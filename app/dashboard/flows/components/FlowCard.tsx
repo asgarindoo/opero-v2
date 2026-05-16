@@ -1,0 +1,86 @@
+"use client";
+
+import { ChevronRight, ListChecks, Calendar, User, Clock } from "lucide-react";
+import type { Flow } from "../types";
+import { CATEGORY_COLORS } from "../types";
+
+interface FlowCardProps {
+  flow: Flow;
+  onClick: () => void;
+}
+
+export default function FlowCard({ flow, onClick }: FlowCardProps) {
+  const lastUpdate = new Date(flow.updated).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  
+  return (
+    <div
+      onClick={onClick}
+      className="group bg-white border border-black/[0.06] rounded-2xl p-5 hover:border-black/[0.12] hover:shadow-sm transition-all cursor-pointer flex flex-col"
+    >
+      {/* Header: Category & Status */}
+      <div className="flex items-start justify-between mb-4">
+        <div className={`px-2 py-0.5 rounded-md font-display text-[9px] font-bold uppercase tracking-wider ${CATEGORY_COLORS[flow.category] || "text-slate-500 bg-slate-50"}`}>
+          {flow.category}
+        </div>
+        <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+          <span className="font-display text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">{flow.status}</span>
+          <ChevronRight size={10} className="text-on-surface-variant" />
+        </div>
+      </div>
+
+      {/* Main Info */}
+      <div className="flex-1 mb-6">
+        <h3 className="font-display text-[15px] font-semibold text-on-surface leading-tight mb-1.5 group-hover:text-primary transition-colors">
+          {flow.name}
+        </h3>
+        <p className="font-display text-[12px] text-on-surface-variant opacity-60 line-clamp-2 leading-relaxed">
+          {flow.description}
+        </p>
+      </div>
+
+      {/* Progress & Stats */}
+      <div className="space-y-4">
+        {/* Progress Bar */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">
+            <span className="opacity-60">Progress</span>
+            <span className="text-primary font-mono">{flow.progress}%</span>
+          </div>
+          <div className="h-1 w-full bg-black/[0.03] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-700 ease-out" 
+              style={{ width: `${flow.progress}%` }} 
+            />
+          </div>
+        </div>
+
+        {/* Footer Meta */}
+        <div className="flex items-center justify-between pt-4 border-t border-black/[0.03]">
+          <div className="flex items-center gap-4">
+            {/* Stages Count */}
+            <div className="flex items-center gap-1.5 text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
+              <ListChecks size={12} strokeWidth={2.5} />
+              <span className="font-display text-[10px] font-bold">{flow.stages.length}</span>
+            </div>
+            {/* Last Updated / Due Date */}
+            <div className="flex items-center gap-1.5 text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
+              <Clock size={12} strokeWidth={2.5} />
+              <span className="font-display text-[10px] font-bold tracking-tight">{lastUpdate}</span>
+            </div>
+          </div>
+
+          {/* Owner Avatar Placeholder */}
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-black/[0.04] border border-white flex items-center justify-center overflow-hidden">
+               {flow.owner.avatar ? (
+                 <img src={flow.owner.avatar} alt={flow.owner.name} className="w-full h-full object-cover" />
+               ) : (
+                 <User size={10} className="text-on-surface-variant opacity-60" />
+               )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

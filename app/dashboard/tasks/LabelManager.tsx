@@ -1,0 +1,117 @@
+"use client";
+
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { X, Plus, Check } from "lucide-react";
+import { addCustomLabel, deleteCustomLabel, getLabels } from "./types";
+
+interface Props {
+  selected: string[];
+  onChange: (labels: string[]) => void;
+}
+
+export default function LabelManager({ selected, onChange }: Props) {
+  const [allLabels, setAllLabels] = useState<string[]>([]);
+  const [creating,  setCreating]  = useState(false);
+  const [newLabel,  setNewLabel]  = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load from localStorage on mount (client-only)
+  useEffect(() => { setAllLabels(getLabels()); }, []);
+
+  // Auto-focus create input
+  useEffect(() => {
+    if (creating) inputRef.current?.focus();
+  }, [creating]);
+
+  function toggle(label: string) {
+    onChange(selected.includes(label)
+      ? selected.filter(l => l !== label)
+      : [...selected, label]);
+  }
+
+  function confirmCreate() {
+    const trimmed = newLabel.trim();
+    if (!trimmed) { setCreating(false); setNewLabel(""); return; }
+    const next = addCustomLabel(trimmed);
+    setAllLabels(next);
+    // Auto-select the new label
+    if (!selected.includes(trimmed)) onChange([...selected, trimmed]);
+    setNewLabel("");
+    setCreating(false);
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") { e.preventDefault(); confirmCreate(); }
+    if (e.key === "Escape") { setCreating(false); setNewLabel(""); }
+  }
+
+  function removeLabel(label: string) {
+    const next = deleteCustomLabel(label);
+    setAllLabels(next);
+    if (selected.includes(label)) onChange(selected.filter(l => l !== label));
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5 items-center">
+      {allLabels.map(l => {
+        const active = selected.includes(l);
+        return (
+          <div key={l} className="relative group/label flex items-center">
+            <button
+              onClick={() => toggle(l)}
+              className="flex items-center gap-1 font-label-caps text-[9px] font-semibold px-2.5 py-1 rounded-full transition-all"
+              style={{
+                background: active ? "var(--color-primary)" : "rgba(0,0,0,0.055)",
+                color: active ? "var(--color-on-primary)" : "var(--color-on-surface-variant)",
+                border: active ? "1.5px solid var(--color-primary)" : "1.5px solid transparent",
+              }}
+            >
+              {active && <Check size={8} strokeWidth={3} />}
+              {l}
+            </button>
+            {/* Delete label (only visible on hover, only on custom ones beyond the core 8) */}
+            <button
+              onClick={() => removeLabel(l)}
+              className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full hidden group-hover/label:flex items-center justify-center transition-all z-10"
+              style={{ background: "rgba(186,26,26,0.7)", color: "#fff" }}
+              title={`Delete label "${l}"`}
+            >
+              <X size={7} strokeWidth={3} />
+            </button>
+          </div>
+        );
+      })}
+
+      {/* Create new label */}
+      {creating ? (
+        <div
+          className="flex items-center gap-1 px-2 py-1 rounded-full"
+          style={{ border: "1.5px solid var(--color-primary)", background: "rgba(0,0,0,0.02)" }}
+        >
+          <input
+            ref={inputRef}
+            value={newLabel}
+            onChange={e => setNewLabel(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={confirmCreate}
+            placeholder="Label name…"
+            className="bg-transparent outline-none font-label-caps text-[9px] font-semibold"
+            style={{ color: "var(--color-on-surface)", width: 80 }}
+          />
+          <button onClick={confirmCreate}>
+            <Check size={9} strokeWidth={3} style={{ color: "var(--color-primary)" }} />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setCreating(true)}
+          className="flex items-center gap-1 font-label-caps text-[9px] font-semibold px-2.5 py-1 rounded-full transition-all hover:bg-black/[0.06]"
+          style={{ border: "1.5px dashed rgba(0,0,0,0.2)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}
+        >
+          <Plus size={9} strokeWidth={2.5} />
+          New Label
+        </button>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,110 @@
+import React, { useMemo } from "react";
+import { MoreHorizontal, Circle } from "lucide-react";
+import { useMembers } from "../context/MembersContext";
+
+const roleColors: Record<string, string> = {
+  Owner: "rgba(0,0,0,0.85)",
+  Admin: "rgba(0,0,0,0.7)",
+  Staff: "rgba(0,0,0,0.6)",
+  Guest: "rgba(0,0,0,0.6)"
+};
+
+export default function MembersDirectory({ searchQuery, onSelectMember }: { searchQuery: string, onSelectMember: (id: string) => void }) {
+  const { members } = useMembers();
+
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery) return members;
+    const q = searchQuery.toLowerCase();
+    return members.filter(m =>
+      m.name.toLowerCase().includes(q) ||
+      m.email.toLowerCase().includes(q) ||
+      m.role.toLowerCase().includes(q) ||
+      (m.department && m.department.toLowerCase().includes(q))
+    );
+  }, [members, searchQuery]);
+
+  return (
+    <div className="p-6">
+      <div className="flex flex-col gap-1">
+        {filteredMembers.map((member) => (
+          <div
+            key={member.id}
+            onClick={() => onSelectMember(member.id)}
+            className="group flex items-center gap-4 p-3 rounded-lg transition-all cursor-pointer border border-transparent hover:border-black/[0.04] hover:bg-black/[0.01]"
+          >
+            {/* Avatar */}
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[12px] shrink-0"
+              style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
+            >
+              {member.initials}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="font-display font-semibold text-[13px] text-on-surface truncate group-hover:text-primary transition-colors">
+                  {member.name}
+                </span>
+                {member.status === "invited" && (
+                  <span className="font-label-caps text-[8px] font-bold px-1.5 py-0.5 rounded bg-black/[0.05] text-on-surface-variant opacity-70">
+                    PENDING INVITE
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60 truncate">
+                  {member.email}
+                </span>
+                {member.department && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-black/10" />
+                    <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60 truncate">
+                      {member.department}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Metadata (Right side) */}
+            <div className="flex items-center gap-8 shrink-0 pr-2">
+              {/* Role */}
+              <div className="w-24 flex items-center gap-2">
+                <Circle size={6} fill={roleColors[member.role]} strokeWidth={0} />
+                <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-70">
+                  {member.role.toUpperCase()}
+                </span>
+              </div>
+
+              {/* Status/Activity */}
+              <div className="w-24 hidden md:flex flex-col items-end">
+                <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60">
+                  Last Active
+                </span>
+                <span className="font-body-sm text-[12px] font-medium text-on-surface-variant opacity-80">
+                  {member.lastActive || "Never"}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <button
+                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-on-surface-variant hover:bg-black/[0.04] transition-all"
+                onClick={(e) => { e.stopPropagation(); onSelectMember(member.id); }}
+              >
+                <MoreHorizontal size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {filteredMembers.length === 0 && (
+          <div className="py-20 text-center font-body-sm text-on-surface-variant opacity-60">
+            No members found matching "{searchQuery}".
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

@@ -1,0 +1,448 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Colors ── */
+  --color-inverse-on-surface: #f4f0ef;
+  --color-on-secondary: #ffffff;
+  --color-on-primary-fixed-variant: #474646;
+  --color-primary: #000000;
+  --color-primary-fixed: #e5e2e1;
+  --color-on-tertiary-container: #848484;
+  --color-secondary-fixed-dim: #c7c6c6;
+  --color-secondary: #5e5e5e;
+  --color-on-surface: #1c1b1b;
+  --color-inverse-surface: #313030;
+  --color-surface-tint: #5f5e5e;
+  --color-tertiary-fixed-dim: #c7c6c6;
+  --color-surface-container-lowest: #ffffff;
+  --color-primary-container: #1c1b1b;
+  --color-on-error-container: #93000a;
+  --color-surface-variant: #e5e2e1;
+  --color-surface-bright: #fdf8f8;
+  --color-error-container: #ffdad6;
+  --color-on-tertiary-fixed: #1b1c1c;
+  --color-inverse-primary: #c9c6c5;
+  --color-surface-container-highest: #e5e2e1;
+  --color-surface: #fdf8f8;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #1b1c1c;
+  --color-on-secondary-fixed-variant: #464747;
+  --color-on-secondary-container: #626262;
+  --color-surface-container: #f1edec;
+  --color-on-primary-container: #858383;
+  --color-background: #fdf8f8;
+  --color-on-primary: #ffffff;
+  --color-secondary-fixed: #e4e2e2;
+  --color-on-surface-variant: #444748;
+  --color-on-secondary-fixed: #1b1c1c;
+  --color-outline: #747878;
+  --color-on-tertiary-fixed-variant: #464747;
+  --color-surface-dim: #ddd9d8;
+  --color-on-background: #1c1b1b;
+  --color-error: #ba1a1a;
+  --color-primary-fixed-dim: #c9c6c5;
+  --color-surface-container-high: #ebe7e6;
+  --color-secondary-container: #e1dfdf;
+  --color-on-error: #ffffff;
+  --color-on-primary-fixed: #1c1b1b;
+  --color-tertiary-fixed: #e3e2e2;
+  --color-outline-variant: #c4c7c7;
+  --color-tertiary: #000000;
+  --color-surface-container-low: #f7f3f2;
+
+  /* ── Spacing ── */
+  --spacing-margin: 48px;
+  --spacing-stack-xs: 4px;
+  --spacing-unit: 8px;
+  --spacing-stack-md: 24px;
+  --spacing-container-max: 1440px;
+  --spacing-grid-pattern-size: 32px;
+  --spacing-stack-sm: 12px;
+  --spacing-stack-lg: 48px;
+  --spacing-gutter: 24px;
+
+  /* ── Border Radius ── */
+  --radius: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
+
+  /* ── Font Families ── */
+  --font-accent-note: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-h1: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-h2: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-h3: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body-md: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body-lg: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body-sm: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-label-caps: "Plus Jakarta Sans", system-ui, sans-serif;
+
+  /* ── Font Sizes ── */
+  --text-accent-note: 18px;
+  --text-accent-note--line-height: 1.2;
+
+  --text-h1: 32px;
+  --text-h1--line-height: 1.2;
+  --text-h1--letter-spacing: -0.01em;
+
+  --text-h3: 18px;
+  --text-h3--line-height: 1.4;
+
+  --text-body-md: 14px;
+  --text-body-md--line-height: 1.5;
+
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.6;
+
+  --text-h2: 24px;
+  --text-h2--line-height: 1.3;
+
+  --text-display: 48px;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-body-sm: 12px;
+  --text-body-sm--line-height: 1.5;
+
+  --text-label-caps: 11px;
+  --text-label-caps--line-height: 1;
+  --text-label-caps--letter-spacing: 0.05em;
+}
+
+/* ── Custom background patterns ── */
+.grid-pattern {
+  background-image: radial-gradient(rgba(8, 8, 8, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.organic-bg-pattern {
+  background-image:
+    radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.02) 0%, transparent 40%),
+    radial-gradient(circle at 0% 0%, rgba(0, 0, 0, 0.01) 0%, transparent 30%);
+}
+
+/* ── Float animations ── */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 7s ease-in-out 2s infinite;
+}
+
+.animate-float-slow {
+  animation: float 8s ease-in-out 1s infinite;
+}
+
+/* ── Spin animation ── */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 0.85s linear infinite;
+}
+
+/* ── Pulse-glow animation ── */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.12);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 0, 0, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ── Shimmer animation ── */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* ── Dot-burst for success state ── */
+@keyframes burst-out {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) translate(var(--tx), var(--ty));
+    opacity: 0;
+  }
+}
+
+.animate-burst {
+  animation: burst-out 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Success check pop ── */
+@keyframes check-pop {
+  0% {
+    transform: scale(0);
+  }
+
+  60% {
+    transform: scale(1.18);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-check-pop {
+  animation: check-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Onboarding glow blobs ── */
+.ob-glow-tl {
+  position: fixed;
+  top: -120px;
+  left: -120px;
+  width: 440px;
+  height: 440px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.035) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.ob-glow-br {
+  position: fixed;
+  bottom: -100px;
+  right: -100px;
+  width: 360px;
+  height: 360px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.025) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Entrance animations ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-400 {
+  animation-delay: 400ms;
+}
+
+/* ── Interactive element polish ── */
+button {
+  cursor: pointer;
+  user-select: none;
+}
+
+a {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ── Smooth scroll ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Dashboard sidebar ── */
+.db-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+}
+
+.db-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.db-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.db-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+}
+
+/* ── Dashboard main scroll ── */
+.db-main {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.06) transparent;
+}
+
+.db-main::-webkit-scrollbar {
+  width: 6px;
+}
+
+.db-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.db-main::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+}
+
+/* ── Widget card hover ── */
+.db-widget {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.db-widget:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
+  transform: translateY(-1px);
+}
+
+/* ── Staggered reveal delays ── */
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-150 {
+  animation-delay: 150ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+.delay-600 {
+  animation-delay: 600ms;
+}
+
+.delay-700 {
+  animation-delay: 700ms;
+}
+
+.delay-800 {
+  animation-delay: 800ms;
+}
+
+/* ── Mini bar chart animation ── */
+@keyframes growUp {
+  from {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+
+  to {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+}
+
+.animate-grow-up {
+  animation: growUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Sidebar nav active indicator ── */
+.db-nav-active {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--color-on-surface);
+}
+
+.db-nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--color-primary);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ── Progress bar shimmer ── */
+@keyframes progressShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.db-progress-bar {
+  background: linear-gradient(90deg,
+      var(--color-primary) 0%,
+      rgba(0, 0, 0, 0.7) 50%,
+      var(--color-primary) 100%);
+  background-size: 200% 100%;
+  animation: progressShimmer 2.5s ease-in-out infinite;
+}
