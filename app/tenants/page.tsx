@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import TenantLogo from "@/app/components/TenantLogo";
+import { getTenantLogoSrc } from "@/lib/tenant-logo";
 
 const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
   owner:  { label: "Owner",  bg: "rgba(0,0,0,0.07)",  color: "var(--color-primary)" },
@@ -17,7 +19,7 @@ export default function TenantSelectionPage() {
   const [loading, setLoading] = useState(true);
   const [orgs, setOrgs] = useState<Array<{
     id: string; name: string; slug: string;
-    role: string; initial: string; color: string;
+    role: string; logo?: string | null; color: string;
   }>>([]);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function TenantSelectionPage() {
             name: org.name,
             slug: org.slug,
             role: (org as { role?: string }).role ?? "member",
-            initial: org.name.charAt(0).toUpperCase(),
+            logo: org.logo ?? null,
             color: `hsl(${(i * 47 + 200) % 360}, 12%, ${20 + (i % 4) * 3}%)`,
           }))
         );
@@ -114,16 +116,13 @@ export default function TenantSelectionPage() {
                 }}
               >
                 {/* Avatar */}
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-white text-[16px] shrink-0 shadow-sm"
-                  style={{ background: t.color }}
-                >
-                  {isSelecting ? (
-                    <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  ) : (
-                    t.initial
-                  )}
-                </div>
+                <TenantLogo
+                  name={t.name}
+                  logo={getTenantLogoSrc(t.id, t.logo)}
+                  color={t.color}
+                  size="lg"
+                  loading={isSelecting}
+                />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">

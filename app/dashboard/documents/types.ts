@@ -31,6 +31,8 @@ export interface FileEntry {
     name: string;
     id: string;
   };
+  storagePath?: string;
+  downloadUrl?: string;
   thumbnailUrl?: string;
   versions: FileVersion[];
   activities: DocumentActivity[];

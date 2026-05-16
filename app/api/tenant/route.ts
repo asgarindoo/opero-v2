@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server/auth-utils";
+import { uploadTenantLogoFromDataUrl } from "@/lib/server/supabase-storage";
 import { z } from "zod";
 
 const CreateTenantSchema = z.object({
@@ -18,7 +19,12 @@ const CreateTenantSchema = z.object({
     .min(2, "Slug must be at least 2 characters")
     .max(30)
     .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
-  logo: z.string().url().optional().or(z.literal("")),
+  logo: z
+    .string()
+    .refine((value) => value === "" || value.startsWith("data:image/") || z.url().safeParse(value).success, {
+      message: "Logo must be an image data URL or a valid URL",
+    })
+    .optional(),
 });
 
 // ── GET /api/tenant ───────────────────────────────────────────────────────────
@@ -69,9 +75,30 @@ export async function POST(req: NextRequest) {
 
     const hdrs = await headers();
     const org = await auth.api.createOrganization({
-      body: { name, slug, logo: logo || undefined },
+      body: { name, slug },
       headers: hdrs,
     });
+
+    if (logo) {
+      const logoPath = logo.startsWith("data:image/")
+        ? await uploadTenantLogoFromDataUrl({ organizationId: org.id, dataUrl: logo })
+        : logo;
+
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: {
+          logo: logoPath,
+          tenantSettings: {
+            upsert: {
+              create: { logoUrl: logoPath },
+              update: { logoUrl: logoPath },
+            },
+          },
+        },
+      });
+
+      org.logo = logoPath;
+    }
 
     return NextResponse.json({ organization: org }, { status: 201 });
   } catch (err) {

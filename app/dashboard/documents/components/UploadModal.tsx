@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDocuments } from "../context/DocumentsContext";
-import { X, Upload, FileText, Tag, Layers, Lock, ShieldCheck, ChevronDown } from "lucide-react";
+import { X, Upload, Tag, Layers, Lock, ChevronDown } from "lucide-react";
 import { FileType } from "../types";
 
 export default function UploadModal({ onClose }: { onClose: () => void }) {
@@ -9,19 +9,58 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<FileType>("other");
   const [tags, setTags] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const selectFile = (selected: File) => {
+    setFile(selected);
+    setError(null);
+    setName((current) => current || selected.name);
+    const ext = selected.name.split(".").pop()?.toLowerCase();
+    if (selected.type.startsWith("image/")) setType("image");
+    else if (ext === "pdf") setType("pdf");
+    else if (["xls", "xlsx", "csv"].includes(ext ?? "")) setType("spreadsheet");
+    else if (["doc", "docx"].includes(ext ?? "")) setType("document");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !file || isUploading) return;
 
-    addFile({
-      name,
-      type,
-      extension: name.split(".").pop() || "bin",
-      size: Math.floor(Math.random() * 5000000) + 100000,
-      tags: tags.split(",").map(t => t.trim()).filter(t => t),
-    });
-    onClose();
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "documents");
+
+      const res = await fetch("/api/tenant/files", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await res.json();
+
+      if (!res.ok) {
+        throw new Error(payload.error ?? "Upload failed.");
+      }
+
+      addFile({
+        name,
+        type,
+        extension: file.name.split(".").pop() || "bin",
+        size: payload.size ?? file.size,
+        tags: tags.split(",").map(t => t.trim()).filter(t => t),
+        storagePath: payload.storagePath,
+        downloadUrl: payload.downloadUrl,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -49,18 +88,40 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
           <div 
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
             onDragLeave={() => setIsDragOver(false)}
-            onDrop={(e) => { e.preventDefault(); setIsDragOver(false); }}
-            className={`aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all ${isDragOver ? "border-primary bg-primary/5" : "border-black/5 bg-surface-container-low"}`}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragOver(false);
+              const dropped = e.dataTransfer.files[0];
+              if (dropped) selectFile(dropped);
+            }}
+            className={`relative aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all ${isDragOver ? "border-primary bg-primary/5" : "border-black/5 bg-surface-container-low"}`}
           >
              <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-on-surface-variant opacity-40">
                 <Upload size={20} />
              </div>
              <div className="text-center">
-                <p className="font-display font-bold text-[13px] text-on-surface opacity-80">Click or drag files to upload</p>
-                <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40 mt-1">PDF, DOCX, XLSX, Images up to 50MB</p>
+                <p className="font-display font-bold text-[13px] text-on-surface opacity-80">
+                  {file ? file.name : "Click or drag files to upload"}
+                </p>
+                <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40 mt-1">
+                  {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "PDF, DOCX, XLSX, Images up to 30MB"}
+                </p>
              </div>
-             <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
+             <input
+               type="file"
+               className="absolute inset-0 opacity-0 cursor-pointer"
+               onChange={(e) => {
+                 const selected = e.target.files?.[0];
+                 if (selected) selectFile(selected);
+               }}
+             />
           </div>
+
+          {error && (
+            <p className="font-body-sm text-[12px] text-red-600">
+              {error}
+            </p>
+          )}
 
           <div className="space-y-4">
             <div>
@@ -126,10 +187,10 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
         <div className="px-6 py-4 bg-surface-container-low border-t border-black/[0.04] flex justify-end gap-3 shrink-0">
           <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide text-on-surface-variant hover:bg-black/5 transition-colors">CANCEL</button>
           <button 
-            type="submit" onClick={handleSubmit} disabled={!name.trim()}
+            type="submit" onClick={handleSubmit} disabled={!name.trim() || !file || isUploading}
             className="px-6 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide bg-primary text-on-primary hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all disabled:opacity-50"
           >
-            START UPLOAD
+            {isUploading ? "UPLOADING..." : "START UPLOAD"}
           </button>
         </div>
       </div>

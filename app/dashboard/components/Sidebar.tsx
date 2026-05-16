@@ -2,105 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
-import {
-  LayoutDashboard,
-  CheckSquare,
-  GitFork,
-  Target,
-  MessageSquare,
-  Users,
-  UserRound,
-  ShoppingCart,
-  Package,
-  Landmark,
-  CreditCard,
-  Receipt,
-  FileText,
-  Megaphone,
-  Share2,
-  Radio,
-  Bot,
-  BarChart2,
-  FileBarChart,
-  Activity,
-  Settings,
-  ChevronsUpDown,
-  Calendar,
-  type LucideIcon,
-} from "lucide-react";
-
-/* ─── Nav definition ─── */
-interface NavItem {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  href: string;
-  badge?: number;
-}
-
-interface NavGroup {
-  label: string | null; // null = no section label (Dashboard row)
-  items: NavItem[];
-}
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: null,
-    items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    ],
-  },
-  {
-    label: "OPERATIONS",
-    items: [
-      { id: "tasks", label: "Tasks", icon: CheckSquare, href: "/dashboard/tasks" },
-      { id: "flows", label: "Flows", icon: GitFork, href: "/dashboard/flows" },
-      { id: "goals", label: "Goals", icon: Target, href: "/dashboard/goals" },
-    ],
-  },
-  {
-    label: "TEAM",
-    items: [
-      { id: "chat", label: "Team Chat", icon: MessageSquare, href: "/dashboard/chat" },
-      { id: "members", label: "Members", icon: Users, href: "/dashboard/members" },
-    ],
-  },
-  {
-    label: "BUSINESS",
-    items: [
-      { id: "contacts", label: "Contacts", icon: UserRound, href: "/dashboard/contacts" },
-      { id: "sales", label: "Sales", icon: ShoppingCart, href: "/dashboard/sales" },
-      { id: "inventory", label: "Inventory", icon: Package, href: "/dashboard/inventory" },
-      { id: "assets", label: "Assets", icon: Landmark, href: "/dashboard/assets" },
-      { id: "finance", label: "Finance", icon: CreditCard, href: "/dashboard/finance" },
-      { id: "invoices", label: "Invoices", icon: Receipt, href: "/dashboard/invoices" },
-      { id: "documents", label: "Documents", icon: FileText, href: "/dashboard/documents" },
-    ],
-  },
-  {
-    label: "MARKETING",
-    items: [
-      { id: "campaigns", label: "Campaigns", icon: Megaphone, href: "/dashboard/campaigns" },
-      { id: "content-planner", label: "Content Planner", icon: Calendar, href: "/dashboard/content-planner" },
-      { id: "social-channels", label: "Social Channels", icon: Share2, href: "/dashboard/social-channels" },
-    ],
-  },
-  {
-    label: "CONNECT",
-    items: [
-      { id: "bots", label: "Bot Manager", icon: Bot, href: "/dashboard/bots" },
-    ],
-  },
-  {
-    label: "MONITOR",
-    items: [
-      { id: "insights", label: "Insights", icon: BarChart2, href: "/dashboard/insights" },
-      { id: "reports", label: "Reports", icon: FileBarChart, href: "/dashboard/reports" },
-      { id: "activity", label: "Activity Log", icon: Activity, href: "/dashboard/activity" },
-    ],
-  },
-];
+import { useActiveOrganization, useSession } from "@/lib/auth-client";
+import TenantLogo from "@/app/components/TenantLogo";
+import { getTenantLogoSrc } from "@/lib/tenant-logo";
+import { Settings, ChevronsUpDown } from "lucide-react";
+import { NAV_GROUPS } from "./navConfig";
 
 interface Props {
   collapsed: boolean;
@@ -111,24 +17,28 @@ interface Props {
 function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { data: activeOrg, isPending: isOrgLoading } = useActiveOrganization();
   const userName = session?.user?.name ?? "User";
   const userInitial = userName.charAt(0).toUpperCase();
   const userRole = (session?.user as { role?: string })?.role ?? "member";
+  const tenantName = activeOrg?.name ?? "OPERO";
+  const tenantLogo = getTenantLogoSrc(activeOrg?.id ?? "", activeOrg?.logo ?? null);
+
+  // Dynamic presence placeholder (could be replaced with real-time socket/presence data)
+  const onlineCount = activeOrg ? 1 : 0;
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
-    
-    // Ensure "Overview" (/dashboard/marketing) doesn't stay active when on sub-pages like /social
+
     const isExact = pathname === href;
     const isSubPath = pathname.startsWith(href + "/");
-    
+
     if (isExact) return true;
     if (!isSubPath) return false;
 
-    // If it's a subpath, we need to check if there's a more specific match in the nav
-    const allItems = NAV_GROUPS.flatMap(g => g.items);
-    const hasMoreSpecificMatch = allItems.some(item => 
-      item.href !== href && item.href.startsWith(href) && pathname.startsWith(item.href)
+    const allItems = NAV_GROUPS.flatMap((g) => g.items);
+    const hasMoreSpecificMatch = allItems.some(
+      (item) => item.href !== href && item.href.startsWith(href) && pathname.startsWith(item.href)
     );
 
     return !hasMoreSpecificMatch;
@@ -160,7 +70,42 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
         )}
       </div>
 
-      {/* ── Nav ── */}
+      {/* ── Tenant Identity ── */}
+      <div className="shrink-0 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+        {isOrgLoading ? (
+          /* Loading State: Soft Skeletons */
+          <div className="px-4 py-3.5 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[6px] bg-black/[0.04] animate-pulse shrink-0" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="h-3 w-24 bg-black/[0.05] rounded-[4px] animate-pulse" />
+              <div className="h-2 w-12 bg-black/[0.03] rounded-[3px] animate-pulse" />
+            </div>
+          </div>
+        ) : collapsed ? (
+          <div className="flex justify-center items-center py-3.5" title={tenantName}>
+            <TenantLogo name={tenantName} logo={tenantLogo} size="sm" />
+          </div>
+        ) : (
+          <div className="px-4 py-3 flex items-center gap-3 select-none">
+            <TenantLogo name={tenantName} logo={tenantLogo} size="md" className="opacity-95" />
+            <div className="min-w-0 flex-1 flex flex-col justify-center">
+              <div
+                className="font-body-sm text-[13px] font-semibold truncate leading-tight tracking-[-0.01em]"
+                style={{ color: "var(--color-on-surface)", opacity: 0.95 }}
+              >
+                {tenantName}
+              </div>
+              <div
+                className="font-body-sm text-[10.5px] font-medium mt-0.5"
+                style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}
+              >
+                {onlineCount} online
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <nav className="flex-1 overflow-y-auto db-sidebar py-2 px-2">
         {NAV_GROUPS.map((group, gi) => (
           <div key={gi} className={group.label !== null ? "mb-3" : "mb-1"}>
@@ -287,7 +232,8 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
         {/* User pill */}
         {!collapsed && (
           <div className="flex items-center gap-2 mt-1 px-2.5 py-[6px] rounded-[6px] cursor-pointer hover:bg-black/[0.035] transition-colors duration-150">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[10px] shrink-0"
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[10px] shrink-0"
               style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
             >
               {userInitial}

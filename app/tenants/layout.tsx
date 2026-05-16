@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import SignOutButton from "./SignOutButton";
 
 export const metadata: Metadata = {
   title: "Choose Workspace — OPERO",
@@ -56,13 +57,7 @@ export default function TenantsLayout({ children }: { children: React.ReactNode 
           OP<span className="opacity-20">E</span>RO
         </Link>
 
-        <Link
-          href="/login"
-          className="flex items-center gap-1.5 font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-on-surface-variant/55 hover:text-primary transition-colors duration-200"
-        >
-          <span className="material-symbols-outlined text-[13px]">logout</span>
-          Sign out
-        </Link>
+        <SignOutButton />
       </header>
 
       <div className="flex-1 flex flex-col">{children}</div>

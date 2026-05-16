@@ -569,7 +569,14 @@ export default function CreateTenantPage() {
 
           {step === 1 && <StepInfo form={tenantForm} setForm={setTenantForm} onNext={() => setStep(2)} />}
           {step === 2 && <StepPlan selected={selectedPlan} onSelect={setSelectedPlan} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-          {step === 3 && <StepLaunch tenantName={tenantForm.name} tenantSlug={tenantForm.slug} onEnter={handleEnterDashboard} />}
+          {step === 3 && (
+            <StepLaunch
+              tenantName={tenantForm.name}
+              tenantSlug={tenantForm.slug}
+              tenantLogo={tenantForm.logo}
+              onEnter={handleEnterDashboard}
+            />
+          )}
         </div>
 
         {step === 1 && (
