@@ -1,60 +1,110 @@
-/**
- * OPERO — Tenant Join Route Handler
- * POST /api/tenant/join → Accept an invitation by invitation ID
- *
- * The "invite code" in OPERO UI maps to an invitation ID from Better Auth.
- * The invite link sent by email is: /onboarding/join?invite=[invitationId]
- */
-
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { requireAuth } from "@/lib/server/auth-utils";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/server/auth-utils";
 
 const JoinSchema = z.object({
-  invitationId: z.string().min(1, "Invitation ID is required"),
+  inviteCode: z.string().regex(/^OP-[A-Z0-9]{4}-[A-Z0-9]{4}$/, "Invalid invite code format").optional(),
+  inviteToken: z.string().regex(/^[a-f0-9]{48}$/i, "Invalid invite link").optional(),
+}).refine((data) => Boolean(data.inviteCode || data.inviteToken), {
+  message: "Invite code or link is required",
 });
 
-// ── POST /api/tenant/join ─────────────────────────────────────────────────────
+/**
+ * POST /api/tenant/join
+ * Join a tenant using a permanent invite code.
+ */
 export async function POST(req: NextRequest) {
   try {
-    await requireAuth();
-
+    const user = await requireAuth();
     const body = await req.json();
     const parsed = JoinSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid invite code", details: parsed.error.flatten().fieldErrors },
+        { error: "Invalid invite code format" },
         { status: 400 }
       );
     }
 
-    const { invitationId } = parsed.data;
-    const hdrs = await headers();
+    const { inviteCode, inviteToken } = parsed.data;
 
-    const result = await auth.api.acceptInvitation({
-      body: { invitationId },
-      headers: hdrs,
-    });
+    const organization = inviteCode
+      ? await prisma.organization.findUnique({
+          where: { inviteCode },
+          select: { id: true, name: true },
+        })
+      : null;
 
-    return NextResponse.json({ member: result }, { status: 200 });
-  } catch (err) {
-    if (err instanceof Response) return err;
+    const inviteLink = inviteToken
+      ? await prisma.tenantInviteLink.findUnique({
+          where: { token: inviteToken },
+          select: {
+            id: true,
+            organizationId: true,
+            expiresAt: true,
+            revokedAt: true,
+            organization: { select: { id: true, name: true } },
+          },
+        })
+      : null;
 
-    // Better Auth throws for expired/invalid invitations
-    const message =
-      err instanceof Error ? err.message : "Invalid or expired invitation";
+    const targetOrganization = organization ?? inviteLink?.organization;
 
-    if (
-      message.toLowerCase().includes("not found") ||
-      message.toLowerCase().includes("expired") ||
-      message.toLowerCase().includes("invalid")
-    ) {
-      return NextResponse.json({ error: message }, { status: 404 });
+    if (!targetOrganization) {
+      return NextResponse.json(
+        { error: "Invalid invite" },
+        { status: 404 }
+      );
     }
 
+    if (inviteLink?.revokedAt || (inviteLink?.expiresAt && inviteLink.expiresAt <= new Date())) {
+      return NextResponse.json({ error: "This invite link has expired" }, { status: 410 });
+    }
+
+    // Check if user is already a member
+    const existingMember = await prisma.member.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId: targetOrganization.id,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (existingMember) {
+      return NextResponse.json(
+        { error: "You are already a member of this workspace" },
+        { status: 400 }
+      );
+    }
+
+    // Join as 'member' (Staff)
+    await prisma.$transaction(async (tx) => {
+      await tx.member.create({
+        data: {
+          organizationId: targetOrganization.id,
+          userId: user.id,
+          role: "member",
+          status: "active",
+        },
+      });
+
+      if (inviteLink) {
+        await tx.tenantInviteLink.update({
+          where: { id: inviteLink.id },
+          data: { uses: { increment: 1 } },
+        });
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      organizationId: targetOrganization.id,
+      organizationName: targetOrganization.name,
+    });
+  } catch (err) {
+    if (err instanceof Response) return err;
     console.error("[POST /api/tenant/join]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

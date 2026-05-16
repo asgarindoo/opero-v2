@@ -3,6 +3,20 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { Member, Role, Permission, ActivityLog, RoleType, InviteLink } from "../types";
 
+interface ApiMember {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  image: string | null;
+  role: string;
+  department: string | null;
+  position: string | null;
+  status: "active" | "suspended";
+  joinedAt: string;
+  lastActive: string | null;
+}
+
 export const PERMISSIONS: Permission[] = [
   // Dashboard
   { id: "dash_view", category: "Dashboard", name: "View Dashboard", description: "Can view the main dashboard overview." },
@@ -40,37 +54,41 @@ const INITIAL_ROLES: Role[] = [
   { id: "r3", name: "Staff", description: "Standard user access. Can collaborate on work but cannot manage system settings.", permissions: STAFF_PERMS },
 ];
 
-const MOCK_MEMBERS: Member[] = [
-  { id: "m1", name: "You (Owner)", email: "you@example.com", role: "Owner", status: "active", department: "Management", jobTitle: "CEO", initials: "Y", joinedAt: "2024-01-10", lastActive: "Just now" },
-  { id: "m2", name: "Sarah Connor", email: "sarah@example.com", role: "Admin", status: "active", department: "Operations", jobTitle: "Head of Operations", initials: "SC", joinedAt: "2024-02-15", lastActive: "2 hours ago" },
-  { id: "m3", name: "John Doe", email: "john@example.com", role: "Staff", status: "active", department: "Engineering", jobTitle: "Software Engineer", initials: "JD", joinedAt: "2024-03-01", lastActive: "1 day ago" },
-];
+const roleMap: Record<string, RoleType> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Staff",
+};
 
-const MOCK_LOGS: ActivityLog[] = [];
-const MOCK_LINKS: InviteLink[] = [
-  { id: "link1", url: "https://opero.app/join/OP-MAIN-2024", createdBy: "You (Owner)", createdAt: "2024-05-10T10:00:00Z", expiresAt: null, uses: 12 }
-];
+const revRoleMap: Record<RoleType, string> = {
+  Owner: "owner",
+  Admin: "admin",
+  Staff: "member",
+};
 
 interface MembersContextType {
   members: Member[];
+  loading: boolean;
   activityLogs: ActivityLog[];
   roles: Role[];
   permissions: Permission[];
   inviteLinks: InviteLink[];
   tenantCode: string;
-  
+  currentUserRole: RoleType | null;
+
   // Member actions
-  inviteMember: (email: string, role: RoleType, department?: string) => void;
-  removeMember: (id: string) => void;
-  updateMemberRole: (id: string, newRole: RoleType) => void;
-  updateMemberOrg: (id: string, department: string, jobTitle: string) => void;
-  
+  fetchMembers: () => Promise<void>;
+  inviteMember: (email: string, role: RoleType, department?: string) => Promise<void>;
+  removeMember: (id: string) => Promise<void>;
+  updateMemberRole: (id: string, newRole: RoleType) => Promise<void>;
+  updateMemberOrg: (id: string, department: string, jobTitle: string) => Promise<void>;
+
   // Access Control actions
   toggleRolePermission: (roleId: string, permissionId: string) => void;
-  
+
   // Invite Link actions
-  generateInviteLink: (expireDays: number | null) => InviteLink;
-  revokeInviteLink: (id: string) => void;
+  generateInviteLink: (expireDays: number | null) => Promise<InviteLink>;
+  revokeInviteLink: (id: string) => Promise<void>;
 
   logActivity: (action: string) => void;
 }
@@ -78,100 +96,171 @@ interface MembersContextType {
 const MembersContext = createContext<MembersContextType | undefined>(undefined);
 
 export function MembersProvider({ children }: { children: React.ReactNode }) {
-  const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(MOCK_LOGS);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [roles, setRoles] = useState<Role[]>(INITIAL_ROLES);
-  const [inviteLinks, setInviteLinks] = useState<InviteLink[]>(MOCK_LINKS);
-  const [tenantCode] = useState("OP-MAIN-2024");
+  const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([]);
+  const [tenantCode, setTenantCode] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState<RoleType | null>(null);
 
   const logActivity = useCallback((action: string) => {
     const newLog: ActivityLog = {
       id: Math.random().toString(36).substring(7),
-      userId: "m1",
+      userId: "system",
       action,
       timestamp: new Date().toISOString()
     };
     setActivityLogs(prev => [newLog, ...prev]);
   }, []);
 
-  const inviteMember = useCallback((email: string, role: RoleType, department?: string) => {
-    const newMember: Member = {
-      id: Math.random().toString(36).substring(7),
-      name: email.split("@")[0],
-      email,
-      role,
-      status: "invited",
-      department,
-      initials: email.substring(0, 2).toUpperCase(),
-      joinedAt: new Date().toISOString()
-    };
-    setMembers(prev => [...prev, newMember]);
-    logActivity(`Invited ${email} as ${role}`);
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const membersRes = await fetch("/api/tenant/members");
+      const membersData = await membersRes.json();
+
+      if (membersData.members) {
+        setMembers((membersData.members as ApiMember[]).map((m) => ({
+          ...m,
+          role: roleMap[m.role] || "Staff",
+          department: m.department ?? undefined,
+          jobTitle: m.position ?? undefined,
+          lastActive: m.lastActive ?? undefined,
+          initials: (m.name || m.email).charAt(0).toUpperCase()
+        })));
+      }
+      if (membersData.currentRole) {
+        setCurrentUserRole(roleMap[membersData.currentRole] || "Staff");
+      }
+
+      const canInvite = membersData.currentRole === "owner" || membersData.currentRole === "admin";
+      if (!canInvite) {
+        setTenantCode("");
+        setInviteLinks([]);
+        return;
+      }
+
+      const inviteRes = await fetch("/api/tenant/invite");
+      const inviteData = await inviteRes.json();
+
+      if (inviteData.inviteCode) {
+        setTenantCode(inviteData.inviteCode);
+      }
+      if (inviteData.inviteLinks) {
+        setInviteLinks(inviteData.inviteLinks);
+      }
+    } catch (err) {
+      console.error("Failed to fetch members:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchMembers();
+  }, [fetchMembers]);
+
+  const inviteMember = useCallback(async (email: string, role: RoleType) => {
+    // This currently just mocks the "invited" status in the list 
+    // real invitations would go through an invite table / email flow
+    logActivity(`Invite requested for ${email} as ${role}`);
+    await fetchMembers();
+  }, [logActivity, fetchMembers]);
+
+  const removeMember = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/tenant/members/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setMembers(prev => prev.filter(m => m.id !== id));
+        logActivity(`Removed member ${id}`);
+      }
+    } catch (err) {
+      console.error("Failed to remove member:", err);
+    }
   }, [logActivity]);
 
-  const removeMember = useCallback((id: string) => {
-    setMembers(prev => prev.filter(m => m.id !== id));
-    logActivity(`Removed member ${id}`);
+  const updateMemberRole = useCallback(async (id: string, newRole: RoleType) => {
+    try {
+      const res = await fetch(`/api/tenant/members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: revRoleMap[newRole] })
+      });
+      if (res.ok) {
+        setMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m));
+        logActivity(`Updated role for member ${id} to ${newRole}`);
+      }
+    } catch (err) {
+      console.error("Failed to update member role:", err);
+    }
   }, [logActivity]);
 
-  const updateMemberRole = useCallback((id: string, newRole: RoleType) => {
-    setMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m));
-    logActivity(`Updated role for member ${id} to ${newRole}`);
+  const updateMemberOrg = useCallback(async (id: string, department: string, jobTitle: string) => {
+    try {
+      const res = await fetch(`/api/tenant/members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ department, position: jobTitle })
+      });
+      if (res.ok) {
+        setMembers(prev => prev.map(m => m.id === id ? { ...m, department, jobTitle } : m));
+        logActivity(`Updated organization structure for member ${id}`);
+      }
+    } catch (err) {
+      console.error("Failed to update member org:", err);
+    }
   }, [logActivity]);
 
-  const updateMemberOrg = useCallback((id: string, department: string, jobTitle: string) => {
-    setMembers(prev => prev.map(m => m.id === id ? { ...m, department, jobTitle } : m));
-    logActivity(`Updated organization structure for member ${id}`);
-  }, [logActivity]);
-
-  // Access Control
+  // Access Control (Local for now, could be persisted later)
   const toggleRolePermission = useCallback((roleId: string, permissionId: string) => {
     if (roleId === "r1") return; // Owner role is locked
 
     setRoles(prev => prev.map(r => {
       if (r.id !== roleId) return r;
       const hasPerm = r.permissions.includes(permissionId);
-      const newPerms = hasPerm 
+      const newPerms = hasPerm
         ? r.permissions.filter(p => p !== permissionId)
         : [...r.permissions, permissionId];
       return { ...r, permissions: newPerms };
     }));
-    
-    const roleName = roles.find(r => r.id === roleId)?.name;
-    const permName = PERMISSIONS.find(p => p.id === permissionId)?.name;
-    logActivity(`Toggled permission '${permName}' for role '${roleName}'`);
-  }, [roles, logActivity]);
+  }, []);
 
   // Invite Links
-  const generateInviteLink = useCallback((expireDays: number | null) => {
-    const expiresAt = expireDays ? new Date(Date.now() + expireDays * 24 * 60 * 60 * 1000).toISOString() : null;
-    
-    const newLink: InviteLink = {
-      id: Math.random().toString(36).substring(7),
-      url: `https://opero.app/join/${tenantCode}`,
-      createdBy: "You (Owner)",
-      createdAt: new Date().toISOString(),
-      expiresAt,
-      uses: 0
-    };
-    
-    setInviteLinks(prev => [newLink, ...prev]);
-    logActivity(`Generated new invite link (Direct Access)`);
-    return newLink;
-  }, [tenantCode, logActivity]);
+  const generateInviteLink = useCallback(async (expireDays: number | null) => {
+    const res = await fetch("/api/tenant/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expireDays })
+    });
+    const payload = await res.json();
 
-  const revokeInviteLink = useCallback((id: string) => {
-    setInviteLinks(prev => prev.filter(l => l.id !== id));
-    logActivity(`Revoked an invite link`);
-  }, [logActivity]);
+    if (!res.ok) {
+      throw new Error(payload.error ?? "Failed to generate invite link");
+    }
+
+    setInviteLinks(prev => [payload.inviteLink, ...prev]);
+    return payload.inviteLink as InviteLink;
+  }, []);
+
+  const revokeInviteLink = useCallback(async (id: string) => {
+    const res = await fetch(`/api/tenant/invite/links/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setInviteLinks(prev => prev.filter(l => l.id !== id));
+    }
+  }, []);
 
   const value = useMemo(() => ({
     members,
+    loading,
     activityLogs,
     roles,
     permissions: PERMISSIONS,
     inviteLinks,
     tenantCode,
+    currentUserRole,
+    fetchMembers,
     inviteMember,
     removeMember,
     updateMemberRole,
@@ -181,8 +270,8 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     revokeInviteLink,
     logActivity
   }), [
-    members, activityLogs, roles, inviteLinks, tenantCode,
-    inviteMember, removeMember, updateMemberRole, updateMemberOrg,
+    members, loading, activityLogs, roles, inviteLinks, tenantCode, currentUserRole,
+    fetchMembers, inviteMember, removeMember, updateMemberRole, updateMemberOrg,
     toggleRolePermission, generateInviteLink, revokeInviteLink, logActivity
   ]);
 
@@ -201,4 +290,3 @@ export function useMembers() {
   }
   return context;
 }
-

@@ -8,10 +8,11 @@ interface PipelinePreviewProps {
 }
 
 function getStageFill(stage: WorkflowStage) {
+  const stageType = stage.stageType ?? "task";
   if (stage.isCompletion) return "bg-black/70";
-  if (stage.approvalRequired || stage.stageType === "approval") return "bg-black/45";
-  if (stage.stageType === "decision") return "bg-black/35";
-  if (stage.stageType === "start") return "bg-black/25";
+  if (stage.approvalRequired || stageType === "approval") return "bg-black/45";
+  if (stageType === "decision") return "bg-black/35";
+  if (stageType === "start") return "bg-black/25";
   return "bg-black/30";
 }
 

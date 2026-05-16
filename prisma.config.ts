@@ -14,7 +14,7 @@ import { defineConfig, env } from "prisma/config";
 // Use DIRECT_URL for migrations (bypasses connection pooler).
 // Fall back to DATABASE_URL if DIRECT_URL is not set.
 const migrationUrl =
-  process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "";
+  process.env.DATABASE_URL ?? process.env.DIRECT_URL ?? "";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

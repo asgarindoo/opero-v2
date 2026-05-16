@@ -66,6 +66,7 @@ export default function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>("tenant");
   const [data, setData] = useState<TenantSettingsResponse | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     logo: "" as string | null,
@@ -80,8 +81,21 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for older browsers
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -95,10 +109,13 @@ export default function SettingsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/tenant/settings", { cache: "no-store" });
-        const payload = await res.json();
+        const [settingsRes, inviteRes] = await Promise.all([
+          fetch("/api/tenant/settings", { cache: "no-store" }),
+          fetch("/api/tenant/invite"),
+        ]);
+        const payload = await settingsRes.json();
 
-        if (!res.ok) {
+        if (!settingsRes.ok) {
           throw new Error(payload.error ?? "Failed to load settings.");
         }
 
@@ -113,6 +130,11 @@ export default function SettingsPage() {
           timezone: payload.tenant.tenantSettings?.timezone ?? "UTC",
           locale: payload.tenant.tenantSettings?.locale ?? "en",
         });
+
+        if (inviteRes.ok) {
+          const invitePayload = await inviteRes.json();
+          if (!cancelled) setInviteCode(invitePayload.inviteCode ?? null);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load settings.");
       } finally {
@@ -301,25 +323,30 @@ export default function SettingsPage() {
 
                         <div className="space-y-2">
                           <label className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">
-                            Tenant Code
+                            Invite Code
                           </label>
                           <div className="relative group">
-                            <input
-                              type="text"
-                              readOnly
-                              value={data.tenant.slug}
-                              className="w-full bg-black/[0.03] border border-black/[0.06] rounded-lg px-4 py-3 font-display text-[14px] text-on-surface-variant font-bold tracking-tight outline-none cursor-default"
-                            />
+                            {inviteCode ? (
+                              <input
+                                type="text"
+                                readOnly
+                                value={inviteCode}
+                                className="w-full bg-black/[0.03] border border-black/[0.06] rounded-lg px-4 py-3 font-display text-[15px] text-on-surface font-bold tracking-[0.15em] outline-none cursor-default select-all"
+                              />
+                            ) : (
+                              <div className="w-full bg-black/[0.02] border border-black/[0.04] rounded-lg px-4 py-3 h-[50px] animate-pulse" />
+                            )}
                             <button
-                              onClick={() => copyToClipboard(data.tenant.slug)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-black/[0.05] rounded-md transition-colors text-on-surface-variant opacity-60 hover:opacity-100"
-                              title="Copy code"
+                              onClick={() => inviteCode && copyToClipboard(inviteCode)}
+                              disabled={!inviteCode}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-black/[0.05] rounded-md transition-colors text-on-surface-variant opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Copy invite code"
                             >
                               {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                             </button>
                           </div>
                           <p className="font-body-sm text-[11px] text-on-surface-variant opacity-50 mt-1">
-                            Share this unique code with others so they can join this tenant.
+                            Share this unique code with others so they can join this workspace as Staff.
                           </p>
                         </div>
                       </div>

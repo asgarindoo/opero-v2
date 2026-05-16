@@ -27,6 +27,21 @@ const CreateTenantSchema = z.object({
     .optional(),
 });
 
+function isOrganizationExistsError(err: unknown) {
+  if (!(err instanceof Error)) return false;
+
+  const errorWithBody = err as Error & {
+    body?: { code?: string; message?: string };
+    statusCode?: number;
+  };
+
+  return (
+    errorWithBody.body?.code === "ORGANIZATION_ALREADY_EXISTS" ||
+    errorWithBody.body?.message === "Organization already exists" ||
+    err.message === "Organization already exists"
+  );
+}
+
 // ── GET /api/tenant ───────────────────────────────────────────────────────────
 export async function GET() {
   try {
@@ -46,7 +61,7 @@ export async function GET() {
 // ── POST /api/tenant ──────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    await requireAuth();
+    const user = await requireAuth();
 
     const body = await req.json();
     const parsed = CreateTenantSchema.safeParse(body);
@@ -74,10 +89,50 @@ export async function POST(req: NextRequest) {
     }
 
     const hdrs = await headers();
-    const org = await auth.api.createOrganization({
-      body: { name, slug },
-      headers: hdrs,
-    });
+    let org;
+
+    try {
+      org = await auth.api.createOrganization({
+        body: { name, slug },
+        headers: hdrs,
+      });
+    } catch (err) {
+      if (!isOrganizationExistsError(err)) throw err;
+
+      const existingOrg = await prisma.organization.findUnique({
+        where: { slug },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logo: true,
+          createdAt: true,
+          metadata: true,
+          inviteCode: true,
+        },
+      });
+
+      if (!existingOrg) throw err;
+
+      const membership = await prisma.member.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: existingOrg.id,
+            userId: user.id,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!membership) {
+        return NextResponse.json(
+          { error: "This subdomain is already taken. Please choose another." },
+          { status: 409 }
+        );
+      }
+
+      org = existingOrg;
+    }
 
     if (logo) {
       const logoPath = logo.startsWith("data:image/")

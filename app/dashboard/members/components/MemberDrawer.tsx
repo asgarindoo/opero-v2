@@ -84,11 +84,27 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
           </div>
 
           <div className="space-y-8">
+            {/* Activity Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 rounded-xl bg-black/[0.01] border border-black/[0.03]">
+                <div className="font-label-caps text-[8px] text-on-surface-variant opacity-50 uppercase tracking-widest mb-1">Joined Date</div>
+                <div className="font-body-sm text-[12px] font-medium text-on-surface opacity-80">
+                  {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : "Unknown"}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-black/[0.01] border border-black/[0.03]">
+                <div className="font-label-caps text-[8px] text-on-surface-variant opacity-50 uppercase tracking-widest mb-1">Last Active</div>
+                <div className="font-body-sm text-[12px] font-medium text-on-surface opacity-80">
+                  {member.lastActive ? new Date(member.lastActive).toLocaleDateString() : "Never"}
+                </div>
+              </div>
+            </div>
+
             {/* Organization Info */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-label-caps text-[10px] text-on-surface-variant opacity-60 uppercase tracking-wider">Organization</h4>
-                {!isEditingOrg && member.role !== "Owner" && ( // Allow owners to edit org info of anyone (if they are admin/owner viewing), or we just allow edit for any member.
+                {!isEditingOrg && (
                   <button
                     onClick={handleEditOrgClick}
                     className="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors"
@@ -102,7 +118,7 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
               {isEditingOrg ? (
                 <div className="space-y-3 p-3 bg-surface-container-low rounded-xl border border-black/5 animate-fade-in">
                   <div>
-                    <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1">Job Title</label>
+                    <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1">Job Title / Position</label>
                     <input
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
@@ -124,7 +140,7 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
                       Cancel
                     </button>
                     <button onClick={handleSaveOrg} className="flex-1 py-1.5 rounded-lg font-body-sm font-medium text-[12px] bg-primary text-on-primary hover:shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-all">
-                      Save
+                      Save Changes
                     </button>
                   </div>
                 </div>
@@ -132,11 +148,11 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-on-surface-variant">
                     <Briefcase size={14} className="opacity-60" />
-                    <span className="font-body-sm text-[13px] font-medium opacity-90">{member.jobTitle || "—"}</span>
+                    <span className="font-body-sm text-[13px] font-medium opacity-90">{member.jobTitle || "No position set"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-on-surface-variant">
                     <Building size={14} className="opacity-60" />
-                    <span className="font-body-sm text-[13px] font-medium opacity-90">{member.department || "—"}</span>
+                    <span className="font-body-sm text-[13px] font-medium opacity-90">{member.department || "No department set"}</span>
                   </div>
                 </div>
               )}

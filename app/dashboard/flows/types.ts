@@ -28,6 +28,16 @@ export interface FlowStage {
   order: number;
 }
 
+export type WorkflowStageType = "start" | "task" | "approval" | "decision" | "completion";
+
+export type WorkflowStage = FlowStage & {
+  stageType?: WorkflowStageType;
+  approvalRequired?: boolean;
+  slaHours?: number;
+  isCompletion?: boolean;
+  isDefault?: boolean;
+};
+
 export interface FlowNote {
   id: string;
   user: {
@@ -56,7 +66,21 @@ export interface Flow {
   notes?: FlowNote[];
   relatedTasksCount?: number;
   relatedDocsCount?: number;
+  isActive?: boolean;
+  tasksCount?: number;
+  usageStats?: {
+    successRate: number;
+    avgCompletionDays: number;
+  };
 }
+
+export const STAGE_TYPE_META: Record<WorkflowStageType, { label: string }> = {
+  start: { label: "Start" },
+  task: { label: "Task" },
+  approval: { label: "Approval" },
+  decision: { label: "Decision" },
+  completion: { label: "Completion" },
+};
 
 // ─── Metadata & Lookups ──────────────────────────────────────────────────────
 

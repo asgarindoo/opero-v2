@@ -8,7 +8,28 @@
 import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma"; // Force TS re-evaluation
+import { generateInviteCode } from "@/lib/utils/invite-code";
+
+async function assignUniqueInviteCode(organizationId: string) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: { inviteCode: generateInviteCode() },
+      });
+      return;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw new Error("Unable to generate a unique tenant invite code");
+}
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -58,6 +79,8 @@ export const auth = betterAuth({
       organizationHooks: {
         afterCreateOrganization: async ({ organization: org }) => {
           try {
+            await assignUniqueInviteCode(org.id);
+
             // Seed free plan if not already in DB
             const freePlan = await prisma.subscriptionPlan.upsert({
               where: { name: "free" },

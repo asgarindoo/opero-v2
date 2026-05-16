@@ -1,13 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Key, Link as LinkIcon, ArrowRight, ArrowLeft, Clipboard, AlertCircle } from "lucide-react";
 import Button from "../../dashboard/components/ui/Button";
 
 export default function JoinTenantPage() {
+  return (
+    <Suspense fallback={<JoinTenantFallback />}>
+      <JoinTenantContent />
+    </Suspense>
+  );
+}
+
+function JoinTenantContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite");
   const [code, setCode] = useState("");
   const [focused, setFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,9 +32,9 @@ export default function JoinTenantPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!code.trim()) return;
+    if (!code.trim() && !inviteToken) return;
     setError(null);
     setIsLoading(true);
 
@@ -32,12 +42,12 @@ export default function JoinTenantPage() {
       const res = await fetch("/api/tenant/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invitationId: code.trim() }),
+        body: JSON.stringify(inviteToken ? { inviteToken } : { inviteCode: code.trim().toUpperCase() }),
       });
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error ?? "Invalid or expired invite code.");
+        setError(json.error ?? "Invalid or expired invite.");
         setIsLoading(false);
         return;
       }
@@ -61,7 +71,7 @@ export default function JoinTenantPage() {
             Join Workspace
           </h1>
           <p className="font-body-md text-[14px] text-on-surface-variant opacity-70">
-            Enter your 6–8 character invite code to gain access.
+            {inviteToken ? "Accept this invite link to join as Staff." : "Enter your workspace invite code to gain access."}
           </p>
         </div>
 
@@ -72,14 +82,16 @@ export default function JoinTenantPage() {
               <label htmlFor="invite-code" className="font-label-caps text-[10px] font-bold uppercase tracking-wider text-on-surface-variant opacity-60">
                 Invite Code
               </label>
-              <button
-                type="button"
-                onClick={handlePaste}
-                className="flex items-center gap-1.5 font-label-caps text-[10px] font-bold uppercase tracking-wider text-on-surface-variant opacity-40 hover:opacity-100 transition-opacity"
-              >
-                <Clipboard size={10} />
-                Paste
-              </button>
+              {!inviteToken && (
+                <button
+                  type="button"
+                  onClick={handlePaste}
+                  className="flex items-center gap-1.5 font-label-caps text-[10px] font-bold uppercase tracking-wider text-on-surface-variant opacity-40 hover:opacity-100 transition-opacity"
+                >
+                  <Clipboard size={10} />
+                  Paste
+                </button>
+              )}
             </div>
             
             <div className="relative group">
@@ -88,8 +100,9 @@ export default function JoinTenantPage() {
                 id="invite-code"
                 type="text"
                 required
-                placeholder="OP-XXXXX"
-                value={code}
+                placeholder="OP-7KQ9-MN24"
+                value={inviteToken ? "Invite link detected" : code}
+                disabled={Boolean(inviteToken)}
                 onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(null); }}
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
@@ -116,7 +129,7 @@ export default function JoinTenantPage() {
             variant="primary"
             className="w-full h-12 text-[12px] font-bold tracking-wider"
             isLoading={isLoading}
-            disabled={!code.trim()}
+            disabled={!code.trim() && !inviteToken}
             icon={ArrowRight}
             iconPosition="right"
           >
@@ -161,4 +174,15 @@ export default function JoinTenantPage() {
   );
 }
 
+function JoinTenantFallback() {
+  return (
+    <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 bg-background">
+      <div className="w-full max-w-[400px] animate-pulse">
+        <div className="mx-auto mb-6 h-12 w-12 rounded-lg bg-black/[0.04]" />
+        <div className="mx-auto mb-3 h-7 w-48 rounded bg-black/[0.04]" />
+        <div className="mx-auto h-4 w-64 rounded bg-black/[0.03]" />
+      </div>
+    </main>
+  );
+}
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useActiveOrganization, useSession } from "@/lib/auth-client";
@@ -16,16 +17,23 @@ interface Props {
 
 function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: () => void }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
   const { data: activeOrg, isPending: isOrgLoading } = useActiveOrganization();
-  const userName = session?.user?.name ?? "User";
+  const userName = mounted ? session?.user?.name ?? "User" : "User";
   const userInitial = userName.charAt(0).toUpperCase();
-  const userRole = (session?.user as { role?: string })?.role ?? "member";
-  const tenantName = activeOrg?.name ?? "OPERO";
-  const tenantLogo = getTenantLogoSrc(activeOrg?.id ?? "", activeOrg?.logo ?? null);
+  const userRole = mounted ? (session?.user as { role?: string })?.role ?? "member" : "member";
+  const tenantName = mounted ? activeOrg?.name ?? "OPERO" : "OPERO";
+  const tenantLogo = mounted ? getTenantLogoSrc(activeOrg?.id ?? "", activeOrg?.logo ?? null) : null;
 
   // Dynamic presence placeholder (could be replaced with real-time socket/presence data)
-  const onlineCount = activeOrg ? 1 : 0;
+  const onlineCount = mounted && activeOrg ? 1 : 0;
+  const showTenantLoading = !mounted || isOrgLoading;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -72,7 +80,7 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
 
       {/* ── Tenant Identity ── */}
       <div className="shrink-0 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-        {isOrgLoading ? (
+        {showTenantLoading ? (
           /* Loading State: Soft Skeletons */
           <div className="px-4 py-3.5 flex items-center gap-3">
             <div className="w-9 h-9 rounded-[6px] bg-black/[0.04] animate-pulse shrink-0" />

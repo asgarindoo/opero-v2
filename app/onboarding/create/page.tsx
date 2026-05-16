@@ -363,11 +363,16 @@ function StepLaunch({
   tenantLogo?: string | null;
   onEnter: () => void;
 }) {
+  const hasStartedRef = useRef(false);
   const [doneCount, setDoneCount] = useState(0);
   const [phase, setPhase] = useState<"loading" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     // Kick off visual progress steps
@@ -396,8 +401,7 @@ function StepLaunch({
       });
 
     return () => timers.forEach(clearTimeout);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [retryNonce, tenantLogo, tenantName, tenantSlug]);
 
 
 
@@ -449,6 +453,42 @@ function StepLaunch({
             })}
           </div>
         </>
+      ) : phase === "error" ? (
+        <div className="flex flex-col items-center gap-5 animate-scale-in">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(186,26,26,0.08)", color: "var(--color-error)" }}
+          >
+            <span className="material-symbols-outlined text-[28px]">error</span>
+          </div>
+
+          <div>
+            <p
+              className="font-display font-bold leading-[1.1] mb-2"
+              style={{ fontSize: "clamp(22px, 3vw, 28px)", letterSpacing: "-0.02em", color: "var(--color-error)" }}
+            >
+              Tenant setup failed.
+            </p>
+            <p className="font-body-md text-[14px] text-on-surface-variant">
+              {errorMsg || "Please check the tenant details and try again."}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              hasStartedRef.current = false;
+              setDoneCount(0);
+              setPhase("loading");
+              setErrorMsg("");
+              setRetryNonce((value) => value + 1);
+            }}
+            className="mt-1 bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-8 py-3.5 rounded-xl flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:-translate-y-px"
+          >
+            Try Again
+            <span className="material-symbols-outlined text-[15px]">refresh</span>
+          </button>
+        </div>
       ) : (
         <div className="flex flex-col items-center gap-5 animate-scale-in">
           {/* Success circle */}

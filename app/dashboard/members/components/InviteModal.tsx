@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, ChevronDown, Link, Copy, Trash2, Clock, Check, Users, Hash, Plus, ShieldCheck } from "lucide-react";
+import { X, ChevronDown, Link, Copy, Trash2, Clock, Check, Users, Hash, ShieldCheck } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
 import Button from "../../components/ui/Button";
 
@@ -9,6 +9,8 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
   const [expireDays, setExpireDays] = useState<number | "never">(7);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isExpireDropdownOpen, setIsExpireDropdownOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const expireOptions = [
     { value: 1, label: "24 Hours" },
@@ -19,15 +21,55 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
 
   const selectedExpireLabel = expireOptions.find(o => o.value === expireDays)?.label;
 
-  const handleGenerateLink = () => {
-    const days = expireDays === "never" ? null : expireDays;
-    generateInviteLink(days);
+  const copyText = async (text: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // Fall through to the textarea fallback below.
+    }
+
+    try {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      const copied = document.execCommand("copy");
+      document.body.removeChild(el);
+      return copied;
+    } catch {
+      return false;
+    }
   };
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
+  const handleGenerateLink = async () => {
+    const days = expireDays === "never" ? null : expireDays;
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const link = await generateInviteLink(days);
+      const copied = await handleCopy(link.url, link.id);
+      if (!copied) {
+        setError("Invite link created. Copy it from the list below.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate invite link");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = async (text: string, id: string) => {
+    const copied = await copyText(text);
+    if (!copied) return false;
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+    return true;
   };
 
   return (
@@ -66,10 +108,13 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
 
               <div className="flex items-center gap-2 p-1 pl-4 rounded-lg border border-black/[0.06] bg-black/[0.01]">
                 <Hash size={14} className="text-on-surface-variant opacity-60" />
-                <span className="flex-1 font-display font-bold text-[16px] text-on-surface tracking-[0.2em]">{tenantCode}</span>
+                <span className="flex-1 font-display font-bold text-[16px] text-on-surface tracking-[0.2em]">
+                  {tenantCode || <div className="h-5 w-24 bg-black/[0.05] animate-pulse rounded" />}
+                </span>
                 <button
-                  onClick={() => handleCopy(tenantCode, 'tenant-code')}
-                  className="px-4 py-2 rounded-md bg-white border border-black/[0.06] font-label-caps text-[10px] font-bold text-primary hover:shadow-sm transition-all relative"
+                  onClick={() => tenantCode && handleCopy(tenantCode, 'tenant-code')}
+                  disabled={!tenantCode}
+                  className="px-4 py-2 rounded-md bg-white border border-black/[0.06] font-label-caps text-[10px] font-bold text-primary hover:shadow-sm transition-all relative disabled:opacity-50"
                 >
                   {copiedId === 'tenant-code' ? 'COPIED' : 'COPY CODE'}
                 </button>
@@ -130,10 +175,14 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
                   className="h-11 px-6 font-bold tracking-wider"
                   icon={Link}
                   onClick={handleGenerateLink}
+                  isLoading={isGenerating}
                 >
                   GENERATE
                 </Button>
               </div>
+              {error && (
+                <p className="font-body-sm text-[12px] text-red-600">{error}</p>
+              )}
             </div>
 
             {/* Active Links List */}

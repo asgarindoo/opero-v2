@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Shield, Clock, Plus } from "lucide-react";
+import { Users, Shield, Clock, Plus, Hash, Copy, Check } from "lucide-react";
 import { useMembers } from "./context/MembersContext";
 
 // Components
@@ -20,12 +20,43 @@ import Button from "../components/ui/Button";
 type Tab = "directory" | "roles" | "activity";
 
 export default function MembersPage() {
-  const { members } = useMembers();
+  const { members, currentUserRole, tenantCode } = useMembers();
+  const canInvite = currentUserRole === "Owner" || currentUserRole === "Admin";
 
   const [activeTab, setActiveTab] = useState<Tab>("directory");
   const [searchQuery, setSearchQuery] = useState("");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const copyInviteCode = async () => {
+    if (!tenantCode) return;
+    let copied = false;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(tenantCode);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+
+    if (!copied) {
+      const el = document.createElement("textarea");
+      el.value = tenantCode;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      copied = document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+
+    setCopiedCode(copied);
+    if (copied) setTimeout(() => setCopiedCode(false), 2000);
+  };
 
   const tabs = [
     { id: "directory", label: "Directory", icon: Users },
@@ -36,31 +67,35 @@ export default function MembersPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* ── Module Header ── */}
-      <ModuleHeader 
+      <ModuleHeader
         title="Members"
         count={members.length}
         rightContent={(
           <>
-            <SearchInput 
-              value={searchQuery} 
-              onChange={setSearchQuery} 
-              placeholder="Search members..." 
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search members..."
               width={200}
             />
-            <Button 
-              variant="primary" 
-              size="sm" 
-              icon={Plus}
-              onClick={() => setShowInviteModal(true)}
-            >
-              INVITE MEMBER
-            </Button>
+            {canInvite && (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={() => setShowInviteModal(true)}
+                >
+                  INVITE MEMBER
+                </Button>
+              </>
+            )}
           </>
         )}
       />
 
       {/* ── Tabs ── */}
-      <ModuleTabs 
+      <ModuleTabs
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as Tab)}
@@ -76,9 +111,8 @@ export default function MembersPage() {
 
 
       {/* ── Modals & Drawers ── */}
-      {showInviteModal && <InviteModal onClose={() => setShowInviteModal(false)} />}
+      {showInviteModal && canInvite && <InviteModal onClose={() => setShowInviteModal(false)} />}
       {selectedMemberId && <MemberDrawer memberId={selectedMemberId} onClose={() => setSelectedMemberId(null)} />}
     </div>
   );
 }
-

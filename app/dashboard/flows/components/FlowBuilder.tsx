@@ -12,10 +12,11 @@ interface FlowBuilderProps {
 }
 
 function stageMeta(stage: WorkflowStage) {
-  if (stage.approvalRequired || stage.stageType === "approval") return { icon: ShieldCheck, label: "Approval" };
+  const stageType = stage.stageType ?? "task";
+  if (stage.approvalRequired || stageType === "approval") return { icon: ShieldCheck, label: "Approval" };
   if (stage.slaHours) return { icon: Clock, label: `${stage.slaHours}h SLA` };
   if (stage.isCompletion) return { icon: CheckCircle2, label: "Completion" };
-  return { icon: GitBranch, label: STAGE_TYPE_META[stage.stageType].label };
+  return { icon: GitBranch, label: STAGE_TYPE_META[stageType].label };
 }
 
 export default function FlowBuilder({ flow, onClose, onUpdate }: FlowBuilderProps) {
@@ -44,7 +45,7 @@ export default function FlowBuilder({ flow, onClose, onUpdate }: FlowBuilderProp
                 Flow Builder
               </span>
               <span className="rounded-[5px] border border-black/[0.06] bg-black/[0.04] px-1.5 py-0.5 font-label-caps text-[8px] font-semibold uppercase tracking-wider text-on-surface-variant opacity-70">
-                {currentFlow.isActive ? "Active" : "Inactive"}
+                {currentFlow.isActive !== false ? "Active" : "Inactive"}
               </span>
             </div>
             <h2 className="truncate font-display text-[18px] font-semibold text-on-surface">{currentFlow.name}</h2>
@@ -55,7 +56,7 @@ export default function FlowBuilder({ flow, onClose, onUpdate }: FlowBuilderProp
               onClick={toggleActive}
               className="rounded-[6px] border border-black/[0.08] bg-black/[0.02] px-3 py-1.5 font-label-caps text-[9px] font-semibold uppercase tracking-widest text-on-surface-variant transition-colors hover:bg-black/[0.05] hover:text-on-surface"
             >
-              {currentFlow.isActive ? "Pause" : "Activate"}
+              {currentFlow.isActive !== false ? "Pause" : "Activate"}
             </button>
             <button
               onClick={onClose}
@@ -84,7 +85,7 @@ export default function FlowBuilder({ flow, onClose, onUpdate }: FlowBuilderProp
             </div>
             <div className="rounded-[8px] border border-black/[0.06] bg-white p-3">
               <p className="mb-1 font-label-caps text-[8px] font-semibold uppercase tracking-widest text-on-surface-variant opacity-40">Tasks</p>
-              <p className="font-display text-[18px] font-semibold text-on-surface">{currentFlow.tasksCount}</p>
+              <p className="font-display text-[18px] font-semibold text-on-surface">{currentFlow.tasksCount ?? currentFlow.relatedTasksCount ?? 0}</p>
             </div>
             <div className="rounded-[8px] border border-black/[0.06] bg-white p-3">
               <p className="mb-1 font-label-caps text-[8px] font-semibold uppercase tracking-widest text-on-surface-variant opacity-40">Success</p>

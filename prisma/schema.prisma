@@ -28,6 +28,7 @@ model User {
   accounts    Account[]
   members     Member[]
   invitations Invitation[]
+  inviteLinks TenantInviteLink[]
 
   @@map("user")
 }
@@ -94,8 +95,10 @@ model Organization {
   // Relations
   members     Member[]
   invitations Invitation[]
+  inviteLinks TenantInviteLink[]
 
   // Custom OPERO extensions
+  inviteCode    String?  @unique // Permanent join code (e.g., OP-XXXX-XXXX)
   tenantSettings TenantSettings?
   tenantPlan     TenantPlan?
 
@@ -107,6 +110,10 @@ model Member {
   organizationId String
   userId         String
   role           String   // "owner" | "admin" | "member" (staff)
+  department     String?
+  position       String?
+  status         String   @default("active") // "active" | "suspended"
+  lastActive     DateTime?
   createdAt      DateTime @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -129,6 +136,23 @@ model Invitation {
   inviter      User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
   @@map("invitation")
+}
+
+model TenantInviteLink {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  organizationId String
+  createdById    String
+  expiresAt      DateTime?
+  uses           Int       @default(0)
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("tenant_invite_link")
 }
 
 // ─────────────────────────────────────────────────────────

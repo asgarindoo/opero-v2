@@ -9,9 +9,10 @@ interface FlowOverviewCardsProps {
 
 export default function FlowOverviewCards({ flows }: FlowOverviewCardsProps) {
   const totalFlows = flows.length;
-  const activeFlows = flows.filter(f => f.isActive).length;
-  const totalTasks = flows.reduce((sum, f) => sum + f.tasksCount, 0);
-  const mostUsedFlow = flows.reduce((max, f) => (f.tasksCount > max.tasksCount ? f : max), flows[0] || null);
+  const getTasksCount = (flow: Flow) => flow.tasksCount ?? flow.relatedTasksCount ?? 0;
+  const activeFlows = flows.filter(f => f.isActive !== false).length;
+  const totalTasks = flows.reduce((sum, f) => sum + getTasksCount(f), 0);
+  const mostUsedFlow = flows.reduce((max, f) => (getTasksCount(f) > getTasksCount(max) ? f : max), flows[0] || null);
 
   const avgCompletionTime = flows.length > 0
     ? Math.round(flows.reduce((sum, f) => sum + (f.usageStats?.avgCompletionDays || 0), 0) / flows.length)
@@ -33,7 +34,7 @@ export default function FlowOverviewCards({ flows }: FlowOverviewCardsProps) {
     {
       title: "Most Used",
       value: mostUsedFlow?.name || "—",
-      subtitle: `${mostUsedFlow?.tasksCount || 0} tasks processed`,
+      subtitle: `${mostUsedFlow ? getTasksCount(mostUsedFlow) : 0} tasks processed`,
       color: "rgba(0,0,0,0.04)",
     },
     {
