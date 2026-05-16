@@ -3,35 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
 
-/**
- * Mock session helper — simulates what a real auth API would do.
- * Three scenarios keyed on email prefix for easy testing:
- *   any email starting with "multi@"   → multi-tenant user, no active tenant → /tenants
- *   any email starting with "none@"    → no tenants yet → /onboarding
- *   everything else                    → single active tenant → /dashboard
- */
-function mockLogin(email: string) {
-  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-  const base    = `; path=/; expires=${expires}; SameSite=Lax`;
+const AUTH_TIMEOUT_MS = 15000;
 
-  if (email.startsWith("multi@")) {
-    document.cookie = `opero_session=1${base}`;
-    document.cookie = `opero_tenants=acme-corp,globex,initech${base}`;
-    document.cookie = `opero_active_tenant=${base}`; // clear active
-    return "/tenants";
+async function withAuthTimeout<T>(request: Promise<T>, action: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${action} timed out. Please check your connection and try again.`));
+    }, AUTH_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([request, timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
-  if (email.startsWith("none@")) {
-    document.cookie = `opero_session=1${base}`;
-    document.cookie = `opero_tenants=${base}`; // clear tenants
-    document.cookie = `opero_active_tenant=${base}`;
-    return "/onboarding";
-  }
-  // Default: authenticated with one active tenant
-  document.cookie = `opero_session=1${base}`;
-  document.cookie = `opero_tenants=acme-corp${base}`;
-  document.cookie = `opero_active_tenant=acme-corp${base}`;
-  return "/dashboard";
 }
 
 export default function LoginPage() {
@@ -41,14 +29,50 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      const destination = mockLogin(email);
-      router.push(destination);
-    }, 1400);
+    setError(null);
+
+    try {
+      const { error: authError } = await withAuthTimeout(
+        authClient.signIn.email({
+          email,
+          password,
+        }),
+        "Sign in"
+      );
+
+      if (authError) {
+        setError(authError.message ?? "Invalid email or password.");
+        return;
+      }
+
+      // Check how many orgs the user belongs to for smart redirect
+      const { data: orgs } = await withAuthTimeout(
+        authClient.organization.list(),
+        "Loading workspaces"
+      );
+      if (!orgs || orgs.length === 0) {
+        router.push("/onboarding");
+      } else if (orgs.length === 1) {
+        // Auto-set the single org as active then go to dashboard
+        await withAuthTimeout(
+          authClient.organization.setActive({ organizationId: orgs[0].id }),
+          "Selecting workspace"
+        );
+        router.push("/dashboard");
+      } else {
+        // Multiple orgs - let user pick
+        router.push("/tenants");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not sign in. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -219,6 +243,13 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Error message */}
+            {error && (
+              <p className="text-[12px] font-body-sm" style={{ color: "var(--color-error, #ba1a1a)" }}>
+                {error}
+              </p>
+            )}
 
             {/* Submit */}
             <button

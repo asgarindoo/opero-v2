@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -109,6 +110,10 @@ interface Props {
 
 function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: () => void }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const userName = session?.user?.name ?? "User";
+  const userInitial = userName.charAt(0).toUpperCase();
+  const userRole = (session?.user as { role?: string })?.role ?? "member";
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -282,21 +287,20 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
         {/* User pill */}
         {!collapsed && (
           <div className="flex items-center gap-2 mt-1 px-2.5 py-[6px] rounded-[6px] cursor-pointer hover:bg-black/[0.035] transition-colors duration-150">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[10px] shrink-0"
+            <div className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[10px] shrink-0"
               style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
             >
-              U
+              {userInitial}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
-                User
+                {userName}
               </div>
               <div
                 className="font-body-sm text-[10px] truncate"
                 style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}
               >
-                owner
+                {userRole}
               </div>
             </div>
             <ChevronsUpDown

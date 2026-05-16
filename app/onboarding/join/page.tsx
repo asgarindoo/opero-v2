@@ -22,20 +22,31 @@ export default function JoinTenantPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
     setError(null);
     setIsLoading(true);
-    // Simulate validation
-    setTimeout(() => {
-      if (code.trim().toLowerCase() === "invalid") {
-        setError("This invite code is invalid or has expired.");
+
+    try {
+      const res = await fetch("/api/tenant/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId: code.trim() }),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setError(json.error ?? "Invalid or expired invite code.");
         setIsLoading(false);
-      } else {
-        router.push("/dashboard");
+        return;
       }
-    }, 1200);
+
+      router.push("/tenants"); // Let user select the newly joined org
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (

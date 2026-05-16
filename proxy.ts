@@ -1,58 +1,112 @@
+/**
+ * OPERO — Middleware (Next.js 16 App Router)
+ *
+ * Handles:
+ *   1. Authentication guard — redirect to /login if no session
+ *   2. Tenant routing — subdomain extraction in production,
+ *      session-based active org in local dev
+ *   3. Onboarding flow — redirect based on org membership state
+ *
+ * Cookie contract (set by Better Auth + organization.setActive):
+ *   better-auth.session_token  — Better Auth session cookie
+ *   better-auth.session_data   — Cached session data (optional)
+ *
+ * In production, subdomains like acme.opero.app are resolved here.
+ * In local dev (localhost:3000), path-based routing is used with
+ * the active organization tracked in the Better Auth session.
+ */
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-/**
- * OPERO Route Guard — Proxy (Next.js 16 file convention)
- *
- * Cookie contract (set by login/register client pages):
- *   opero_session        = "1"           → user is authenticated
- *   opero_tenants        = "slug1,slug2" → comma-separated tenant slugs (empty = no tenants)
- *   opero_active_tenant  = "slug1"       → currently active tenant (empty = none selected)
- *
- * Subdomain note:
- *   Production would detect `request.nextUrl.hostname` (e.g. "acme.opero.app")
- *   and resolve the tenant from the subdomain. For local dev we keep path-based routing.
- *   Plug-in point marked with  // [SUBDOMAIN] comment below.
- */
+/** Better Auth session cookie name */
+const SESSION_COOKIE = "better-auth.session_token";
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+/** Routes that don't require any auth check */
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password"];
 
-  const session       = request.cookies.get("opero_session")?.value;
-  const tenantsRaw    = request.cookies.get("opero_tenants")?.value ?? "";
-  const activeTenant  = request.cookies.get("opero_active_tenant")?.value ?? "";
+/** Known non-tenant subdomains */
+const SYSTEM_SUBDOMAINS = new Set(["www", "app", "api", "opero"]);
 
-  const isAuthed   = !!session;
-  const hasTenants = tenantsRaw.trim().length > 0;
+function isPublicRoute(pathname: string): boolean {
+  return (
+    PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/auth") || // Better Auth routes are always public
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/public")
+  );
+}
 
-  // ── [SUBDOMAIN] ──────────────────────────────────────────────────────────
-  // const host = request.nextUrl.hostname;           // e.g. "acme.opero.app"
-  // const subdomain = host.split(".")[0];            // e.g. "acme"
-  // const isTenantSubdomain = subdomain !== "www" && subdomain !== "opero";
-  // if (isTenantSubdomain) { /* validate tenant membership here */ }
-  // ─────────────────────────────────────────────────────────────────────────
+export default async function proxy(request: NextRequest) {
+  const { pathname, hostname } = request.nextUrl;
 
-  // Protected: /dashboard
+  // ── Subdomain extraction (production only) ─────────────────────────
+  // In production: acme.opero.app → tenantSlug = "acme"
+  // In local dev: localhost:3000 → no subdomain, use session
+  let tenantSlugFromSubdomain: string | null = null;
+  if (process.env.NODE_ENV === "production") {
+    const parts = hostname.split(".");
+    if (parts.length >= 3) {
+      const sub = parts[0];
+      if (!SYSTEM_SUBDOMAINS.has(sub)) {
+        tenantSlugFromSubdomain = sub;
+      }
+    }
+  }
+
+  // ── Session check (lightweight — just look at cookie presence) ─────
+  // Full session validation happens in server utilities (auth-utils.ts)
+  // Middleware keeps DB queries to zero for performance.
+  const hasSession = !!request.cookies.get(SESSION_COOKIE)?.value;
+
+  // ── Public routes — always pass through ───────────────────────────
+  if (isPublicRoute(pathname)) {
+    // If user is authenticated and visits /login or /register, redirect to dashboard
+    if (hasSession && (pathname === "/login" || pathname === "/register")) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // ── Protected routes ──────────────────────────────────────────────
+
+  // 1. Not authenticated → /login
+  if (!hasSession) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 2. Authenticated but visiting /tenants or /onboarding — allowed
+  if (
+    pathname.startsWith("/tenants") ||
+    pathname.startsWith("/onboarding")
+  ) {
+    return NextResponse.next();
+  }
+
+  // 3. Dashboard routes — inject tenant slug header for server components
   if (pathname.startsWith("/dashboard")) {
-    if (!isAuthed)     return NextResponse.redirect(new URL("/login",    request.url));
-    if (!activeTenant) return NextResponse.redirect(new URL(hasTenants ? "/tenants" : "/onboarding", request.url));
-  }
+    const response = NextResponse.next();
 
-  // Protected: /tenants
-  if (pathname.startsWith("/tenants")) {
-    if (!isAuthed) return NextResponse.redirect(new URL("/login", request.url));
-    // If user already has an active tenant, go straight to dashboard
-    if (activeTenant) return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+    // Pass subdomain slug to server via header (production)
+    if (tenantSlugFromSubdomain) {
+      response.headers.set("x-tenant-slug", tenantSlugFromSubdomain);
+    }
 
-  // Protected: /onboarding
-  if (pathname.startsWith("/onboarding")) {
-    if (!isAuthed) return NextResponse.redirect(new URL("/login", request.url));
+    return response;
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/tenants/:path*", "/onboarding/:path*"],
+  matcher: [
+    /*
+     * Match all request paths EXCEPT Next.js internals and static files.
+     * This is the recommended pattern for Next.js 16 middleware.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

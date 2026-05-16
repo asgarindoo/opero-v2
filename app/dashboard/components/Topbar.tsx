@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
-function getCookie(name: string): string {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : "";
-}
+import { useSession, useActiveOrganization } from "@/lib/auth-client";
 
 const QUICK_CREATE_ITEMS = [
   { icon: "task_alt",    label: "New Task",       shortcut: "T" },
@@ -31,22 +26,17 @@ interface Props {
 }
 
 export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }: Props) {
-  const [tenantName, setTenantName]         = useState("Workspace");
+  const { data: session }           = useSession();
+  const { data: activeOrg }         = useActiveOrganization();
+  const tenantName = activeOrg?.name ?? "Workspace";
+  const userInitial = session?.user?.name?.charAt(0)?.toUpperCase() ?? "U";
+
   const [showCreate, setShowCreate]         = useState(false);
   const [showNotifs, setShowNotifs]         = useState(false);
   const [searchFocused, setSearchFocused]   = useState(false);
 
   const createRef = useRef<HTMLDivElement>(null);
   const notifRef  = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const slug = getCookie("opero_active_tenant");
-    if (slug) {
-      setTenantName(
-        slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
-      );
-    }
-  }, []);
 
   /* Close dropdowns on outside click */
   useEffect(() => {
@@ -263,7 +253,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
           className="w-8 h-8 rounded-full flex items-center justify-center font-display font-bold text-[11px] hover:opacity-80 transition-opacity"
           style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
         >
-          U
+          {userInitial}
         </button>
       </div>
     </header>

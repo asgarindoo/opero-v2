@@ -3,6 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
+
+const AUTH_TIMEOUT_MS = 15000;
+
+async function withAuthTimeout<T>(request: Promise<T>, action: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${action} timed out. Please check your connection and try again.`));
+    }, AUTH_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([request, timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -10,23 +28,44 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agree) {
+      setError("Please accept the Terms of Service and Privacy Policy first.");
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
-      // New users never have a tenant — always go to onboarding
-      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-      const base    = `; path=/; expires=${expires}; SameSite=Lax`;
-      document.cookie = `opero_session=1${base}`;
-      document.cookie = `opero_tenants=${base}`;        // no tenants yet
-      document.cookie = `opero_active_tenant=${base}`;  // no active tenant
+    setError(null);
+
+    try {
+      const { error: authError } = await withAuthTimeout(
+        authClient.signUp.email({
+          name: form.fullName,
+          email: form.email,
+          password: form.password,
+        }),
+        "Create account"
+      );
+
+      if (authError) {
+        setError(authError.message ?? "Could not create account. Please try again.");
+        return;
+      }
+
+      // New users always go to onboarding (no tenant yet)
       router.push("/onboarding");
-    }, 1400);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const strength = Math.min(4, Math.floor(form.password.length / 3));
@@ -195,6 +234,13 @@ export default function RegisterPage() {
                 <Link href="/privacy" className="text-primary font-semibold hover:underline underline-offset-2">Privacy Policy</Link>.
               </span>
             </label>
+
+            {/* Error message */}
+            {error && (
+              <p className="text-[12px] font-body-sm" style={{ color: "var(--color-error, #ba1a1a)" }}>
+                {error}
+              </p>
+            )}
 
             {/* Submit */}
             <button

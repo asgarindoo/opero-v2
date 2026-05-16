@@ -1,64 +1,47 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-/* Simulated tenant data â€” replace with real API */
-const MOCK_TENANTS = [
-  {
-    id: "t1",
-    name: "Acme Corporation",
-    slug: "acme-corp",
-    role: "Owner" as const,
-    memberCount: 12,
-    plan: "Pro",
-    initial: "A",
-    color: "hsl(220, 12%, 20%)",
-    lastActive: "Active now",
-  },
-  {
-    id: "t2",
-    name: "Globex Systems",
-    slug: "globex",
-    role: "Admin" as const,
-    memberCount: 8,
-    plan: "Business",
-    initial: "G",
-    color: "hsl(190, 12%, 22%)",
-    lastActive: "2 hours ago",
-  },
-  {
-    id: "t3",
-    name: "Initech",
-    slug: "initech",
-    role: "Member" as const,
-    memberCount: 45,
-    plan: "Free",
-    initial: "I",
-    color: "hsl(260, 10%, 24%)",
-    lastActive: "Yesterday",
-  },
-];
+import { authClient } from "@/lib/auth-client";
 
 const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
-  Owner:  { label: "Owner",  bg: "rgba(0,0,0,0.07)", color: "var(--color-primary)" },
-  Admin:  { label: "Admin",  bg: "rgba(0,0,0,0.045)", color: "var(--color-secondary)" },
-  Member: { label: "Member", bg: "rgba(0,0,0,0.03)",  color: "var(--color-on-surface-variant)" },
+  owner:  { label: "Owner",  bg: "rgba(0,0,0,0.07)",  color: "var(--color-primary)" },
+  admin:  { label: "Admin",  bg: "rgba(0,0,0,0.045)", color: "var(--color-secondary)" },
+  member: { label: "Member", bg: "rgba(0,0,0,0.03)",  color: "var(--color-on-surface-variant)" },
 };
 
 export default function TenantSelectionPage() {
   const router = useRouter();
   const [selecting, setSelecting] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [orgs, setOrgs] = useState<Array<{
+    id: string; name: string; slug: string;
+    role: string; initial: string; color: string;
+  }>>([]);
 
-  const handleSelect = (tenant: typeof MOCK_TENANTS[number]) => {
-    setSelecting(tenant.id);
-    setTimeout(() => {
-      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-      const base    = `; path=/; expires=${expires}; SameSite=Lax`;
-      document.cookie = `opero_active_tenant=${tenant.slug}${base}`;
-      router.push("/dashboard");
-    }, 900);
+  useEffect(() => {
+    authClient.organization.list().then(({ data }) => {
+      if (data) {
+        setOrgs(
+          data.map((org, i) => ({
+            id: org.id,
+            name: org.name,
+            slug: org.slug,
+            role: (org as { role?: string }).role ?? "member",
+            initial: org.name.charAt(0).toUpperCase(),
+            color: `hsl(${(i * 47 + 200) % 360}, 12%, ${20 + (i % 4) * 3}%)`,
+          }))
+        );
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSelect = async (org: typeof orgs[number]) => {
+    setSelecting(org.id);
+    await authClient.organization.setActive({ organizationId: org.id });
+    router.push("/dashboard");
   };
 
   return (
@@ -85,10 +68,26 @@ export default function TenantSelectionPage() {
 
         {/* Tenant cards */}
         <div className="flex flex-col gap-3 animate-fade-in-up delay-200">
-          {MOCK_TENANTS.map((t, idx) => {
-            const isSelecting = selecting === t.id;
-            const meta = roleMeta[t.role];
-            return (
+          {loading ? (
+            // Loading skeleton — same card shape
+            Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-5 rounded-2xl border border-outline/12 bg-surface-container-lowest animate-pulse">
+                <div className="w-12 h-12 rounded-xl bg-outline/10 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 bg-outline/10 rounded-full w-1/3" />
+                  <div className="h-2.5 bg-outline/8 rounded-full w-1/2" />
+                </div>
+              </div>
+            ))
+          ) : orgs.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="font-body-md text-[14px] text-on-surface-variant">No tenants found.</p>
+            </div>
+          ) : (
+            orgs.map((t, idx) => {
+              const isSelecting = selecting === t.id;
+              const meta = roleMeta[t.role] ?? roleMeta["member"];
+              return (
               <button
                 key={t.id}
                 id={`tenant-${t.id}`}
@@ -139,31 +138,19 @@ export default function TenantSelectionPage() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-body-sm text-[12px] text-on-surface-variant/55 font-mono">{t.slug}.opero.app</span>
-                    <span className="w-0.5 h-0.5 rounded-full bg-outline/40 shrink-0" />
-                    <span className="font-body-sm text-[12px] text-on-surface-variant/50">
-                      <span className="material-symbols-outlined text-[11px] align-middle mr-0.5">group</span>
-                      {t.memberCount} members
-                    </span>
-                    <span className="w-0.5 h-0.5 rounded-full bg-outline/40 shrink-0" />
-                    <span className="font-body-sm text-[12px] text-on-surface-variant/40">{t.lastActive}</span>
                   </div>
                 </div>
 
-                {/* Plan chip + arrow */}
+                {/* Arrow */}
                 <div className="flex items-center gap-3 shrink-0">
-                  <span
-                    className="hidden sm:block font-label-caps text-[9px] uppercase tracking-[0.05em] font-semibold px-2 py-1 rounded-full"
-                    style={{ background: "rgba(0,0,0,0.04)", color: "var(--color-on-surface-variant)" }}
-                  >
-                    {t.plan}
-                  </span>
                   <span className="material-symbols-outlined text-[18px] text-on-surface-variant/25 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200">
                     arrow_forward
                   </span>
                 </div>
               </button>
             );
-          })}
+          })
+          )}
         </div>
 
         {/* Create new tenant */}

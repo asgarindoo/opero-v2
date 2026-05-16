@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
 
 /* â”€â”€ Plan data â”€â”€ */
 const plans = [
@@ -37,8 +38,7 @@ const plans = [
 
 const STEPS = ["Business Setup", "Choose Plan", "Launch"];
 
-/* Slugs that are "taken" in the mock */
-const TAKEN_SLUGS = new Set(["acme", "acme-corp", "globex", "initech", "opero", "app", "admin", "api"]);
+
 
 function slugify(val: string) {
   return val
@@ -98,8 +98,13 @@ function StepInfo({
     if (!slug) { setAvail("idle"); return; }
     setAvail("checking");
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      setAvail(TAKEN_SLUGS.has(slug) ? "taken" : "available");
+    timerRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await authClient.organization.checkSlug({ slug });
+        setAvail(error ? "taken" : data?.status ? "available" : "idle");
+      } catch {
+        setAvail("idle");
+      }
     }, 650);
   }, []);
 
@@ -339,7 +344,7 @@ function StepPlan({
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Step 3: Launch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────────── Step 3: Launch ─────────────────── */
 const LAUNCH_STEPS = [
   { label: "Creating Tenant", delay: 400 },
   { label: "Applying plan & billing", delay: 900 },
@@ -347,18 +352,54 @@ const LAUNCH_STEPS = [
   { label: "Finalising setup", delay: 2000 },
 ];
 
-function StepLaunch({ tenantName, tenantSlug, onEnter }: { tenantName: string; tenantSlug: string; onEnter: () => void }) {
+function StepLaunch({
+  tenantName,
+  tenantSlug,
+  tenantLogo,
+  onEnter,
+}: {
+  tenantName: string;
+  tenantSlug: string;
+  tenantLogo?: string | null;
+  onEnter: () => void;
+}) {
   const [doneCount, setDoneCount] = useState(0);
-  const [phase, setPhase] = useState<"loading" | "success">("loading");
+  const [phase, setPhase] = useState<"loading" | "success" | "error">("loading");
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
+
+    // Kick off visual progress steps
     LAUNCH_STEPS.forEach((s, i) => {
       timers.push(setTimeout(() => setDoneCount(i + 1), s.delay));
     });
-    timers.push(setTimeout(() => setPhase("success"), 2600));
+
+    // Actual API call — create the org
+    fetch("/api/tenant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: tenantName, slug: tenantSlug, logo: tenantLogo ?? "" }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          setPhase("error");
+          setErrorMsg(data.error);
+        } else {
+          timers.push(setTimeout(() => setPhase("success"), 2600));
+        }
+      })
+      .catch(() => {
+        setPhase("error");
+        setErrorMsg("Failed to create tenant. Please try again.");
+      });
+
     return () => timers.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+
 
   return (
     <div className="flex flex-col items-center justify-center text-center gap-7 py-6 animate-fade-in-up min-h-[300px]">
@@ -451,11 +492,13 @@ export default function CreateTenantPage() {
   const [tenantForm, setTenantForm] = useState({ name: "", slug: "", logo: null as string | null });
   const [selectedPlan, setSelectedPlan] = useState("pro");
 
-  const handleEnterDashboard = () => {
-    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-    const base    = `; path=/; expires=${expires}; SameSite=Lax`;
-    document.cookie = `opero_active_tenant=${tenantForm.slug}${base}`;
-    document.cookie = `opero_tenants=${tenantForm.slug}${base}`;
+  const handleEnterDashboard = async () => {
+    // The org was already created in StepLaunch — just set it active
+    const { data: orgs } = await authClient.organization.list();
+    const created = orgs?.find((o) => o.slug === tenantForm.slug);
+    if (created) {
+      await authClient.organization.setActive({ organizationId: created.id });
+    }
     router.push("/dashboard");
   };
 

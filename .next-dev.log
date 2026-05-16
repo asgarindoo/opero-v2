@@ -1,0 +1,12 @@
+
+> opero@0.1.0 dev
+> next dev
+
+[32m✔[0m [33mConsole Ninja[0m extension is connected to [33mNext.js[0m, see [36mhttps://tinyurl.com/2vt8jxzw[0m
+▲ Next.js 16.2.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.100.168:3000
+- Environments: .env
+✓ Ready in 780ms
+Creating turbopack project { dir: 'E:\\Project\\opero', testMode: true }
+
