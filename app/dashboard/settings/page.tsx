@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
+import { getRootAppUrl } from "@/lib/tenant-url";
 import ModuleHeader from "../components/shared/ModuleHeader";
 import ModuleTabs from "../components/shared/ModuleTabs";
 import Button from "../components/ui/Button";
@@ -207,9 +208,7 @@ export default function SettingsPage() {
   };
 
   const handleSignOut = async () => {
-    await authClient.signOut();
-    router.replace("/login");
-    router.refresh();
+    window.location.assign(getRootAppUrl("/logout"));
   };
 
   const handleLeaveTenant = async () => {

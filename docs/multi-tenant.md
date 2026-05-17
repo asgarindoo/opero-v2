@@ -25,7 +25,9 @@ Client-supplied versions of these headers are stripped before forwarding.
 Root-domain routes (`/`, `/login`, `/register`, `/onboarding`, `/tenants`) stay
 on the root host. If they are opened on a tenant subdomain, Proxy redirects them
 back to the root host. Tenant subdomains are reserved for `/dashboard` and
-tenant-scoped APIs after authentication.
+tenant-scoped APIs after authentication. Short tenant paths such as `/tasks`,
+`/members`, and `/settings` on a tenant subdomain are rewritten to the matching
+`/dashboard/...` route after tenant validation.
 
 ## User Flow
 
@@ -61,11 +63,31 @@ Supported roles are `owner`, `admin`, and `member`.
 ## Local Testing
 
 Use `localhost:3000` for landing/auth/onboarding/create/join flows. Use
-`localhost:3000/dashboard?tenant=<tenant-slug>` by default in local development,
-because browsers do not reliably share auth cookies between `localhost` and
-`*.localhost`. To force subdomain testing anyway, set
-`NEXT_PUBLIC_ENABLE_LOCALHOST_SUBDOMAINS=true` and use
-`<tenant-slug>.localhost:3000/dashboard`.
+`<tenant-slug>.localhost:3000/dashboard` for tenant workspaces in local
+development. Examples:
+
+- `localhost:3000` -> root landing/auth/onboarding
+- `app.localhost:3000` -> root app host
+- `main.localhost:3000/dashboard` -> tenant `main`
+- `bisnis-a.localhost:3000/dashboard` -> tenant `bisnis-a`
 
 A user who is not a member of that tenant is redirected to `/unauthorized`;
 inactive tenants are redirected to `/tenant-inactive`.
+
+If your browser or OS does not resolve wildcard localhost names, add entries to
+your hosts file, for example:
+
+```text
+127.0.0.1 main.localhost
+127.0.0.1 bisnis-a.localhost
+```
+
+## Isolation Tests
+
+1. Open `localhost:3000`; it should show the root app.
+2. Open `main.localhost:3000/dashboard` as a member; it should show tenant `main`.
+3. Open `unknown.localhost:3000/dashboard`; it should show Tenant Not Found.
+4. Log in as a user from tenant A and open tenant B; it should show Unauthorized.
+5. Mark a tenant inactive and open its subdomain; it should show Tenant Inactive.
+6. Create a tenant; the browser should redirect to `<slug>.localhost:3000/dashboard`.
+7. Join a tenant with invite code/link; the browser should redirect to that tenant subdomain.

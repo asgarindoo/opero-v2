@@ -13,7 +13,17 @@ import { prisma } from "@/lib/prisma"; // Force TS re-evaluation
 import { generateInviteCode } from "@/lib/utils/invite-code";
 
 const rootAuthUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+const rootDomain  = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+const isLocalhost = rootAuthUrl.includes("localhost") || rootAuthUrl.includes("127.0.0.1");
+
+// Cookie domain strategy:
+//   localhost:  omit domain entirely (host-only cookie).
+//               Domain=localhost and Domain=.localhost are REJECTED by browsers per RFC 6265.
+//               Cross-subdomain auth in local dev uses the handoff token mechanism.
+//   production: set domain to ".rootDomain" so subdomains share the cookie.
+const cookieDomain = !isLocalhost
+  ? (process.env.BETTER_AUTH_COOKIE_DOMAIN ?? rootDomain ?? undefined)
+  : undefined;
 
 async function assignUniqueInviteCode(organizationId: string) {
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -125,15 +135,21 @@ export const auth = betterAuth({
   trustedOrigins: [
     rootAuthUrl,
     "http://*.localhost:3000",
+    "http://lvh.me:3000",
+    "http://*.lvh.me:3000",
     ...(rootDomain ? [`https://*.${rootDomain}`, `http://*.${rootDomain}`] : []),
   ],
 
-  advanced: {
-    crossSubDomainCookies: {
-      enabled: true,
-      domain: rootDomain ?? "localhost",
-    },
-  },
+  ...(cookieDomain
+    ? {
+        advanced: {
+          crossSubDomainCookies: {
+            enabled: true,
+            domain: cookieDomain,
+          },
+        },
+      }
+    : {}),
 });
 
 export type Auth = typeof auth;

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession, useActiveOrganization, authClient } from "@/lib/auth-client";
+import { useSession, useActiveOrganization } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import { NAV_GROUPS } from "./navConfig";
+import { getRootAppUrl } from "@/lib/tenant-url";
 
 /* ─── Command palette items (searchable) ─── */
 interface CommandItem {
@@ -131,9 +132,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
 
   /* ── Logout ── */
   async function handleLogout() {
-    await authClient.signOut();
-    router.replace("/login");
-    router.refresh();
+    window.location.assign(getRootAppUrl("/logout"));
   }
 
   return (

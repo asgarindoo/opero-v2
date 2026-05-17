@@ -21,29 +21,64 @@ export default function TenantSelectionPage() {
     role: string; logo?: string | null; color: string;
   }>>([]);
 
+  // Navigate to a tenant dashboard using the session handoff mechanism.
+  // This passes a signed short-lived token so the proxy can set the session
+  // cookie on the tenant subdomain (cross-subdomain cookie sharing is unreliable).
+  async function navigateToTenant(slug: string) {
+    const dashboardUrl = getTenantDashboardUrl(slug);
+    try {
+      const res = await fetch("/api/auth/handoff", { credentials: "include" });
+      if (res.ok) {
+        const { token } = await res.json() as { token: string };
+        const url = new URL(dashboardUrl);
+        url.searchParams.set("__handoff", token);
+        window.location.assign(url.toString());
+        return;
+      }
+    } catch { /* fall through */ }
+    window.location.assign(dashboardUrl);
+  }
+
   useEffect(() => {
+    let cancelled = false;
+
     authClient.organization.list().then(({ data }) => {
+      if (cancelled) return;
+
       if (data) {
-        setOrgs(
-          data.map((org, i) => ({
-            id: org.id,
-            name: org.name,
-            slug: org.slug,
-            role: (org as { role?: string }).role ?? "member",
-            logo: org.logo ?? null,
-            color: `hsl(${(i * 47 + 200) % 360}, 12%, ${20 + (i % 4) * 3}%)`,
-          }))
-        );
+        const mapped = data.map((org, i) => ({
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          role: (org as { role?: string }).role ?? "member",
+          logo: org.logo ?? null,
+          color: `hsl(${(i * 47 + 200) % 360}, 12%, ${20 + (i % 4) * 3}%)`,
+        }));
+
+        if (mapped.length === 1) {
+          setSelecting(mapped[0].id);
+          authClient.organization.setActive({ organizationId: mapped[0].id }).then(() => {
+            rememberTenant({ id: mapped[0].id, slug: mapped[0].slug });
+            navigateToTenant(mapped[0].slug);
+          });
+          return;
+        }
+
+        setOrgs(mapped);
       }
       setLoading(false);
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSelect = async (org: typeof orgs[number]) => {
     setSelecting(org.id);
     await authClient.organization.setActive({ organizationId: org.id });
     rememberTenant({ id: org.id, slug: org.slug });
-    window.location.assign(getTenantDashboardUrl(org.slug));
+    await navigateToTenant(org.slug);
   };
 
   return (
@@ -72,15 +107,12 @@ export default function TenantSelectionPage() {
         <div className="flex flex-col gap-3 animate-fade-in-up delay-200">
           {loading ? (
             // Loading skeleton — same card shape
-            Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 p-5 rounded-2xl border border-outline/12 bg-surface-container-lowest animate-pulse">
-                <div className="w-12 h-12 rounded-xl bg-outline/10 shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 bg-outline/10 rounded-full w-1/3" />
-                  <div className="h-2.5 bg-outline/8 rounded-full w-1/2" />
-                </div>
-              </div>
-            ))
+            <div className="flex items-center justify-center gap-3 rounded-xl border border-outline/10 bg-surface-container-lowest px-5 py-6">
+              <span className="h-4 w-4 rounded-full border-2 border-outline/30 border-t-primary animate-spin" />
+              <span className="font-label-caps text-[10px] uppercase tracking-[0.08em] font-semibold text-on-surface-variant/55">
+                Loading tenants
+              </span>
+            </div>
           ) : orgs.length === 0 ? (
             <div className="text-center py-8">
               <p className="font-body-md text-[14px] text-on-surface-variant">No tenants found.</p>

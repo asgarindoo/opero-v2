@@ -1,28 +1,41 @@
-export function getTenantDashboardUrl(slug: string, path = "/dashboard") {
-  if (typeof window === "undefined") return path;
+/**
+ * Client-side tenant URL helpers.
+ *
+ * NEXT_PUBLIC_ROOT_URL is the single source of truth — matches the proxy's ROOT_URL.
+ * This ensures port numbers are always preserved (e.g. :3000 in local dev).
+ */
 
-  const { protocol, hostname, port } = window.location;
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-  const enableLocalhostSubdomains = process.env.NEXT_PUBLIC_ENABLE_LOCALHOST_SUBDOMAINS === "true";
+const ROOT_URL =
+  process.env.NEXT_PUBLIC_ROOT_URL ||
+  (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}` : "http://localhost:3000");
 
-  if (hostname === "localhost" || hostname.endsWith(".localhost")) {
-    if (!enableLocalhostSubdomains) {
-      const url = new URL(normalizedPath, `${protocol}//localhost${port ? `:${port}` : ""}`);
-      url.searchParams.set("tenant", slug);
-      return url.toString();
-    }
+function getRootParsed() {
+  return new URL(ROOT_URL);
+}
 
-    return `${protocol}//${slug}.localhost${port ? `:${port}` : ""}${normalizedPath}`;
-  }
+/**
+ * Build the root app URL for a given path.
+ *
+ *   getRootAppUrl("/login") → "http://localhost:3000/login"
+ */
+export function getRootAppUrl(path = "/") {
+  const root = getRootParsed();
+  const url = new URL(path, root.href);
+  return url.toString();
+}
 
-  if (rootDomain) {
-    return `${protocol}//${slug}.${rootDomain}${port ? `:${port}` : ""}${normalizedPath}`;
-  }
-
-  const parts = hostname.split(".");
-  const baseHost = parts.length >= 3 ? parts.slice(1).join(".") : hostname;
-  return `${protocol}//${slug}.${baseHost}${port ? `:${port}` : ""}${normalizedPath}`;
+/**
+ * Build the tenant dashboard URL for a given slug.
+ * Port is always taken from NEXT_PUBLIC_ROOT_URL — never lost.
+ *
+ *   getTenantDashboardUrl("myotic")           → "http://myotic.localhost:3000/dashboard"
+ *   getTenantDashboardUrl("myotic", "/tasks") → "http://myotic.localhost:3000/tasks"
+ */
+export function getTenantDashboardUrl(slug: string, path = "/dashboard"): string {
+  const root = getRootParsed();
+  const tenantHostname = `${slug}.${root.hostname}`;
+  const portSuffix     = root.port ? `:${root.port}` : "";
+  return `${root.protocol}//${tenantHostname}${portSuffix}${path}`;
 }
 
 const LAST_TENANT_KEY = "opero:last-tenant";
@@ -34,7 +47,6 @@ export function rememberTenant(tenant: { id: string; slug: string }) {
 
 export function getRememberedTenant(): { id: string; slug: string } | null {
   if (typeof window === "undefined") return null;
-
   try {
     const raw = window.localStorage.getItem(LAST_TENANT_KEY);
     if (!raw) return null;

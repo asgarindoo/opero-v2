@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { LayoutDashboard, LogOut, Users } from "lucide-react";
-import { authClient, useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
+import { getRootAppUrl } from "@/lib/tenant-url";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -13,7 +13,6 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const router = useRouter();
   const { data: session, isPending } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -30,18 +29,15 @@ export default function Header() {
   }, []);
 
   const handleSignOut = async () => {
-    await authClient.signOut();
-    setProfileOpen(false);
-    router.refresh();
+    window.location.assign(getRootAppUrl("/logout"));
   };
 
   return (
     <header
-      className={`fixed top-0 w-full z-50 flex flex-col transition-all duration-300 ${
-        scrolled
-          ? "bg-background/85 backdrop-blur-xl shadow-[0_2px_20px_rgba(0,0,0,0.06)]"
-          : "bg-transparent"
-      }`}
+      className={`fixed top-0 w-full z-50 flex flex-col transition-all duration-300 ${scrolled
+        ? "bg-background/85 backdrop-blur-xl shadow-[0_2px_20px_rgba(0,0,0,0.06)]"
+        : "bg-transparent"
+        }`}
     >
       <div className="max-w-[1440px] mx-auto px-[20px] sm:px-[32px] md:px-[48px] w-full flex items-center justify-between h-16 sm:h-20">
         <div className="flex items-center">
@@ -132,9 +128,8 @@ export default function Header() {
       </div>
 
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-          menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        }`}
+        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          }`}
       >
         <div className="mx-4 mb-3 bg-surface-container-lowest border border-outline/10 rounded-[1.25rem] shadow-lg overflow-hidden">
           <nav className="flex flex-col p-2">

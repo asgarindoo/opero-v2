@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
+import { getRememberedTenant, getTenantDashboardUrl, rememberTenant, getRootAppUrl } from "@/lib/tenant-url";
 
 const AUTH_TIMEOUT_MS = 15000;
 
@@ -32,6 +32,27 @@ export default function LoginPage() {
   const [focused, setFocused] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Guard: Next.js client-side navigation to /login on a tenant subdomain
+  // bypasses the proxy (no HTTP request = no server redirect).
+  // Detect it here and hard-redirect to the absolute root login URL.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const { hostname, port } = window.location;
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_URL || "http://localhost:3000";
+    const rootHostname = new URL(rootUrl).hostname; // e.g. "localhost"
+
+    // We're on a tenant subdomain if the hostname has a "." prefix before the root hostname
+    const isTenantSubdomain =
+      hostname.endsWith(`.${rootHostname}`) &&   // e.g. "myotic.localhost"
+      hostname !== rootHostname;                  // not the root itself
+
+    if (isTenantSubdomain) {
+      const target = getRootAppUrl("/login");
+      console.log(`[LOGIN] client-side subdomain guard: ${hostname} → ${target}`);
+      window.location.replace(target);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -51,24 +72,91 @@ export default function LoginPage() {
         return;
       }
 
+      console.log("[LOGIN] ✓ signIn succeeded — checking session on root domain");
+
       // Check how many orgs the user belongs to for smart redirect
       const { data: orgs } = await withAuthTimeout(
         authClient.organization.list(),
         "Loading workspaces"
       );
+
+      console.log(`[LOGIN] orgs count=${orgs?.length ?? 0}`, orgs?.map((o) => o.slug));
+
       if (!orgs || orgs.length === 0) {
-        router.push("/onboarding");
-      } else if (orgs.length === 1) {
-        // Auto-set the single org as active then go to dashboard
+        console.log("[LOGIN] no orgs → /onboarding/create");
+        router.push("/onboarding/create");
+        return;
+      }
+
+      const pendingTenantSlug = getCookieValue("pendingTenantSlug");
+      const rememberedTenant = getRememberedTenant();
+      console.log(`[LOGIN] pendingTenantSlug=${pendingTenantSlug ?? "(none)"}`);
+      console.log(`[LOGIN] rememberedTenant=${rememberedTenant ? JSON.stringify(rememberedTenant) : "(none)"}`);
+
+      // ── Routing decision ───────────────────────────────────────────────────
+      // 1. pendingTenantSlug → user was trying to reach a specific tenant, go directly.
+      // 2. Only 1 org → go directly (no choice needed).
+      // 3. Multiple orgs + no pending → show /tenants picker so the user can choose.
+      //    (The /tenants page also handles the single-org fast-path internally.)
+
+      const pendingOrg = pendingTenantSlug
+        ? orgs.find((org) => org.slug === pendingTenantSlug) ?? null
+        : null;
+
+      if (!pendingOrg && orgs.length > 1) {
+        // Multiple tenants, no specific destination — show the picker
+        console.log(`[LOGIN] multiple orgs (${orgs.length}), no pending slug → /tenants`);
+        clearCookie("pendingTenantSlug");
+        window.location.assign(getRootAppUrl("/tenants"));
+        return;
+      }
+
+      // Single org OR a pending tenant slug matched → go directly
+      const targetOrg = pendingOrg ?? orgs[0];
+      console.log(`[LOGIN] targetOrg=${targetOrg ? JSON.stringify({ id: targetOrg.id, slug: targetOrg.slug }) : "(none)"}`);
+
+      if (targetOrg) {
         await withAuthTimeout(
-          authClient.organization.setActive({ organizationId: orgs[0].id }),
+          authClient.organization.setActive({ organizationId: targetOrg.id }),
           "Selecting workspace"
         );
-        rememberTenant({ id: orgs[0].id, slug: orgs[0].slug });
-        window.location.assign(getTenantDashboardUrl(orgs[0].slug));
-      } else {
-        router.push("/tenants");
+        console.log(`[LOGIN] setActive(${targetOrg.id}) done`);
+
+        clearCookie("pendingTenantSlug");
+        rememberTenant({ id: targetOrg.id, slug: targetOrg.slug });
+
+        const dashboardUrl = getTenantDashboardUrl(targetOrg.slug);
+        console.log(`[LOGIN] dashboardUrl=${dashboardUrl}`);
+
+        // Session handoff: session cookie is HttpOnly on localhost:3000,
+        // so the browser won't send it to myotic.localhost:3000 automatically.
+        // Fetch a signed 30-second token and pass it as ?__handoff= so
+        // the proxy can set the cookie directly on the tenant subdomain.
+        try {
+          console.log("[LOGIN] fetching /api/auth/handoff …");
+          const res = await fetch("/api/auth/handoff", { credentials: "include" });
+          console.log(`[LOGIN] /api/auth/handoff status=${res.status}`);
+          if (res.ok) {
+            const { token } = await res.json() as { token: string };
+            const url = new URL(dashboardUrl);
+            url.searchParams.set("__handoff", token);
+            console.log(`[LOGIN] ✓ handoff token obtained — navigating to ${url.toString()}`);
+            window.location.assign(url.toString());
+            return;
+          }
+          const errBody = await res.text().catch(() => "(unreadable)");
+          console.warn(`[LOGIN] ✗ /api/auth/handoff failed (${res.status}): ${errBody}`);
+          // Fall through to direct navigation
+        } catch (err) {
+          console.warn("[LOGIN] ✗ handoff fetch threw:", err);
+          // Fall through to direct navigation
+        }
+
+        console.warn(`[LOGIN] ⚠ falling back to direct nav (no handoff) → ${dashboardUrl}`);
+        console.warn("[LOGIN] ⚠ dashboard will likely redirect to /login because cookie is not shared");
+        window.location.assign(dashboardUrl);
       }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in. Please try again.");
     } finally {
@@ -161,10 +249,10 @@ export default function LoginPage() {
               className="w-full flex items-center justify-center gap-2.5 border border-outline/20 bg-surface-container-lowest text-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-4 py-2.5 rounded-xl hover:bg-surface-container-low hover:border-outline/40 active:scale-[0.98] transition-all duration-200"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
               Continue with Google
             </button>
@@ -297,4 +385,20 @@ export default function LoginPage() {
       </main>
     </div>
   );
+}
+
+function getCookieValue(name: string) {
+  const prefix = `${name}=`;
+  return document.cookie
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(prefix))
+    ?.slice(prefix.length) ?? null;
+}
+
+function clearCookie(name: string) {
+  // Clear all possible domain variants the cookie may have been set with
+  document.cookie = `${name}=; Max-Age=0; path=/`;
+  document.cookie = `${name}=; Max-Age=0; path=/; domain=localhost`;
+  document.cookie = `${name}=; Max-Age=0; path=/; domain=.localhost`;
 }

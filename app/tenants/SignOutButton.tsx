@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { getRootAppUrl } from "@/lib/tenant-url";
 
 export default function SignOutButton() {
-  const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
   async function handleSignOut() {
@@ -13,9 +11,7 @@ export default function SignOutButton() {
     setSigningOut(true);
 
     try {
-      await authClient.signOut();
-      router.replace("/login");
-      router.refresh();
+      window.location.assign(getRootAppUrl("/logout"));
     } finally {
       setSigningOut(false);
     }
