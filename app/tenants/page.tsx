@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import TenantLogo from "@/app/components/TenantLogo";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
+import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
 
 const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
   owner:  { label: "Owner",  bg: "rgba(0,0,0,0.07)",  color: "var(--color-primary)" },
@@ -14,7 +14,6 @@ const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
 };
 
 export default function TenantSelectionPage() {
-  const router = useRouter();
   const [selecting, setSelecting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [orgs, setOrgs] = useState<Array<{
@@ -43,7 +42,8 @@ export default function TenantSelectionPage() {
   const handleSelect = async (org: typeof orgs[number]) => {
     setSelecting(org.id);
     await authClient.organization.setActive({ organizationId: org.id });
-    router.push("/dashboard");
+    rememberTenant({ id: org.id, slug: org.slug });
+    window.location.assign(getTenantDashboardUrl(org.slug));
   };
 
   return (
@@ -152,14 +152,14 @@ export default function TenantSelectionPage() {
           )}
         </div>
 
-        {/* Create new tenant */}
+        {/* Join another tenant */}
         <div className="mt-6 pt-6 border-t border-outline/10 flex items-center justify-center animate-fade-in-up delay-400">
           <Link
-            href="/onboarding/create"
+            href="/onboarding/join"
             className="flex items-center gap-2 font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-on-surface-variant/50 hover:text-primary border border-outline/15 hover:border-outline/35 px-5 py-2.5 rounded-full transition-all duration-200 hover:bg-surface-container"
           >
-            <span className="material-symbols-outlined text-[14px]">add</span>
-            Create a new tenant
+            <span className="material-symbols-outlined text-[14px]">group_add</span>
+            Join another tenant
           </Link>
         </div>
       </div>

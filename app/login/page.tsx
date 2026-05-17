@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
 
 const AUTH_TIMEOUT_MS = 15000;
 
@@ -63,9 +64,9 @@ export default function LoginPage() {
           authClient.organization.setActive({ organizationId: orgs[0].id }),
           "Selecting workspace"
         );
-        router.push("/dashboard");
+        rememberTenant({ id: orgs[0].id, slug: orgs[0].slug });
+        window.location.assign(getTenantDashboardUrl(orgs[0].slug));
       } else {
-        // Multiple orgs - let user pick
         router.push("/tenants");
       }
     } catch (err) {

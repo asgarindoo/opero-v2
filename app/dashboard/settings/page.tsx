@@ -14,6 +14,8 @@ import {
   UserRound,
   Copy,
   Check,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
@@ -77,6 +79,8 @@ export default function SettingsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -101,6 +105,7 @@ export default function SettingsPage() {
   };
 
   const canManage = data?.membership.role === "owner" || data?.membership.role === "admin";
+  const isOwner = data?.membership.role === "owner";
 
   useEffect(() => {
     let cancelled = false;
@@ -205,6 +210,63 @@ export default function SettingsPage() {
     await authClient.signOut();
     router.replace("/login");
     router.refresh();
+  };
+
+  const handleLeaveTenant = async () => {
+    if (!data) return;
+    const confirmed = window.confirm(`Leave "${data.tenant.name}"? You will lose access until someone invites you again.`);
+    if (!confirmed) return;
+
+    setIsLeaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/tenant/leave", { method: "POST" });
+      const payload = await res.json();
+
+      if (!res.ok) {
+        throw new Error(payload.error ?? "Failed to leave tenant.");
+      }
+
+      await authClient.organization.setActive({ organizationId: null });
+      router.replace("/tenants");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to leave tenant.");
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
+  const handleDeleteTenant = async () => {
+    if (!data || !isOwner) return;
+    const typed = window.prompt(`Type ${data.tenant.slug} to permanently delete this tenant.`);
+    if (typed !== data.tenant.slug) {
+      if (typed !== null) setError("Tenant deletion cancelled: slug did not match.");
+      return;
+    }
+
+    setIsDeleting(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/tenant", { method: "DELETE" });
+      const payload = await res.json();
+
+      if (!res.ok) {
+        throw new Error(payload.error ?? "Failed to delete tenant.");
+      }
+
+      await authClient.organization.setActive({ organizationId: null });
+      router.replace("/tenants");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete tenant.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const plan = data?.tenant.tenantPlan;
@@ -481,6 +543,53 @@ export default function SettingsPage() {
                       SIGN OUT
                     </Button>
                   </section>
+
+                  <section className="pt-10 border-t border-red-500/10 space-y-6">
+                    <div>
+                      <h3 className="font-display font-semibold text-[15px] text-red-700">Danger Zone</h3>
+                      <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 mt-1">
+                        Leave this tenant or permanently delete it if you are the owner.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <DangerAction
+                        icon={AlertTriangle}
+                        title="Leave tenant"
+                        description="Remove your membership from this workspace. Owners can leave only if another owner remains."
+                        action={(
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon={LogOut}
+                            isLoading={isLeaving}
+                            onClick={handleLeaveTenant}
+                          >
+                            LEAVE TENANT
+                          </Button>
+                        )}
+                      />
+
+                      {isOwner && (
+                        <DangerAction
+                          icon={Trash2}
+                          title="Delete tenant"
+                          description="Permanently delete this tenant and all tenant-scoped records that cascade from it."
+                          action={(
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              icon={Trash2}
+                              isLoading={isDeleting}
+                              onClick={handleDeleteTenant}
+                            >
+                              DELETE TENANT
+                            </Button>
+                          )}
+                        />
+                      )}
+                    </div>
+                  </section>
                 </div>
               )}
             </>
@@ -518,6 +627,35 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
           {value}
         </p>
       </div>
+    </div>
+  );
+}
+
+function DangerAction({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  action: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between p-5 rounded-xl border border-red-500/10 bg-red-500/[0.025]">
+      <div className="flex items-start gap-4 min-w-0">
+        <div className="w-10 h-10 rounded-lg bg-white border border-red-500/10 flex items-center justify-center text-red-600 shrink-0">
+          <Icon size={18} />
+        </div>
+        <div className="min-w-0">
+          <p className="font-display text-[14px] font-semibold text-on-surface">{title}</p>
+          <p className="font-body-sm text-[12px] text-on-surface-variant opacity-65 mt-1 leading-relaxed">
+            {description}
+          </p>
+        </div>
+      </div>
+      <div className="shrink-0">{action}</div>
     </div>
   );
 }

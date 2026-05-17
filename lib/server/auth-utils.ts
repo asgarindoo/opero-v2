@@ -32,11 +32,19 @@ export interface CurrentTenant {
   name: string;
   slug: string;
   logo: string | null;
+  status: string;
 }
 
 export interface TenantMembership {
   tenant: CurrentTenant;
+  user: CurrentUser;
   role: OrgRole;
+}
+
+export interface TenantContext extends TenantMembership {
+  tenantId: string;
+  tenantSlug: string;
+  userId: string;
 }
 
 // ── Core helpers ──────────────────────────────────────────────────────────────
@@ -83,7 +91,7 @@ export async function getCurrentTenant(): Promise<CurrentTenant | null> {
 
   const org = await prisma.organization.findUnique({
     where: { id: session.session.activeOrganizationId },
-    select: { id: true, name: true, slug: true, logo: true },
+    select: { id: true, name: true, slug: true, logo: true, status: true },
   });
 
   return org ?? null;
@@ -116,7 +124,7 @@ export async function requireTenantAccess(
 
   const org = await prisma.organization.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, logo: true },
+    select: { id: true, name: true, slug: true, logo: true, status: true },
   });
 
   if (!org) {
@@ -126,19 +134,26 @@ export async function requireTenantAccess(
     });
   }
 
+  if (org.status !== "active") {
+    throw new Response(JSON.stringify({ error: "Tenant inactive" }), {
+      status: 423,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const membership = await prisma.member.findUnique({
     where: { organizationId_userId: { organizationId: org.id, userId: user.id } },
-    select: { role: true },
+    select: { role: true, status: true },
   });
 
-  if (!membership) {
+  if (!membership || membership.status !== "active") {
     throw new Response(JSON.stringify({ error: "Access denied" }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  return { tenant: org, role: membership.role as OrgRole };
+  return { tenant: org, user, role: membership.role as OrgRole };
 }
 
 /**
@@ -153,31 +168,16 @@ export async function requireTenantAccess(
 export async function requireRole(
   allowedRoles: OrgRole[]
 ): Promise<TenantMembership> {
-  const user = await requireAuth();
-  const tenant = await getCurrentTenant();
+  const context = await requireTenantMember();
 
-  if (!tenant) {
-    throw new Response(JSON.stringify({ error: "No active tenant" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const membership = await prisma.member.findUnique({
-    where: {
-      organizationId_userId: { organizationId: tenant.id, userId: user.id },
-    },
-    select: { role: true },
-  });
-
-  if (!membership || !allowedRoles.includes(membership.role as OrgRole)) {
+  if (!allowedRoles.includes(context.role)) {
     throw new Response(
       JSON.stringify({ error: "Insufficient permissions" }),
       { status: 403, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  return { tenant, role: membership.role as OrgRole };
+  return context;
 }
 
 /**
@@ -191,11 +191,76 @@ export async function resolveTenantFromRequest(): Promise<CurrentTenant | null> 
   if (slugFromHeader) {
     const org = await prisma.organization.findUnique({
       where: { slug: slugFromHeader },
-      select: { id: true, name: true, slug: true, logo: true },
+      select: { id: true, name: true, slug: true, logo: true, status: true },
     });
     return org ?? null;
   }
 
   // Fallback: use active org from session
   return getCurrentTenant();
+}
+
+/**
+ * Resolves the tenant context from trusted server state only.
+ *
+ * Shared database/shared schema rule: every tenant-owned query must use
+ * `tenantId` from this helper, never a client-provided tenant_id.
+ * Proxy may inject x-tenant-* headers after validation; server handlers still
+ * re-check session, tenant status, and membership here before touching data.
+ */
+export async function getTenantContext(): Promise<TenantContext | null> {
+  const hdrs = await headers();
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const headerTenantId = hdrs.get("x-tenant-id");
+  const headerTenantSlug = hdrs.get("x-tenant-slug");
+  const sessionTenant = await getCurrentTenant();
+
+  const tenant = headerTenantId
+    ? await prisma.organization.findUnique({
+        where: { id: headerTenantId },
+        select: { id: true, name: true, slug: true, logo: true, status: true },
+      })
+    : headerTenantSlug
+      ? await prisma.organization.findUnique({
+          where: { slug: headerTenantSlug },
+          select: { id: true, name: true, slug: true, logo: true, status: true },
+        })
+      : sessionTenant;
+
+  if (!tenant || tenant.status !== "active") return null;
+
+  const membership = await prisma.member.findUnique({
+    where: {
+      organizationId_userId: { organizationId: tenant.id, userId: user.id },
+    },
+    select: { role: true, status: true },
+  });
+
+  if (!membership || membership.status !== "active") return null;
+
+  return {
+    tenant,
+    user,
+    role: membership.role as OrgRole,
+    tenantId: tenant.id,
+    tenantSlug: tenant.slug,
+    userId: user.id,
+  };
+}
+
+export async function requireTenant(): Promise<TenantContext> {
+  const context = await getTenantContext();
+  if (!context) {
+    throw new Response(JSON.stringify({ error: "Tenant access required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return context;
+}
+
+export async function requireTenantMember(): Promise<TenantContext> {
+  return requireTenant();
 }

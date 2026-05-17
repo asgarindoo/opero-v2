@@ -90,6 +90,8 @@ model Organization {
   slug      String   @unique
   logo      String?
   metadata  String?  @db.Text
+  status    String   @default("active") // "active" | "inactive"
+  createdById String?
   createdAt DateTime @default(now())
 
   // Relations
@@ -102,6 +104,7 @@ model Organization {
   tenantSettings TenantSettings?
   tenantPlan     TenantPlan?
 
+  @@index([createdById])
   @@map("organization")
 }
 

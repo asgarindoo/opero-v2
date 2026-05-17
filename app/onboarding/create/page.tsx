@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
 
 /* â”€â”€ Plan data â”€â”€ */
 const plans = [
@@ -527,10 +527,36 @@ function StepLaunch({
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function CreateTenantPage() {
-  const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [tenantForm, setTenantForm] = useState({ name: "", slug: "", logo: null as string | null });
   const [selectedPlan, setSelectedPlan] = useState("pro");
+  const [eligibility, setEligibility] = useState<{
+    loading: boolean;
+    canCreate: boolean;
+    ownedTenant?: { id: string; name: string; slug: string } | null;
+  }>({ loading: true, canCreate: false });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/tenant/create-eligibility", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((payload) => {
+        if (cancelled) return;
+        setEligibility({
+          loading: false,
+          canCreate: Boolean(payload.canCreate),
+          ownedTenant: payload.ownedTenant ?? null,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setEligibility({ loading: false, canCreate: false, ownedTenant: null });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleEnterDashboard = async () => {
     // The org was already created in StepLaunch — just set it active
@@ -538,9 +564,55 @@ export default function CreateTenantPage() {
     const created = orgs?.find((o) => o.slug === tenantForm.slug);
     if (created) {
       await authClient.organization.setActive({ organizationId: created.id });
+      rememberTenant({ id: created.id, slug: created.slug });
     }
-    router.push("/dashboard");
+    window.location.assign(getTenantDashboardUrl(tenantForm.slug));
   };
+
+  if (eligibility.loading) {
+    return (
+      <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">
+        <div className="w-full max-w-[420px] space-y-4 animate-pulse">
+          <div className="mx-auto h-8 w-56 rounded bg-black/[0.05]" />
+          <div className="mx-auto h-3 w-72 rounded bg-black/[0.035]" />
+          <div className="h-48 rounded-2xl border border-outline/10 bg-surface-container-lowest" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!eligibility.canCreate) {
+    return (
+      <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">
+        <div className="w-full max-w-[520px] text-center animate-fade-in-up">
+          <span className="inline-flex items-center gap-1.5 font-label-caps text-[10px] uppercase tracking-[0.08em] font-semibold text-on-surface-variant/50 mb-4">
+            Tenant limit reached
+          </span>
+          <h1 className="font-display text-primary font-bold leading-[1.1] mb-4" style={{ fontSize: "clamp(26px, 4vw, 38px)" }}>
+            You already created a tenant.
+          </h1>
+          <p className="font-body-md text-[14px] text-on-surface-variant leading-relaxed mb-8">
+            Each account can create one tenant. You can still join other tenants using an invite code.
+            {eligibility.ownedTenant ? ` Your tenant is "${eligibility.ownedTenant.name}".` : ""}
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/onboarding/join"
+              className="w-full sm:w-auto bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-6 py-3 rounded-xl"
+            >
+              Join with invite code
+            </Link>
+            <Link
+              href="/tenants"
+              className="w-full sm:w-auto border border-outline/20 text-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-6 py-3 rounded-xl"
+            >
+              My tenants
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">

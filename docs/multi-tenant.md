@@ -1,0 +1,71 @@
+# Multi-Tenant Architecture
+
+OPERO uses a shared database/shared schema model. Tenants are Better Auth
+organizations stored in `organization`; tenant-owned rows must be scoped with the
+server-resolved tenant id (`organizationId`, equivalent to `tenant_id`).
+
+## Tenant Resolver
+
+`proxy.ts` resolves workspace subdomains such as `acme.localhost:3000` or
+`acme.<NEXT_PUBLIC_ROOT_DOMAIN>`. It validates:
+
+- tenant slug exists
+- tenant `status` is `active`
+- session user is an active `member`
+
+After validation it forwards trusted request headers:
+
+- `x-tenant-id`
+- `x-tenant-slug`
+- `x-user-id`
+- `x-user-role`
+
+Client-supplied versions of these headers are stripped before forwarding.
+
+Root-domain routes (`/`, `/login`, `/register`, `/onboarding`, `/tenants`) stay
+on the root host. If they are opened on a tenant subdomain, Proxy redirects them
+back to the root host. Tenant subdomains are reserved for `/dashboard` and
+tenant-scoped APIs after authentication.
+
+## User Flow
+
+1. User opens the root domain landing page.
+2. User logs in or registers.
+3. If the user has no tenants, they go to onboarding to create or join a tenant.
+4. If the user has exactly one tenant, OPERO opens it directly; if the user has multiple tenants, OPERO shows the tenant selector.
+5. The selected tenant becomes the active organization and the browser moves to `tenant-slug.localhost:3000/dashboard`.
+6. Proxy resolves the subdomain, validates tenant status and membership, then injects tenant context headers.
+7. Server helpers re-check tenant context and all tenant-owned data is filtered by `tenantId`.
+
+## Server Context
+
+Use `getTenantContext()`, `requireTenant()`, `requireTenantMember()`, and
+`requireRole()` from `lib/server/auth-utils.ts`. These helpers never trust
+`tenant_id` from query params, JSON payloads, or client headers. They re-check
+the session, tenant status, and membership before returning a context.
+
+## Tenant Filtering
+
+Every tenant-owned query must filter by `context.tenantId`; every create must
+set `organizationId`/`tenant_id` on the server. The optional
+`lib/server/tenant-prisma.ts` wrapper demonstrates the pattern for scoped Prisma
+queries.
+
+## RBAC
+
+Supported roles are `owner`, `admin`, and `member`.
+
+- `owner` and `admin`: tenant settings, invite codes, invite links, and member management
+- `member`: read/access tenant data only
+
+## Local Testing
+
+Use `localhost:3000` for landing/auth/onboarding/create/join flows. Use
+`localhost:3000/dashboard?tenant=<tenant-slug>` by default in local development,
+because browsers do not reliably share auth cookies between `localhost` and
+`*.localhost`. To force subdomain testing anyway, set
+`NEXT_PUBLIC_ENABLE_LOCALHOST_SUBDOMAINS=true` and use
+`<tenant-slug>.localhost:3000/dashboard`.
+
+A user who is not a member of that tenant is redirected to `/unauthorized`;
+inactive tenants are redirected to `/tenant-inactive`.

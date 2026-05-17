@@ -12,6 +12,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma"; // Force TS re-evaluation
 import { generateInviteCode } from "@/lib/utils/invite-code";
 
+const rootAuthUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+
 async function assignUniqueInviteCode(organizationId: string) {
   for (let attempt = 0; attempt < 8; attempt++) {
     try {
@@ -32,6 +35,8 @@ async function assignUniqueInviteCode(organizationId: string) {
 }
 
 export const auth = betterAuth({
+  baseURL: rootAuthUrl,
+
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -118,8 +123,17 @@ export const auth = betterAuth({
 
   // ── Trusted Origins ─────────────────────────────────────────────────
   trustedOrigins: [
-    process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    rootAuthUrl,
+    "http://*.localhost:3000",
+    ...(rootDomain ? [`https://*.${rootDomain}`, `http://*.${rootDomain}`] : []),
   ],
+
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain: rootDomain ?? "localhost",
+    },
+  },
 });
 
 export type Auth = typeof auth;

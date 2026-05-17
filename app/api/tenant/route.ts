@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server/auth-utils";
+import { requireAuth, requireRole } from "@/lib/server/auth-utils";
 import { uploadTenantLogoFromDataUrl } from "@/lib/server/supabase-storage";
 import { z } from "zod";
 
@@ -63,6 +63,33 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth();
 
+    const ownedTenant = await prisma.organization.findFirst({
+      where: {
+        OR: [
+          { createdById: user.id },
+          {
+            members: {
+              some: {
+                userId: user.id,
+                role: "owner",
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true, name: true, slug: true },
+    });
+
+    if (ownedTenant) {
+      return NextResponse.json(
+        {
+          error: "You can only create one tenant per account. Use an invite code to join another tenant.",
+          tenant: ownedTenant,
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const parsed = CreateTenantSchema.safeParse(body);
 
@@ -95,6 +122,11 @@ export async function POST(req: NextRequest) {
       org = await auth.api.createOrganization({
         body: { name, slug },
         headers: hdrs,
+      });
+
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: { createdById: user.id },
       });
     } catch (err) {
       if (!isOrganizationExistsError(err)) throw err;
@@ -159,6 +191,26 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("[POST /api/tenant]", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/tenant
+ * Permanently delete the active tenant. Owner-only.
+ */
+export async function DELETE() {
+  try {
+    const { tenant } = await requireRole(["owner"]);
+
+    await prisma.organization.delete({
+      where: { id: tenant.id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    if (err instanceof Response) return err;
+    console.error("[DELETE /api/tenant]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

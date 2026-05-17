@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 const choices = [
   {
@@ -29,6 +31,13 @@ const choices = [
 
 export default function TenantGateway() {
   const router = useRouter();
+  const [hasOwnedTenant, setHasOwnedTenant] = useState(false);
+
+  useEffect(() => {
+    authClient.organization.list().then(({ data }) => {
+      setHasOwnedTenant(Boolean(data?.some((org) => (org as { role?: string }).role === "owner")));
+    });
+  }, []);
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-16 relative">
@@ -72,6 +81,38 @@ export default function TenantGateway() {
       {/* ── Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[800px] animate-fade-in-up delay-200">
         {choices.map((c, idx) => (
+          c.id === "create" && hasOwnedTenant ? (
+          <button
+            key={c.id}
+            id={`gateway-${c.id}`}
+            type="button"
+            disabled
+            className="group text-left flex flex-col rounded-2xl outline-none overflow-hidden opacity-55 cursor-not-allowed"
+            style={{
+              border: "1px solid rgba(116,120,120,0.14)",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div className="relative px-8 pt-8 pb-7 flex items-start gap-4 bg-[#171717]">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 relative z-10" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <span className="material-symbols-outlined text-white/80 text-[20px]">{c.icon}</span>
+              </div>
+              <div className="flex-1 relative z-10">
+                <h2 className="font-h2 font-semibold leading-snug mb-1.5" style={{ fontSize: 17, color: "rgba(255,255,255,0.92)" }}>
+                  Tenant already created
+                </h2>
+                <p className="font-body-md leading-relaxed" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
+                  Each account can create one tenant. Use an invite code to join another workspace.
+                </p>
+              </div>
+            </div>
+            <div className="px-8 py-5 bg-surface-container-lowest" style={{ borderTop: "1px solid rgba(116,120,120,0.08)" }}>
+              <span className="font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-primary/50">
+                Join another tenant instead
+              </span>
+            </div>
+          </button>
+          ) : (
           <button
             key={c.id}
             id={`gateway-${c.id}`}
@@ -170,12 +211,13 @@ export default function TenantGateway() {
               </div>
             </div>
           </button>
+          )
         ))}
       </div>
 
       {/* Footer */}
       <p className="mt-10 font-body-sm text-[12px] text-on-surface-variant/30 text-center animate-fade-in-up delay-400">
-        You can always create or join more tenants later from your account settings.
+        One account can create one tenant and join more tenants by invitation.
       </p>
     </main>
   );

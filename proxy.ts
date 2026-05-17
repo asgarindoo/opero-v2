@@ -1,112 +1,223 @@
 /**
- * OPERO — Middleware (Next.js 16 App Router)
+ * OPERO - Next.js 16 Proxy
  *
- * Handles:
- *   1. Authentication guard — redirect to /login if no session
- *   2. Tenant routing — subdomain extraction in production,
- *      session-based active org in local dev
- *   3. Onboarding flow — redirect based on org membership state
- *
- * Cookie contract (set by Better Auth + organization.setActive):
- *   better-auth.session_token  — Better Auth session cookie
- *   better-auth.session_data   — Cached session data (optional)
- *
- * In production, subdomains like acme.opero.app are resolved here.
- * In local dev (localhost:3000), path-based routing is used with
- * the active organization tracked in the Better Auth session.
+ * Tenant subdomains are resolved here, then passed upstream as trusted request
+ * headers. Server helpers still re-check session, tenant status, and membership
+ * before any database query.
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-/** Better Auth session cookie name */
 const SESSION_COOKIE = "better-auth.session_token";
-
-/** Routes that don't require any auth check */
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password"];
-
-/** Known non-tenant subdomains */
-const SYSTEM_SUBDOMAINS = new Set(["www", "app", "api", "opero"]);
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/unauthorized", "/tenant-inactive"];
+const SYSTEM_SUBDOMAINS = new Set(["www", "app", "api", "opero", "main"]);
 
 function isPublicRoute(pathname: string): boolean {
   return (
-    PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
+    PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/")) ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") || // Better Auth routes are always public
+    pathname.startsWith("/api/auth") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/public")
   );
 }
 
-export default async function proxy(request: NextRequest) {
-  const { pathname, hostname } = request.nextUrl;
+function getTenantSlug(hostname: string): string | null {
+  const host = hostname.split(":")[0].toLowerCase();
 
-  // ── Subdomain extraction (production only) ─────────────────────────
-  // In production: acme.opero.app → tenantSlug = "acme"
-  // In local dev: localhost:3000 → no subdomain, use session
-  let tenantSlugFromSubdomain: string | null = null;
-  if (process.env.NODE_ENV === "production") {
-    const parts = hostname.split(".");
-    if (parts.length >= 3) {
-      const sub = parts[0];
-      if (!SYSTEM_SUBDOMAINS.has(sub)) {
-        tenantSlugFromSubdomain = sub;
-      }
-    }
+  if (host.endsWith(".localhost")) {
+    const subdomain = host.replace(".localhost", "");
+    return subdomain && !SYSTEM_SUBDOMAINS.has(subdomain) ? subdomain : null;
   }
 
-  // ── Session check (lightweight — just look at cookie presence) ─────
-  // Full session validation happens in server utilities (auth-utils.ts)
-  // Middleware keeps DB queries to zero for performance.
-  const hasSession = !!request.cookies.get(SESSION_COOKIE)?.value;
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+  if (rootDomain && host.endsWith(`.${rootDomain}`)) {
+    const subdomain = host.slice(0, -1 * `.${rootDomain}`.length);
+    return subdomain && !subdomain.includes(".") && !SYSTEM_SUBDOMAINS.has(subdomain) ? subdomain : null;
+  }
 
-  // ── Public routes — always pass through ───────────────────────────
+  const parts = host.split(".");
+  if (parts.length >= 3 && !SYSTEM_SUBDOMAINS.has(parts[0])) {
+    return parts[0];
+  }
+
+  return null;
+}
+
+async function getSessionInfo(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    return {
+      userId: session?.user?.id ?? null,
+      activeOrganizationId: session?.session?.activeOrganizationId ?? null,
+    };
+  } catch {
+    return { userId: null, activeOrganizationId: null };
+  }
+}
+
+function getTenantUrl(request: NextRequest, slug: string) {
+  const url = request.nextUrl.clone();
+  const host = request.nextUrl.hostname;
+  const port = request.nextUrl.port;
+  const enableLocalhostSubdomains = process.env.NEXT_PUBLIC_ENABLE_LOCALHOST_SUBDOMAINS === "true";
+
+  if (host === "localhost" || host.endsWith(".localhost")) {
+    if (!enableLocalhostSubdomains) {
+      url.hostname = "localhost";
+      url.searchParams.set("tenant", slug);
+      if (port) url.port = port;
+      return url;
+    }
+
+    url.hostname = `${slug}.localhost`;
+  } else if (process.env.NEXT_PUBLIC_ROOT_DOMAIN) {
+    url.hostname = `${slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`;
+  } else {
+    const parts = host.split(".");
+    url.hostname = `${slug}.${parts.length >= 3 ? parts.slice(1).join(".") : host}`;
+  }
+
+  if (port) url.port = port;
+  return url;
+}
+
+function getRootUrl(request: NextRequest, path = request.nextUrl.pathname) {
+  const url = new URL(request.url);
+  const host = request.nextUrl.hostname;
+  const port = request.nextUrl.port;
+
+  url.pathname = path;
+
+  if (host.endsWith(".localhost")) {
+    url.hostname = "localhost";
+  } else if (process.env.NEXT_PUBLIC_ROOT_DOMAIN) {
+    url.hostname = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+  } else {
+    const parts = host.split(".");
+    if (parts.length >= 3) url.hostname = parts.slice(1).join(".");
+  }
+
+  if (port) url.port = port;
+  return url;
+}
+
+function getRootLoginUrl(request: NextRequest) {
+  const loginUrl = getRootUrl(request, "/login");
+  loginUrl.search = "";
+  loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+  return loginUrl;
+}
+
+async function resolveTenantRequest(request: NextRequest, tenantSlug: string, userId: string) {
+  const tenant = await prisma.organization.findUnique({
+    where: { slug: tenantSlug },
+    select: { id: true, slug: true, status: true },
+  });
+
+  if (!tenant) {
+    return NextResponse.redirect(new URL("/unauthorized", request.url));
+  }
+
+  if (tenant.status !== "active") {
+    return NextResponse.redirect(new URL("/tenant-inactive", request.url));
+  }
+
+  const membership = await prisma.member.findUnique({
+    where: {
+      organizationId_userId: {
+        organizationId: tenant.id,
+        userId,
+      },
+    },
+    select: { role: true, status: true },
+  });
+
+  if (!membership || membership.status !== "active") {
+    return NextResponse.redirect(new URL("/unauthorized", request.url));
+  }
+
+  const requestHeaders = sanitizeTenantHeaders(request.headers);
+  requestHeaders.set("x-tenant-id", tenant.id);
+  requestHeaders.set("x-tenant-slug", tenant.slug);
+  requestHeaders.set("x-user-id", userId);
+  requestHeaders.set("x-user-role", membership.role);
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
+function sanitizeTenantHeaders(headers: Headers) {
+  const requestHeaders = new Headers(headers);
+  requestHeaders.delete("x-tenant-id");
+  requestHeaders.delete("x-tenant-slug");
+  requestHeaders.delete("x-user-id");
+  requestHeaders.delete("x-user-role");
+  return requestHeaders;
+}
+
+function nextWithoutClientTenantHeaders(request: NextRequest) {
+  return NextResponse.next({ request: { headers: sanitizeTenantHeaders(request.headers) } });
+}
+
+export default async function proxy(request: NextRequest) {
+  const { pathname, hostname } = request.nextUrl;
+  const tenantSlug = getTenantSlug(hostname);
+  const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
+  const tenantQuerySlug = request.nextUrl.searchParams.get("tenant");
+
+  if (tenantSlug && !pathname.startsWith("/dashboard") && !pathname.startsWith("/api/tenant")) {
+    return NextResponse.redirect(getRootUrl(request));
+  }
+
   if (isPublicRoute(pathname)) {
-    // If user is authenticated and visits /login or /register, redirect to dashboard
     if (hasSession && (pathname === "/login" || pathname === "/register")) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-    return NextResponse.next();
+    return nextWithoutClientTenantHeaders(request);
   }
 
-  // ── Protected routes ──────────────────────────────────────────────
-
-  // 1. Not authenticated → /login
   if (!hasSession) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(getRootLoginUrl(request));
   }
 
-  // 2. Authenticated but visiting /tenants or /onboarding — allowed
-  if (
-    pathname.startsWith("/tenants") ||
-    pathname.startsWith("/onboarding")
-  ) {
-    return NextResponse.next();
+  if (pathname.startsWith("/tenants") || pathname.startsWith("/onboarding")) {
+    return nextWithoutClientTenantHeaders(request);
   }
 
-  // 3. Dashboard routes — inject tenant slug header for server components
-  if (pathname.startsWith("/dashboard")) {
-    const response = NextResponse.next();
-
-    // Pass subdomain slug to server via header (production)
-    if (tenantSlugFromSubdomain) {
-      response.headers.set("x-tenant-slug", tenantSlugFromSubdomain);
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/api/tenant")) {
+    const { userId, activeOrganizationId } = await getSessionInfo(request);
+    if (!userId) {
+      return NextResponse.redirect(getRootLoginUrl(request));
     }
 
-    return response;
+    if (tenantSlug || tenantQuerySlug) {
+      return resolveTenantRequest(request, tenantSlug ?? tenantQuerySlug!, userId);
+    }
+
+    if (pathname.startsWith("/dashboard") && activeOrganizationId) {
+      const tenant = await prisma.organization.findUnique({
+        where: { id: activeOrganizationId },
+        select: { slug: true },
+      });
+
+      if (tenant) {
+        return NextResponse.redirect(getTenantUrl(request, tenant.slug));
+      }
+    }
+
+    if (pathname.startsWith("/dashboard")) {
+      return NextResponse.redirect(new URL("/tenants", request.url));
+    }
   }
 
-  return NextResponse.next();
+  return nextWithoutClientTenantHeaders(request);
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths EXCEPT Next.js internals and static files.
-     * This is the recommended pattern for Next.js 16 middleware.
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

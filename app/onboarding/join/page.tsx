@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Key, Link as LinkIcon, ArrowRight, ArrowLeft, Clipboard, AlertCircle } from "lucide-react";
 import Button from "../../dashboard/components/ui/Button";
+import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
 
 export default function JoinTenantPage() {
   return (
@@ -52,7 +53,13 @@ function JoinTenantContent() {
         return;
       }
 
-      router.push("/tenants"); // Let user select the newly joined org
+      if (json.organizationId && json.organizationSlug) {
+        rememberTenant({ id: json.organizationId, slug: json.organizationSlug });
+        window.location.assign(getTenantDashboardUrl(json.organizationSlug));
+        return;
+      }
+
+      router.push("/tenants");
     } catch {
       setError("Something went wrong. Please try again.");
       setIsLoading(false);
@@ -162,10 +169,10 @@ function JoinTenantContent() {
             </Link>
             <div className="w-px h-3 bg-black/[0.06]" />
             <Link
-              href="/onboarding/create"
+              href="/tenants"
               className="font-label-caps text-[10px] font-bold uppercase tracking-wider text-on-surface-variant opacity-40 hover:opacity-100 transition-opacity"
             >
-              Create Workspace
+              My Workspaces
             </Link>
           </div>
         </div>

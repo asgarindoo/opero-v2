@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const organization = inviteCode
       ? await prisma.organization.findUnique({
           where: { inviteCode },
-          select: { id: true, name: true },
+          select: { id: true, name: true, slug: true },
         })
       : null;
 
@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
             id: true,
             organizationId: true,
             expiresAt: true,
-            revokedAt: true,
-            organization: { select: { id: true, name: true } },
+          revokedAt: true,
+            organization: { select: { id: true, name: true, slug: true } },
           },
         })
       : null;
@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
       success: true,
       organizationId: targetOrganization.id,
       organizationName: targetOrganization.name,
+      organizationSlug: targetOrganization.slug,
     });
   } catch (err) {
     if (err instanceof Response) return err;
