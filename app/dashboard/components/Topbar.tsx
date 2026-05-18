@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession, useActiveOrganization } from "@/lib/auth-client";
+import { useSession, useActiveOrganization, useListOrganizations } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import { NAV_GROUPS } from "./navConfig";
 import { getRootAppUrl } from "@/lib/tenant-url";
@@ -34,14 +34,18 @@ interface Props {
 }
 
 export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }: Props) {
-  const { data: session }   = useSession();
+  const { data: session } = useSession();
   const { data: activeOrg } = useActiveOrganization();
-  const pathname            = usePathname();
-  const router              = useRouter();
+  const { data: orgs } = useListOrganizations();
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const tenantName  = activeOrg?.name ?? "Workspace";
-  const userName    = session?.user?.name ?? "User";
+  const tenantName = activeOrg?.name ?? "Workspace";
+  const userName = session?.user?.name ?? "User";
   const userInitial = userName.charAt(0).toUpperCase();
+
+  // Check if user belongs to more than one tenant to show selection link
+  const hasMultipleOrgs = (orgs ?? []).length > 1;
 
   /* ── Dynamic breadcrumb ── */
   const currentPage = (() => {
@@ -56,23 +60,23 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
   })();
 
   /* ── Search / Command palette ── */
-  const [searchOpen, setSearchOpen]       = useState(false);
-  const [searchQuery, setSearchQuery]     = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
-  const [selectedIdx, setSelectedIdx]     = useState(0);
+  const [selectedIdx, setSelectedIdx] = useState(0);
 
-  const searchRef     = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const profileRef    = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const allCommands = buildCommandItems();
 
   const filtered = searchQuery.trim()
     ? allCommands.filter(
-        (c) =>
-          c.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (c.sublabel ?? "").toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      (c) =>
+        c.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.sublabel ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : allCommands;
 
   /* ── Profile dropdown ── */
@@ -388,7 +392,26 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
                   </div>
                 </div>
 
-                {/* Menu items */}
+                {/* Tenant switcher — only shown if user has multiple orgs */}
+                {hasMultipleOrgs && (
+                  <div className="py-1">
+                    <button
+                      className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/[0.03] transition-colors"
+                      onClick={() => {
+                        setShowProfile(false);
+                        window.location.assign(getRootAppUrl("/tenants"));
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 15, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
+                        domain
+                      </span>
+                      <span className="font-body-sm text-[13px] text-on-surface">Pilih Tenant</span>
+                    </button>
+                    <div className="mx-4 my-1" style={{ height: 1, background: "rgba(0,0,0,0.05)" }} />
+                  </div>
+                )}
+
+                {/* Profile Settings */}
                 <div className="py-1">
                   <button
                     className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/[0.03] transition-colors"

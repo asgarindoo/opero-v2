@@ -38,7 +38,7 @@ export async function GET() {
       prisma.tenantActivity.findMany({
         where: { organizationId: ctx.tenantId },
         orderBy: { createdAt: "desc" },
-        take: 7,
+        take: 5,
         include: { user: { select: { id: true, name: true, email: true } } },
       }),
       prisma.member.findMany({
@@ -51,8 +51,8 @@ export async function GET() {
     const flows = flowRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
     const sales = saleRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
 
-    // ── Active tasks (top 7) ────────────────────────────────────────────────
-    const activeTasks = tasks.slice(0, 7).map((task: any) => {
+    // ── Active tasks (top 5) ────────────────────────────────────────────────
+    const activeTasks = tasks.slice(0, 5).map((task: any) => {
       const checklist = getChecklistProgress(task.checklist as Array<{ done: boolean }> | undefined);
       const allAssignees = Array.isArray(task.assignees) ? task.assignees : [];
       const firstAssignee = allAssignees[0] ?? null;

@@ -12,12 +12,12 @@ import {
 import { useDashboardData } from "./DashboardDataContext";
 
 const QUICK_ACTIONS: { icon: LucideIcon; label: string; href: string }[] = [
-  { icon: CheckSquare, label: "New Task",  href: "/dashboard/tasks" },
-  { icon: Kanban,      label: "Boards",    href: "/dashboard/flows" },
-  { icon: GitFork,     label: "Flows",     href: "/dashboard/flows" },
-  { icon: ShoppingCart,label: "Sales",     href: "/dashboard/sales" },
-  { icon: UserRound,   label: "Clients",   href: "/dashboard/contacts" },
-  { icon: BarChart2,   label: "Insights",  href: "/dashboard/insights" },
+  { icon: CheckSquare, label: "New Task", href: "/dashboard/tasks" },
+  { icon: Kanban, label: "Boards", href: "/dashboard/flows" },
+  { icon: GitFork, label: "Flows", href: "/dashboard/flows" },
+  { icon: ShoppingCart, label: "Sales", href: "/dashboard/sales" },
+  { icon: UserRound, label: "Clients", href: "/dashboard/contacts" },
+  { icon: BarChart2, label: "Insights", href: "/dashboard/insights" },
 ];
 
 export default function DashboardHero() {
@@ -36,17 +36,17 @@ export default function DashboardHero() {
 
   const chips = heroStats
     ? [
-        { label: `${heroStats.activeTasks} active task${heroStats.activeTasks !== 1 ? "s" : ""}` },
-        { label: `${heroStats.dueToday} due today` },
-        { label: `${heroStats.openDeals} open deal${heroStats.openDeals !== 1 ? "s" : ""}` },
-        { label: `${heroStats.totalMembers} member${heroStats.totalMembers !== 1 ? "s" : ""}` },
-      ]
+      { label: `${heroStats.activeTasks} active task${heroStats.activeTasks !== 1 ? "s" : ""}` },
+      { label: `${heroStats.dueToday} due today` },
+      { label: `${heroStats.openDeals} open deal${heroStats.openDeals !== 1 ? "s" : ""}` },
+      { label: `${heroStats.totalMembers} member${heroStats.totalMembers !== 1 ? "s" : ""}` },
+    ]
     : [
-        { label: "— active tasks" },
-        { label: "— due today" },
-        { label: "— open deals" },
-        { label: "— members" },
-      ];
+      { label: "— active tasks" },
+      { label: "— due today" },
+      { label: "— open deals" },
+      { label: "— members" },
+    ];
 
   return (
     <div className="relative overflow-hidden rounded-[12px] mb-4" style={{ background: "var(--color-primary)" }}>
@@ -66,7 +66,6 @@ export default function DashboardHero() {
         {/* Left: Greeting */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "rgba(255,255,255,0.5)" }} />
             <span className="font-label-caps text-[9px] uppercase tracking-[0.1em] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
               {today}
             </span>

@@ -1,28 +1,19 @@
 "use client";
 
+import { Clock } from "lucide-react";
 import { useDashboardData } from "../DashboardDataContext";
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m`;
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}M AGO`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) return `${hours}H AGO`;
+  return `${Math.floor(hours / 24)}D AGO`;
 }
 
-function SkeletonItem() {
-  return (
-    <div className="flex items-start gap-3 py-2.5 border-b" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
-      <div className="w-6 h-6 rounded-full bg-black/[0.05] animate-pulse shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="h-2.5 w-40 rounded bg-black/[0.05] animate-pulse" />
-        <div className="h-2 w-16 rounded bg-black/[0.03] animate-pulse" />
-      </div>
-    </div>
-  );
-}
+
 
 export default function RecentActivityWidget() {
   const { data, loading } = useDashboardData();
@@ -30,8 +21,8 @@ export default function RecentActivityWidget() {
 
   return (
     <div
-      className="db-widget rounded-[10px] overflow-hidden flex flex-col h-full"
-      style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+      className="db-widget rounded-[10px] overflow-hidden flex flex-col"
+      style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: 390 }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
@@ -42,42 +33,71 @@ export default function RecentActivityWidget() {
       </div>
 
       {/* Timeline — scrollable, fills remaining height */}
-      <div className="flex-1 overflow-y-auto db-sidebar px-4 py-3 min-h-0">
+      <div className="flex-1 overflow-y-auto db-sidebar px-5 py-5 min-h-0">
         {loading ? (
-          [...Array(6)].map((_, i) => <SkeletonItem key={i} />)
+          <div className="relative">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="relative pl-6 pb-7 last:pb-0">
+                {i < 4 && (
+                  <div className="absolute left-[4.5px] top-[12px] bottom-0 w-[1px]" style={{ background: "rgba(0,0,0,0.06)" }} />
+                )}
+                <div className="absolute left-0 w-2.5 h-2.5 rounded-full bg-black/[0.08] animate-pulse ring-4 ring-white" style={{ top: 3.5 }} />
+                <div className="space-y-1.5 ml-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-20 rounded bg-black/[0.07] animate-pulse" />
+                    <div className="h-3 w-28 rounded bg-black/[0.05] animate-pulse" />
+                  </div>
+                  <div className="h-2 w-24 rounded bg-black/[0.04] animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : feed.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-on-surface-variant)", opacity: 0.25 }}>history</span>
-            <p className="font-body-sm text-[12px] text-on-surface-variant opacity-50">No activity yet</p>
+          <div className="flex flex-col items-center justify-center py-12 gap-2">
+            <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-on-surface-variant)", opacity: 0.2 }}>history</span>
+            <p className="font-body-sm text-[12px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.45 }}>No activity yet</p>
           </div>
         ) : (
-          feed.map((item, i) => (
-            <div key={item.id} className="flex items-start gap-3 py-2.5 border-b last:border-0" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
-              {/* Timeline line + icon */}
-              <div className="flex flex-col items-center shrink-0 mt-0.5">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.04)" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 12, color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
-                    {item.icon}
-                  </span>
-                </div>
-                {i < feed.length - 1 && (
-                  <div className="w-px flex-1 mt-1 mb-0" style={{ minHeight: 12, background: "rgba(0,0,0,0.06)" }} />
+          <div className="relative">
+            {feed.map((item, idx) => (
+              <div key={item.id} className="relative pl-6 pb-7 last:pb-0">
+                {/* Vertical connecting line - hidden for the last item */}
+                {idx < feed.length - 1 && (
+                  <div className="absolute left-[4.5px] top-[14px] bottom-0 w-[1px]" style={{ background: "rgba(0,0,0,0.06)" }} />
                 )}
-              </div>
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="font-body-sm text-[12px] leading-snug" style={{ color: "var(--color-on-surface)", opacity: 0.85 }}>
-                  <span className="font-semibold">{item.user}</span>
-                  {" "}<span style={{ opacity: 0.6 }}>{item.action}</span>
-                  {" "}<span className="font-medium">{item.target}</span>
-                </p>
-                <span className="font-label-caps text-[9px] uppercase tracking-[0.05em]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.4 }}>
-                  {timeAgo(item.time)} ago
-                </span>
+                {/* Timeline Dot — same as ActivityAuditLog */}
+                <div
+                  className="absolute left-0 w-2.5 h-2.5 rounded-full ring-4 ring-white"
+                  style={{ top: 3.5, background: "var(--color-primary)", opacity: 0.8 }}
+                />
+
+                {/* Content */}
+                <div className="ml-2">
+                  {/* Name + action */}
+                  <div className="flex items-baseline gap-1.5 flex-wrap mb-1">
+                    <span className="font-display font-semibold text-[13px]" style={{ color: "var(--color-on-surface)" }}>
+                      {item.user}
+                    </span>
+                    <span className="font-body-sm text-[13px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+                      {item.action}
+                    </span>
+                    <span className="font-display font-semibold text-[13px]" style={{ color: "var(--color-on-surface)", opacity: 0.85 }}>
+                      {item.target}
+                    </span>
+                  </div>
+
+                  {/* Timestamp — same as ActivityAuditLog */}
+                  <div className="flex items-center gap-1.5" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
+                    <Clock size={10} strokeWidth={2} />
+                    <span className="font-label-caps text-[9px] font-bold tracking-wider">
+                      {timeAgo(item.time)}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
@@ -85,8 +105,8 @@ export default function RecentActivityWidget() {
       {!loading && (
         <div className="px-4 py-2.5 border-t shrink-0" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
           <button
-            className="w-full font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center justify-center gap-1 hover:opacity-80 transition-opacity"
-            style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}
+            className="w-full font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center justify-center gap-1 hover:opacity-70 transition-opacity"
+            style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}
             onClick={() => window.location.href = "/dashboard/activity"}
           >
             View full log

@@ -54,8 +54,8 @@ export default function ActiveTasksWidget() {
 
   return (
     <div
-      className="db-widget rounded-[10px] overflow-hidden flex flex-col h-full"
-      style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+      className="db-widget rounded-[10px] overflow-hidden flex flex-col"
+      style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: 390 }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
@@ -85,7 +85,7 @@ export default function ActiveTasksWidget() {
       {/* Task rows — scrollable, fills remaining height */}
       <div className="flex-1 overflow-y-auto db-sidebar min-h-0">
         {loading ? (
-          [...Array(7)].map((_, i) => <SkeletonRow key={i} />)
+          [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
         ) : tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-2">
             <span className="material-symbols-outlined" style={{ fontSize: 32, color: "var(--color-on-surface-variant)", opacity: 0.25 }}>task_alt</span>
