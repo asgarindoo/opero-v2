@@ -1,25 +1,31 @@
 "use client";
 
-const TODAY_EVENTS = [
-  { time: "09:00", title: "Team Stand-up",        type: "meeting",  duration: "30m" },
-  { time: "10:30", title: "Client Presentation",  type: "deadline", duration: "1h"  },
-  { time: "13:00", title: "Q2 Review Draft Due",  type: "deadline", duration: null  },
-  { time: "14:00", title: "Vendor Call — Supplies",type: "meeting", duration: "45m" },
-  { time: "16:00", title: "Deploy: Bot v2",        type: "task",    duration: null  },
-];
-
-const TYPE_STYLE: Record<string, { icon: string; bg: string }> = {
-  meeting:  { icon: "videocam",      bg: "rgba(0,0,0,0.06)"  },
-  deadline: { icon: "flag",          bg: "rgba(186,26,26,0.07)" },
-  task:     { icon: "task_alt",      bg: "rgba(0,0,0,0.04)"  },
-};
+import { useDashboardData } from "../DashboardDataContext";
 
 const DAYS = ["M","T","W","T","F","S","S"];
 
+const TYPE_STYLE: Record<string, { icon: string; bg: string }> = {
+  meeting:  { icon: "videocam",  bg: "rgba(0,0,0,0.06)"       },
+  deadline: { icon: "flag",      bg: "rgba(186,26,26,0.07)"    },
+  task:     { icon: "task_alt",  bg: "rgba(0,0,0,0.04)"        },
+  default:  { icon: "event",     bg: "rgba(0,0,0,0.04)"        },
+};
+
 export default function CalendarWidget() {
+  const { data } = useDashboardData();
+
   const now = new Date();
   const today = now.getDay(); // 0=Sun
   const adjustedToday = today === 0 ? 6 : today - 1; // Mon-based index
+
+  // Calendar events from API (currently always empty — shows empty state gracefully)
+  const events = (data?.calendar?.events ?? []) as Array<{
+    time?: string;
+    title: string;
+    type?: string;
+    duration?: string;
+  }>;
+
   return (
     <div
       className="db-widget rounded-[10px] overflow-hidden"
@@ -28,13 +34,11 @@ export default function CalendarWidget() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
-            calendar_month
-          </span>
+          <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>calendar_month</span>
           <span className="font-h3 text-[13px] font-semibold text-on-surface">Schedule</span>
         </div>
         <span className="font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
-          {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          {now.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </span>
       </div>
 
@@ -65,38 +69,38 @@ export default function CalendarWidget() {
           <span className="font-label-caps text-[9px] uppercase tracking-[0.08em] font-semibold block mb-2" style={{ color: "var(--color-on-surface-variant)", opacity: 0.4 }}>
             Today
           </span>
-          {TODAY_EVENTS.map((event) => {
-            const s = TYPE_STYLE[event.type];
-            return (
-              <div
-                key={event.title}
-                className="flex items-center gap-2.5 p-2 rounded-[6px] hover:bg-black/[0.02] transition-colors cursor-pointer"
-                style={{ border: "1px solid rgba(0,0,0,0.04)" }}
-              >
+          {events.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 gap-2">
+              <span className="material-symbols-outlined" style={{ fontSize: 24, color: "var(--color-on-surface-variant)", opacity: 0.22 }}>event_busy</span>
+              <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40">No events scheduled</p>
+            </div>
+          ) : (
+            events.map((event, idx) => {
+              const s = TYPE_STYLE[event.type ?? ""] ?? TYPE_STYLE.default;
+              return (
                 <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: s.bg }}
+                  key={idx}
+                  className="flex items-center gap-2.5 p-2 rounded-[6px] hover:bg-black/[0.02] transition-colors cursor-pointer"
+                  style={{ border: "1px solid rgba(0,0,0,0.04)" }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: 11, color: "var(--color-on-surface-variant)", opacity: 0.75 }}>
-                    {s.icon}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-body-md text-[12px] font-medium text-on-surface truncate">{event.title}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <span className="font-label-caps text-[9px] font-semibold block" style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}>
-                    {event.time}
-                  </span>
-                  {event.duration && (
-                    <span className="font-label-caps text-[8px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.35 }}>
-                      {event.duration}
-                    </span>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: s.bg }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 11, color: "var(--color-on-surface-variant)", opacity: 0.75 }}>{s.icon}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-body-md text-[12px] font-medium text-on-surface truncate">{event.title}</p>
+                  </div>
+                  {event.time && (
+                    <div className="text-right shrink-0">
+                      <span className="font-label-caps text-[9px] font-semibold block" style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}>{event.time}</span>
+                      {event.duration && (
+                        <span className="font-label-caps text-[8px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.35 }}>{event.duration}</span>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>

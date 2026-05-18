@@ -1,7 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { Report, ReportType, ReportStatus } from "../types";
+import {
+  createTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface ReportsContextType {
   reports: Report[];
@@ -16,51 +21,28 @@ interface ReportsContextType {
 
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
 
-const MOCK_REPORTS: Report[] = [
-  {
-    id: "r1",
-    title: "Q2 Sales Performance",
-    type: "Sales",
-    description: "Quarterly breakdown of revenue, conversion rates, and team targets.",
-    status: "Ready",
-    createdAt: "2026-04-10T08:00:00Z",
-    updatedAt: "2026-05-12T10:00:00Z",
-    lastGeneratedAt: "2026-05-12T10:00:00Z",
-    author: "Alex Rivera",
-    visibility: "Team",
-    parameters: { dateRange: "Last Quarter", filters: {} }
-  },
-  {
-    id: "r2",
-    title: "Operational Efficiency Log",
-    type: "Operations",
-    description: "Detailed analysis of task completion velocity and bottleneck detection.",
-    status: "Generating",
-    createdAt: "2026-05-01T14:30:00Z",
-    updatedAt: "2026-05-12T09:15:00Z",
-    author: "Sam Chen",
-    visibility: "Global",
-    parameters: { dateRange: "Last 30 Days", filters: { team: "Engineering" } }
-  },
-  {
-    id: "r3",
-    title: "Inventory Turnover",
-    type: "Inventory",
-    description: "Stock movement report focusing on high-velocity items and low-stock alerts.",
-    status: "Scheduled",
-    createdAt: "2026-03-15T11:00:00Z",
-    updatedAt: "2026-05-10T16:45:00Z",
-    lastGeneratedAt: "2026-05-01T00:00:00Z",
-    author: "Jordan Lee",
-    visibility: "Private",
-    parameters: { dateRange: "Weekly", filters: {} }
-  }
-];
-
 export function ReportsProvider({ children }: { children: React.ReactNode }) {
-  const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
+  const [reports, setReports] = useState<Report[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"All" | ReportType>("All");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const items = await listTenantRecords<Report>("reports");
+        if (!cancelled) setReports(items);
+      } catch (err) {
+        console.error("Failed to load reports:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addReport = (data: Omit<Report, "id" | "createdAt" | "updatedAt" | "status">) => {
     const newReport: Report = {
@@ -70,26 +52,33 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    setReports(prev => [newReport, ...prev]);
+    createTenantRecord<Report>("reports", newReport)
+      .then((created) => setReports(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create report:", err));
   };
 
   const generateReport = (id: string) => {
-    setReports(prev => prev.map(r => 
-      r.id === id ? { ...r, status: "Generating", updatedAt: new Date().toISOString() } : r
-    ));
-    
-    // Mock generation delay
-    setTimeout(() => {
-      setReports(prev => prev.map(r => 
-        r.id === id ? { ...r, status: "Ready", lastGeneratedAt: new Date().toISOString() } : r
-      ));
-    }, 2000);
+    setReports(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      const updated = { ...r, status: "Ready", lastGeneratedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      const recordId = (r as { recordId?: string }).recordId ?? r.id;
+      updateTenantRecord<Report>("reports", recordId, updated).catch((err) => {
+        console.error("Failed to generate report:", err);
+      });
+      return updated;
+    }));
   };
 
   const archiveReport = (id: string) => {
-    setReports(prev => prev.map(r => 
-      r.id === id ? { ...r, status: "Archived", updatedAt: new Date().toISOString() } : r
-    ));
+    setReports(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      const updated = { ...r, status: "Archived", updatedAt: new Date().toISOString() };
+      const recordId = (r as { recordId?: string }).recordId ?? r.id;
+      updateTenantRecord<Report>("reports", recordId, updated).catch((err) => {
+        console.error("Failed to archive report:", err);
+      });
+      return updated;
+    }));
   };
 
   const filteredReports = useMemo(() => {

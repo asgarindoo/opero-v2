@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { Metric, InsightTrend, ActivityPoint, InsightCategory } from "../types";
+import { listTenantActivity, listTenantRecords } from "@/lib/client/tenant-records";
 
 interface InsightsContextType {
   metrics: Metric[];
@@ -16,71 +17,140 @@ interface InsightsContextType {
 
 const InsightsContext = createContext<InsightsContextType | undefined>(undefined);
 
-// Base Mock Data generator
-const getMockMetrics = (range: string): Metric[] => {
-  const multiplier = range === "Today" ? 0.1 : range.includes("7") ? 0.25 : range.includes("30") ? 1 : range.includes("12") ? 12 : 1;
-  const trendBase = range === "Today" ? 2 : 5;
-  
-  return [
-    { id: "1", label: "Active Tasks", value: Math.round(24 * multiplier), trend: trendBase + 2, category: "Operations" },
-    { id: "2", label: "Avg. Completion Time", value: range === "Today" ? "0.8d" : "3.2d", trend: -5, category: "Operations" },
-    { id: "3", label: "Revenue", value: (42500 * multiplier).toLocaleString(), prefix: "$", trend: 8, category: "Sales" },
-    { id: "4", label: "Conversion Rate", value: "4.8%", trend: 2, category: "Marketing" },
-    { id: "5", label: "Team Productivity", value: "92%", trend: 4, category: "Team" },
-    { id: "6", label: "Operational Costs", value: (12800 * multiplier).toLocaleString(), prefix: "$", trend: -1.5, category: "Finance" },
-  ];
-};
+function parseDate(dateStr?: string) {
+  if (!dateStr) return null;
+  const dt = new Date(dateStr);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
 
-const getMockTrends = (range: string): InsightTrend[] => {
-  const labels = range === "Today" ? ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"] :
-                 range.includes("7") ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] :
-                 range.includes("30") ? ["Week 1", "Week 2", "Week 3", "Week 4"] :
-                 ["Jan", "Mar", "May", "Jul", "Sep", "Nov"];
-
-  return [
-    {
-      id: "t1",
-      title: "Task Completion",
-      category: "Operations",
-      data: labels.map(l => ({ label: l, value: Math.floor(Math.random() * 50) + 10 }))
-    },
-    {
-      id: "t2",
-      title: "Value Velocity",
-      category: "Sales",
-      data: labels.map(l => ({ label: l, value: Math.floor(Math.random() * 100) + 20 }))
-    }
-  ];
-};
+function rangeStart(range: string) {
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (range === "Today") return base;
+  if (range.includes("7")) {
+    base.setDate(base.getDate() - 7);
+    return base;
+  }
+  if (range.includes("30")) {
+    base.setDate(base.getDate() - 30);
+    return base;
+  }
+  if (range.includes("12")) {
+    base.setMonth(base.getMonth() - 12);
+    return base;
+  }
+  return new Date(0);
+}
 
 export function InsightsProvider({ children }: { children: React.ReactNode }) {
   const [selectedCategory, setSelectedCategory] = useState<"All" | InsightCategory>("All");
   const [dateRange, setDateRange] = useState("Last 30 Days");
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [trends, setTrends] = useState<InsightTrend[]>([]);
+  const [activityData, setActivityData] = useState<ActivityPoint[]>([]);
 
-  const metrics = useMemo(() => {
-    const all = getMockMetrics(dateRange);
-    if (selectedCategory === "All") return all;
-    return all.filter(m => m.category === selectedCategory);
-  }, [selectedCategory, dateRange]);
+  useEffect(() => {
+    let cancelled = false;
 
-  const trends = useMemo(() => {
-    const all = getMockTrends(dateRange);
-    if (selectedCategory === "All") return all;
-    return all.filter(t => t.category === selectedCategory);
-  }, [selectedCategory, dateRange]);
+    async function load() {
+      try {
+        const [tasks, sales, finance, activityLogs] = await Promise.all([
+          listTenantRecords<any>("tasks"),
+          listTenantRecords<any>("sales"),
+          listTenantRecords<any>("finance"),
+          listTenantActivity(),
+        ]);
 
-  const activityData: ActivityPoint[] = useMemo(() => {
-    return Array.from({ length: 7 * 12 }, (_, i) => ({
-      day: Math.floor(i / 12),
-      hour: (i % 12) * 2,
-      intensity: Math.random()
-    }));
+        const start = rangeStart(dateRange);
+        const taskInRange = tasks.filter((t) => {
+          const updated = parseDate(t.recordUpdatedAt) ?? parseDate(t.recordCreatedAt);
+          return updated ? updated >= start : false;
+        });
+
+        const activeTasks = taskInRange.filter((t) => t.status !== "Done" && t.status !== "Cancelled");
+        const completedTasks = taskInRange.filter((t) => t.status === "Done");
+        const avgCompletion = completedTasks.length
+          ? Math.round(
+              completedTasks.reduce((acc, t) => {
+                const created = parseDate(t.created) ?? parseDate(t.recordCreatedAt);
+                const updated = parseDate(t.recordUpdatedAt);
+                if (!created || !updated) return acc;
+                return acc + Math.max(1, Math.round((updated.getTime() - created.getTime()) / 86_400_000));
+              }, 0) / completedTasks.length
+            )
+          : 0;
+
+        const revenue = sales.reduce((acc, s) => acc + (Number(s.value) || 0), 0);
+        const expenses = finance.filter((t) => t.type === "Expense").reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+
+        const metricList: Metric[] = [
+          { id: "1", label: "Active Tasks", value: activeTasks.length, trend: 0, category: "Operations" },
+          { id: "2", label: "Avg. Completion Time", value: avgCompletion ? `${avgCompletion}d` : "--", trend: 0, category: "Operations" },
+          { id: "3", label: "Revenue", value: revenue.toLocaleString(), prefix: "$", trend: 0, category: "Sales" },
+          { id: "4", label: "Operational Costs", value: expenses.toLocaleString(), prefix: "$", trend: 0, category: "Finance" },
+        ];
+
+        const days = dateRange.includes("7") ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["Week 1", "Week 2", "Week 3", "Week 4"];
+        const trendList: InsightTrend[] = [
+          {
+            id: "t1",
+            title: "Task Completion",
+            category: "Operations",
+            data: days.map((label, idx) => ({ label, value: idx < completedTasks.length ? completedTasks.length : 0 })),
+          },
+          {
+            id: "t2",
+            title: "Value Velocity",
+            category: "Sales",
+            data: days.map((label) => ({ label, value: Math.round(revenue / Math.max(1, days.length)) })),
+          },
+        ];
+
+        const heatmap = Array.from({ length: 7 * 12 }, (_, i) => {
+          const day = Math.floor(i / 12);
+          const hour = (i % 12) * 2;
+          const intensity = (activityLogs as any[]).filter((log) => {
+            const dt = new Date(log.timestamp);
+            const now = new Date();
+            const dayIndex = (now.getDay() + 6) % 7;
+            const diffDays = (dayIndex - day + 7) % 7;
+            const bucketDay = new Date(now);
+            bucketDay.setDate(now.getDate() - diffDays);
+            return dt.getDay() === bucketDay.getDay() && Math.floor(dt.getHours() / 2) * 2 === hour;
+          }).length;
+          return { day, hour, intensity: Math.min(1, intensity / 5) };
+        });
+
+        if (!cancelled) {
+          setMetrics(metricList);
+          setTrends(trendList);
+          setActivityData(heatmap);
+        }
+      } catch (err) {
+        console.error("Failed to load insights:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [dateRange]);
+
+  const filteredMetrics = useMemo(() => {
+    if (selectedCategory === "All") return metrics;
+    return metrics.filter(m => m.category === selectedCategory);
+  }, [metrics, selectedCategory]);
+
+  const filteredTrends = useMemo(() => {
+    if (selectedCategory === "All") return trends;
+    return trends.filter(t => t.category === selectedCategory);
+  }, [trends, selectedCategory]);
 
   const exportData = () => {
     // Generate simple CSV
     const headers = "Metric,Value,Trend,Category\n";
-    const rows = metrics.map(m => `${m.label},${m.prefix || ""}${m.value}${m.suffix || ""},${m.trend}%,${m.category}`).join("\n");
+    const rows = filteredMetrics.map(m => `${m.label},${m.prefix || ""}${m.value}${m.suffix || ""},${m.trend}%,${m.category}`).join("\n");
     const csvContent = "data:text/csv;charset=utf-8," + headers + rows;
     
     const encodedUri = encodeURI(csvContent);
@@ -93,8 +163,8 @@ export function InsightsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = {
-    metrics,
-    trends,
+    metrics: filteredMetrics,
+    trends: filteredTrends,
     activityData,
     selectedCategory,
     setSelectedCategory,

@@ -20,24 +20,9 @@ for (let y = currentYear - 1; y <= currentYear + 2; y++) {
   }
 }
 
-const INITIAL_POSTS: ContentPost[] = [
-  { id: "cnt-01", date: new Date(2026, 4, 4),  title: "Weekly Team Productivity Tips",         platform: "Instagram", status: "Scheduled", type: "Video",   category: "Q3 Productivity Series",  assignee: "Alex Rivera",   time: "10:00 AM", description: "", tags: [], assets: [] },
-  { id: "cnt-02", date: new Date(2026, 4, 7),  title: "Day in the Life: Content Creator",     platform: "Instagram", status: "Approved",  type: "Image",   category: "Personal Branding",       assignee: "Sarah Chen",    time: "09:00 AM", description: "", tags: [], assets: [] },
-  { id: "cnt-03", date: new Date(2026, 4, 9),  title: "Quick Tutorial: Database Best Pract.", platform: "Web",       status: "Approved",  type: "Article", category: "Educational Content",     assignee: "Marcus Thorne", time: "02:00 PM", description: "", tags: [], assets: [] },
-  { id: "cnt-04", date: new Date(2026, 4, 12), title: "Office Setup Tour & Organization",     platform: "LinkedIn",  status: "Scheduled", type: "Video",   category: "Workplace Culture",       assignee: "Elena Rossi",   time: "04:00 PM", description: "", tags: [], assets: [] },
-  { id: "cnt-05", date: new Date(2026, 4, 15), title: "Industry Trends Report: Q3 Insights", platform: "LinkedIn",  status: "In Review", type: "Article", category: "Thought Leadership",      assignee: "Alex Rivera",   time: "11:00 AM", description: "", tags: [], assets: [] },
-  { id: "cnt-06", date: new Date(2026, 4, 17), title: "Customer Interview Highlight",         platform: "Web",       status: "Draft",     type: "Article", category: "Customer Success",        assignee: "Sarah Chen",    time: "03:00 PM", description: "", tags: [], assets: [] },
-  { id: "cnt-07", date: new Date(2026, 4, 19), title: "Team Milestone Celebration",           platform: "Twitter",   status: "Draft",     type: "Thread",  category: "Company Updates",         assignee: "Marcus Thorne", time: "10:30 AM", description: "", tags: [], assets: [] },
-  { id: "cnt-08", date: new Date(2026, 4, 23), title: "How We Plan Our Content Strategy",    platform: "Instagram", status: "Draft",     type: "Image",   category: "Educational Content",     assignee: "Elena Rossi",   time: "01:00 PM", description: "", tags: [], assets: [] },
-  { id: "cnt-09", date: new Date(2026, 4, 24), title: "Customer Success Story Spotlight",    platform: "Web",       status: "Draft",     type: "Article", category: "Customer Success",        assignee: "Alex Rivera",   time: "11:30 AM", description: "", tags: [], assets: [] },
-  { id: "cnt-10", date: new Date(2026, 4, 26), title: "Behind the Scenes: Team Day",         platform: "Instagram", status: "Draft",     type: "Image",   category: "Company Culture",         assignee: "Sarah Chen",    time: "02:30 PM", description: "", tags: [], assets: [] },
-  { id: "cnt-11", date: new Date(2026, 4, 29), title: "Weekly Learning Resources",           platform: "Web",       status: "Draft",     type: "Article", category: "Educational Content",     assignee: "Marcus Thorne", time: "09:00 AM", description: "", tags: [], assets: [] },
-];
+const INITIAL_POSTS: ContentPost[] = [];
 
-const INITIAL_ASSETS: Asset[] = [
-  { id: "ast-01", name: "Summer Campaign Hero", type: "image/png", url: "#", size: "2.4 MB", date: new Date(), tags: [] },
-  { id: "ast-02", name: "Product Demo Video",   type: "video/mp4", url: "#", size: "15.8 MB", date: new Date(), tags: [] },
-];
+const INITIAL_ASSETS: Asset[] = [];
 
 const TABS = [
   { id: "calendar", label: "Calendar", icon: CalendarIcon },

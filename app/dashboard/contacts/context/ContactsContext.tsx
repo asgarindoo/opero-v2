@@ -1,104 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Contact, ContactActivity, ContactStatus, RelationshipType } from "../types";
-
-const MOCK_CONTACTS: Contact[] = [
-  {
-    id: "c1",
-    name: "Acme Corp",
-    initials: "AC",
-    industry: "Manufacturing",
-    status: "Active",
-    relationshipType: "Customer",
-    contextData: {
-      value: 125000,
-      stage: "Closed"
-    },
-    isArchived: false,
-    tags: [],
-    persons: [
-      { id: "cnt1", name: "Alice Smith", email: "alice@acme.example.com", role: "VP of Operations", isPrimary: true },
-      { id: "cnt2", name: "Bob Johnson", email: "bob@acme.example.com", phone: "+1 555-0192", role: "Procurement Manager", isPrimary: false }
-    ],
-    activities: [
-      { id: "act1", type: "meeting", description: "Quarterly business review", timestamp: "2024-05-10T10:00:00Z", author: "You" },
-      { id: "act2", type: "email", description: "Sent updated SLAs", timestamp: "2024-05-08T14:30:00Z", author: "Sarah Connor" }
-    ],
-    assignedStaff: [],
-    createdAt: "2023-11-15T08:00:00Z",
-    lastContacted: "2024-05-10T10:00:00Z"
-  },
-  {
-    id: "c2",
-    name: "Globex Dynamics",
-    initials: "GD",
-    industry: "Software",
-    status: "Onboarding",
-    relationshipType: "Partner",
-    contextData: {
-      value: 45000,
-      stage: "Strategic"
-    },
-    isArchived: false,
-    tags: [],
-    persons: [
-      { id: "cnt3", name: "Charlie Davis", email: "charlie@globex.example.com", role: "CTO", isPrimary: true }
-    ],
-    activities: [
-      { id: "act3", type: "call", description: "Kickoff call and introduction", timestamp: "2024-05-11T09:00:00Z", author: "You" }
-    ],
-    assignedStaff: [],
-    createdAt: "2024-05-01T10:00:00Z",
-    lastContacted: "2024-05-11T09:00:00Z"
-  },
-  {
-    id: "c3",
-    name: "Stark Industries",
-    initials: "SI",
-    industry: "Defense & Energy",
-    status: "Lead",
-    relationshipType: "Investor",
-    contextData: {
-      value: 850000,
-      stage: "Pitched"
-    },
-    isArchived: false,
-    tags: [],
-    persons: [
-      { id: "cnt4", name: "Pepper Potts", email: "pepper@stark.example.com", role: "CEO", isPrimary: true }
-    ],
-    activities: [
-      { id: "act4", type: "note", description: "Initial outreach via LinkedIn", timestamp: "2024-05-12T08:00:00Z", author: "John Doe" }
-    ],
-    assignedStaff: [],
-    createdAt: "2024-05-12T08:00:00Z",
-    lastContacted: "2024-05-12T08:00:00Z"
-  },
-  {
-    id: "c4",
-    name: "Apex Logistics",
-    initials: "AL",
-    industry: "Supply Chain",
-    status: "Active",
-    relationshipType: "Supplier",
-    contextData: {
-      value: 50000,
-      stage: "Tier 1"
-    },
-    isArchived: false,
-    tags: [],
-    persons: [
-      { id: "cnt5", name: "Frank Martin", email: "frank@apex.example.com", role: "Logistics Director", isPrimary: true }
-    ],
-    activities: [
-      { id: "act5", type: "email", description: "Negotiated Q3 rates", timestamp: "2024-05-11T11:00:00Z", author: "Sarah Connor" }
-    ],
-    assignedStaff: [],
-    createdAt: "2024-05-11T10:00:00Z",
-    lastContacted: "2024-05-11T11:00:00Z"
-  }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface ContactsContextType {
   contacts: Contact[];
@@ -112,7 +21,25 @@ interface ContactsContextType {
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
 
 export function ContactsProvider({ children }: { children: React.ReactNode }) {
-  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const items = await listTenantRecords<Contact>("contacts");
+        if (!cancelled) setContacts(items);
+      } catch (err) {
+        console.error("Failed to load contacts:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addNote = useCallback((contactId: string, note: string) => {
     setContacts(prev => prev.map(c => {
@@ -124,20 +51,43 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: "You"
       };
-      return {
+      const updated = {
         ...c,
         activities: [newActivity, ...c.activities],
         lastContacted: newActivity.timestamp
       };
+
+      const recordId = (c as { recordId?: string }).recordId ?? c.id;
+      updateTenantRecord<Contact>("contacts", recordId, updated).catch((err) => {
+        console.error("Failed to save contact note:", err);
+      });
+
+      return updated;
     }));
   }, []);
 
   const updateStatus = useCallback((contactId: string, status: ContactStatus) => {
-    setContacts(prev => prev.map(c => c.id === contactId ? { ...c, status } : c));
+    setContacts(prev => prev.map(c => {
+      if (c.id !== contactId) return c;
+      const updated = { ...c, status };
+      const recordId = (c as { recordId?: string }).recordId ?? c.id;
+      updateTenantRecord<Contact>("contacts", recordId, updated).catch((err) => {
+        console.error("Failed to update contact status:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const updateRelationshipType = useCallback((contactId: string, type: RelationshipType) => {
-    setContacts(prev => prev.map(c => c.id === contactId ? { ...c, relationshipType: type } : c));
+    setContacts(prev => prev.map(c => {
+      if (c.id !== contactId) return c;
+      const updated = { ...c, relationshipType: type };
+      const recordId = (c as { recordId?: string }).recordId ?? c.id;
+      updateTenantRecord<Contact>("contacts", recordId, updated).catch((err) => {
+        console.error("Failed to update relationship type:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const addContact = useCallback((partial: Partial<Contact>) => {
@@ -158,12 +108,23 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       lastContacted: new Date().toISOString(),
       ...partial
     };
-    setContacts(prev => [newContact, ...prev]);
+    createTenantRecord<Contact>("contacts", newContact)
+      .then((created) => setContacts(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create contact:", err));
   }, []);
 
   const deleteContacts = useCallback((ids: string[]) => {
     setContacts(prev => prev.filter(c => !ids.includes(c.id)));
-  }, []);
+    Promise.all(
+      ids.map((id) => {
+        const recordId = contacts.find(c => c.id === id) as { recordId?: string } | undefined;
+        const targetId = recordId?.recordId ?? id;
+        return deleteTenantRecord("contacts", targetId).catch((err) => {
+          console.error("Failed to delete contact:", err);
+        });
+      })
+    ).catch(() => undefined);
+  }, [contacts]);
 
   const value = useMemo(() => ({
     contacts,

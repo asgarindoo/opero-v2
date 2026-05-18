@@ -1,62 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Bot, BotStatus, PlatformType } from "../types";
-
-const MOCK_BOTS: Bot[] = [
-  {
-    id: "bot1",
-    name: "Opero Ops Notifier",
-    description: "Sends critical system alerts and deployment updates to the engineering channel.",
-    platform: "Telegram",
-    status: "Active",
-    token: "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-    webhookUrl: "https://api.opero.com/webhooks/telegram/ops",
-    metrics: {
-      messagesSent: 12450,
-      activeWorkflows: 3
-    },
-    automations: {
-      autoReplyEnabled: false,
-      welcomeMessageEnabled: true,
-      defaultFallbackEnabled: false
-    },
-    commands: [
-      { id: "cmd1", command: "/status", description: "Get current system status", actionType: "Reply" },
-      { id: "cmd2", command: "/deploy", description: "Trigger deployment workflow", actionType: "Trigger Workflow" }
-    ],
-    activities: [
-      { id: "act1", type: "config_updated", description: "Updated webhook URL", timestamp: "2024-05-10T09:00:00Z", author: "Alex M." },
-      { id: "act2", type: "status_changed", description: "Bot activated", timestamp: "2024-05-10T09:10:00Z", author: "Alex M." }
-    ],
-    assignedStaff: ["Alex M.", "Sarah K."],
-    createdAt: "2024-05-01T10:00:00Z",
-    updatedAt: "2024-05-10T09:10:00Z"
-  },
-  {
-    id: "bot2",
-    name: "Customer Support (WA)",
-    description: "Handles incoming customer queries and routes them to the support team.",
-    platform: "WhatsApp",
-    status: "Pending Setup",
-    metrics: {
-      messagesSent: 0,
-      activeWorkflows: 1
-    },
-    automations: {
-      autoReplyEnabled: true,
-      welcomeMessageEnabled: true,
-      defaultFallbackEnabled: true
-    },
-    commands: [],
-    activities: [
-      { id: "act3", type: "status_changed", description: "Created bot profile", timestamp: "2024-05-12T08:00:00Z", author: "John D." }
-    ],
-    assignedStaff: ["John D."],
-    createdAt: "2024-05-12T08:00:00Z",
-    updatedAt: "2024-05-12T08:00:00Z"
-  }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface BotContextType {
   bots: Bot[];
@@ -69,7 +20,25 @@ interface BotContextType {
 const BotContext = createContext<BotContextType | undefined>(undefined);
 
 export function BotProvider({ children }: { children: React.ReactNode }) {
-  const [bots, setBots] = useState<Bot[]>(MOCK_BOTS);
+  const [bots, setBots] = useState<Bot[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const items = await listTenantRecords<Bot>("bots");
+        if (!cancelled) setBots(items);
+      } catch (err) {
+        console.error("Failed to load bots:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addBot = useCallback((partial: Partial<Bot>) => {
     const newBot: Bot = {
@@ -92,29 +61,52 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    setBots(prev => [newBot, ...prev]);
+    createTenantRecord<Bot>("bots", newBot)
+      .then((created) => setBots(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create bot:", err));
   }, []);
 
   const updateBot = useCallback((id: string, updates: Partial<Bot>) => {
-    setBots(prev => prev.map(b => b.id === id ? { 
-      ...b, 
-      ...updates, 
-      updatedAt: new Date().toISOString(),
-      activities: [...b.activities, { id: "a" + Date.now(), type: "config_updated", description: "Configuration updated", timestamp: new Date().toISOString(), author: "Current User" }]
-    } : b));
+    setBots(prev => prev.map(b => {
+      if (b.id !== id) return b;
+      const updated = { 
+        ...b, 
+        ...updates, 
+        updatedAt: new Date().toISOString(),
+        activities: [...b.activities, { id: "a" + Date.now(), type: "config_updated", description: "Configuration updated", timestamp: new Date().toISOString(), author: "Current User" }]
+      };
+      const recordId = (b as { recordId?: string }).recordId ?? b.id;
+      updateTenantRecord<Bot>("bots", recordId, updated).catch((err) => {
+        console.error("Failed to update bot:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const deleteBot = useCallback((id: string) => {
     setBots(prev => prev.filter(b => b.id !== id));
-  }, []);
+    const recordId = bots.find(b => b.id === id) as { recordId?: string } | undefined;
+    const targetId = recordId?.recordId ?? id;
+    deleteTenantRecord("bots", targetId).catch((err) => {
+      console.error("Failed to delete bot:", err);
+    });
+  }, [bots]);
 
   const updateStatus = useCallback((id: string, status: BotStatus) => {
-    setBots(prev => prev.map(b => b.id === id ? { 
-      ...b, 
-      status, 
-      updatedAt: new Date().toISOString(),
-      activities: [...b.activities, { id: "a" + Date.now(), type: "status_changed", description: `Status changed to ${status}`, timestamp: new Date().toISOString(), author: "Current User" }]
-    } : b));
+    setBots(prev => prev.map(b => {
+      if (b.id !== id) return b;
+      const updated = { 
+        ...b, 
+        status, 
+        updatedAt: new Date().toISOString(),
+        activities: [...b.activities, { id: "a" + Date.now(), type: "status_changed", description: `Status changed to ${status}`, timestamp: new Date().toISOString(), author: "Current User" }]
+      };
+      const recordId = (b as { recordId?: string }).recordId ?? b.id;
+      updateTenantRecord<Bot>("bots", recordId, updated).catch((err) => {
+        console.error("Failed to update bot status:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const value = useMemo(() => ({

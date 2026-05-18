@@ -1,7 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
-import { SEED_TASKS } from "./types";
 import type { Task, Status } from "./types";
 import ViewSwitcher, { type ViewType } from "./views/ViewSwitcher";
 import ListView from "./views/ListView";
@@ -25,7 +24,7 @@ const GROUP_OPTIONS = [
 ];
 
 export default function TasksPage() {
-  const [tasks,        setTasks]        = useState<Task[]>(SEED_TASKS);
+  const [tasks,        setTasks]        = useState<Task[]>([]);
   const [view,         setView]         = useState<ViewType>("list");
   const [search,       setSearch]       = useState("");
   const [groupBy,      setGroupBy]      = useState<GroupBy>("status");

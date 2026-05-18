@@ -1,80 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Invoice, InvoiceStatus, InvoiceActivity, InvoiceItem } from "../types";
-
-const MOCK_INVOICES: Invoice[] = [
-  {
-    id: "inv1",
-    invoiceNumber: "INV-2024-001",
-    contactName: "Acme Corp",
-    issueDate: "2024-05-01",
-    dueDate: "2024-05-15",
-    status: "Paid",
-    items: [
-      { id: "itm1", description: "Cloud Infrastructure (Monthly)", quantity: 1, unitPrice: 2500, amount: 2500 },
-      { id: "itm2", description: "Maintenance Support", quantity: 5, unitPrice: 150, amount: 750 }
-    ],
-    subtotal: 3250,
-    taxTotal: 325,
-    discountTotal: 0,
-    totalAmount: 3575,
-    currency: "USD",
-    notes: "Thanks for your business!",
-    activities: [
-      { id: "act1", type: "payment", description: "Payment received via Stripe", timestamp: "2024-05-05T10:00:00Z", author: "System" }
-    ],
-    attachments: ["INV-001.pdf"],
-    createdAt: "2024-05-01T08:00:00Z",
-    updatedAt: "2024-05-05T10:00:00Z"
-  },
-  {
-    id: "inv2",
-    invoiceNumber: "INV-2024-002",
-    contactName: "Global Tech Solutions",
-    issueDate: "2024-05-10",
-    dueDate: "2024-05-24",
-    status: "Unpaid",
-    items: [
-      { id: "itm3", description: "Professional Services", quantity: 20, unitPrice: 200, amount: 4000 }
-    ],
-    subtotal: 4000,
-    taxTotal: 400,
-    discountTotal: 200,
-    totalAmount: 4200,
-    currency: "USD",
-    notes: "PO #8892",
-    activities: [
-      { id: "act2", type: "creation", description: "Invoice created and sent", timestamp: "2024-05-10T11:00:00Z", author: "You" }
-    ],
-    attachments: [],
-    createdAt: "2024-05-10T11:00:00Z",
-    updatedAt: "2024-05-10T11:00:00Z"
-  },
-  {
-    id: "inv3",
-    invoiceNumber: "INV-2024-003",
-    contactName: "Vertex Media",
-    issueDate: "2024-04-15",
-    dueDate: "2024-04-29",
-    status: "Overdue",
-    items: [
-      { id: "itm4", description: "Marketing Campaign Q1", quantity: 1, unitPrice: 8500, amount: 8500 }
-    ],
-    subtotal: 8500,
-    taxTotal: 850,
-    discountTotal: 0,
-    totalAmount: 9350,
-    currency: "USD",
-    notes: "Pending follow up.",
-    activities: [
-      { id: "act3", type: "reminder", description: "Overdue reminder sent to client", timestamp: "2024-05-01T09:00:00Z", author: "System" }
-    ],
-    attachments: [],
-    createdAt: "2024-04-15T08:00:00Z",
-    updatedAt: "2024-05-01T09:00:00Z"
-  }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface InvoicesContextType {
   invoices: Invoice[];
@@ -87,7 +20,25 @@ interface InvoicesContextType {
 const InvoicesContext = createContext<InvoicesContextType | undefined>(undefined);
 
 export function InvoicesProvider({ children }: { children: React.ReactNode }) {
-  const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const items = await listTenantRecords<Invoice>("invoices");
+        if (!cancelled) setInvoices(items);
+      } catch (err) {
+        console.error("Failed to load invoices:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addInvoice = useCallback((partial: Partial<Invoice>) => {
     const totalAmount = (partial.items || []).reduce((acc, curr) => acc + curr.amount, 0);
@@ -111,11 +62,21 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    setInvoices(prev => [newInvoice, ...prev]);
+    createTenantRecord<Invoice>("invoices", newInvoice)
+      .then((created) => setInvoices(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create invoice:", err));
   }, []);
 
   const updateInvoice = useCallback((id: string, updates: Partial<Invoice>) => {
-    setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, ...updates, updatedAt: new Date().toISOString() } : inv));
+    setInvoices(prev => prev.map(inv => {
+      if (inv.id !== id) return inv;
+      const updated = { ...inv, ...updates, updatedAt: new Date().toISOString() };
+      const recordId = (inv as { recordId?: string }).recordId ?? inv.id;
+      updateTenantRecord<Invoice>("invoices", recordId, updated).catch((err) => {
+        console.error("Failed to update invoice:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const markAsPaid = useCallback((id: string) => {
@@ -128,18 +89,32 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: "You"
       };
-      return {
+      const updated = {
         ...inv,
         status: "Paid",
         activities: [newActivity, ...inv.activities],
         updatedAt: newActivity.timestamp
       };
+      const recordId = (inv as { recordId?: string }).recordId ?? inv.id;
+      updateTenantRecord<Invoice>("invoices", recordId, updated).catch((err) => {
+        console.error("Failed to mark invoice as paid:", err);
+      });
+      return updated;
     }));
   }, []);
 
   const deleteInvoices = useCallback((ids: string[]) => {
     setInvoices(prev => prev.filter(inv => !ids.includes(inv.id)));
-  }, []);
+    Promise.all(
+      ids.map((id) => {
+        const recordId = invoices.find(inv => inv.id === id) as { recordId?: string } | undefined;
+        const targetId = recordId?.recordId ?? id;
+        return deleteTenantRecord("invoices", targetId).catch((err) => {
+          console.error("Failed to delete invoice:", err);
+        });
+      })
+    ).catch(() => undefined);
+  }, [invoices]);
 
   const value = useMemo(() => ({
     invoices,

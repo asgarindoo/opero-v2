@@ -1,65 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Transaction, TransactionStatus, FinanceActivity, TransactionType, FinancialSummary, DateRange } from "../types";
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: "t1",
-    date: "2026-05-12",
-    type: "Income",
-    category: "Product Sales",
-    amount: 12500,
-    currency: "USD",
-    status: "Paid",
-    reference: "INV-2024-001",
-    contactName: "Acme Corp",
-    paymentMethod: "Stripe",
-    notes: "Payment for Q2 license",
-    activities: [
-      { id: "act1", type: "payment", description: "Payment confirmed via Stripe", timestamp: "2026-05-12T09:00:00Z", author: "System" }
-    ],
-    attachments: ["receipt_001.pdf"],
-    createdAt: "2026-05-12T08:00:00Z",
-    updatedAt: "2026-05-12T09:00:00Z"
-  },
-  {
-    id: "t2",
-    date: "2026-05-11",
-    type: "Expense",
-    category: "Infrastructure",
-    amount: 1200,
-    currency: "USD",
-    status: "Approved",
-    reference: "BILL-8892",
-    contactName: "AWS",
-    paymentMethod: "Credit Card",
-    notes: "Monthly cloud hosting",
-    activities: [
-      { id: "act2", type: "approval", description: "Expense approved by CFO", timestamp: "2026-05-11T14:30:00Z", author: "Sarah Connor" }
-    ],
-    attachments: [],
-    createdAt: "2026-05-11T10:00:00Z",
-    updatedAt: "2026-05-11T14:30:00Z"
-  },
-  {
-    id: "t3",
-    date: "2026-04-10",
-    type: "Expense",
-    category: "Office Supplies",
-    amount: 450,
-    currency: "USD",
-    status: "Pending",
-    reference: "PUR-099",
-    contactName: "Office Depot",
-    paymentMethod: "Bank Transfer",
-    notes: "Stationery for new wing",
-    activities: [],
-    attachments: [],
-    createdAt: "2026-04-10T08:00:00Z",
-    updatedAt: "2026-04-10T08:00:00Z"
-  }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface FinanceContextType {
   transactions: Transaction[];
@@ -79,10 +27,28 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"All" | TransactionType>("All");
   const [dateRange, setDateRange] = useState<DateRange>("All Time");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const items = await listTenantRecords<Transaction>("finance");
+        if (!cancelled) setTransactions(items);
+      } catch (err) {
+        console.error("Failed to load transactions:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addTransaction = useCallback((partial: Partial<Transaction>) => {
     const newTx: Transaction = {
@@ -102,11 +68,21 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    setTransactions(prev => [newTx, ...prev]);
+    createTenantRecord<Transaction>("finance", newTx)
+      .then((created) => setTransactions(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create transaction:", err));
   }, []);
 
   const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
-    setTransactions(prev => prev.map(tx => tx.id === id ? { ...tx, ...updates, updatedAt: new Date().toISOString() } : tx));
+    setTransactions(prev => prev.map(tx => {
+      if (tx.id !== id) return tx;
+      const updated = { ...tx, ...updates, updatedAt: new Date().toISOString() };
+      const recordId = (tx as { recordId?: string }).recordId ?? tx.id;
+      updateTenantRecord<Transaction>("finance", recordId, updated).catch((err) => {
+        console.error("Failed to update transaction:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const approveTransaction = useCallback((id: string) => {
@@ -119,18 +95,32 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: "You"
       };
-      return {
+      const updated = {
         ...tx,
         status: "Approved",
         activities: [newActivity, ...tx.activities],
         updatedAt: newActivity.timestamp
       };
+      const recordId = (tx as { recordId?: string }).recordId ?? tx.id;
+      updateTenantRecord<Transaction>("finance", recordId, updated).catch((err) => {
+        console.error("Failed to approve transaction:", err);
+      });
+      return updated;
     }));
   }, []);
 
   const deleteTransactions = useCallback((ids: string[]) => {
     setTransactions(prev => prev.filter(tx => !ids.includes(tx.id)));
-  }, []);
+    Promise.all(
+      ids.map((id) => {
+        const recordId = transactions.find(tx => tx.id === id) as { recordId?: string } | undefined;
+        const targetId = recordId?.recordId ?? id;
+        return deleteTenantRecord("finance", targetId).catch((err) => {
+          console.error("Failed to delete transaction:", err);
+        });
+      })
+    ).catch(() => undefined);
+  }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
     const now = new Date();

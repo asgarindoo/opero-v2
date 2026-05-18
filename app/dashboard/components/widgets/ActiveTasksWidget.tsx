@@ -1,35 +1,6 @@
-const TASKS = [
-  {
-    id: "T-041", title: "Revamp client onboarding deck",
-    priority: "high", status: "In Progress", assignee: "AR",
-    due: "Today", labels: ["Design", "Client"],
-    checklist: { done: 3, total: 5 }, progress: 60,
-  },
-  {
-    id: "T-042", title: "Set up WhatsApp bot for CS team",
-    priority: "medium", status: "In Progress", assignee: "BK",
-    due: "Tomorrow", labels: ["Bot", "Automation"],
-    checklist: { done: 1, total: 4 }, progress: 25,
-  },
-  {
-    id: "T-043", title: "Write Q2 financial summary report",
-    priority: "high", status: "Pending", assignee: "CR",
-    due: "May 10", labels: ["Finance"],
-    checklist: { done: 0, total: 3 }, progress: 0,
-  },
-  {
-    id: "T-044", title: "Review vendor proposal for office supplies",
-    priority: "low", status: "Pending", assignee: "DS",
-    due: "May 12", labels: ["Operations"],
-    checklist: { done: 2, total: 2 }, progress: 100,
-  },
-  {
-    id: "T-045", title: "Deploy automation: lead capture → task",
-    priority: "medium", status: "Review", assignee: "EF",
-    due: "May 9", labels: ["Automation"],
-    checklist: { done: 4, total: 4 }, progress: 90,
-  },
-];
+"use client";
+
+import { useDashboardData } from "../DashboardDataContext";
 
 const PRIORITY_STYLE: Record<string, { bg: string; text: string; label: string }> = {
   high:   { bg: "rgba(186,26,26,0.08)",  text: "rgba(186,26,26,0.85)",  label: "High" },
@@ -42,9 +13,45 @@ const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
   "Pending":     { bg: "rgba(0,0,0,0.04)",     text: "rgba(0,0,0,0.45)"  },
   "Review":      { bg: "rgba(0,0,0,0.07)",     text: "rgba(0,0,0,0.75)"  },
   "Done":        { bg: "rgba(0,0,0,0.04)",     text: "rgba(0,0,0,0.4)"   },
+  "Todo":        { bg: "rgba(0,0,0,0.04)",     text: "rgba(0,0,0,0.45)"  },
+  "Blocked":     { bg: "rgba(186,26,26,0.07)", text: "rgba(186,26,26,0.8)" },
 };
 
+function formatDue(due: string | null): { label: string; urgent: boolean } {
+  if (!due) return { label: "--", urgent: false };
+  const today = new Date().toISOString().slice(0, 10);
+  const dueDate = String(due).slice(0, 10);
+  if (dueDate === today) return { label: "Today", urgent: true };
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (dueDate === tomorrow.toISOString().slice(0, 10)) return { label: "Tomorrow", urgent: false };
+  try {
+    return { label: new Date(due).toLocaleDateString("en-US", { month: "short", day: "numeric" }), urgent: dueDate < today };
+  } catch {
+    return { label: String(due), urgent: false };
+  }
+}
+
+// Skeleton row
+function SkeletonRow() {
+  return (
+    <div className="grid items-center px-4 py-3 border-b" style={{ gridTemplateColumns: "1fr 60px 64px 56px 56px", borderColor: "rgba(0,0,0,0.04)" }}>
+      <div className="space-y-1.5 pr-3">
+        <div className="h-2 w-16 rounded bg-black/[0.04] animate-pulse" />
+        <div className="h-3 w-48 rounded bg-black/[0.06] animate-pulse" />
+      </div>
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="flex justify-center"><div className="h-4 w-10 rounded bg-black/[0.04] animate-pulse" /></div>
+      ))}
+    </div>
+  );
+}
+
 export default function ActiveTasksWidget() {
+  const { data, loading } = useDashboardData();
+  const tasks = data?.activeTasks.items ?? [];
+  const total = data?.activeTasks.total ?? 0;
+
   return (
     <div
       className="db-widget rounded-[10px] overflow-hidden"
@@ -53,28 +60,19 @@ export default function ActiveTasksWidget() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
-            task_alt
-          </span>
+          <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>task_alt</span>
           <span className="font-h3 text-[13px] font-semibold text-on-surface">Active Tasks</span>
-          <span
-            className="font-label-caps text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-            style={{ background: "rgba(0,0,0,0.06)", color: "var(--color-on-surface-variant)" }}
-          >
-            {TASKS.length}
-          </span>
+          {!loading && (
+            <span className="font-label-caps text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.06)", color: "var(--color-on-surface-variant)" }}>
+              {total}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           <button
-            className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center gap-1 px-2 py-1 rounded-[4px] hover:bg-black/[0.04] transition-colors"
-            style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>filter_list</span>
-            Filter
-          </button>
-          <button
             className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center gap-1 px-2.5 py-1 rounded-[4px] transition-colors"
             style={{ border: "1px solid rgba(0,0,0,0.1)", color: "var(--color-on-surface)" }}
+            onClick={() => window.location.href = "/dashboard/tasks"}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 12 }}>add</span>
             Add Task
@@ -96,102 +94,94 @@ export default function ActiveTasksWidget() {
 
       {/* Task rows */}
       <div>
-        {TASKS.map((task, i) => {
-          const p = PRIORITY_STYLE[task.priority];
-          const s = STATUS_STYLE[task.status] ?? STATUS_STYLE["Pending"];
-          return (
-            <div
-              key={task.id}
-              className="grid items-center px-4 py-2.5 hover:bg-black/[0.015] transition-colors cursor-pointer border-b"
-              style={{ gridTemplateColumns: "1fr 60px 64px 56px 56px", borderColor: "rgba(0,0,0,0.04)", animationDelay: `${i * 60}ms` }}
-            >
-              {/* Title + meta */}
-              <div className="min-w-0 pr-3">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="font-label-caps text-[9px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.45 }}>
-                    {task.id}
-                  </span>
-                  {task.labels.map((l) => (
-                    <span
-                      key={l}
-                      className="font-label-caps text-[8px] font-semibold px-1.5 py-px rounded"
-                      style={{ background: "rgba(0,0,0,0.04)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}
-                    >
-                      {l}
-                    </span>
-                  ))}
-                </div>
-                <p className="font-body-md text-[12.5px] font-medium text-on-surface truncate">{task.title}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <div
-                    className="w-4 h-4 rounded-full flex items-center justify-center font-display font-bold text-[8px]"
-                    style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-                  >
-                    {task.assignee}
+        {loading ? (
+          [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+        ) : tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2">
+            <span className="material-symbols-outlined" style={{ fontSize: 32, color: "var(--color-on-surface-variant)", opacity: 0.25 }}>task_alt</span>
+            <p className="font-body-sm text-[12px] text-on-surface-variant opacity-50">No active tasks yet</p>
+          </div>
+        ) : (
+          tasks.map((task, i) => {
+            const p = PRIORITY_STYLE[task.priority] ?? PRIORITY_STYLE.medium;
+            const s = STATUS_STYLE[task.status] ?? STATUS_STYLE["Pending"];
+            const due = formatDue(task.due);
+            return (
+              <div
+                key={task.id}
+                className="grid items-center px-4 py-2.5 hover:bg-black/[0.015] transition-colors cursor-pointer border-b"
+                style={{ gridTemplateColumns: "1fr 60px 64px 56px 56px", borderColor: "rgba(0,0,0,0.04)", animationDelay: `${i * 60}ms` }}
+              >
+                {/* Title + meta */}
+                <div className="min-w-0 pr-3">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {task.labels.slice(0, 2).map((l) => (
+                      <span key={l} className="font-label-caps text-[8px] font-semibold px-1.5 py-px rounded" style={{ background: "rgba(0,0,0,0.04)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
+                        {l}
+                      </span>
+                    ))}
                   </div>
-                  <span className="font-body-sm text-[10px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
-                    {task.checklist.done}/{task.checklist.total} steps
+                  <p className="font-body-md text-[12.5px] font-medium text-on-surface truncate">{task.title}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {task.assignee && task.assignee !== "--" && (
+                      <div className="w-4 h-4 rounded-full flex items-center justify-center font-display font-bold text-[8px]" style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}>
+                        {task.assignee}
+                      </div>
+                    )}
+                    {task.checklist.total > 0 && (
+                      <span className="font-body-sm text-[10px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
+                        {task.checklist.done}/{task.checklist.total} steps
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Priority */}
+                <div className="flex justify-center">
+                  <span className="font-label-caps text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: p.bg, color: p.text }}>{p.label}</span>
+                </div>
+
+                {/* Status */}
+                <div className="flex justify-center">
+                  <span className="font-label-caps text-[9px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap" style={{ background: s.bg, color: s.text }}>{task.status}</span>
+                </div>
+
+                {/* Due */}
+                <div className="flex justify-center">
+                  <span className="font-body-sm text-[10px] font-medium" style={{ color: due.urgent ? "rgba(186,26,26,0.8)" : "var(--color-on-surface-variant)", opacity: due.urgent ? 1 : 0.6 }}>
+                    {due.label}
                   </span>
                 </div>
-              </div>
 
-              {/* Priority */}
-              <div className="flex justify-center">
-                <span
-                  className="font-label-caps text-[9px] font-semibold px-1.5 py-0.5 rounded"
-                  style={{ background: p.bg, color: p.text }}
-                >
-                  {p.label}
-                </span>
-              </div>
-
-              {/* Status */}
-              <div className="flex justify-center">
-                <span
-                  className="font-label-caps text-[9px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap"
-                  style={{ background: s.bg, color: s.text }}
-                >
-                  {task.status}
-                </span>
-              </div>
-
-              {/* Due date */}
-              <div className="flex justify-center">
-                <span
-                  className="font-body-sm text-[10px] font-medium"
-                  style={{ color: task.due === "Today" ? "rgba(186,26,26,0.8)" : "var(--color-on-surface-variant)", opacity: task.due === "Today" ? 1 : 0.6 }}
-                >
-                  {task.due}
-                </span>
-              </div>
-
-              {/* Progress */}
-              <div className="flex flex-col items-center gap-1">
-                <span className="font-label-caps text-[9px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
-                  {task.progress}%
-                </span>
-                <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)" }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${task.progress}%`, background: "var(--color-primary)" }}
-                  />
+                {/* Progress */}
+                <div className="flex flex-col items-center gap-1">
+                  <span className="font-label-caps text-[9px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>{task.progress}%</span>
+                  <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)" }}>
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${task.progress}%`, background: "var(--color-primary)" }} />
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 flex items-center justify-between">
-        <span className="font-body-sm text-[11px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
-          Showing 5 of 24 tasks
-        </span>
-        <button className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center gap-1 hover:text-primary transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
-          View all
-          <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_forward</span>
-        </button>
-      </div>
+      {!loading && (
+        <div className="px-4 py-2.5 flex items-center justify-between">
+          <span className="font-body-sm text-[11px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
+            {total === 0 ? "No tasks" : `Showing ${Math.min(tasks.length, total)} of ${total} task${total !== 1 ? "s" : ""}`}
+          </span>
+          <button
+            className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center gap-1 hover:text-primary transition-colors"
+            style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}
+            onClick={() => window.location.href = "/dashboard/tasks"}
+          >
+            View all
+            <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_forward</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

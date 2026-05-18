@@ -25,27 +25,11 @@ interface Channel {
    notes: string;
 }
 
-const INITIAL_CHANNELS: Channel[] = [
-   { id: "ch-1", name: "Main Instagram", platform: "Instagram", username: "@opero_hq", profileLink: "https://instagram.com/opero_hq", status: "Active", followers: 12400, postsThisMonth: 14, interactions: 1540, monthlyReach: 45000, averageViews: 3200, lastActiveDate: "2026-05-12", notes: "Main brand visual channel." },
-   { id: "ch-2", name: "Corporate LinkedIn", platform: "LinkedIn", username: "opero-enterprise", profileLink: "https://linkedin.com/company/opero", status: "Active", followers: 8200, postsThisMonth: 8, interactions: 640, monthlyReach: 12000, lastActiveDate: "2026-05-10", notes: "Corporate and thought leadership." },
-   { id: "ch-3", name: "TikTok Demo", platform: "TikTok", username: "@opero_tiktok", profileLink: "https://tiktok.com/@opero_tiktok", status: "Active", followers: 5100, postsThisMonth: 22, interactions: 4200, monthlyReach: 88000, averageViews: 4500, lastActiveDate: "2026-05-13", notes: "Short-form product demos." },
-   { id: "ch-4", name: "Opero Weekly", platform: "Newsletter", username: "Opero Weekly", profileLink: "", status: "Active", followers: 3200, postsThisMonth: 4, interactions: 850, monthlyReach: 9000, lastActiveDate: "2026-05-11", notes: "Weekly digest to subscribers." },
-   { id: "ch-5", name: "Beta WhatsApp", platform: "WhatsApp", username: "Opero Users", profileLink: "", status: "Inactive", followers: 420, postsThisMonth: 0, interactions: 0, lastActiveDate: "2026-04-30", notes: "Beta user community group." },
-];
+const INITIAL_CHANNELS: Channel[] = [];
 
-const SCHEDULED = [
-   { id: "s-1", channel: "Instagram", title: "Summer Collection Teaser", date: "Tomorrow, 09:00", type: "Post", status: "Ready" },
-   { id: "s-2", channel: "LinkedIn", title: "Q3 Productivity Report", date: "May 20, 11:30", type: "Campaign", status: "Draft" },
-   { id: "s-3", channel: "TikTok", title: "Behind the Build #12", date: "May 21, 14:00", type: "Video", status: "Review" },
-   { id: "s-4", channel: "Newsletter", title: "Opero Weekly #19", date: "May 23, 09:00", type: "Broadcast", status: "Draft" },
-];
+const SCHEDULED: any[] = [];
 
-const ACTIVITY = [
-   { id: "a-1", channel: "Instagram", action: "Follower count updated", time: "2h ago", user: "Sarah L." },
-   { id: "a-2", channel: "LinkedIn", action: "Linked to Q2 Campaign", time: "Yesterday", user: "Marcus K." },
-   { id: "a-3", channel: "TikTok", action: "Channel status changed to Active", time: "May 11", user: "Ellen W." },
-   { id: "a-4", channel: "Twitter", action: "Social profile URL updated", time: "May 9", user: "System" },
-];
+const ACTIVITY: any[] = [];
 
 const statusDot = (s: ChannelStatus) =>
    s === "Active" ? "bg-black" : s === "Inactive" ? "bg-black/60" : "bg-black/60";

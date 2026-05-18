@@ -9,21 +9,20 @@ import {
   BarChart2,
   type LucideIcon,
 } from "lucide-react";
+import { useDashboardData } from "./DashboardDataContext";
 
 const QUICK_ACTIONS: { icon: LucideIcon; label: string; href: string }[] = [
   { icon: CheckSquare, label: "New Task",  href: "/dashboard/tasks" },
-  { icon: Kanban,      label: "Boards",    href: "/dashboard/boards" },
+  { icon: Kanban,      label: "Boards",    href: "/dashboard/flows" },
   { icon: GitFork,     label: "Flows",     href: "/dashboard/flows" },
   { icon: ShoppingCart,label: "Sales",     href: "/dashboard/sales" },
-  { icon: UserRound,   label: "Clients",   href: "/dashboard/clients" },
+  { icon: UserRound,   label: "Clients",   href: "/dashboard/contacts" },
   { icon: BarChart2,   label: "Insights",  href: "/dashboard/insights" },
 ];
 
-interface Props {
-  tenantName: string;
-}
+export default function DashboardHero() {
+  const { data } = useDashboardData();
 
-export default function DashboardHero({ tenantName }: Props) {
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -31,6 +30,23 @@ export default function DashboardHero({ tenantName }: Props) {
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric",
   });
+
+  const heroStats = data?.heroStats;
+  const tenantName = data?.tenantName ?? "Your Workspace";
+
+  const chips = heroStats
+    ? [
+        { label: `${heroStats.activeTasks} active task${heroStats.activeTasks !== 1 ? "s" : ""}` },
+        { label: `${heroStats.dueToday} due today` },
+        { label: `${heroStats.openDeals} open deal${heroStats.openDeals !== 1 ? "s" : ""}` },
+        { label: `${heroStats.totalMembers} member${heroStats.totalMembers !== 1 ? "s" : ""}` },
+      ]
+    : [
+        { label: "— active tasks" },
+        { label: "— due today" },
+        { label: "— open deals" },
+        { label: "— members" },
+      ];
 
   return (
     <div className="relative overflow-hidden rounded-[12px] mb-4" style={{ background: "var(--color-primary)" }}>
@@ -59,12 +75,7 @@ export default function DashboardHero({ tenantName }: Props) {
             {greeting}, {tenantName} 👋
           </h1>
           <div className="flex items-center gap-3 flex-wrap">
-            {[
-              { label: "24 active tasks" },
-              { label: "3 due today" },
-              { label: "5 open deals" },
-              { label: "2 pending invoices" },
-            ].map((chip) => (
+            {chips.map((chip) => (
               <span
                 key={chip.label}
                 className="font-label-caps text-[9px] uppercase tracking-[0.07em] font-semibold px-2 py-1 rounded-full"

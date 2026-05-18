@@ -1,7 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Member, Role, Permission, ActivityLog, RoleType, InviteLink } from "../types";
+import {
+  createTenantRecord,
+  listTenantActivity,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface ApiMember {
   id: string;
@@ -48,11 +54,6 @@ const ALL_PERMS = PERMISSIONS.map(p => p.id);
 const ADMIN_PERMS = ALL_PERMS.filter(p => p !== "settings_manage");
 const STAFF_PERMS = ["dash_view", "tasks_view", "tasks_create", "goals_view", "flows_view", "chat_access", "members_view"];
 
-const INITIAL_ROLES: Role[] = [
-  { id: "r1", name: "Owner", description: "Full administrative access to the entire workspace. Cannot be restricted.", permissions: ALL_PERMS },
-  { id: "r2", name: "Admin", description: "Can manage members and operations, but cannot access global settings.", permissions: ADMIN_PERMS },
-  { id: "r3", name: "Staff", description: "Standard user access. Can collaborate on work but cannot manage system settings.", permissions: STAFF_PERMS },
-];
 
 const roleMap: Record<string, RoleType> = {
   owner: "Owner",
@@ -84,7 +85,7 @@ interface MembersContextType {
   updateMemberOrg: (id: string, department: string, jobTitle: string) => Promise<void>;
 
   // Access Control actions
-  toggleRolePermission: (roleId: string, permissionId: string) => void;
+  toggleRolePermission: (roleId: string, permissionId: string) => Promise<void>;
 
   // Invite Link actions
   generateInviteLink: (expireDays: number | null) => Promise<InviteLink>;
@@ -99,19 +100,26 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [roles, setRoles] = useState<Role[]>(INITIAL_ROLES);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([]);
   const [tenantCode, setTenantCode] = useState("");
   const [currentUserRole, setCurrentUserRole] = useState<RoleType | null>(null);
 
-  const logActivity = useCallback((action: string) => {
-    const newLog: ActivityLog = {
-      id: Math.random().toString(36).substring(7),
-      userId: "system",
-      action,
-      timestamp: new Date().toISOString()
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
+  const refreshActivity = useCallback(async () => {
+    try {
+      const logs = await listTenantActivity("TEAM");
+      setActivityLogs(
+        (logs as any[]).map((log) => ({
+          id: log.id,
+          userId: log.user?.id ?? "system",
+          action: log.description || `${log.action} ${log.entityType ?? "Record"}`,
+          target: log.entityName,
+          timestamp: log.timestamp,
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to load activity logs:", err);
+    }
   }, []);
 
   const fetchMembers = useCallback(async () => {
@@ -134,22 +142,24 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
         setCurrentUserRole(roleMap[membersData.currentRole] || "Staff");
       }
 
-      const canInvite = membersData.currentRole === "owner" || membersData.currentRole === "admin";
-      if (!canInvite) {
-        setTenantCode("");
-        setInviteLinks([]);
-        return;
+      const [rolesData, inviteRes] = await Promise.all([
+        listTenantRecords<Role>("roles"),
+        fetch("/api/tenant/invite"),
+      ]);
+
+      setRoles(rolesData);
+
+      if (inviteRes.ok) {
+        const inviteData = await inviteRes.json();
+        if (inviteData.inviteCode) {
+          setTenantCode(inviteData.inviteCode);
+        }
+        if (inviteData.inviteLinks) {
+          setInviteLinks(inviteData.inviteLinks);
+        }
       }
 
-      const inviteRes = await fetch("/api/tenant/invite");
-      const inviteData = await inviteRes.json();
-
-      if (inviteData.inviteCode) {
-        setTenantCode(inviteData.inviteCode);
-      }
-      if (inviteData.inviteLinks) {
-        setInviteLinks(inviteData.inviteLinks);
-      }
+      await refreshActivity();
     } catch (err) {
       console.error("Failed to fetch members:", err);
     } finally {
@@ -157,29 +167,38 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
 
   const inviteMember = useCallback(async (email: string, role: RoleType) => {
-    // This currently just mocks the "invited" status in the list 
-    // real invitations would go through an invite table / email flow
-    logActivity(`Invite requested for ${email} as ${role}`);
-    await fetchMembers();
-  }, [logActivity, fetchMembers]);
+    try {
+      const res = await fetch("/api/tenant/members/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role: revRoleMap[role] }),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload.error ?? "Failed to invite member");
+      }
+      await fetchMembers();
+    } catch (err) {
+      console.error("Failed to invite member:", err);
+    }
+  }, [fetchMembers]);
 
   const removeMember = useCallback(async (id: string) => {
     try {
       const res = await fetch(`/api/tenant/members/${id}`, { method: "DELETE" });
       if (res.ok) {
         setMembers(prev => prev.filter(m => m.id !== id));
-        logActivity(`Removed member ${id}`);
+        await refreshActivity();
       }
     } catch (err) {
       console.error("Failed to remove member:", err);
     }
-  }, [logActivity]);
+  }, [refreshActivity]);
 
   const updateMemberRole = useCallback(async (id: string, newRole: RoleType) => {
     try {
@@ -190,12 +209,12 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         setMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m));
-        logActivity(`Updated role for member ${id} to ${newRole}`);
+        await refreshActivity();
       }
     } catch (err) {
       console.error("Failed to update member role:", err);
     }
-  }, [logActivity]);
+  }, [refreshActivity]);
 
   const updateMemberOrg = useCallback(async (id: string, department: string, jobTitle: string) => {
     try {
@@ -206,26 +225,33 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         setMembers(prev => prev.map(m => m.id === id ? { ...m, department, jobTitle } : m));
-        logActivity(`Updated organization structure for member ${id}`);
+        await refreshActivity();
       }
     } catch (err) {
       console.error("Failed to update member org:", err);
     }
-  }, [logActivity]);
+  }, [refreshActivity]);
 
-  // Access Control (Local for now, could be persisted later)
-  const toggleRolePermission = useCallback((roleId: string, permissionId: string) => {
+  // Access Control
+  const toggleRolePermission = useCallback(async (roleId: string, permissionId: string) => {
     if (roleId === "r1") return; // Owner role is locked
 
-    setRoles(prev => prev.map(r => {
-      if (r.id !== roleId) return r;
-      const hasPerm = r.permissions.includes(permissionId);
-      const newPerms = hasPerm
-        ? r.permissions.filter(p => p !== permissionId)
-        : [...r.permissions, permissionId];
-      return { ...r, permissions: newPerms };
-    }));
-  }, []);
+    const current = roles.find(r => r.id === roleId);
+    if (!current) return;
+
+    const hasPerm = current.permissions.includes(permissionId);
+    const newPerms = hasPerm
+      ? current.permissions.filter(p => p !== permissionId)
+      : [...current.permissions, permissionId];
+
+    const recordId = (current as { recordId?: string }).recordId ?? current.id;
+    try {
+      const updated = await updateTenantRecord<Role>("roles", recordId, { permissions: newPerms });
+      setRoles(prev => prev.map(r => r.id === roleId ? updated : r));
+    } catch (err) {
+      console.error("Failed to update role permissions:", err);
+    }
+  }, [roles]);
 
   // Invite Links
   const generateInviteLink = useCallback(async (expireDays: number | null) => {
@@ -268,11 +294,11 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     toggleRolePermission,
     generateInviteLink,
     revokeInviteLink,
-    logActivity
+    logActivity: () => refreshActivity()
   }), [
     members, loading, activityLogs, roles, inviteLinks, tenantCode, currentUserRole,
     fetchMembers, inviteMember, removeMember, updateMemberRole, updateMemberOrg,
-    toggleRolePermission, generateInviteLink, revokeInviteLink, logActivity
+    toggleRolePermission, generateInviteLink, revokeInviteLink, refreshActivity
   ]);
 
   return (

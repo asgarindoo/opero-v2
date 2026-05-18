@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, Check, X } from "lucide-react";
-import { TEAM_MEMBERS, type Member } from "../types";
+import { type Member } from "../types";
 
 interface Props {
   selected: Member[];
@@ -15,7 +15,7 @@ export default function MemberPicker({ selected, onChange, max }: Props) {
   const [open,  setOpen]  = useState(false);
 
   const filtered = useMemo(() =>
-    TEAM_MEMBERS.filter(m =>
+    ([] as Member[]).filter(m =>
       m.name.toLowerCase().includes(query.toLowerCase()) ||
       m.role?.toLowerCase().includes(query.toLowerCase())
     ), [query]);

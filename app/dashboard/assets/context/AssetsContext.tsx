@@ -1,70 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Asset, AssetStatus, AssetActivity } from "../types";
-
-const MOCK_ASSETS: Asset[] = [
-  {
-    id: "a1",
-    name: "MacBook Pro 16\" (M3 Max)",
-    category: "Computing",
-    assetCode: "HW-LAP-001",
-    status: "In Use",
-    assignedTo: "Alice Smith",
-    department: "Engineering",
-    location: "Remote",
-    purchaseDate: "2024-01-10",
-    purchaseValue: 3499,
-    warrantyExpiry: "2025-01-10",
-    supplierName: "Apple Enterprise",
-    maintenanceHistory: [],
-    activities: [
-      { id: "act1", type: "assignment", description: "Assigned to Alice Smith", timestamp: "2024-01-12T10:00:00Z", author: "You" }
-    ],
-    notes: "New employee kit.",
-    createdAt: "2024-01-10T08:00:00Z",
-    updatedAt: "2024-01-12T10:00:00Z"
-  },
-  {
-    id: "a2",
-    name: "Herman Miller Aeron Chair",
-    category: "Furniture",
-    assetCode: "FUR-CHR-99",
-    status: "Active",
-    department: "Operations",
-    location: "Main Office - 4th Floor",
-    purchaseDate: "2023-05-20",
-    purchaseValue: 1200,
-    warrantyExpiry: "2035-05-20",
-    supplierName: "OfficeDesign Inc.",
-    maintenanceHistory: [
-      { id: "m1", date: "2024-03-15", description: "Hydraulic cylinder replacement", technician: "FurnitureFix", cost: 150 }
-    ],
-    activities: [
-      { id: "act2", type: "maintenance", description: "Scheduled hydraulic maintenance", timestamp: "2024-03-15T14:30:00Z", author: "Sarah Connor" }
-    ],
-    notes: "Ergonomic standard.",
-    createdAt: "2023-05-20T09:00:00Z",
-    updatedAt: "2024-03-15T14:30:00Z"
-  },
-  {
-    id: "a3",
-    name: "Conference Room Display (85\")",
-    category: "AV Equipment",
-    assetCode: "AV-DIS-500",
-    status: "Maintenance",
-    location: "Room 402",
-    purchaseDate: "2022-11-15",
-    purchaseValue: 2500,
-    maintenanceHistory: [],
-    activities: [
-      { id: "act3", type: "status_change", description: "Moved to Maintenance: Backlight flickering", timestamp: "2024-05-10T09:00:00Z", author: "Sarah Connor" }
-    ],
-    notes: "Contacting Samsung for warranty support.",
-    createdAt: "2022-11-15T08:00:00Z",
-    updatedAt: "2024-05-10T09:00:00Z"
-  }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface AssetsContextType {
   assets: Asset[];
@@ -77,7 +20,25 @@ interface AssetsContextType {
 const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
 
 export function AssetsProvider({ children }: { children: React.ReactNode }) {
-  const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
+  const [assets, setAssets] = useState<Asset[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const items = await listTenantRecords<Asset>("assets");
+        if (!cancelled) setAssets(items);
+      } catch (err) {
+        console.error("Failed to load assets:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addAsset = useCallback((partial: Partial<Asset>) => {
     const newAsset: Asset = {
@@ -93,11 +54,21 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    setAssets(prev => [newAsset, ...prev]);
+    createTenantRecord<Asset>("assets", newAsset)
+      .then((created) => setAssets(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create asset:", err));
   }, []);
 
   const updateAsset = useCallback((id: string, updates: Partial<Asset>) => {
-    setAssets(prev => prev.map(a => a.id === id ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a));
+    setAssets(prev => prev.map(a => {
+      if (a.id !== id) return a;
+      const updated = { ...a, ...updates, updatedAt: new Date().toISOString() };
+      const recordId = (a as { recordId?: string }).recordId ?? a.id;
+      updateTenantRecord<Asset>("assets", recordId, updated).catch((err) => {
+        console.error("Failed to update asset:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const assignAsset = useCallback((id: string, person: string, department?: string) => {
@@ -110,7 +81,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: "You"
       };
-      return {
+      const updated = {
         ...a,
         assignedTo: person,
         department: department || a.department,
@@ -118,12 +89,26 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         activities: [newActivity, ...a.activities],
         updatedAt: newActivity.timestamp
       };
+      const recordId = (a as { recordId?: string }).recordId ?? a.id;
+      updateTenantRecord<Asset>("assets", recordId, updated).catch((err) => {
+        console.error("Failed to assign asset:", err);
+      });
+      return updated;
     }));
   }, []);
 
   const deleteAssets = useCallback((ids: string[]) => {
     setAssets(prev => prev.filter(a => !ids.includes(a.id)));
-  }, []);
+    Promise.all(
+      ids.map((id) => {
+        const recordId = assets.find(a => a.id === id) as { recordId?: string } | undefined;
+        const targetId = recordId?.recordId ?? id;
+        return deleteTenantRecord("assets", targetId).catch((err) => {
+          console.error("Failed to delete asset:", err);
+        });
+      })
+    ).catch(() => undefined);
+  }, [assets]);
 
   const value = useMemo(() => ({
     assets,

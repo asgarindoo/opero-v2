@@ -1,69 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { FileEntry, Folder, FileStatus, DocumentActivity } from "../types";
-
-const MOCK_FILES: FileEntry[] = [
-  {
-    id: "f1",
-    name: "Q2 Financial Report.pdf",
-    type: "pdf",
-    extension: "pdf",
-    size: 2400000,
-    status: "Active",
-    tags: ["Finance", "Report"],
-    relatedTo: { type: "Invoice", name: "INV-2024-001", id: "inv1" },
-    versions: [{ id: "v1", version: "1.0", updatedAt: "2024-05-10T10:00:00Z", author: "You", size: 2400000 }],
-    activities: [
-      { id: "act1", type: "upload", description: "Uploaded initial version", timestamp: "2024-05-10T10:00:00Z", author: "You" }
-    ],
-    notes: "Final version for board review.",
-    sharedWith: ["Alice Smith", "Sarah Connor"],
-    createdAt: "2024-05-10T10:00:00Z",
-    updatedAt: "2024-05-10T10:00:00Z",
-    author: "You"
-  },
-  {
-    id: "f2",
-    name: "Product Design Assets.zip",
-    type: "design",
-    extension: "zip",
-    size: 156000000,
-    status: "Active",
-    tags: ["Branding", "Assets"],
-    relatedTo: { type: "Sale", name: "Acme Product Launch", id: "s1" },
-    versions: [{ id: "v2", version: "1.0", updatedAt: "2024-05-08T14:00:00Z", author: "Sarah Connor", size: 156000000 }],
-    activities: [],
-    notes: "Includes logos and font files.",
-    sharedWith: ["Design Team"],
-    createdAt: "2024-05-08T14:00:00Z",
-    updatedAt: "2024-05-08T14:00:00Z",
-    author: "Sarah Connor"
-  },
-  {
-    id: "f3",
-    name: "Employee Handbook.docx",
-    type: "document",
-    extension: "docx",
-    size: 1200000,
-    status: "Active",
-    tags: ["HR", "Internal"],
-    versions: [{ id: "v3", version: "2.1", updatedAt: "2024-05-05T09:00:00Z", author: "You", size: 1200000 }],
-    activities: [
-      { id: "act2", type: "edit", description: "Updated benefits section", timestamp: "2024-05-05T09:00:00Z", author: "You" }
-    ],
-    notes: "Latest HR guidelines.",
-    sharedWith: ["All Staff"],
-    createdAt: "2024-01-15T08:00:00Z",
-    updatedAt: "2024-05-05T09:00:00Z",
-    author: "You"
-  }
-];
-
-const MOCK_FOLDERS: Folder[] = [
-  { id: "fold1", name: "Finance Records", createdAt: "2024-01-01T00:00:00Z" },
-  { id: "fold2", name: "Project Alpha Assets", createdAt: "2024-03-01T00:00:00Z" }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface DocumentsContextType {
   files: FileEntry[];
@@ -77,8 +21,32 @@ interface DocumentsContextType {
 const DocumentsContext = createContext<DocumentsContextType | undefined>(undefined);
 
 export function DocumentsProvider({ children }: { children: React.ReactNode }) {
-  const [files, setFiles] = useState<FileEntry[]>(MOCK_FILES);
-  const [folders, setFolders] = useState<Folder[]>(MOCK_FOLDERS);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [fileItems, folderItems] = await Promise.all([
+          listTenantRecords<FileEntry>("documents"),
+          listTenantRecords<Folder>("document-folders"),
+        ]);
+        if (!cancelled) {
+          setFiles(fileItems);
+          setFolders(folderItems);
+        }
+      } catch (err) {
+        console.error("Failed to load documents:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addFile = useCallback((partial: Partial<FileEntry>) => {
     const newFile: FileEntry = {
@@ -98,16 +66,35 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       author: "You",
       ...partial
     };
-    setFiles(prev => [newFile, ...prev]);
+    createTenantRecord<FileEntry>("documents", newFile)
+      .then((created) => setFiles(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create file:", err));
   }, []);
 
   const updateFile = useCallback((id: string, updates: Partial<FileEntry>) => {
-    setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates, updatedAt: new Date().toISOString() } : f));
+    setFiles(prev => prev.map(f => {
+      if (f.id !== id) return f;
+      const updated = { ...f, ...updates, updatedAt: new Date().toISOString() };
+      const recordId = (f as { recordId?: string }).recordId ?? f.id;
+      updateTenantRecord<FileEntry>("documents", recordId, updated).catch((err) => {
+        console.error("Failed to update file:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const deleteFiles = useCallback((ids: string[]) => {
     setFiles(prev => prev.filter(f => !ids.includes(f.id)));
-  }, []);
+    Promise.all(
+      ids.map((id) => {
+        const recordId = files.find(f => f.id === id) as { recordId?: string } | undefined;
+        const targetId = recordId?.recordId ?? id;
+        return deleteTenantRecord("documents", targetId).catch((err) => {
+          console.error("Failed to delete file:", err);
+        });
+      })
+    ).catch(() => undefined);
+  }, [files]);
 
   const addFolder = useCallback((name: string, parentId?: string) => {
     const newFolder: Folder = {
@@ -116,7 +103,9 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       parentId,
       createdAt: new Date().toISOString()
     };
-    setFolders(prev => [...prev, newFolder]);
+    createTenantRecord<Folder>("document-folders", newFolder)
+      .then((created) => setFolders(prev => [...prev, created]))
+      .catch((err) => console.error("Failed to create folder:", err));
   }, []);
 
   const value = useMemo(() => ({

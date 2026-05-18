@@ -1,68 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Product, StockStatus, InventoryActivity } from "../types";
-
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: "p1",
-    name: "Classic Crewneck Sweatshirt",
-    sku: "AP-SWE-001",
-    category: "Apparel",
-    status: "In Stock",
-    totalQuantity: 245,
-    minThreshold: 50,
-    variants: [
-      { id: "v1", name: "Size S / Black", sku: "AP-SWE-001-S-BLK", price: 45, quantity: 80, warehouse: "Main WH" },
-      { id: "v2", name: "Size M / Black", sku: "AP-SWE-001-M-BLK", price: 45, quantity: 120, warehouse: "Main WH" },
-      { id: "v3", name: "Size L / Black", sku: "AP-SWE-001-L-BLK", price: 45, quantity: 45, warehouse: "Secondary WH" }
-    ],
-    activities: [
-      { id: "act1", type: "stock_in", description: "Received batch from Supplier A", quantity: 100, timestamp: "2024-05-10T10:00:00Z", author: "You" },
-      { id: "act2", type: "adjustment", description: "Inventory count correction", quantity: -5, timestamp: "2024-05-08T14:30:00Z", author: "Sarah Connor" }
-    ],
-    supplierName: "Premium Textiles Co.",
-    notes: "Best seller for winter season.",
-    createdAt: "2024-01-15T08:00:00Z",
-    updatedAt: "2024-05-10T10:00:00Z"
-  },
-  {
-    id: "p2",
-    name: "Minimalist Desk Lamp",
-    sku: "HO-LMP-99",
-    category: "Home Office",
-    status: "Low Stock",
-    totalQuantity: 12,
-    minThreshold: 20,
-    variants: [
-      { id: "v4", name: "Standard / White", sku: "HO-LMP-99-WHT", price: 89, quantity: 12, warehouse: "Main WH" }
-    ],
-    activities: [
-      { id: "act3", type: "stock_out", description: "Order #ORD-2024-055 shipped", quantity: 2, timestamp: "2024-05-11T09:00:00Z", author: "System" }
-    ],
-    supplierName: "Lumens Lighting",
-    notes: "Restock pending for next week.",
-    createdAt: "2024-03-20T09:00:00Z",
-    updatedAt: "2024-05-11T09:00:00Z"
-  },
-  {
-    id: "p3",
-    name: "Ergonomic Office Chair",
-    sku: "HO-CHR-500",
-    category: "Furniture",
-    status: "Out of Stock",
-    totalQuantity: 0,
-    minThreshold: 10,
-    variants: [
-      { id: "v5", name: "Executive / Grey", sku: "HO-CHR-500-GRY", price: 299, quantity: 0, warehouse: "Main WH" }
-    ],
-    activities: [],
-    supplierName: "WorkComfort Ltd.",
-    notes: "Supplier issue - discontinued?",
-    createdAt: "2024-02-10T08:00:00Z",
-    updatedAt: "2024-05-12T08:00:00Z"
-  }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+} from "@/lib/client/tenant-records";
 
 interface InventoryContextType {
   products: Product[];
@@ -80,9 +25,27 @@ interface InventoryContextType {
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
 export function InventoryProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<"All" | StockStatus>("All");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const items = await listTenantRecords<Product>("inventory");
+        if (!cancelled) setProducts(items);
+      } catch (err) {
+        console.error("Failed to load inventory:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addProduct = useCallback((partial: Partial<Product>) => {
     const newProduct: Product = {
@@ -100,11 +63,21 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    setProducts(prev => [newProduct, ...prev]);
+    createTenantRecord<Product>("inventory", newProduct)
+      .then((created) => setProducts(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create product:", err));
   }, []);
 
   const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
+    setProducts(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const updated = { ...p, ...updates, updatedAt: new Date().toISOString() };
+      const recordId = (p as { recordId?: string }).recordId ?? p.id;
+      updateTenantRecord<Product>("inventory", recordId, updated).catch((err) => {
+        console.error("Failed to update product:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const adjustStock = useCallback((id: string, quantity: number, type: InventoryActivity["type"], reason: string) => {
@@ -123,19 +96,33 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       if (newTotal <= 0) newStatus = "Out of Stock";
       else if (newTotal <= p.minThreshold) newStatus = "Low Stock";
 
-      return {
+      const updated = {
         ...p,
         totalQuantity: newTotal,
         status: newStatus,
         activities: [newActivity, ...p.activities],
         updatedAt: newActivity.timestamp
       };
+      const recordId = (p as { recordId?: string }).recordId ?? p.id;
+      updateTenantRecord<Product>("inventory", recordId, updated).catch((err) => {
+        console.error("Failed to adjust stock:", err);
+      });
+      return updated;
     }));
   }, []);
 
   const deleteProducts = useCallback((ids: string[]) => {
     setProducts(prev => prev.filter(p => !ids.includes(p.id)));
-  }, []);
+    Promise.all(
+      ids.map((id) => {
+        const recordId = products.find(p => p.id === id) as { recordId?: string } | undefined;
+        const targetId = recordId?.recordId ?? id;
+        return deleteTenantRecord("inventory", targetId).catch((err) => {
+          console.error("Failed to delete product:", err);
+        });
+      })
+    ).catch(() => undefined);
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {

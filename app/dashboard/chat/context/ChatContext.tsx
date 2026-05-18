@@ -4,11 +4,7 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 import { ChatChannel, ChatMessage, User } from "../types";
 
 // INITIAL MOCK DATA
-const MOCK_USERS: Record<string, User> = {
-  "u1": { id: "u1", name: "You", status: "online" },
-  "u2": { id: "u2", name: "Sarah Connor", status: "online" },
-  "u3": { id: "u3", name: "John Doe", status: "away" },
-};
+const MOCK_USERS: Record<string, User> = {};
 
 const MOCK_CHANNELS: ChatChannel[] = [];
 const MOCK_MESSAGES: Record<string, ChatMessage[]> = {};
@@ -102,7 +98,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const newChannel: ChatChannel = {
       id: Math.random().toString(36).substr(2, 9),
       tenant_id: "t1",
-      name: `dm-${otherUser.name.toLowerCase().replace(/\s+/g, '-')}`,
+      name: `dm-${(otherUser?.name || "user").toLowerCase().replace(/\s+/g, '-')}`,
       is_private: true,
       members: [currentUserId, userId],
       created_at: new Date().toISOString()

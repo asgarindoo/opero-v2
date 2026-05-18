@@ -30,6 +30,13 @@ model User {
   invitations Invitation[]
   inviteLinks TenantInviteLink[]
 
+  // TenantRecord back-references (named relations)
+  tenantRecordsCreated TenantRecord[] @relation("TenantRecordCreatedBy")
+  tenantRecordsUpdated TenantRecord[] @relation("TenantRecordUpdatedBy")
+
+  // TenantActivity back-reference
+  tenantActivities TenantActivity[]
+
   @@map("user")
 }
 
@@ -95,12 +102,14 @@ model Organization {
   createdAt DateTime @default(now())
 
   // Relations
-  members     Member[]
-  invitations Invitation[]
-  inviteLinks TenantInviteLink[]
+  members          Member[]
+  invitations      Invitation[]
+  inviteLinks      TenantInviteLink[]
+  tenantRecords    TenantRecord[]
+  tenantActivities TenantActivity[]
 
   // Custom OPERO extensions
-  inviteCode    String?  @unique // Permanent join code (e.g., OP-XXXX-XXXX)
+  inviteCode     String?         @unique // Permanent join code (e.g., OP-XXXX-XXXX)
   tenantSettings TenantSettings?
   tenantPlan     TenantPlan?
 
@@ -209,4 +218,43 @@ model TenantPlan {
   plan         SubscriptionPlan @relation(fields: [planId], references: [id])
 
   @@map("tenant_plan")
+}
+
+/// Generic tenant-scoped records (store module data as JSON payloads)
+model TenantRecord {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           String
+  data           Json
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?       @relation("TenantRecordCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?       @relation("TenantRecordUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, type])
+  @@map("tenant_record")
+}
+
+/// Tenant activity log
+model TenantActivity {
+  id             String   @id @default(cuid())
+  organizationId String
+  module         String
+  action         String
+  entityId       String?
+  entityType     String?
+  entityName     String?
+  description    String?
+  userId         String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, module])
+  @@map("tenant_activity")
 }

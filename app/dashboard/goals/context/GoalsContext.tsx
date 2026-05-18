@@ -1,88 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useMemo, ReactNode } from "react";
+import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from "react";
 import { Goal, KeyResult, User, Milestone, Activity } from "../types";
-
-// Mock Users
-export const USERS: Record<string, User> = {
-  u1: { id: "u1", name: "Sarah Connor", initials: "SC" },
-  u2: { id: "u2", name: "John Doe", initials: "JD" },
-  u3: { id: "u3", name: "Alice Smith", initials: "AS" },
-};
-
-// Initial Mock Data
-const INITIAL_GOALS: Goal[] = [
-  {
-    id: "g1",
-    title: "Achieve Enterprise Market Penetration",
-    description: "Secure 5 new Fortune 500 enterprise clients and expand our service offering to cover advanced compliance needs.",
-    status: "on-track",
-    priority: "high",
-    ownerId: "u1",
-    collaboratorIds: ["u2"],
-    startDate: "2026-04-01",
-    targetDate: "2026-09-30",
-    progress: 0, // Will be calculated
-    keyResults: [
-      { id: "kr1", title: "Close 5 enterprise deals", target: 5, current: 3, unit: "deals", status: "on-track" },
-      { id: "kr2", title: "Publish SOC2 Type II Report", target: 1, current: 1, unit: "report", status: "completed" },
-      { id: "kr3", title: "Achieve $2M in Enterprise ARR", target: 2000000, current: 1200000, unit: "$", status: "at-risk" },
-    ],
-    milestones: [
-      { id: "m1", title: "Finalize compliance roadmap", date: "2026-05-15", completed: true },
-      { id: "m2", title: "Launch targeted enterprise campaign", date: "2026-06-01", completed: false },
-    ],
-    linkedItems: [
-      { id: "t1", type: "task", title: "Update SOC2 Compliance Documentation", status: "Done" },
-      { id: "f1", type: "flow", title: "Client Onboarding Redesign", status: "In Progress" },
-    ],
-    activities: [
-      { id: "a1", userId: "u1", type: "progress_update", content: "Closed deal with ACME Corp.", timestamp: "2026-05-10T10:00:00Z" }
-    ],
-  },
-  {
-    id: "g2",
-    title: "Launch Global Platform V2.0",
-    description: "Roll out the new multi-tenant architecture with 99.99% uptime and zero critical bugs during the launch window.",
-    status: "at-risk",
-    priority: "critical",
-    ownerId: "u2",
-    collaboratorIds: ["u1", "u3"],
-    startDate: "2026-01-15",
-    targetDate: "2026-06-30",
-    progress: 0,
-    keyResults: [
-      { id: "kr4", title: "Complete load testing for 100k CCU", target: 100, current: 40, unit: "k CCU", status: "behind" },
-      { id: "kr5", title: "Zero critical bugs in staging", target: 0, current: 3, unit: "bugs", status: "at-risk" },
-    ],
-    milestones: [
-      { id: "m3", title: "Alpha Release", date: "2026-03-01", completed: true },
-      { id: "m4", title: "Beta Release", date: "2026-05-01", completed: true },
-      { id: "m5", title: "Public Launch", date: "2026-06-30", completed: false },
-    ],
-    linkedItems: [],
-    activities: [],
-  },
-  {
-    id: "g3",
-    title: "Optimize Customer Acquisition Cost",
-    description: "Reduce CAC by 15% through organic channels and improved sales funnel conversion rates.",
-    status: "on-track",
-    priority: "medium",
-    ownerId: "u3",
-    collaboratorIds: [],
-    startDate: "2026-07-01",
-    targetDate: "2026-12-31",
-    progress: 0,
-    keyResults: [
-      { id: "kr6", title: "Reduce ad spend by 10%", target: 10, current: 5, unit: "%", status: "on-track" },
-      { id: "kr7", title: "Increase organic traffic by 25%", target: 25, current: 20, unit: "%", status: "on-track" },
-    ],
-    milestones: [],
-    linkedItems: [],
-    activities: [],
-  }
-];
+import {
+  createTenantRecord,
+  deleteTenantRecord,
+  listTenantRecords,
+  updateTenantRecord,
+  getProfile,
+} from "@/lib/client/tenant-records";
 
 // Helper to calculate progress
 function calculateGoalProgress(keyResults: KeyResult[]): number {
@@ -97,12 +23,6 @@ function calculateGoalProgress(keyResults: KeyResult[]): number {
   }, 0);
   return Math.round(totalPercentage / keyResults.length);
 }
-
-// Initial calculation
-const PRE_CALCULATED_GOALS = INITIAL_GOALS.map(g => ({
-  ...g,
-  progress: calculateGoalProgress(g.keyResults)
-}));
 
 interface GoalsContextType {
   goals: Goal[];
@@ -121,25 +41,84 @@ interface GoalsContextType {
 const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
-  const [goals, setGoals] = useState<Goal[]>(PRE_CALCULATED_GOALS);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [currentUser, setCurrentUser] = useState<User>({ id: "", name: "", initials: "" });
 
-  // Hardcode current user for simulation
-  const currentUser = USERS.u1;
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [items, profile] = await Promise.all([
+          listTenantRecords<Goal>("goals"),
+          getProfile(),
+        ]);
+        if (!cancelled) {
+          setGoals(items.map(g => ({ ...g, progress: calculateGoalProgress(g.keyResults) })));
+          if (profile?.user) {
+            const name = profile.user.name || profile.user.email || "User";
+            setCurrentUser({
+              id: profile.user.id,
+              name,
+              initials: name
+                .split(/\s+/)
+                .map((p: string) => p[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase(),
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load goals:", err);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addGoal = (goal: Goal) => {
-    setGoals(prev => [goal, ...prev]);
+    const next = { ...goal, progress: calculateGoalProgress(goal.keyResults) };
+    createTenantRecord<Goal>("goals", next)
+      .then((created) => setGoals(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to create goal:", err));
   };
 
   const updateGoal = (goalId: string, updates: Partial<Goal>) => {
-    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, ...updates } : g));
+    setGoals(prev => prev.map(g => {
+      if (g.id !== goalId) return g;
+      const updated = { ...g, ...updates };
+      const recordId = (g as { recordId?: string }).recordId ?? g.id;
+      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+        console.error("Failed to update goal:", err);
+      });
+      return updated;
+    }));
   };
 
   const deleteGoal = (goalId: string) => {
     setGoals(prev => prev.filter(g => g.id !== goalId));
+    const recordId = goals.find(g => g.id === goalId) as { recordId?: string } | undefined;
+    const targetId = recordId?.recordId ?? goalId;
+    deleteTenantRecord("goals", targetId).catch((err) => {
+      console.error("Failed to delete goal:", err);
+    });
   };
 
   const deleteGoals = (ids: string[]) => {
     setGoals(prev => prev.filter(g => !ids.includes(g.id)));
+    Promise.all(
+      ids.map((id) => {
+        const recordId = goals.find(g => g.id === id) as { recordId?: string } | undefined;
+        const targetId = recordId?.recordId ?? id;
+        return deleteTenantRecord("goals", targetId).catch((err) => {
+          console.error("Failed to delete goal:", err);
+        });
+      })
+    ).catch(() => undefined);
   };
 
   const addKeyResult = (goalId: string, krData: Omit<KeyResult, "id">) => {
@@ -148,7 +127,12 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       const newKr: KeyResult = { ...krData, id: `kr_${Date.now()}` };
       const newKRs = [...g.keyResults, newKr];
       const newProgress = calculateGoalProgress(newKRs);
-      return { ...g, keyResults: newKRs, progress: newProgress };
+      const updated = { ...g, keyResults: newKRs, progress: newProgress };
+      const recordId = (g as { recordId?: string }).recordId ?? g.id;
+      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+        console.error("Failed to add key result:", err);
+      });
+      return updated;
     }));
   };
 
@@ -157,7 +141,12 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       if (g.id !== goalId) return g;
       const newKRs = g.keyResults.map(kr => kr.id === krId ? { ...kr, ...updates } : kr);
       const newProgress = calculateGoalProgress(newKRs);
-      return { ...g, keyResults: newKRs, progress: newProgress };
+      const updated = { ...g, keyResults: newKRs, progress: newProgress };
+      const recordId = (g as { recordId?: string }).recordId ?? g.id;
+      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+        console.error("Failed to update key result:", err);
+      });
+      return updated;
     }));
   };
 
@@ -165,7 +154,12 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
       const newMs: Milestone = { ...msData, id: `ms_${Date.now()}` };
-      return { ...g, milestones: [...g.milestones, newMs] };
+      const updated = { ...g, milestones: [...g.milestones, newMs] };
+      const recordId = (g as { recordId?: string }).recordId ?? g.id;
+      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+        console.error("Failed to add milestone:", err);
+      });
+      return updated;
     }));
   };
 
@@ -175,22 +169,35 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       id: `act_${Date.now()}`,
       timestamp: new Date().toISOString()
     };
-    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, activities: [newActivity, ...g.activities] } : g));
+    setGoals(prev => prev.map(g => {
+      if (g.id !== goalId) return g;
+      const updated = { ...g, activities: [newActivity, ...g.activities] };
+      const recordId = (g as { recordId?: string }).recordId ?? g.id;
+      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+        console.error("Failed to add activity:", err);
+      });
+      return updated;
+    }));
   };
 
   const toggleMilestone = (goalId: string, milestoneId: string) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
-      return {
+      const updated = {
         ...g,
         milestones: g.milestones.map(m => m.id === milestoneId ? { ...m, completed: !m.completed } : m)
       };
+      const recordId = (g as { recordId?: string }).recordId ?? g.id;
+      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+        console.error("Failed to toggle milestone:", err);
+      });
+      return updated;
     }));
   };
 
   const value = useMemo(() => ({
     goals, addGoal, updateGoal, deleteGoal, deleteGoals, addKeyResult, updateKeyResult, addMilestone, addActivity, toggleMilestone, currentUser
-  }), [goals]);
+  }), [goals, currentUser]);
 
   return <GoalsContext.Provider value={value}>{children}</GoalsContext.Provider>;
 }
