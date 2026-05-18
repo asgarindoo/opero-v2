@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search, Target, TrendingUp, LayoutGrid, List, Filter, Inbox, BarChart2 } from "lucide-react";
+import { Plus, Search, LayoutGrid, List } from "lucide-react";
 import { useGoals } from "./context/GoalsContext";
 import GoalCard from "./components/GoalCard";
 import GoalListView from "./components/GoalListView";
 import GoalDetail from "./components/GoalDetail";
 import CreateGoalModal from "./components/CreateGoalModal";
-import type { Goal } from "./types";
+import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "../components/shared/DataState";
 
 type GoalFilter = "all" | "active" | "archive";
 
 export default function GoalsPage() {
-  const { goals, addGoal, updateGoal, deleteGoal } = useGoals();
+  const { goals, loading, error, addGoal, updateGoal, deleteGoal } = useGoals();
   const [view, setView] = useState<"list" | "grid">("grid");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<GoalFilter>("all");
@@ -147,7 +147,11 @@ export default function GoalsPage() {
 
       {/* ── Main Content ── */}
       <main className="flex-1 overflow-y-auto bg-[#fef8f8]">
-        {filtered.length > 0 ? (
+        {loading ? (
+          view === "list" ? <RowSkeleton rows={9} /> : <div className="p-8"><CardGridSkeleton /></div>
+        ) : error ? (
+          <ErrorState message={error} />
+        ) : filtered.length > 0 ? (
           view === "list" ? (
             <GoalListView goals={filtered} onGoalClick={(goal) => setSelectedGoalId(goal.id)} />
           ) : (
@@ -160,10 +164,11 @@ export default function GoalsPage() {
             </div>
           )
         ) : (
-          <div className="flex flex-col items-center justify-center py-40 text-on-surface-variant opacity-20">
-            <Inbox size={48} strokeWidth={1} className="mb-6" />
-            <p className="font-display text-[14px] font-semibold tracking-[0.2em] uppercase">No operational goals found</p>
-          </div>
+          <EmptyState
+            icon="target"
+            title="No goals found"
+            description="There are no goals matching your current view or search filters."
+          />
         )}
       </main>
 

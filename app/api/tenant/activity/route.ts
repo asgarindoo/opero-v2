@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listTenantActivity } from "@/lib/server/tenant-records";
+import { listActivities } from "@/lib/server/services/activity.service";
 
 export async function GET(req: NextRequest) {
   try {
     const moduleFilter = req.nextUrl.searchParams.get("module") ?? undefined;
-    const activities = await listTenantActivity(moduleFilter);
+    const activities = await listActivities(moduleFilter);
     return NextResponse.json({ activities });
   } catch (err) {
     if (err instanceof Response) return err;

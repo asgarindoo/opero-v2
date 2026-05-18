@@ -2,12 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Contact, ContactActivity, ContactStatus, RelationshipType } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { createContact, deleteContact, listContacts, updateContact as saveContact } from "@/lib/client/services/contact.service";
 
 interface ContactsContextType {
   contacts: Contact[];
@@ -28,7 +23,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Contact>("contacts");
+        const items = await listContacts<Contact>();
         if (!cancelled) setContacts(items);
       } catch (err) {
         console.error("Failed to load contacts:", err);
@@ -58,7 +53,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       };
 
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      updateTenantRecord<Contact>("contacts", recordId, updated).catch((err) => {
+      saveContact<Contact>(recordId, updated).catch((err) => {
         console.error("Failed to save contact note:", err);
       });
 
@@ -71,7 +66,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       if (c.id !== contactId) return c;
       const updated = { ...c, status };
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      updateTenantRecord<Contact>("contacts", recordId, updated).catch((err) => {
+      saveContact<Contact>(recordId, updated).catch((err) => {
         console.error("Failed to update contact status:", err);
       });
       return updated;
@@ -83,7 +78,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       if (c.id !== contactId) return c;
       const updated = { ...c, relationshipType: type };
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      updateTenantRecord<Contact>("contacts", recordId, updated).catch((err) => {
+      saveContact<Contact>(recordId, updated).catch((err) => {
         console.error("Failed to update relationship type:", err);
       });
       return updated;
@@ -108,7 +103,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       lastContacted: new Date().toISOString(),
       ...partial
     };
-    createTenantRecord<Contact>("contacts", newContact)
+    createContact<Contact>(newContact)
       .then((created) => setContacts(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create contact:", err));
   }, []);
@@ -119,7 +114,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = contacts.find(c => c.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("contacts", targetId).catch((err) => {
+        return deleteContact(targetId).catch((err) => {
           console.error("Failed to delete contact:", err);
         });
       })
@@ -149,3 +144,4 @@ export function useContacts() {
   }
   return context;
 }
+

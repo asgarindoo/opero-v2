@@ -100,15 +100,6 @@ export default function ContentPlannerPage() {
     setIsAddOpen(true);
   };
 
-  function Field({ label, children }: { label: string, children: React.ReactNode }) {
-    return (
-      <div className="space-y-1.5">
-        <label className="font-display text-[9px] font-bold uppercase tracking-[0.1em] text-black/60">{label}</label>
-        {children}
-      </div>
-    );
-  }
-
   function StatusDot({ status }: { status: ContentStatus }) {
     const colors = { "Draft": "bg-gray-400", "In Review": "bg-yellow-400", "Approved": "bg-blue-400", "Scheduled": "bg-green-400", "Published": "bg-purple-400" };
     return <div className={`w-1.5 h-1.5 rounded-full ${colors[status] || "bg-black"}`} />;

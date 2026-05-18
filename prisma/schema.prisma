@@ -331,7 +331,14 @@ model Flow {
   id             String   @id @default(cuid())
   organizationId String
   title          String?
+  name           String
+  category       String   @default("Operations")
+  description    String?
   status         String?
+  progress       Int      @default(0)
+  stages         Json     @default("[]")
+  notes          Json     @default("[]")
+  dueDate        DateTime?
   payload        Json?
   createdById    String?
   updatedById    String?

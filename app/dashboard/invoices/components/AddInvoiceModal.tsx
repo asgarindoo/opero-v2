@@ -6,7 +6,7 @@ import { InvoiceItem } from "../types";
 export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const { addInvoice } = useInvoices();
   const [contactName, setContactName] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState("INV-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 1000));
+  const [invoiceNumber, setInvoiceNumber] = useState(() => "INV-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 1000));
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<Partial<InvoiceItem>[]>([

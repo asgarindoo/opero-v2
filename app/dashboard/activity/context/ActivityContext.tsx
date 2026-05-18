@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ActivityLog, ActivityCategory, ActivityGroup, ActivityModule } from "../types";
-import { listTenantActivity } from "@/lib/client/tenant-records";
+import { listActivities } from "@/lib/client/services/activity.service";
 
 interface ActivityContextType {
   activities: ActivityLog[];
@@ -31,7 +31,7 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const items = await listTenantActivity();
+        const items = await listActivities();
         if (!cancelled) setAllActivities(items as ActivityLog[]);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load activity log");

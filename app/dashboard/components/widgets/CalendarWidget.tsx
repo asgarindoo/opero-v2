@@ -17,6 +17,11 @@ export default function CalendarWidget() {
   const now = new Date();
   const today = now.getDay(); // 0=Sun
   const adjustedToday = today === 0 ? 6 : today - 1; // Mon-based index
+  const weekDates = DAYS.map((_, i) => {
+    const date = new Date(now);
+    date.setDate(now.getDate() - (adjustedToday - i));
+    return date.getDate();
+  });
 
   // Calendar events from API (currently always empty — shows empty state gracefully)
   const events = (data?.calendar?.events ?? []) as Array<{
@@ -58,7 +63,7 @@ export default function CalendarWidget() {
                   opacity: i === adjustedToday ? 1 : 0.55,
                 }}
               >
-                {new Date(Date.now() - (adjustedToday - i) * 86400000).getDate()}
+                {weekDates[i]}
               </div>
             </div>
           ))}

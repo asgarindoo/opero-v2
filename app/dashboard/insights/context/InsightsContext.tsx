@@ -2,7 +2,10 @@
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { Metric, InsightTrend, ActivityPoint, InsightCategory } from "../types";
-import { listTenantActivity, listTenantRecords } from "@/lib/client/tenant-records";
+import { listActivities } from "@/lib/client/services/activity.service";
+import { listTransactions } from "@/lib/client/services/finance.service";
+import { listSales } from "@/lib/client/services/sale.service";
+import { listTasks } from "@/lib/client/services/task.service";
 
 interface InsightsContextType {
   metrics: Metric[];
@@ -55,10 +58,10 @@ export function InsightsProvider({ children }: { children: React.ReactNode }) {
     async function load() {
       try {
         const [tasks, sales, finance, activityLogs] = await Promise.all([
-          listTenantRecords<any>("tasks"),
-          listTenantRecords<any>("sales"),
-          listTenantRecords<any>("finance"),
-          listTenantActivity(),
+          listTasks<any>(),
+          listSales<any>(),
+          listTransactions<any>(),
+          listActivities(),
         ]);
 
         const start = rangeStart(dateRange);

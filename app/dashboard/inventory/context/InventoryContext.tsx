@@ -2,12 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Product, StockStatus, InventoryActivity } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { createProduct, deleteProduct, listProducts, updateProduct as saveProduct } from "@/lib/client/services/product.service";
 
 interface InventoryContextType {
   products: Product[];
@@ -34,7 +29,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Product>("inventory");
+        const items = await listProducts<Product>();
         if (!cancelled) setProducts(items);
       } catch (err) {
         console.error("Failed to load inventory:", err);
@@ -63,7 +58,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    createTenantRecord<Product>("inventory", newProduct)
+    createProduct<Product>(newProduct)
       .then((created) => setProducts(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create product:", err));
   }, []);
@@ -73,7 +68,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       if (p.id !== id) return p;
       const updated = { ...p, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (p as { recordId?: string }).recordId ?? p.id;
-      updateTenantRecord<Product>("inventory", recordId, updated).catch((err) => {
+      saveProduct<Product>(recordId, updated).catch((err) => {
         console.error("Failed to update product:", err);
       });
       return updated;
@@ -104,7 +99,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         updatedAt: newActivity.timestamp
       };
       const recordId = (p as { recordId?: string }).recordId ?? p.id;
-      updateTenantRecord<Product>("inventory", recordId, updated).catch((err) => {
+      saveProduct<Product>(recordId, updated).catch((err) => {
         console.error("Failed to adjust stock:", err);
       });
       return updated;
@@ -117,7 +112,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = products.find(p => p.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("inventory", targetId).catch((err) => {
+        return deleteProduct(targetId).catch((err) => {
           console.error("Failed to delete product:", err);
         });
       })
@@ -156,3 +151,4 @@ export function useInventory() {
   }
   return context;
 }
+

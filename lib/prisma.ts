@@ -17,10 +17,7 @@ const globalForPrisma = globalThis as unknown as {
 const connectionString = process.env.DATABASE_URL ?? "";
 const pool = new Pool({
   connectionString,
-  ssl: {
-    // Supabase uses self-signed certs behind the pooler in some regions
-    rejectUnauthorized: false,
-  },
+  ssl: false,
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
   max: 10,

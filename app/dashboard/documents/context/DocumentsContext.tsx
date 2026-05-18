@@ -3,11 +3,13 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { FileEntry, Folder, FileStatus, DocumentActivity } from "../types";
 import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+  createDocument,
+  createFolder,
+  deleteDocument,
+  listDocuments,
+  listFolders,
+  updateDocument,
+} from "@/lib/client/services/document.service";
 
 interface DocumentsContextType {
   files: FileEntry[];
@@ -30,8 +32,8 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     async function load() {
       try {
         const [fileItems, folderItems] = await Promise.all([
-          listTenantRecords<FileEntry>("documents"),
-          listTenantRecords<Folder>("document-folders"),
+          listDocuments<FileEntry>(),
+          listFolders<Folder>(),
         ]);
         if (!cancelled) {
           setFiles(fileItems);
@@ -66,7 +68,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       author: "You",
       ...partial
     };
-    createTenantRecord<FileEntry>("documents", newFile)
+    createDocument<FileEntry>(newFile)
       .then((created) => setFiles(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create file:", err));
   }, []);
@@ -76,7 +78,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       if (f.id !== id) return f;
       const updated = { ...f, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (f as { recordId?: string }).recordId ?? f.id;
-      updateTenantRecord<FileEntry>("documents", recordId, updated).catch((err) => {
+      updateDocument<FileEntry>(recordId, updated).catch((err) => {
         console.error("Failed to update file:", err);
       });
       return updated;
@@ -89,7 +91,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = files.find(f => f.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("documents", targetId).catch((err) => {
+        return deleteDocument(targetId).catch((err) => {
           console.error("Failed to delete file:", err);
         });
       })
@@ -103,7 +105,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       parentId,
       createdAt: new Date().toISOString()
     };
-    createTenantRecord<Folder>("document-folders", newFolder)
+    createFolder<Folder>(newFolder)
       .then((created) => setFolders(prev => [...prev, created]))
       .catch((err) => console.error("Failed to create folder:", err));
   }, []);

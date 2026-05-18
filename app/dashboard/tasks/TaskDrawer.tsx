@@ -60,7 +60,19 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
   const total    = task.checklist.length;
   const checkPct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  useEffect(() => { setTitleVal(task.title); setEditTitle(false); }, [task.id]);
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setTitleVal(task.title);
+      setEditTitle(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [task.id, task.title]);
 
   function submitComment() {
     if (!comment.trim()) return;

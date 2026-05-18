@@ -10,13 +10,10 @@ interface Props {
 }
 
 export default function LabelManager({ selected, onChange }: Props) {
-  const [allLabels, setAllLabels] = useState<string[]>([]);
+  const [allLabels, setAllLabels] = useState<string[]>(() => getLabels());
   const [creating,  setCreating]  = useState(false);
   const [newLabel,  setNewLabel]  = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Load from localStorage on mount (client-only)
-  useEffect(() => { setAllLabels(getLabels()); }, []);
 
   // Auto-focus create input
   useEffect(() => {

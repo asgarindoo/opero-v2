@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import type { Task, Status } from "../types";
 import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "../types";
+import { EmptyState, RowSkeleton } from "../../components/shared/DataState";
 
 interface Props {
   tasks: Task[];
@@ -143,43 +144,16 @@ export default function ListView({ tasks, groupBy, onTaskClick, onAddTask, searc
   }
 
   if (loading) {
-    return (
-      <div className="flex-1 overflow-y-auto db-sidebar">
-        {[...Array(3)].map((_, g) => (
-          <div key={g}>
-            <div className="flex items-center gap-2 px-4 py-2 sticky top-0" style={{ background: "var(--color-background)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-              <div className="w-2 h-2 rounded-full bg-black/[0.08] animate-pulse" />
-              <div className="h-2.5 w-20 rounded bg-black/[0.07] animate-pulse" />
-            </div>
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-2.5 border-b" style={{ borderColor: "rgba(0,0,0,0.05)" }}>
-                <div className="w-2 h-2 rounded-full bg-black/[0.06] animate-pulse shrink-0" />
-                <div className="flex-1 h-3 rounded bg-black/[0.06] animate-pulse" />
-                <div className="h-4 w-12 rounded bg-black/[0.05] animate-pulse" />
-                <div className="h-4 w-16 rounded bg-black/[0.04] animate-pulse" />
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    );
+    return <RowSkeleton rows={9} />;
   }
 
   if (filtered.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.02)" }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 32, color: "var(--color-on-surface-variant)", opacity: 0.3 }}>
-            checklist
-          </span>
-        </div>
-        <div className="text-center space-y-1 max-w-xs">
-          <p className="font-display font-bold text-[14px] text-on-surface">No tasks found</p>
-          <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 leading-relaxed">
-            There are no tasks matching your current view or search filters.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon="checklist"
+        title="No tasks found"
+        description="There are no tasks matching your current view or search filters."
+      />
     );
   }
 

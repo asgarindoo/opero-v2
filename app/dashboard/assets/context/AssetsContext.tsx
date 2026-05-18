@@ -1,13 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Asset, AssetStatus, AssetActivity } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { Asset, AssetActivity } from "../types";
+import { createAsset, deleteAsset, listAssets, updateAsset as saveAsset } from "@/lib/client/services/asset.service";
 
 interface AssetsContextType {
   assets: Asset[];
@@ -27,7 +22,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Asset>("assets");
+        const items = await listAssets<Asset>();
         if (!cancelled) setAssets(items);
       } catch (err) {
         console.error("Failed to load assets:", err);
@@ -54,7 +49,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    createTenantRecord<Asset>("assets", newAsset)
+    createAsset<Asset>(newAsset)
       .then((created) => setAssets(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create asset:", err));
   }, []);
@@ -64,7 +59,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
       if (a.id !== id) return a;
       const updated = { ...a, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (a as { recordId?: string }).recordId ?? a.id;
-      updateTenantRecord<Asset>("assets", recordId, updated).catch((err) => {
+      saveAsset<Asset>(recordId, updated).catch((err) => {
         console.error("Failed to update asset:", err);
       });
       return updated;
@@ -81,7 +76,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: "You"
       };
-      const updated = {
+      const updated: Asset = {
         ...a,
         assignedTo: person,
         department: department || a.department,
@@ -90,7 +85,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         updatedAt: newActivity.timestamp
       };
       const recordId = (a as { recordId?: string }).recordId ?? a.id;
-      updateTenantRecord<Asset>("assets", recordId, updated).catch((err) => {
+      saveAsset<Asset>(recordId, updated).catch((err) => {
         console.error("Failed to assign asset:", err);
       });
       return updated;
@@ -103,7 +98,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = assets.find(a => a.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("assets", targetId).catch((err) => {
+        return deleteAsset(targetId).catch((err) => {
           console.error("Failed to delete asset:", err);
         });
       })
@@ -128,3 +123,4 @@ export function useAssets() {
   }
   return context;
 }
+

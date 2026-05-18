@@ -2,12 +2,8 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Member, Role, Permission, ActivityLog, RoleType, InviteLink } from "../types";
-import {
-  createTenantRecord,
-  listTenantActivity,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { listActivities } from "@/lib/client/services/activity.service";
+import { listRoles, updateRole } from "@/lib/client/services/role.service";
 
 interface ApiMember {
   id: string;
@@ -21,6 +17,16 @@ interface ApiMember {
   status: "active" | "suspended";
   joinedAt: string;
   lastActive: string | null;
+}
+
+interface ApiActivity {
+  id: string;
+  user?: { id?: string | null } | null;
+  action: string;
+  description?: string | null;
+  entityType?: string | null;
+  entityName?: string | null;
+  timestamp: string;
 }
 
 export const PERMISSIONS: Permission[] = [
@@ -49,11 +55,6 @@ export const PERMISSIONS: Permission[] = [
   // Settings
   { id: "settings_manage", category: "Settings", name: "Workspace Settings", description: "Can manage billing, domains, and global settings." },
 ];
-
-const ALL_PERMS = PERMISSIONS.map(p => p.id);
-const ADMIN_PERMS = ALL_PERMS.filter(p => p !== "settings_manage");
-const STAFF_PERMS = ["dash_view", "tasks_view", "tasks_create", "goals_view", "flows_view", "chat_access", "members_view"];
-
 
 const roleMap: Record<string, RoleType> = {
   owner: "Owner",
@@ -107,13 +108,13 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
 
   const refreshActivity = useCallback(async () => {
     try {
-      const logs = await listTenantActivity("TEAM");
+      const logs = await listActivities("TEAM") as ApiActivity[];
       setActivityLogs(
-        (logs as any[]).map((log) => ({
+        logs.map((log) => ({
           id: log.id,
           userId: log.user?.id ?? "system",
           action: log.description || `${log.action} ${log.entityType ?? "Record"}`,
-          target: log.entityName,
+          target: log.entityName ?? undefined,
           timestamp: log.timestamp,
         }))
       );
@@ -143,7 +144,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       }
 
       const [rolesData, inviteRes] = await Promise.all([
-        listTenantRecords<Role>("roles"),
+        listRoles<Role>(),
         fetch("/api/tenant/invite"),
       ]);
 
@@ -165,10 +166,18 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshActivity]);
 
   useEffect(() => {
-    fetchMembers();
+    let cancelled = false;
+
+    Promise.resolve().then(() => {
+      if (!cancelled) void fetchMembers();
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [fetchMembers]);
 
   const inviteMember = useCallback(async (email: string, role: RoleType) => {
@@ -246,7 +255,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
 
     const recordId = (current as { recordId?: string }).recordId ?? current.id;
     try {
-      const updated = await updateTenantRecord<Role>("roles", recordId, { permissions: newPerms });
+      const updated = await updateRole<Role>(recordId, { permissions: newPerms });
       setRoles(prev => prev.map(r => r.id === roleId ? updated : r));
     } catch (err) {
       console.error("Failed to update role permissions:", err);

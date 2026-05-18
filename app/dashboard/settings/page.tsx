@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Building,
@@ -417,9 +418,16 @@ export default function SettingsPage() {
                           Logo
                         </label>
                         <div className="flex items-center gap-5">
-                          <div className="w-24 h-24 rounded-lg bg-black/[0.02] border border-dashed border-black/[0.1] flex items-center justify-center overflow-hidden text-on-surface-variant">
+                          <div className="relative w-24 h-24 rounded-lg bg-black/[0.02] border border-dashed border-black/[0.1] flex items-center justify-center overflow-hidden text-on-surface-variant">
                             {form.logo ? (
-                              <img src={form.logo} alt={`${form.name} logo`} className="w-full h-full object-cover" />
+                              <Image
+                                src={form.logo}
+                                alt={`${form.name} logo`}
+                                fill
+                                sizes="96px"
+                                className="object-cover"
+                                unoptimized
+                              />
                             ) : (
                               <Building size={32} className="opacity-40" />
                             )}

@@ -2,12 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Transaction, TransactionStatus, FinanceActivity, TransactionType, FinancialSummary, DateRange } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { createTransaction, deleteTransaction, listTransactions, updateTransaction as saveTransaction } from "@/lib/client/services/finance.service";
 
 interface FinanceContextType {
   transactions: Transaction[];
@@ -37,7 +32,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Transaction>("finance");
+        const items = await listTransactions<Transaction>();
         if (!cancelled) setTransactions(items);
       } catch (err) {
         console.error("Failed to load transactions:", err);
@@ -68,7 +63,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    createTenantRecord<Transaction>("finance", newTx)
+    createTransaction<Transaction>(newTx)
       .then((created) => setTransactions(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create transaction:", err));
   }, []);
@@ -78,7 +73,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       if (tx.id !== id) return tx;
       const updated = { ...tx, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (tx as { recordId?: string }).recordId ?? tx.id;
-      updateTenantRecord<Transaction>("finance", recordId, updated).catch((err) => {
+      saveTransaction<Transaction>(recordId, updated).catch((err) => {
         console.error("Failed to update transaction:", err);
       });
       return updated;
@@ -102,7 +97,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         updatedAt: newActivity.timestamp
       };
       const recordId = (tx as { recordId?: string }).recordId ?? tx.id;
-      updateTenantRecord<Transaction>("finance", recordId, updated).catch((err) => {
+      saveTransaction<Transaction>(recordId, updated).catch((err) => {
         console.error("Failed to approve transaction:", err);
       });
       return updated;
@@ -115,7 +110,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = transactions.find(tx => tx.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("finance", targetId).catch((err) => {
+        return deleteTransaction(targetId).catch((err) => {
           console.error("Failed to delete transaction:", err);
         });
       })
@@ -181,3 +176,4 @@ export function useFinance() {
   }
   return context;
 }
+

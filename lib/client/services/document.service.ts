@@ -1,0 +1,11 @@
+import { createDomainItem, deleteDomainItem, listDomainItems, updateDomainItem } from "../api";
+const documentsEndpoint = "/api/tenant/documents";
+const foldersEndpoint = "/api/tenant/document-folders";
+export const listDocuments = <T>() => listDomainItems<T>(documentsEndpoint);
+export const createDocument = <T>(data: T) => createDomainItem<T>(documentsEndpoint, data);
+export const updateDocument = <T>(id: string, data: Partial<T>) => updateDomainItem<T>(`${documentsEndpoint}/${id}`, data);
+export const deleteDocument = (id: string) => deleteDomainItem(`${documentsEndpoint}/${id}`);
+export const listFolders = <T>() => listDomainItems<T>(foldersEndpoint);
+export const createFolder = <T>(data: T) => createDomainItem<T>(foldersEndpoint, data);
+export const updateFolder = <T>(id: string, data: Partial<T>) => updateDomainItem<T>(`${foldersEndpoint}/${id}`, data);
+export const deleteFolder = (id: string) => deleteDomainItem(`${foldersEndpoint}/${id}`);

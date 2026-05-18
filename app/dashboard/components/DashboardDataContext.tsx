@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getDashboardSummary } from "@/lib/client/tenant-records";
+import { getDashboardSummary } from "@/lib/client/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -129,7 +129,15 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   }, []);
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+
+    Promise.resolve().then(() => {
+      if (!cancelled) void load();
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   return (

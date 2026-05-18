@@ -1,25 +1,54 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Plus, LayoutGrid, List, TrendingUp, BarChart2 } from "lucide-react";
-import { SAMPLE_FLOWS, FLOW_CATEGORIES, type Flow, type FlowCategory, type FlowStatus } from "./types";
+import React, { useState, useMemo, useEffect } from "react";
+import { Plus, LayoutGrid, List } from "lucide-react";
+import { FLOW_CATEGORIES, type Flow, type FlowCategory } from "./types";
 import FlowCard from "./components/FlowCard";
 import FlowDetail from "./components/FlowDetail";
 import CreateFlowModal from "./components/CreateFlowModal";
 import ModuleHeader from "../components/shared/ModuleHeader";
 import ModuleTabs from "../components/shared/ModuleTabs";
 import SearchInput from "../components/shared/SearchInput";
-import ExportButton from "../components/shared/ExportButton";
 import Button from "../components/ui/Button";
 import FlowListView from "./components/FlowListView";
+import { createFlow, deleteFlow, listFlows, updateFlow } from "@/lib/client/services/flow.service";
+import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "../components/shared/DataState";
 
 export default function FlowsPage() {
-  const [flows, setFlows] = useState<Flow[]>(SAMPLE_FLOWS);
+  const [flows, setFlows] = useState<Flow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "grid">("grid");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"All" | FlowCategory>("All");
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    listFlows<Flow>()
+      .then((data) => {
+        if (!cancelled) {
+          setFlows(data);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load flows:", err);
+        if (!cancelled) {
+          setFlows([]);
+          setError(err instanceof Error ? err.message : "Failed to load flows");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Tabs for the sub-header
   const categories = [
@@ -42,20 +71,35 @@ export default function FlowsPage() {
     , [flows, selectedFlowId]);
 
   // Handler for creating a new flow
-  const handleCreateFlow = (newFlow: Flow) => {
-    setFlows(prev => [newFlow, ...prev]);
-    setIsCreateModalOpen(false);
+  const handleCreateFlow = async (newFlow: Flow) => {
+    try {
+      const saved = await createFlow<Flow>(newFlow);
+      setFlows(prev => [saved, ...prev]);
+      setIsCreateModalOpen(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to create flow");
+    }
   };
 
   // Handler for updating a flow
-  const handleUpdateFlow = (updated: Flow) => {
-    setFlows(prev => prev.map(f => f.id === updated.id ? updated : f));
+  const handleUpdateFlow = async (updated: Flow) => {
+    try {
+      const saved = await updateFlow<Flow>(updated.id, updated);
+      setFlows(prev => prev.map(f => f.id === saved.id ? saved : f));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update flow");
+    }
   };
 
   // Handler for deleting/archiving a flow
-  const handleDeleteFlow = (id: string) => {
-    setFlows(prev => prev.filter(f => f.id !== id));
-    setSelectedFlowId(null);
+  const handleDeleteFlow = async (id: string) => {
+    try {
+      await deleteFlow(id);
+      setFlows(prev => prev.filter(f => f.id !== id));
+      setSelectedFlowId(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete flow");
+    }
   };
 
   if (selectedFlow) {
@@ -114,7 +158,7 @@ export default function FlowsPage() {
       <ModuleTabs
         tabs={categories}
         activeTab={selectedCategory}
-        onTabChange={(id) => setSelectedCategory(id as any)}
+        onTabChange={(id) => setSelectedCategory(id as "All" | FlowCategory)}
         background="bg-[#fbf5f5]"
         className="border-black/[0.03]"
         rightContent={(
@@ -125,7 +169,11 @@ export default function FlowsPage() {
       />
 
       <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-        {filtered.length > 0 ? (
+        {loading ? (
+          view === "grid" ? <CardGridSkeleton /> : <RowSkeleton rows={9} />
+        ) : error ? (
+          <ErrorState message={error} />
+        ) : filtered.length > 0 ? (
           view === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
               {filtered.map(flow => (
@@ -140,13 +188,24 @@ export default function FlowsPage() {
             <FlowListView
               flows={filtered}
               onFlowClick={(flow) => setSelectedFlowId(flow.id)}
+              onBulkDelete={async (ids) => {
+                try {
+                  for (const id of ids) {
+                    await deleteFlow(id);
+                  }
+                  setFlows(prev => prev.filter(f => !ids.includes(f.id)));
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : "Failed to delete flows");
+                }
+              }}
             />
           )
         ) : (
-          <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant opacity-20">
-            <Plus size={48} strokeWidth={1} className="mb-4" />
-            <p className="font-display text-[14px] font-bold tracking-widest uppercase">No flows matching your filter</p>
-          </div>
+          <EmptyState
+            icon="schema"
+            title="No flows found"
+            description="There are no flows matching your current view or search filters."
+          />
         )}
       </main>
 
@@ -159,3 +218,4 @@ export default function FlowsPage() {
     </div>
   );
 }
+

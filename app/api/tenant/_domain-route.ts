@@ -1,0 +1,104 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const PayloadSchema = z.object({
+  data: z.record(z.string(), z.unknown()),
+});
+
+type DomainService = {
+  list: () => Promise<unknown[]>;
+  get?: (id: string) => Promise<unknown | null>;
+  create: (data: Record<string, unknown>) => Promise<unknown>;
+  update: (id: string, data: Record<string, unknown>) => Promise<unknown | null>;
+  remove: (id: string) => Promise<unknown | null>;
+};
+
+export function createDomainCollectionHandlers(service: Pick<DomainService, "list" | "create">) {
+  return {
+    async GET(req: NextRequest) {
+      try {
+        const items = await service.list();
+        return NextResponse.json({ items });
+      } catch (err) {
+        if (err instanceof Response) return err;
+        console.error(`[GET ${req.nextUrl.pathname}]`, err);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      }
+    },
+
+    async POST(req: NextRequest) {
+      try {
+        const body = await req.json();
+        const parsed = PayloadSchema.safeParse(body);
+
+        if (!parsed.success) {
+          return NextResponse.json(
+            { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+            { status: 400 }
+          );
+        }
+
+        const item = await service.create(parsed.data.data);
+        return NextResponse.json({ item }, { status: 201 });
+      } catch (err) {
+        if (err instanceof Response) return err;
+        console.error(`[POST ${req.nextUrl.pathname}]`, err);
+        return NextResponse.json({ error: err instanceof Error ? err.message : "Internal server error" }, { status: 500 });
+      }
+    },
+  };
+}
+
+export function createDomainItemHandlers(service: Pick<DomainService, "update" | "remove"> & Pick<Partial<DomainService>, "get">) {
+  return {
+    async GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+      try {
+        const { id } = await params;
+        if (!service.get) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        const item = await service.get(id);
+        if (!item) return NextResponse.json({ error: "Record not found" }, { status: 404 });
+        return NextResponse.json({ item });
+      } catch (err) {
+        if (err instanceof Response) return err;
+        console.error(`[GET ${req.nextUrl.pathname}]`, err);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      }
+    },
+
+    async PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+      try {
+        const { id } = await params;
+        const body = await req.json();
+        const parsed = PayloadSchema.safeParse(body);
+
+        if (!parsed.success) {
+          return NextResponse.json(
+            { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+            { status: 400 }
+          );
+        }
+
+        const item = await service.update(id, parsed.data.data);
+        if (!item) return NextResponse.json({ error: "Record not found" }, { status: 404 });
+        return NextResponse.json({ item });
+      } catch (err) {
+        if (err instanceof Response) return err;
+        console.error(`[PATCH ${req.nextUrl.pathname}]`, err);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      }
+    },
+
+    async DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+      try {
+        const { id } = await params;
+        const item = await service.remove(id);
+        if (!item) return NextResponse.json({ error: "Record not found" }, { status: 404 });
+        return NextResponse.json({ success: true });
+      } catch (err) {
+        if (err instanceof Response) return err;
+        console.error(`[DELETE ${req.nextUrl.pathname}]`, err);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      }
+    },
+  };
+}

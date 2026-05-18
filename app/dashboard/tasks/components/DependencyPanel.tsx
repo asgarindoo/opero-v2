@@ -28,7 +28,7 @@ export default function DependencyPanel({ relationships, allTasks, onChange }: P
 
   function addRel(task: Task) {
     if (relationships.some(r => r.targetId === task.id && r.type === relType)) return;
-    onChange([...relationships, { id: `r${Date.now()}`, type: relType, targetId: task.id, targetTitle: task.title }]);
+    onChange([...relationships, { id: `r-${relType}-${task.id}`, type: relType, targetId: task.id, targetTitle: task.title }]);
     setAdding(false); setQuery("");
   }
 

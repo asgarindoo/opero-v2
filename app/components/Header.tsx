@@ -39,9 +39,9 @@ export default function Header() {
         : "bg-transparent"
         }`}
     >
-      <div className="max-w-[1440px] mx-auto px-[20px] sm:px-[32px] md:px-[48px] w-full flex items-center justify-between h-16 sm:h-20">
+      <div className="max-w-container-max mx-auto px-5 sm:px-[32px] md:px-[48px] w-full flex items-center justify-between h-16 sm:h-20">
         <div className="flex items-center">
-          <Link href="/" className="font-display font-bold tracking-[-0.05em] text-primary" style={{ fontSize: "clamp(20px, 2.5vw, 26px)" }}>
+          <Link href="/" className="font-display font-bold tracking-tighter text-primary" style={{ fontSize: "clamp(20px, 2.5vw, 26px)" }}>
             OP<span className="opacity-25">E</span>RO
           </Link>
         </div>
@@ -69,14 +69,14 @@ export default function Header() {
                 <span className="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center font-display font-bold text-[11px]">
                   {userInitial}
                 </span>
-                <span className="hidden sm:inline max-w-[120px] truncate font-body-sm text-[12px] font-semibold text-primary">
+                <span className="hidden sm:inline max-w-30 truncate font-body-sm text-[12px] font-semibold text-primary">
                   {userName}
                 </span>
                 <span className="material-symbols-outlined text-[14px] text-on-surface-variant/50">expand_more</span>
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 top-full mt-2 w-[230px] overflow-hidden rounded-xl border border-outline/10 bg-surface-container-lowest shadow-[0_16px_44px_rgba(0,0,0,0.12)]">
+                <div className="absolute right-0 top-full mt-2 w-57.5 overflow-hidden rounded-xl border border-outline/10 bg-surface-container-lowest shadow-[0_16px_44px_rgba(0,0,0,0.12)]">
                   <div className="border-b border-outline/10 px-4 py-3">
                     <p className="font-body-sm text-[13px] font-semibold text-primary truncate">{userName}</p>
                     <p className="font-body-sm text-[11px] text-on-surface-variant/60 truncate">{user.email}</p>
@@ -101,13 +101,13 @@ export default function Header() {
             <>
               <a
                 href="/login"
-                className="text-on-surface-variant hover:text-primary font-label-caps text-[10px] sm:text-[11px] uppercase tracking-[0.05em] font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-full border border-outline/15 hover:border-outline/40 hover:bg-surface-container transition-all duration-200"
+                className="text-on-surface-variant hover:text-primary font-label-caps text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-full border border-outline/15 hover:border-outline/40 hover:bg-surface-container transition-all duration-200"
               >
                 Login
               </a>
               <a
                 href="/register"
-                className="bg-primary text-on-primary font-label-caps text-[10px] sm:text-[11px] uppercase tracking-[0.05em] font-semibold px-4 sm:px-6 py-2 sm:py-2.5 rounded-full flex items-center gap-1.5 hover:bg-primary/90 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-px"
+                className="bg-primary text-on-primary font-label-caps text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold px-4 sm:px-6 py-2 sm:py-2.5 rounded-full flex items-center gap-1.5 hover:bg-primary/90 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-px"
               >
                 Start Free
                 <span className="material-symbols-outlined text-[13px] hidden sm:inline">arrow_forward</span>
@@ -138,7 +138,7 @@ export default function Header() {
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-between text-on-surface-variant hover:text-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-4 py-3.5 rounded-xl hover:bg-surface-container transition-all duration-200"
+                className="flex items-center justify-between text-on-surface-variant hover:text-primary font-label-caps text-[11px] uppercase tracking-wider font-semibold px-4 py-3.5 rounded-xl hover:bg-surface-container transition-all duration-200"
               >
                 {item.label}
                 <span className="material-symbols-outlined text-[14px] opacity-30">chevron_right</span>
@@ -186,7 +186,7 @@ function MobileMenuLink({ href, label, onClick }: { href: string; label: string;
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center justify-between text-on-surface-variant hover:text-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-4 py-3.5 rounded-xl hover:bg-surface-container transition-all duration-200"
+      className="flex items-center justify-between text-on-surface-variant hover:text-primary font-label-caps text-[11px] uppercase tracking-wider font-semibold px-4 py-3.5 rounded-xl hover:bg-surface-container transition-all duration-200"
     >
       {label}
       <span className="material-symbols-outlined text-[14px] opacity-30">chevron_right</span>

@@ -108,17 +108,21 @@ export default function ReportDetail({ report, onClose }: ReportDetailProps) {
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-black/[0.03]">
-                     {[1,2,3,4,5,6,7,8].map(i => (
-                        <tr key={i} className="hover:bg-black/[0.01] transition-colors">
-                           <td className="px-6 py-4 font-display text-[12px] text-on-surface-variant opacity-60">#MET-{1000+i}</td>
-                           <td className="px-6 py-4 font-display text-[13px] font-semibold text-on-surface">Core Performance Node {i}</td>
-                           <td className="px-6 py-4 font-display text-[13px] text-on-surface">{(Math.random() * 100).toFixed(2)} units</td>
-                           <td className="px-6 py-4 font-display text-[13px] text-on-surface-variant opacity-60">85.00 units</td>
-                           <td className={`px-6 py-4 font-display text-[12px] font-bold text-right ${Math.random() > 0.5 ? 'text-emerald-500' : 'text-red-500'}`}>
-                              {Math.random() > 0.5 ? '+' : '-'}{(Math.random() * 15).toFixed(1)}%
-                           </td>
-                        </tr>
-                     ))}
+                     {[1,2,3,4,5,6,7,8].map(i => {
+                        const current = 62 + i * 4.37;
+                        const variance = i % 2 === 0 ? i * 1.4 : -i * 1.1;
+                        return (
+                           <tr key={i} className="hover:bg-black/[0.01] transition-colors">
+                              <td className="px-6 py-4 font-display text-[12px] text-on-surface-variant opacity-60">#MET-{1000+i}</td>
+                              <td className="px-6 py-4 font-display text-[13px] font-semibold text-on-surface">Core Performance Node {i}</td>
+                              <td className="px-6 py-4 font-display text-[13px] text-on-surface">{current.toFixed(2)} units</td>
+                              <td className="px-6 py-4 font-display text-[13px] text-on-surface-variant opacity-60">85.00 units</td>
+                              <td className={`px-6 py-4 font-display text-[12px] font-bold text-right ${variance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                 {variance >= 0 ? '+' : '-'}{Math.abs(variance).toFixed(1)}%
+                              </td>
+                           </tr>
+                        );
+                     })}
                   </tbody>
                </table>
             </div>

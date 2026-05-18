@@ -2,11 +2,7 @@
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { Report, ReportType, ReportStatus } from "../types";
-import {
-  createTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { createReport, listReports, updateReport as saveReport } from "@/lib/client/services/report.service";
 
 interface ReportsContextType {
   reports: Report[];
@@ -31,7 +27,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Report>("reports");
+        const items = await listReports<Report>();
         if (!cancelled) setReports(items);
       } catch (err) {
         console.error("Failed to load reports:", err);
@@ -52,7 +48,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    createTenantRecord<Report>("reports", newReport)
+    createReport<Report>(newReport)
       .then((created) => setReports(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create report:", err));
   };
@@ -60,9 +56,9 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const generateReport = (id: string) => {
     setReports(prev => prev.map(r => {
       if (r.id !== id) return r;
-      const updated = { ...r, status: "Ready", lastGeneratedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      const updated: Report = { ...r, status: "Ready", lastGeneratedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       const recordId = (r as { recordId?: string }).recordId ?? r.id;
-      updateTenantRecord<Report>("reports", recordId, updated).catch((err) => {
+      saveReport<Report>(recordId, updated).catch((err) => {
         console.error("Failed to generate report:", err);
       });
       return updated;
@@ -72,9 +68,9 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const archiveReport = (id: string) => {
     setReports(prev => prev.map(r => {
       if (r.id !== id) return r;
-      const updated = { ...r, status: "Archived", updatedAt: new Date().toISOString() };
+      const updated: Report = { ...r, status: "Archived", updatedAt: new Date().toISOString() };
       const recordId = (r as { recordId?: string }).recordId ?? r.id;
-      updateTenantRecord<Report>("reports", recordId, updated).catch((err) => {
+      saveReport<Report>(recordId, updated).catch((err) => {
         console.error("Failed to archive report:", err);
       });
       return updated;
@@ -109,3 +105,4 @@ export function useReports() {
   if (!context) throw new Error("useReports must be used within ReportsProvider");
   return context;
 }
+

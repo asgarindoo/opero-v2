@@ -2,12 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import type { Campaign } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { createCampaign, deleteCampaign, listCampaigns, updateCampaign as saveCampaign } from "@/lib/client/services/campaign.service";
 
 interface CampaignsContextType {
   campaigns: Campaign[];
@@ -26,7 +21,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Campaign>("campaigns");
+        const items = await listCampaigns<Campaign>();
         if (!cancelled) setCampaigns(items);
       } catch (err) {
         console.error("Failed to load campaigns:", err);
@@ -61,7 +56,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    createTenantRecord<Campaign>("campaigns", newCampaign)
+    createCampaign<Campaign>(newCampaign)
       .then((created) => setCampaigns(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create campaign:", err));
   }, []);
@@ -71,7 +66,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
       if (c.id !== id) return c;
       const updated = { ...c, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      updateTenantRecord<Campaign>("campaigns", recordId, updated).catch((err) => {
+      saveCampaign<Campaign>(recordId, updated).catch((err) => {
         console.error("Failed to update campaign:", err);
       });
       return updated;
@@ -84,7 +79,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = campaigns.find(c => c.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("campaigns", targetId).catch((err) => {
+        return deleteCampaign(targetId).catch((err) => {
           console.error("Failed to delete campaign:", err);
         });
       })
@@ -108,3 +103,4 @@ export function useCampaigns() {
   }
   return context;
 }
+

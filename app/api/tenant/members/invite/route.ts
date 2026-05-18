@@ -10,7 +10,7 @@ const InviteSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { tenant, userId } = await requireRole(["owner", "admin", "member"]);
+    const { tenant, user } = await requireRole(["owner", "admin", "member"]);
     const body = await req.json();
     const parsed = InviteSchema.safeParse(body);
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         role: parsed.data.role ?? "member",
         status: "pending",
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        inviterId: userId,
+        inviterId: user.id,
       },
       select: {
         id: true,

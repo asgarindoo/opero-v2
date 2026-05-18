@@ -2,12 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { SaleOpportunity, SaleStatus, PaymentStatus, SalePriority, SaleActivity } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { createSale, deleteSale, listSales, updateSale as saveSale } from "@/lib/client/services/sale.service";
 
 interface SalesContextType {
   sales: SaleOpportunity[];
@@ -27,7 +22,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<SaleOpportunity>("sales");
+        const items = await listSales<SaleOpportunity>();
         if (!cancelled) setSales(items);
       } catch (err) {
         console.error("Failed to load sales:", err);
@@ -62,7 +57,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    createTenantRecord<SaleOpportunity>("sales", newSale)
+    createSale<SaleOpportunity>(newSale)
       .then((created) => setSales(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create sale:", err));
   }, [sales.length]);
@@ -72,7 +67,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       if (s.id !== id) return s;
       const updated = { ...s, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (s as { recordId?: string }).recordId ?? s.id;
-      updateTenantRecord<SaleOpportunity>("sales", recordId, updated).catch((err) => {
+      saveSale<SaleOpportunity>(recordId, updated).catch((err) => {
         console.error("Failed to update sale:", err);
       });
       return updated;
@@ -94,7 +89,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
         updatedAt: newActivity.timestamp
       };
       const recordId = (s as { recordId?: string }).recordId ?? s.id;
-      updateTenantRecord<SaleOpportunity>("sales", recordId, updated).catch((err) => {
+      saveSale<SaleOpportunity>(recordId, updated).catch((err) => {
         console.error("Failed to add sale activity:", err);
       });
       return updated;
@@ -107,7 +102,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = sales.find(s => s.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("sales", targetId).catch((err) => {
+        return deleteSale(targetId).catch((err) => {
           console.error("Failed to delete sale:", err);
         });
       })
@@ -132,3 +127,4 @@ export function useSales() {
   }
   return context;
 }
+

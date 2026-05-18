@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Loader2 } from "lucide-react";
-import { listTenantRecords, createTenantRecord, updateTenantRecord, deleteTenantRecord } from "@/lib/client/tenant-records";
+import { Plus } from "lucide-react";
+import { createTask as createTaskRecord, deleteTask as deleteTaskRecord, listTasks, updateTask as updateTaskRecord } from "@/lib/client/services/task.service";
 import type { Task, Status } from "./types";
 import ViewSwitcher, { type ViewType } from "./views/ViewSwitcher";
 import ListView from "./views/ListView";
@@ -37,7 +37,7 @@ export default function TasksPage() {
   useEffect(() => {
     async function fetchTasks() {
       try {
-        const data = await listTenantRecords<Task>("tasks");
+        const data = await listTasks<Task>();
         setTasks(data);
       } catch (err) {
         console.error("Failed to load tasks:", err);
@@ -57,7 +57,7 @@ export default function TasksPage() {
     const taskToUpdate = tasks.find(t => t.id === id);
     if (taskToUpdate?.recordId) {
       try {
-        await updateTenantRecord("tasks", taskToUpdate.recordId, patch);
+        await updateTaskRecord<Task>(taskToUpdate.recordId, patch);
       } catch (err) {
         console.error("Failed to update task", err);
       }
@@ -71,7 +71,7 @@ export default function TasksPage() {
 
     if (taskToDelete?.recordId) {
       try {
-        await deleteTenantRecord("tasks", taskToDelete.recordId);
+        await deleteTaskRecord(taskToDelete.recordId);
       } catch (err) {
         console.error("Failed to delete task", err);
       }
@@ -84,7 +84,7 @@ export default function TasksPage() {
     setTasks(prev => [...prev, optimisticTask]);
     
     try {
-      const saved = await createTenantRecord<Task>("tasks", task);
+      const saved = await createTaskRecord<Task>(task);
       // Replace optimistic with saved
       setTasks(prev => prev.map(t => t.id === optimisticTask.id ? saved : t));
     } catch (err) {
@@ -188,3 +188,4 @@ export default function TasksPage() {
     </div>
   );
 }
+

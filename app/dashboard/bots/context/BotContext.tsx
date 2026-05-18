@@ -1,13 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Bot, BotStatus, PlatformType } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { Bot, BotStatus } from "../types";
+import { createBot, deleteBot as removeBot, listBots, updateBot as saveBot } from "@/lib/client/services/bot.service";
 
 interface BotContextType {
   bots: Bot[];
@@ -27,7 +22,7 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Bot>("bots");
+        const items = await listBots<Bot>();
         if (!cancelled) setBots(items);
       } catch (err) {
         console.error("Failed to load bots:", err);
@@ -61,7 +56,7 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    createTenantRecord<Bot>("bots", newBot)
+    createBot<Bot>(newBot)
       .then((created) => setBots(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create bot:", err));
   }, []);
@@ -69,14 +64,14 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
   const updateBot = useCallback((id: string, updates: Partial<Bot>) => {
     setBots(prev => prev.map(b => {
       if (b.id !== id) return b;
-      const updated = { 
+      const updated: Bot = { 
         ...b, 
         ...updates, 
         updatedAt: new Date().toISOString(),
         activities: [...b.activities, { id: "a" + Date.now(), type: "config_updated", description: "Configuration updated", timestamp: new Date().toISOString(), author: "Current User" }]
       };
       const recordId = (b as { recordId?: string }).recordId ?? b.id;
-      updateTenantRecord<Bot>("bots", recordId, updated).catch((err) => {
+      saveBot<Bot>(recordId, updated).catch((err) => {
         console.error("Failed to update bot:", err);
       });
       return updated;
@@ -87,7 +82,7 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
     setBots(prev => prev.filter(b => b.id !== id));
     const recordId = bots.find(b => b.id === id) as { recordId?: string } | undefined;
     const targetId = recordId?.recordId ?? id;
-    deleteTenantRecord("bots", targetId).catch((err) => {
+    removeBot(targetId).catch((err) => {
       console.error("Failed to delete bot:", err);
     });
   }, [bots]);
@@ -95,14 +90,14 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
   const updateStatus = useCallback((id: string, status: BotStatus) => {
     setBots(prev => prev.map(b => {
       if (b.id !== id) return b;
-      const updated = { 
+      const updated: Bot = { 
         ...b, 
         status, 
         updatedAt: new Date().toISOString(),
         activities: [...b.activities, { id: "a" + Date.now(), type: "status_changed", description: `Status changed to ${status}`, timestamp: new Date().toISOString(), author: "Current User" }]
       };
       const recordId = (b as { recordId?: string }).recordId ?? b.id;
-      updateTenantRecord<Bot>("bots", recordId, updated).catch((err) => {
+      saveBot<Bot>(recordId, updated).catch((err) => {
         console.error("Failed to update bot status:", err);
       });
       return updated;
@@ -127,3 +122,4 @@ export function useBots() {
   }
   return context;
 }
+

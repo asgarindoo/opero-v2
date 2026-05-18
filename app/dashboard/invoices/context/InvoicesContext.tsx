@@ -1,13 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Invoice, InvoiceStatus, InvoiceActivity, InvoiceItem } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-} from "@/lib/client/tenant-records";
+import { Invoice, InvoiceActivity } from "../types";
+import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/lib/client/services/invoice.service";
 
 interface InvoicesContextType {
   invoices: Invoice[];
@@ -27,7 +22,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const items = await listTenantRecords<Invoice>("invoices");
+        const items = await listInvoices<Invoice>();
         if (!cancelled) setInvoices(items);
       } catch (err) {
         console.error("Failed to load invoices:", err);
@@ -62,7 +57,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
       ...partial
     };
-    createTenantRecord<Invoice>("invoices", newInvoice)
+    createInvoice<Invoice>(newInvoice)
       .then((created) => setInvoices(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create invoice:", err));
   }, []);
@@ -72,7 +67,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       if (inv.id !== id) return inv;
       const updated = { ...inv, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (inv as { recordId?: string }).recordId ?? inv.id;
-      updateTenantRecord<Invoice>("invoices", recordId, updated).catch((err) => {
+      saveInvoice<Invoice>(recordId, updated).catch((err) => {
         console.error("Failed to update invoice:", err);
       });
       return updated;
@@ -89,14 +84,14 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: "You"
       };
-      const updated = {
+      const updated: Invoice = {
         ...inv,
         status: "Paid",
         activities: [newActivity, ...inv.activities],
         updatedAt: newActivity.timestamp
       };
       const recordId = (inv as { recordId?: string }).recordId ?? inv.id;
-      updateTenantRecord<Invoice>("invoices", recordId, updated).catch((err) => {
+      saveInvoice<Invoice>(recordId, updated).catch((err) => {
         console.error("Failed to mark invoice as paid:", err);
       });
       return updated;
@@ -109,7 +104,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       ids.map((id) => {
         const recordId = invoices.find(inv => inv.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("invoices", targetId).catch((err) => {
+        return deleteInvoice(targetId).catch((err) => {
           console.error("Failed to delete invoice:", err);
         });
       })
@@ -134,3 +129,4 @@ export function useInvoices() {
   }
   return context;
 }
+

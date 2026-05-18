@@ -2,13 +2,7 @@
 
 import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from "react";
 import { Goal, KeyResult, User, Milestone, Activity } from "../types";
-import {
-  createTenantRecord,
-  deleteTenantRecord,
-  listTenantRecords,
-  updateTenantRecord,
-  getProfile,
-} from "@/lib/client/tenant-records";
+import { createGoal, deleteGoal as removeGoal, listGoals, updateGoal as saveGoal } from "@/lib/client/services/goal.service";
 
 // Helper to calculate progress
 function calculateGoalProgress(keyResults: KeyResult[]): number {
@@ -26,6 +20,8 @@ function calculateGoalProgress(keyResults: KeyResult[]): number {
 
 interface GoalsContextType {
   goals: Goal[];
+  loading: boolean;
+  error: string | null;
   addGoal: (goal: Goal) => void;
   updateGoal: (goalId: string, updates: Partial<Goal>) => void;
   deleteGoal: (goalId: string) => void;
@@ -42,35 +38,25 @@ const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [currentUser, setCurrentUser] = useState<User>({ id: "", name: "", initials: "" });
+  const [currentUser] = useState<User>({ id: "", name: "", initials: "" });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const [items, profile] = await Promise.all([
-          listTenantRecords<Goal>("goals"),
-          getProfile(),
-        ]);
+        const items = await listGoals<Goal>();
         if (!cancelled) {
           setGoals(items.map(g => ({ ...g, progress: calculateGoalProgress(g.keyResults) })));
-          if (profile?.user) {
-            const name = profile.user.name || profile.user.email || "User";
-            setCurrentUser({
-              id: profile.user.id,
-              name,
-              initials: name
-                .split(/\s+/)
-                .map((p: string) => p[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase(),
-            });
-          }
+          setError(null);
         }
       } catch (err) {
         console.error("Failed to load goals:", err);
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load goals");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -82,7 +68,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 
   const addGoal = (goal: Goal) => {
     const next = { ...goal, progress: calculateGoalProgress(goal.keyResults) };
-    createTenantRecord<Goal>("goals", next)
+    createGoal<Goal>(next)
       .then((created) => setGoals(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create goal:", err));
   };
@@ -92,7 +78,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       if (g.id !== goalId) return g;
       const updated = { ...g, ...updates };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
-      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+      saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to update goal:", err);
       });
       return updated;
@@ -103,7 +89,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
     setGoals(prev => prev.filter(g => g.id !== goalId));
     const recordId = goals.find(g => g.id === goalId) as { recordId?: string } | undefined;
     const targetId = recordId?.recordId ?? goalId;
-    deleteTenantRecord("goals", targetId).catch((err) => {
+    removeGoal(targetId).catch((err) => {
       console.error("Failed to delete goal:", err);
     });
   };
@@ -114,7 +100,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       ids.map((id) => {
         const recordId = goals.find(g => g.id === id) as { recordId?: string } | undefined;
         const targetId = recordId?.recordId ?? id;
-        return deleteTenantRecord("goals", targetId).catch((err) => {
+        return removeGoal(targetId).catch((err) => {
           console.error("Failed to delete goal:", err);
         });
       })
@@ -129,7 +115,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       const newProgress = calculateGoalProgress(newKRs);
       const updated = { ...g, keyResults: newKRs, progress: newProgress };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
-      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+      saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to add key result:", err);
       });
       return updated;
@@ -143,7 +129,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       const newProgress = calculateGoalProgress(newKRs);
       const updated = { ...g, keyResults: newKRs, progress: newProgress };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
-      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+      saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to update key result:", err);
       });
       return updated;
@@ -156,7 +142,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       const newMs: Milestone = { ...msData, id: `ms_${Date.now()}` };
       const updated = { ...g, milestones: [...g.milestones, newMs] };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
-      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+      saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to add milestone:", err);
       });
       return updated;
@@ -173,7 +159,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       if (g.id !== goalId) return g;
       const updated = { ...g, activities: [newActivity, ...g.activities] };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
-      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+      saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to add activity:", err);
       });
       return updated;
@@ -188,7 +174,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
         milestones: g.milestones.map(m => m.id === milestoneId ? { ...m, completed: !m.completed } : m)
       };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
-      updateTenantRecord<Goal>("goals", recordId, updated).catch((err) => {
+      saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to toggle milestone:", err);
       });
       return updated;
@@ -196,8 +182,8 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({
-    goals, addGoal, updateGoal, deleteGoal, deleteGoals, addKeyResult, updateKeyResult, addMilestone, addActivity, toggleMilestone, currentUser
-  }), [goals, currentUser]);
+    goals, loading, error, addGoal, updateGoal, deleteGoal, deleteGoals, addKeyResult, updateKeyResult, addMilestone, addActivity, toggleMilestone, currentUser
+  }), [goals, loading, error, currentUser]);
 
   return <GoalsContext.Provider value={value}>{children}</GoalsContext.Provider>;
 }
