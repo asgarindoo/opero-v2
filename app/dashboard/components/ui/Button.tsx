@@ -18,8 +18,7 @@ export default function Button({
   icon: Icon,
   iconPosition = "left",
   isLoading,
-  className = "",
-  style,
+  className = "", 
   ...props
 }: ButtonProps) {
   const baseStyles = "inline-flex items-center justify-center gap-2 rounded-[6px] font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
