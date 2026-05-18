@@ -1,27 +1,31 @@
 "use client";
 
-import {
-  CheckSquare,
-  Kanban,
-  GitFork,
-  ShoppingCart,
-  UserRound,
-  BarChart2,
-  type LucideIcon,
-} from "lucide-react";
-import { useDashboardData } from "./DashboardDataContext";
 
-const QUICK_ACTIONS: { icon: LucideIcon; label: string; href: string }[] = [
-  { icon: CheckSquare, label: "New Task", href: "/dashboard/tasks" },
-  { icon: Kanban, label: "Boards", href: "/dashboard/flows" },
-  { icon: GitFork, label: "Flows", href: "/dashboard/flows" },
-  { icon: ShoppingCart, label: "Sales", href: "/dashboard/sales" },
-  { icon: UserRound, label: "Clients", href: "/dashboard/contacts" },
-  { icon: BarChart2, label: "Insights", href: "/dashboard/insights" },
-];
+import { useState, useEffect } from "react";
+import { useDashboardData } from "./DashboardDataContext";
+import { useSession } from "@/lib/auth-client";
 
 export default function DashboardHero() {
   const { data } = useDashboardData();
+  const { data: session } = useSession();
+
+  const [timeData, setTimeData] = useState({ timeStr: "", ampm: "" });
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // 0 should be 12
+      const hh = String(hours).padStart(2, '0');
+      setTimeData({ timeStr: `${hh}:${minutes}`, ampm });
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const hour = new Date().getHours();
   const greeting =
@@ -32,7 +36,7 @@ export default function DashboardHero() {
   });
 
   const heroStats = data?.heroStats;
-  const tenantName = data?.tenantName ?? "Your Workspace";
+  const userName = session?.user?.name ?? "User";
 
   const chips = heroStats
     ? [
@@ -62,7 +66,7 @@ export default function DashboardHero() {
       <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)" }} />
       <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)" }} />
 
-      <div className="relative px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="relative px-6 py-5 flex flex-col md:flex-row md:items-center gap-4 justify-between">
         {/* Left: Greeting */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
@@ -70,8 +74,8 @@ export default function DashboardHero() {
               {today}
             </span>
           </div>
-          <h1 className="font-display text-[22px] font-bold leading-tight mb-1" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
-            {greeting}, {tenantName} 👋
+          <h1 className="font-display text-[22px] font-bold leading-tight mb-3" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
+            {greeting}, {userName} 👋
           </h1>
           <div className="flex items-center gap-3 flex-wrap">
             {chips.map((chip) => (
@@ -86,28 +90,16 @@ export default function DashboardHero() {
           </div>
         </div>
 
-        {/* Right: Quick actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {QUICK_ACTIONS.map((action) => {
-            const Icon = action.icon;
-            return (
-              <a
-                key={action.label}
-                href={action.href}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] transition-all duration-150 hover:-translate-y-0.5"
-                style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  color: "rgba(255,255,255,0.85)",
-                }}
-              >
-                <Icon size={13} strokeWidth={1.75} style={{ color: "rgba(255,255,255,0.85)" }} />
-                <span className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold hidden sm:inline">
-                  {action.label}
-                </span>
-              </a>
-            );
-          })}
+        {/* Right side: Large Minimalist Clock with AM/PM */}
+        <div className="md:self-center shrink-0 w-full md:w-auto flex md:justify-end select-none">
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-[44px] font-semibold tracking-tight" style={{ color: "rgba(255, 255, 255, 0.95)", lineHeight: 1 }}>
+              {timeData.timeStr || "—:—"}
+            </span>
+            <span className="font-label-caps text-[10px] font-bold tracking-wider" style={{ color: "rgba(255, 255, 255, 0.45)", textTransform: "uppercase" }}>
+              {timeData.ampm}
+            </span>
+          </div>
         </div>
       </div>
     </div>

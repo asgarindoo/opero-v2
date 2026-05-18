@@ -22,7 +22,7 @@ export default function RecentActivityWidget() {
   return (
     <div
       className="db-widget rounded-[10px] overflow-hidden flex flex-col"
-      style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: 390 }}
+      style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: 430 }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
