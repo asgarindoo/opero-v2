@@ -77,8 +77,8 @@ export default function TableView({ tasks, onTaskClick, onStatusChange }: Props)
           </thead>
           <tbody>
             {paged.map((task, i) => {
-              const pm  = PRIORITY_META[task.priority];
-              const sm  = STATUS_META[task.status];
+              const pm = PRIORITY_META[task.priority] || { label: task.priority || "None", bg: "rgba(0,0,0,0.05)", color: "rgba(0,0,0,0.6)" };
+              const sm = STATUS_META[task.status] || { dot: "rgba(0,0,0,0.3)", color: "rgba(0,0,0,0.38)", bg: "rgba(0,0,0,0.04)" };
               return (
                 <tr
                   key={task.id}

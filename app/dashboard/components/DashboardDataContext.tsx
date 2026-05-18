@@ -10,7 +10,8 @@ export interface TaskItem {
   title: string;
   priority: string;
   status: string;
-  assignee: string;
+  assignee: string;          // kept for backward compat (first initials)
+  assignees: { id: string; name: string; initials: string }[];
   due: string | null;
   labels: string[];
   checklist: { done: number; total: number };

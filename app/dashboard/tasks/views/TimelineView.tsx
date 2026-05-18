@@ -90,7 +90,7 @@ export default function TimelineView({ tasks, onTaskClick }: Props) {
 
         {/* ── Groups ── */}
         {statusGroups.map(group => {
-          const sm = STATUS_META[group.status];
+          const sm = STATUS_META[group.status] || { dot: "rgba(0,0,0,0.3)" };
           return (
             <div key={group.status}>
               {/* Group label */}
@@ -102,7 +102,7 @@ export default function TimelineView({ tasks, onTaskClick }: Props) {
 
               {/* Task bars */}
               {group.items.map(({ task, start, width }) => {
-                const pm = PRIORITY_META[task.priority];
+                const pm = PRIORITY_META[task.priority] || { label: task.priority || "None", bg: "rgba(0,0,0,0.05)", color: "rgba(0,0,0,0.6)" };
                 return (
                   <div key={task.id} className="flex items-center border-b" style={{ borderColor: "rgba(0,0,0,0.04)", height: ROW_H }}>
                     {/* Label */}

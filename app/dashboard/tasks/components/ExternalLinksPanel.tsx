@@ -9,9 +9,12 @@ interface Props {
   onChange: (links: ExternalLink[]) => void;
 }
 
-function getFavicon(url: string): string {
-  try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=16`; }
-  catch { return ""; }
+function getFavicon(url: string): string | null {
+  try {
+    const host = new URL(url).hostname;
+    if (!host) return null;
+    return `https://www.google.com/s2/favicons?domain=${host}&sz=16`;
+  } catch { return null; }
 }
 
 export default function ExternalLinksPanel({ links, onChange }: Props) {
@@ -31,7 +34,9 @@ export default function ExternalLinksPanel({ links, onChange }: Props) {
       {links.map(l => (
         <div key={l.id} className="group flex items-center gap-2.5 px-2.5 py-2 rounded-[7px]" style={{ border: "1px solid rgba(0,0,0,0.07)", background: "rgba(0,0,0,0.015)" }}>
           <div className="w-5 h-5 rounded-[4px] flex items-center justify-center overflow-hidden shrink-0" style={{ background: "rgba(0,0,0,0.04)" }}>
-            <img src={getFavicon(l.url)} alt="" width={14} height={14} onError={e => (e.currentTarget.style.display = "none")} />
+            {getFavicon(l.url) && (
+              <img src={getFavicon(l.url)!} alt="" width={14} height={14} onError={e => (e.currentTarget.style.display = "none")} />
+            )}
             <Link size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.4 }} />
           </div>
           <div className="flex-1 min-w-0">

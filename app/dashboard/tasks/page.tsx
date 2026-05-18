@@ -102,11 +102,11 @@ export default function TasksPage() {
   const filtered = useMemo(() => {
     if (!search) return tasks;
     const q = search.toLowerCase();
-    return tasks.filter(t =>
-      t.title.toLowerCase().includes(q) ||
-      t.id.toLowerCase().includes(q) ||
-      t.labels.some(l => l.toLowerCase().includes(q)) ||
-      t.assignees.some(a => a.name.toLowerCase().includes(q))
+    return tasks.filter((t) =>
+      (t.title ?? "").toLowerCase().includes(q) ||
+      (t.id ?? "").toLowerCase().includes(q) ||
+      (t.labels ?? []).some((l) => l.toLowerCase().includes(q)) ||
+      (t.assignees ?? []).some((a) => a.name.toLowerCase().includes(q))
     );
   }, [tasks, search]);
 
@@ -149,13 +149,9 @@ export default function TasksPage() {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden bg-surface-container-lowest relative">
-        {loading && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface-container-lowest/50 backdrop-blur-[1px]">
-            <Loader2 className="animate-spin text-black/40" size={24} />
-          </div>
-        )}
+
         {view === "list" && (
-          <ListView tasks={filtered} groupBy={groupBy} onTaskClick={setActiveTask} onAddTask={openCreate} search={search} />
+          <ListView tasks={filtered} groupBy={groupBy} onTaskClick={setActiveTask} onAddTask={openCreate} search={search} loading={loading} />
         )}
         {view === "kanban" && (
           <KanbanView tasks={filtered} onTaskClick={setActiveTask} onAddTask={openCreate} onStatusChange={(id, status) => updateTask(id, { status })} />

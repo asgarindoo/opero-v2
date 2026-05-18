@@ -31,8 +31,51 @@ model User {
   inviteLinks TenantInviteLink[]
 
   // TenantRecord back-references (named relations)
-  tenantRecordsCreated TenantRecord[] @relation("TenantRecordCreatedBy")
-  tenantRecordsUpdated TenantRecord[] @relation("TenantRecordUpdatedBy")
+  tasksCreated            Task[]           @relation("TaskCreatedBy")
+  flowsCreated            Flow[]           @relation("FlowCreatedBy")
+  campaignsCreated        Campaign[]       @relation("CampaignCreatedBy")
+  contactsCreated         Contact[]        @relation("ContactCreatedBy")
+  rolesCreated            Role[]           @relation("RoleCreatedBy")
+  goalsCreated            Goal[]           @relation("GoalCreatedBy")
+  salesCreated            Sale[]           @relation("SaleCreatedBy")
+  invoicesCreated         Invoice[]        @relation("InvoiceCreatedBy")
+  transactionsCreated     Transaction[]    @relation("TransactionCreatedBy")
+  productsCreated         Product[]        @relation("ProductCreatedBy")
+  assetsCreated           Asset[]          @relation("AssetCreatedBy")
+  documentsCreated        Document[]       @relation("DocumentCreatedBy")
+  foldersCreated          Folder[]         @relation("FolderCreatedBy")
+  botsCreated             Bot[]            @relation("BotCreatedBy")
+  reportsCreated          Report[]         @relation("ReportCreatedBy")
+  socialChannelsCreated   SocialChannel[]  @relation("SocialChannelCreatedBy")
+  socialSchedulesCreated  SocialSchedule[] @relation("SocialScheduleCreatedBy")
+  socialActivitiesCreated SocialActivity[] @relation("SocialActivityCreatedBy")
+  contentPostsCreated     ContentPost[]    @relation("ContentPostCreatedBy")
+  contentAssetsCreated    ContentAsset[]   @relation("ContentAssetCreatedBy")
+  chatChannelsCreated     ChatChannel[]    @relation("ChatChannelCreatedBy")
+  chatMessagesCreated     ChatMessage[]    @relation("ChatMessageCreatedBy")
+
+  tasksUpdated            Task[]           @relation("TaskUpdatedBy")
+  flowsUpdated            Flow[]           @relation("FlowUpdatedBy")
+  campaignsUpdated        Campaign[]       @relation("CampaignUpdatedBy")
+  contactsUpdated         Contact[]        @relation("ContactUpdatedBy")
+  rolesUpdated            Role[]           @relation("RoleUpdatedBy")
+  goalsUpdated            Goal[]           @relation("GoalUpdatedBy")
+  salesUpdated            Sale[]           @relation("SaleUpdatedBy")
+  invoicesUpdated         Invoice[]        @relation("InvoiceUpdatedBy")
+  transactionsUpdated     Transaction[]    @relation("TransactionUpdatedBy")
+  productsUpdated         Product[]        @relation("ProductUpdatedBy")
+  assetsUpdated           Asset[]          @relation("AssetUpdatedBy")
+  documentsUpdated        Document[]       @relation("DocumentUpdatedBy")
+  foldersUpdated          Folder[]         @relation("FolderUpdatedBy")
+  botsUpdated             Bot[]            @relation("BotUpdatedBy")
+  reportsUpdated          Report[]         @relation("ReportUpdatedBy")
+  socialChannelsUpdated   SocialChannel[]  @relation("SocialChannelUpdatedBy")
+  socialSchedulesUpdated  SocialSchedule[] @relation("SocialScheduleUpdatedBy")
+  socialActivitiesUpdated SocialActivity[] @relation("SocialActivityUpdatedBy")
+  contentPostsUpdated     ContentPost[]    @relation("ContentPostUpdatedBy")
+  contentAssetsUpdated    ContentAsset[]   @relation("ContentAssetUpdatedBy")
+  chatChannelsUpdated     ChatChannel[]    @relation("ChatChannelUpdatedBy")
+  chatMessagesUpdated     ChatMessage[]    @relation("ChatMessageUpdatedBy")
 
   // TenantActivity back-reference
   tenantActivities TenantActivity[]
@@ -92,20 +135,41 @@ model Verification {
 // ─────────────────────────────────────────────────────────
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  logo      String?
-  metadata  String?  @db.Text
-  status    String   @default("active") // "active" | "inactive"
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  logo        String?
+  metadata    String?  @db.Text
+  status      String   @default("active") // "active" | "inactive"
   createdById String?
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   // Relations
   members          Member[]
   invitations      Invitation[]
   inviteLinks      TenantInviteLink[]
-  tenantRecords    TenantRecord[]
+  tasks            Task[]
+  flows            Flow[]
+  campaigns        Campaign[]
+  contacts         Contact[]
+  roles            Role[]
+  goals            Goal[]
+  sales            Sale[]
+  invoices         Invoice[]
+  transactions     Transaction[]
+  products         Product[]
+  assets           Asset[]
+  documents        Document[]
+  folders          Folder[]
+  bots             Bot[]
+  reports          Report[]
+  socialChannels   SocialChannel[]
+  socialSchedules  SocialSchedule[]
+  socialActivities SocialActivity[]
+  contentPosts     ContentPost[]
+  contentAssets    ContentAsset[]
+  chatChannels     ChatChannel[]
+  chatMessages     ChatMessage[]
   tenantActivities TenantActivity[]
 
   // Custom OPERO extensions
@@ -118,15 +182,15 @@ model Organization {
 }
 
 model Member {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   userId         String
-  role           String   // "owner" | "admin" | "member" (staff)
+  role           String // "owner" | "admin" | "member" (staff)
   department     String?
   position       String?
-  status         String   @default("active") // "active" | "suspended"
+  status         String    @default("active") // "active" | "suspended"
   lastActive     DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -136,11 +200,11 @@ model Member {
 }
 
 model Invitation {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   organizationId String
   email          String
-  role           String?   // role to assign on accept
-  status         String    @default("pending") // "pending" | "accepted" | "rejected" | "cancelled"
+  role           String? // role to assign on accept
+  status         String   @default("pending") // "pending" | "accepted" | "rejected" | "cancelled"
   expiresAt      DateTime
   inviterId      String
 
@@ -220,25 +284,6 @@ model TenantPlan {
   @@map("tenant_plan")
 }
 
-/// Generic tenant-scoped records (store module data as JSON payloads)
-model TenantRecord {
-  id             String   @id @default(cuid())
-  organizationId String
-  type           String
-  data           Json
-  createdById    String?
-  updatedById    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy    User?       @relation("TenantRecordCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy    User?       @relation("TenantRecordUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  @@index([organizationId, type])
-  @@map("tenant_record")
-}
-
 /// Tenant activity log
 model TenantActivity {
   id             String   @id @default(cuid())
@@ -257,4 +302,426 @@ model TenantActivity {
 
   @@index([organizationId, module])
   @@map("tenant_activity")
+}
+
+// ─────────────────────────────────────────────────────────
+// NEW FEATURE MODELS (TENANT AWARE)
+// ─────────────────────────────────────────────────────────
+
+model Task {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("TaskUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("task")
+}
+
+model Flow {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("FlowCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("FlowUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("flow")
+}
+
+model Campaign {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("CampaignUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("campaign")
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ContactCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("ContactUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("contact")
+}
+
+model Role {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("RoleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("RoleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("role")
+}
+
+model Goal {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("GoalCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("GoalUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("goal")
+}
+
+model Sale {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("SaleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("sale")
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("InvoiceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("invoice")
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("TransactionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("transaction")
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("product")
+}
+
+model Asset {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("AssetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("AssetUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("asset")
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("DocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("document")
+}
+
+model Folder {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("FolderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("FolderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("folder")
+}
+
+model Bot {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("BotCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("BotUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("bot")
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ReportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("ReportUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("report")
+}
+
+model SocialChannel {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("SocialChannelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("SocialChannelUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("social_channel")
+}
+
+model SocialSchedule {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("SocialScheduleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("SocialScheduleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("social_schedule")
+}
+
+model SocialActivity {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("SocialActivityCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("SocialActivityUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("social_activity")
+}
+
+model ContentPost {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ContentPostCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("ContentPostUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("content_post")
+}
+
+model ContentAsset {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ContentAssetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("ContentAssetUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("content_asset")
+}
+
+model ChatChannel {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ChatChannelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("ChatChannelUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("chat_channel")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String?
+  status         String?
+  payload        Json?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("ChatMessageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?        @relation("ChatMessageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("chat_message")
 }

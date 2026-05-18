@@ -13,7 +13,7 @@ interface Props {
 }
 
 function KanbanCard({ task, onClick, onDragStart }: { task: Task; onClick: () => void; onDragStart: () => void }) {
-  const pm = PRIORITY_META[task.priority];
+  const pm = PRIORITY_META[task.priority] || { label: task.priority || "None", bg: "rgba(0,0,0,0.05)", color: "rgba(0,0,0,0.6)" };
 
   return (
     <div
@@ -40,7 +40,7 @@ function KanbanCard({ task, onClick, onDragStart }: { task: Task; onClick: () =>
       {/* Footer */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="font-label-caps text-[8px] font-semibold px-1.5 py-0.5 rounded" style={{ background: pm.bg, color: pm.color }}>{pm.label}</span>
+          <span className="font-label-caps text-[8px] font-semibold px-1.5 py-0.5 rounded">{pm.label}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -72,7 +72,7 @@ export default function KanbanView({ tasks, onTaskClick, onAddTask, onStatusChan
     <div className="flex-1 overflow-x-auto overflow-y-hidden">
       <div className="flex gap-3 h-full px-4 py-4" style={{ minWidth: ALL_STATUSES.length * 260 }}>
         {ALL_STATUSES.map(status => {
-          const sm = STATUS_META[status];
+          const sm = STATUS_META[status] || { dot: "rgba(0,0,0,0.3)" };
           const colTasks = tasks.filter(t => t.status === status);
           const isDragOver = dragOverCol === status;
 

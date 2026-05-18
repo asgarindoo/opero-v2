@@ -13,7 +13,7 @@ function SkeletonMetric() {
       <div className="h-2 w-20 rounded bg-black/[0.04] animate-pulse" />
       <div className="flex items-end gap-px h-5">
         {[...Array(7)].map((_, i) => (
-          <div key={i} className="flex-1 rounded-t-[1px] bg-black/[0.06] animate-pulse" style={{ height: `${30 + Math.random() * 60}%` }} />
+          <div key={i} className="flex-1 rounded-t-[1px] bg-black/[0.06] animate-pulse" style={{ height: `${30 + ((i * 29) % 60)}%` }} />
         ))}
       </div>
     </div>

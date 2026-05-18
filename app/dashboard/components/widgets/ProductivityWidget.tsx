@@ -53,7 +53,7 @@ export default function ProductivityWidget() {
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className="w-full rounded-t-[3px] bg-black/[0.05] animate-pulse"
-                  style={{ height: `${30 + Math.random() * 50}%` }}
+                  style={{ height: `${30 + ((i * 23) % 50)}%` }}
                 />
                 <div className="h-2 w-4 rounded bg-black/[0.04] animate-pulse" />
               </div>

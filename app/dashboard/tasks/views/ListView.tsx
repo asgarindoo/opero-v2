@@ -11,11 +11,12 @@ interface Props {
   onTaskClick: (task: Task) => void;
   onAddTask: (status?: Status) => void;
   search: string;
+  loading?: boolean;
 }
 
 function TaskRow({ task, onClick }: { task: Task; onClick: () => void }) {
-  const pm = PRIORITY_META[task.priority];
-  const sm = STATUS_META[task.status];
+  const pm = PRIORITY_META[task.priority] || { label: task.priority || "None", bg: "rgba(0,0,0,0.05)", color: "rgba(0,0,0,0.6)" };
+  const sm = STATUS_META[task.status] || { dot: "rgba(0,0,0,0.3)" };
 
   return (
     <div
@@ -90,7 +91,7 @@ function TaskRow({ task, onClick }: { task: Task; onClick: () => void }) {
   );
 }
 
-export default function ListView({ tasks, groupBy, onTaskClick, onAddTask, search }: Props) {
+export default function ListView({ tasks, groupBy, onTaskClick, onAddTask, search, loading }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => {
@@ -139,6 +140,29 @@ export default function ListView({ tasks, groupBy, onTaskClick, onAddTask, searc
       }
       return next;
     });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex-1 overflow-y-auto db-sidebar">
+        {[...Array(3)].map((_, g) => (
+          <div key={g}>
+            <div className="flex items-center gap-2 px-4 py-2 sticky top-0" style={{ background: "var(--color-background)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+              <div className="w-2 h-2 rounded-full bg-black/[0.08] animate-pulse" />
+              <div className="h-2.5 w-20 rounded bg-black/[0.07] animate-pulse" />
+            </div>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-2.5 border-b" style={{ borderColor: "rgba(0,0,0,0.05)" }}>
+                <div className="w-2 h-2 rounded-full bg-black/[0.06] animate-pulse shrink-0" />
+                <div className="flex-1 h-3 rounded bg-black/[0.06] animate-pulse" />
+                <div className="h-4 w-12 rounded bg-black/[0.05] animate-pulse" />
+                <div className="h-4 w-16 rounded bg-black/[0.04] animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (filtered.length === 0) {

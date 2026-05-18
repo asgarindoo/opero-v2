@@ -59,15 +59,6 @@ const ACTION_CATEGORY: Record<string, string> = {
   Deleted: "WARNING",
 };
 
-function toRecordData(record: { id: string; data: Prisma.JsonValue; createdAt?: Date; updatedAt?: Date }) {
-  const data = (record.data ?? {}) as Prisma.JsonObject;
-  return {
-    ...data,
-    recordId: record.id,
-    recordCreatedAt: record.createdAt?.toISOString(),
-    recordUpdatedAt: record.updatedAt?.toISOString(),
-  } as Record<string, unknown>;
-}
 
 function getEntityName(data: Record<string, unknown>): string {
   const name =
@@ -106,113 +97,168 @@ async function logTenantActivity(params: {
   });
 }
 
+function getDelegate(type: string) {
+  switch (type) {
+    case 'tasks': return prisma.task;
+    case 'flows': return prisma.flow;
+    case 'campaigns': return prisma.campaign;
+    case 'contacts': return prisma.contact;
+    case 'roles': return prisma.role;
+    case 'goals': return prisma.goal;
+    case 'sales': return prisma.sale;
+    case 'invoices': return prisma.invoice;
+    case 'finance': return prisma.transaction;
+    case 'inventory': return prisma.product;
+    case 'assets': return prisma.asset;
+    case 'documents': return prisma.document;
+    case 'document-folders': return prisma.folder;
+    case 'bots': return prisma.bot;
+    case 'reports': return prisma.report;
+    case 'social-channels': return prisma.socialChannel;
+    case 'social-scheduled': return prisma.socialSchedule;
+    case 'social-activity': return prisma.socialActivity;
+    case 'content-posts': return prisma.contentPost;
+    case 'content-assets': return prisma.contentAsset;
+    case 'chat-channels': return prisma.chatChannel;
+    case 'chat-messages': return prisma.chatMessage;
+    default: return null;
+  }
+}
+
 export async function listTenantRecords(type: string) {
   const ctx = await requireTenant();
+  const delegate = getDelegate(type);
+  if (!delegate) return [];
 
-  const records = await prisma.tenantRecord.findMany({
-    where: { organizationId: ctx.tenantId, type },
+  const records = await (delegate as any).findMany({
+    where: { organizationId: ctx.tenantId },
     orderBy: { createdAt: "desc" },
   });
 
-  return records.map(toRecordData);
+  return records.map((record: any) => {
+    const payloadData = record.payload
+      ? (typeof record.payload === 'string' ? JSON.parse(record.payload) : record.payload)
+      : {};
+    return {
+      ...record,
+      ...payloadData,
+      // Ensure array fields are never null
+      labels:    payloadData.labels    ?? record.labels    ?? [],
+      assignees: payloadData.assignees ?? record.assignees ?? [],
+      checklist: payloadData.checklist ?? record.checklist ?? [],
+      attachments: payloadData.attachments ?? record.attachments ?? [],
+      comments:  payloadData.comments  ?? record.comments  ?? [],
+      activity:  payloadData.activity  ?? record.activity  ?? [],
+      recordId: record.id,
+      recordCreatedAt: record.createdAt?.toISOString(),
+      recordUpdatedAt: record.updatedAt?.toISOString(),
+    };
+  });
 }
 
 export async function createTenantRecord(type: string, data: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const recordId = crypto.randomUUID();
+  const delegate = getDelegate(type);
+  if (!delegate) throw new Error(`Unknown record type: ${type}`);
 
-  const record = await prisma.tenantRecord.create({
+  const { title, name, status, ...payload } = data;
+
+  const record = await (delegate as any).create({
     data: {
-      id: recordId,
       organizationId: ctx.tenantId,
-      type,
-      data,
+      title: (title || name || data.label || data.invoiceNumber || "Untitled") as string,
+      status: (status as string) || "Pending",
+      payload,
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
   });
 
-  const entityId = typeof data.id === "string" ? data.id : recordId;
+  const entityId = record.id;
   await logTenantActivity({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     type,
     action: "Created",
     entityId,
-    entityName: getEntityName(data),
+    entityName: record.title || getEntityName(data),
     description: typeof data.description === "string" ? data.description : null,
   });
 
-  return toRecordData(record);
+  return {
+    ...record,
+    ...(record.payload ? (typeof record.payload === 'string' ? JSON.parse(record.payload) : record.payload) : {}),
+    recordId: record.id,
+  };
 }
 
 export async function updateTenantRecord(type: string, recordId: string, patch: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const record = await prisma.tenantRecord.findFirst({
-    where: { id: recordId, organizationId: ctx.tenantId, type },
+  const delegate = getDelegate(type);
+  if (!delegate) throw new Error(`Unknown record type: ${type}`);
+
+  const record = await (delegate as any).findFirst({
+    where: { id: recordId, organizationId: ctx.tenantId },
   });
 
-  if (!record) {
-    return null;
-  }
+  if (!record) return null;
 
-  const current = (record.data ?? {}) as Prisma.JsonObject;
-  const merged = { ...current, ...patch } as Prisma.JsonObject;
+  const currentPayload = typeof record.payload === 'string' ? JSON.parse(record.payload) : (record.payload || {});
+  const { title, status, id, ...patchPayload } = patch;
+  
+  const mergedPayload = { ...currentPayload, ...patchPayload };
 
-  const updated = await prisma.tenantRecord.update({
+  const updated = await (delegate as any).update({
     where: { id: recordId },
     data: {
-      data: merged,
+      title: title !== undefined ? title : record.title,
+      status: status !== undefined ? status : record.status,
+      payload: mergedPayload,
       updatedById: ctx.userId,
     },
   });
 
-  const entityId = typeof merged.id === "string" ? (merged.id as string) : recordId;
   await logTenantActivity({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     type,
     action: "Updated",
-    entityId,
-    entityName: getEntityName(merged as Record<string, unknown>),
-    description: typeof merged.description === "string" ? (merged.description as string) : null,
+    entityId: recordId,
+    entityName: updated.title || getEntityName(patch),
+    description: typeof patch.description === "string" ? patch.description : null,
   });
 
-  return toRecordData(updated);
+  return {
+    ...updated,
+    ...(updated.payload ? (typeof updated.payload === 'string' ? JSON.parse(updated.payload) : updated.payload) : {}),
+    recordId: updated.id,
+  };
 }
 
 export async function deleteTenantRecord(type: string, recordId: string) {
   const ctx = await requireTenant();
-  const record = await prisma.tenantRecord.findFirst({
-    where: { id: recordId, organizationId: ctx.tenantId, type },
+  const delegate = getDelegate(type);
+  if (!delegate) return null;
+
+  const record = await (delegate as any).findFirst({
+    where: { id: recordId, organizationId: ctx.tenantId },
   });
 
-  if (!record) {
-    return null;
-  }
+  if (!record) return null;
 
-  const data = (record.data ?? {}) as Prisma.JsonObject;
-  await prisma.tenantRecord.delete({ where: { id: recordId } });
+  await (delegate as any).delete({ where: { id: recordId } });
 
-  const entityId = typeof data.id === "string" ? (data.id as string) : recordId;
   await logTenantActivity({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     type,
     action: "Deleted",
-    entityId,
-    entityName: getEntityName(data as Record<string, unknown>),
-    description: typeof data.description === "string" ? (data.description as string) : null,
+    entityId: recordId,
+    entityName: record.title || "Untitled",
   });
 
-  return toRecordData({
-    id: recordId,
-    data,
-    createdAt: record.createdAt,
-    updatedAt: record.updatedAt,
-  } as { id: string; data: Prisma.JsonValue; createdAt?: Date; updatedAt?: Date });
+  return { id: recordId };
 }
-
 export async function listTenantActivity(moduleFilter?: string) {
   const ctx = await requireTenant();
   const module = moduleFilter && moduleFilter !== "All" ? moduleFilter : undefined;

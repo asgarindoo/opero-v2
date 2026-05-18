@@ -32,18 +32,9 @@ export async function GET() {
         where: { id: ctx.tenantId },
         select: { name: true },
       }),
-      prisma.tenantRecord.findMany({
-        where: { organizationId: ctx.tenantId, type: "tasks" },
-        orderBy: { updatedAt: "desc" },
-      }),
-      prisma.tenantRecord.findMany({
-        where: { organizationId: ctx.tenantId, type: "flows" },
-        orderBy: { updatedAt: "desc" },
-      }),
-      prisma.tenantRecord.findMany({
-        where: { organizationId: ctx.tenantId, type: "sales" },
-        orderBy: { updatedAt: "desc" },
-      }),
+      prisma.task.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { updatedAt: "desc" } }),
+      prisma.flow.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { updatedAt: "desc" } }),
+      prisma.sale.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { updatedAt: "desc" } }),
       prisma.tenantActivity.findMany({
         where: { organizationId: ctx.tenantId },
         orderBy: { createdAt: "desc" },
@@ -56,20 +47,26 @@ export async function GET() {
       }),
     ]);
 
-    const tasks = taskRecords.map((r: any) => r.data as Record<string, any>);
-    const flows = flowRecords.map((r: any) => r.data as Record<string, any>);
-    const sales = saleRecords.map((r: any) => r.data as Record<string, any>);
+    const tasks = taskRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
+    const flows = flowRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
+    const sales = saleRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
 
-    // ── Active tasks (top 5) ────────────────────────────────────────────────
-    const activeTasks = tasks.slice(0, 5).map((task: any) => {
+    // ── Active tasks (top 7) ────────────────────────────────────────────────
+    const activeTasks = tasks.slice(0, 7).map((task: any) => {
       const checklist = getChecklistProgress(task.checklist as Array<{ done: boolean }> | undefined);
-      const firstAssignee = Array.isArray(task.assignees) ? task.assignees[0] : null;
+      const allAssignees = Array.isArray(task.assignees) ? task.assignees : [];
+      const firstAssignee = allAssignees[0] ?? null;
       return {
         id: task.id ?? task.recordId,
         title: task.title ?? "Untitled",
         priority: task.priority ?? "medium",
         status: task.status ?? "Todo",
         assignee: firstAssignee?.initials ?? (firstAssignee?.name ? toShortName(firstAssignee.name) : "--"),
+        assignees: allAssignees.map((a: any) => ({
+          id: a.id ?? "",
+          name: a.name ?? "",
+          initials: a.initials ?? toShortName(a.name ?? "?"),
+        })),
         due: task.due ?? null,
         labels: Array.isArray(task.labels) ? task.labels : [],
         checklist: { done: checklist.done, total: checklist.total },
@@ -109,18 +106,16 @@ export async function GET() {
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayStart.getDate() + 1);
       const count = taskRecords.filter((r: any) => {
-        const d = r.data as Record<string, any>;
-        return d.status === "Done" && r.updatedAt >= dayStart && r.updatedAt < dayEnd;
+        const payloadObj = r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {};
+        const s = r.status || payloadObj.status;
+        return s === "Done" && r.updatedAt >= dayStart && r.updatedAt < dayEnd;
       }).length;
       return { day, tasks: count };
     });
 
     const totalTasks = taskRecords.length;
-    const doneTasks = taskRecords.filter((r: any) => (r.data as Record<string, any>).status === "Done").length;
-    const blockedTasks = taskRecords.filter((r: any) => {
-      const s = (r.data as Record<string, any>).status;
-      return s === "Blocked" || s === "In Review";
-    }).length;
+    const doneTasks = tasks.filter((t: any) => t.status === "Done").length;
+    const blockedTasks = tasks.filter((t: any) => t.status === "Blocked" || t.status === "In Review").length;
     const completionRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
     const productivityMetrics = [

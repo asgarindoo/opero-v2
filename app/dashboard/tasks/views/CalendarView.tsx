@@ -104,8 +104,8 @@ export default function CalendarView({ tasks, onTaskClick }: Props) {
               {/* Tasks for this day */}
               <div className="space-y-0.5 flex-1 overflow-hidden">
                 {dayTasks.slice(0, 3).map(t => {
-                  const pm = PRIORITY_META[t.priority];
-                  const sm = STATUS_META[t.status];
+                  const pm = PRIORITY_META[t.priority] || { label: t.priority || "None", bg: "rgba(0,0,0,0.05)", color: "rgba(0,0,0,0.6)" };
+                  const sm = STATUS_META[t.status] || { dot: "rgba(0,0,0,0.3)" };
                   return (
                     <button
                       key={t.id}

@@ -95,7 +95,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: "You"
       };
-      const updated = {
+      const updated: Transaction = {
         ...tx,
         status: "Approved",
         activities: [newActivity, ...tx.activities],

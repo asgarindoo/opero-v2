@@ -30,25 +30,19 @@ export default function RecentActivityWidget() {
 
   return (
     <div
-      className="db-widget rounded-[10px] overflow-hidden"
+      className="db-widget rounded-[10px] overflow-hidden flex flex-col h-full"
       style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>timeline</span>
           <span className="font-h3 text-[13px] font-semibold text-on-surface">Activity Log</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "rgba(0,0,0,0.4)" }} />
-          <span className="font-label-caps text-[9px] uppercase tracking-[0.07em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.45 }}>
-            Live
-          </span>
-        </div>
       </div>
 
-      {/* Timeline */}
-      <div className="px-4 py-3 space-y-0">
+      {/* Timeline — scrollable, fills remaining height */}
+      <div className="flex-1 overflow-y-auto db-sidebar px-4 py-3 min-h-0">
         {loading ? (
           [...Array(6)].map((_, i) => <SkeletonItem key={i} />)
         ) : feed.length === 0 ? (
@@ -87,17 +81,19 @@ export default function RecentActivityWidget() {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-        <button
-          className="w-full font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center justify-center gap-1 hover:text-primary transition-colors"
-          style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}
-          onClick={() => window.location.href = "/dashboard/activity"}
-        >
-          View full log
-          <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_forward</span>
-        </button>
-      </div>
+      {/* Footer — pinned to bottom */}
+      {!loading && (
+        <div className="px-4 py-2.5 border-t shrink-0" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+          <button
+            className="w-full font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center justify-center gap-1 hover:opacity-80 transition-opacity"
+            style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}
+            onClick={() => window.location.href = "/dashboard/activity"}
+          >
+            View full log
+            <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_forward</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
