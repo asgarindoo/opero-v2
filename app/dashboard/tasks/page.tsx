@@ -1,6 +1,7 @@
 "use client";
-import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Plus, Loader2 } from "lucide-react";
+import { listTenantRecords, createTenantRecord, updateTenantRecord, deleteTenantRecord } from "@/lib/client/tenant-records";
 import type { Task, Status } from "./types";
 import ViewSwitcher, { type ViewType } from "./views/ViewSwitcher";
 import ListView from "./views/ListView";
@@ -31,21 +32,66 @@ export default function TasksPage() {
   const [activeTask,   setActiveTask]   = useState<Task | null>(null);
   const [showCreate,   setShowCreate]   = useState(false);
   const [createStatus, setCreateStatus] = useState<Status | undefined>();
+  const [loading,      setLoading]      = useState(true);
+
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        const data = await listTenantRecords<Task>("tasks");
+        setTasks(data);
+      } catch (err) {
+        console.error("Failed to load tasks:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTasks();
+  }, []);
 
   const nextId = `T-${String(tasks.length + 1).padStart(3, "0")}`;
 
-  function updateTask(id: string, patch: Partial<Task>) {
+  async function updateTask(id: string, patch: Partial<Task>) {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...patch } : t));
     setActiveTask(prev => prev?.id === id ? { ...prev, ...patch } : prev);
+    
+    const taskToUpdate = tasks.find(t => t.id === id);
+    if (taskToUpdate?.recordId) {
+      try {
+        await updateTenantRecord("tasks", taskToUpdate.recordId, patch);
+      } catch (err) {
+        console.error("Failed to update task", err);
+      }
+    }
   }
 
-  function deleteTask(id: string) {
+  async function deleteTask(id: string) {
+    const taskToDelete = tasks.find(t => t.id === id);
     setTasks(prev => prev.filter(t => t.id !== id));
     setActiveTask(null);
+
+    if (taskToDelete?.recordId) {
+      try {
+        await deleteTenantRecord("tasks", taskToDelete.recordId);
+      } catch (err) {
+        console.error("Failed to delete task", err);
+      }
+    }
   }
 
-  function createTask(task: Task) {
-    setTasks(prev => [...prev, task]);
+  async function createTask(task: Task) {
+    // Add optimistically first
+    const optimisticTask = { ...task, id: task.id || `T-${Date.now()}` };
+    setTasks(prev => [...prev, optimisticTask]);
+    
+    try {
+      const saved = await createTenantRecord<Task>("tasks", task);
+      // Replace optimistic with saved
+      setTasks(prev => prev.map(t => t.id === optimisticTask.id ? saved : t));
+    } catch (err) {
+      console.error("Failed to create task", err);
+      // Revert if failed
+      setTasks(prev => prev.filter(t => t.id !== optimisticTask.id));
+    }
   }
 
   function openCreate(status?: Status) {
@@ -102,7 +148,12 @@ export default function TasksPage() {
         )}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-surface-container-lowest">
+      <div className="flex-1 flex flex-col overflow-hidden bg-surface-container-lowest relative">
+        {loading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface-container-lowest/50 backdrop-blur-[1px]">
+            <Loader2 className="animate-spin text-black/40" size={24} />
+          </div>
+        )}
         {view === "list" && (
           <ListView tasks={filtered} groupBy={groupBy} onTaskClick={setActiveTask} onAddTask={openCreate} search={search} />
         )}

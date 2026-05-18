@@ -143,17 +143,18 @@ export default function ListView({ tasks, groupBy, onTaskClick, onAddTask, searc
 
   if (filtered.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-2">
-        <p className="font-body-md text-[14px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.45 }}>
-          No tasks found
-        </p>
-        <button
-          onClick={() => onAddTask()}
-          className="font-label-caps text-[10px] font-semibold px-3 py-1.5 rounded-[6px] hover:bg-black/[0.05] transition-colors"
-          style={{ border: "1px dashed rgba(0,0,0,0.2)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}
-        >
-          + New Task
-        </button>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.02)" }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 32, color: "var(--color-on-surface-variant)", opacity: 0.3 }}>
+            checklist
+          </span>
+        </div>
+        <div className="text-center space-y-1 max-w-xs">
+          <p className="font-display font-bold text-[14px] text-on-surface">No tasks found</p>
+          <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 leading-relaxed">
+            There are no tasks matching your current view or search filters.
+          </p>
+        </div>
       </div>
     );
   }

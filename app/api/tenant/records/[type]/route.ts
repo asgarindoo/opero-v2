@@ -17,7 +17,7 @@ export async function GET(
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("[GET /api/tenant/records/:type]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined }, { status: 500 });
   }
 }
 
@@ -42,6 +42,6 @@ export async function POST(
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("[POST /api/tenant/records/:type]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined }, { status: 500 });
   }
 }
