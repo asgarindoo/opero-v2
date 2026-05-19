@@ -1,5 +1,5 @@
 import { createDomainItemHandlers } from "@/lib/api/domain-route";
-import { deleteContact, updateContact } from "@/lib/server/services/contact.service";
+import { deleteContact, updateContact } from "@/features/contacts/services/contacts.server";
 
 const handlers = createDomainItemHandlers({ update: updateContact, remove: deleteContact });
 export const PATCH = handlers.PATCH;

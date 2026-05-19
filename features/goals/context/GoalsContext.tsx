@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from "react";
 import { Goal, KeyResult, User, Milestone, Activity } from "../types";
-import { createGoal, deleteGoal as removeGoal, listGoals, updateGoal as saveGoal } from "@/lib/client/services/goal.service";
+import { createGoal, deleteGoal as removeGoal, listGoals, updateGoal as saveGoal } from "@/features/goals/services/goals.client";
 
 // Helper to calculate progress
 function calculateGoalProgress(keyResults: KeyResult[]): number {

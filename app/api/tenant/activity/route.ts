@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listActivities } from "@/lib/server/services/activity.service";
+import { listActivities } from "@/features/activity/services/activity.server";
 
 export async function GET(req: NextRequest) {
   try {

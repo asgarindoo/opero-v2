@@ -1,5 +1,5 @@
 import { createDomainItemHandlers } from "@/lib/api/domain-route";
-import { deleteDocument, updateDocument } from "@/lib/server/services/document.service";
+import { deleteDocument, updateDocument } from "@/features/documents/services/documents.server";
 
 const handlers = createDomainItemHandlers({ update: updateDocument, remove: deleteDocument });
 export const PATCH = handlers.PATCH;

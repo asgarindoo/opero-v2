@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Product, StockStatus, InventoryActivity } from "../types";
-import { createProduct, deleteProduct, listProducts, updateProduct as saveProduct } from "@/lib/client/services/product.service";
+import { createProduct, deleteProduct, listProducts, updateProduct as saveProduct } from "@/features/inventory/services/inventory.client";
 
 interface InventoryContextType {
   products: Product[];

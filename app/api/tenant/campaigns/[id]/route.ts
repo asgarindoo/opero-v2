@@ -1,5 +1,5 @@
 import { createDomainItemHandlers } from "@/lib/api/domain-route";
-import { deleteCampaign, updateCampaign } from "@/lib/server/services/campaign.service";
+import { deleteCampaign, updateCampaign } from "@/features/campaigns/services/campaigns.server";
 
 const handlers = createDomainItemHandlers({ update: updateCampaign, remove: deleteCampaign });
 export const PATCH = handlers.PATCH;

@@ -1,5 +1,5 @@
 import { createDomainItemHandlers } from "@/lib/api/domain-route";
-import { deleteBot, updateBot } from "@/lib/server/services/bot.service";
+import { deleteBot, updateBot } from "@/features/bots/services/bots.server";
 
 const handlers = createDomainItemHandlers({ update: updateBot, remove: deleteBot });
 export const PATCH = handlers.PATCH;

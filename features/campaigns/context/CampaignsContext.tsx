@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import type { Campaign } from "../types";
-import { createCampaign, deleteCampaign, listCampaigns, updateCampaign as saveCampaign } from "@/lib/client/services/campaign.service";
+import { createCampaign, deleteCampaign, listCampaigns, updateCampaign as saveCampaign } from "@/features/campaigns/services/campaigns.client";
 
 interface CampaignsContextType {
   campaigns: Campaign[];

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Invoice, InvoiceActivity } from "../types";
-import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/lib/client/services/invoice.service";
+import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/features/invoices/services/invoices.client";
 
 interface InvoicesContextType {
   invoices: Invoice[];

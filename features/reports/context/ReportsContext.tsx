@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { Report, ReportType, ReportStatus } from "../types";
-import { createReport, listReports, updateReport as saveReport } from "@/lib/client/services/report.service";
+import { createReport, listReports, updateReport as saveReport } from "@/features/reports/services/reports.client";
 
 interface ReportsContextType {
   reports: Report[];

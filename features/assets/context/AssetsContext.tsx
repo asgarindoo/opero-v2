@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Asset, AssetActivity } from "../types";
-import { createAsset, deleteAsset, listAssets, updateAsset as saveAsset } from "@/lib/client/services/asset.service";
+import { createAsset, deleteAsset, listAssets, updateAsset as saveAsset } from "@/features/assets/services/assets.client";
 
 interface AssetsContextType {
   assets: Asset[];

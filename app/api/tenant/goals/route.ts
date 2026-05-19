@@ -1,5 +1,5 @@
 import { createDomainCollectionHandlers } from "@/lib/api/domain-route";
-import { createGoal, listGoals } from "@/lib/server/services/goal.service";
+import { createGoal, listGoals } from "@/features/goals/services/goals.server";
 
 const handlers = createDomainCollectionHandlers({ list: listGoals, create: createGoal });
 export const GET = handlers.GET;

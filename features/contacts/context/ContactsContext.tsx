@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Contact, ContactActivity, ContactStatus, RelationshipType } from "../types";
-import { createContact, deleteContact, listContacts, updateContact as saveContact } from "@/lib/client/services/contact.service";
+import { createContact, deleteContact, listContacts, updateContact as saveContact } from "@/features/contacts/services/contacts.client";
 
 interface ContactsContextType {
   contacts: Contact[];

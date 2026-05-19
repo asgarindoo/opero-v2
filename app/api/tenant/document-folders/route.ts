@@ -1,5 +1,5 @@
 import { createDomainCollectionHandlers } from "@/lib/api/domain-route";
-import { createFolder, listFolders } from "@/lib/server/services/document.service";
+import { createFolder, listFolders } from "@/features/documents/services/documents.server";
 
 const handlers = createDomainCollectionHandlers({ list: listFolders, create: createFolder });
 export const GET = handlers.GET;

@@ -2,10 +2,10 @@
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { Metric, InsightTrend, ActivityPoint, InsightCategory } from "../types";
-import { listActivities } from "@/lib/client/services/activity.service";
-import { listTransactions } from "@/lib/client/services/finance.service";
-import { listSales } from "@/lib/client/services/sale.service";
-import { listTasks } from "@/lib/client/services/task.service";
+import { listActivities } from "@/features/activity/services/activity.client";
+import { listTransactions } from "@/features/finance/services/finance.client";
+import { listSales } from "@/features/sales/services/sales.client";
+import { listTasks } from "@/features/tasks/services/tasks.client";
 
 interface InsightsContextType {
   metrics: Metric[];

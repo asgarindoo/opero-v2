@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getDashboardSummary } from "@/lib/client/api";
+import { getDashboardSummary } from "@/features/dashboard/services/dashboard.client";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

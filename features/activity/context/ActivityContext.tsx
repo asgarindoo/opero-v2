@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ActivityLog, ActivityCategory, ActivityGroup, ActivityModule } from "../types";
-import { listActivities } from "@/lib/client/services/activity.service";
+import { listActivities } from "@/features/activity/services/activity.client";
 
 interface ActivityContextType {
   activities: ActivityLog[];

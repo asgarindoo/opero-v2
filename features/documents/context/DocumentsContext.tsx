@@ -9,7 +9,7 @@ import {
   listDocuments,
   listFolders,
   updateDocument,
-} from "@/lib/client/services/document.service";
+} from "@/features/documents/services/documents.client";
 
 interface DocumentsContextType {
   files: FileEntry[];

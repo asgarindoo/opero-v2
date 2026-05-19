@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { SaleOpportunity, SaleStatus, PaymentStatus, SalePriority, SaleActivity } from "../types";
-import { createSale, deleteSale, listSales, updateSale as saveSale } from "@/lib/client/services/sale.service";
+import { createSale, deleteSale, listSales, updateSale as saveSale } from "@/features/sales/services/sales.client";
 
 interface SalesContextType {
   sales: SaleOpportunity[];
