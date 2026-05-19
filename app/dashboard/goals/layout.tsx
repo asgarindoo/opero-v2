@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GoalsProvider } from "./context/GoalsContext";
+import { GoalsProvider } from "@/features/goals/context/GoalsContext";
 
 export const metadata: Metadata = {
   title: "Goals — OPERO",

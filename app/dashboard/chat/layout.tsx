@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { ChatProvider } from "./context/ChatContext";
-import ChannelSidebar from "./components/ChannelSidebar";
+import { ChatProvider } from "@/features/chat/context/ChatContext";
+import ChannelSidebar from "@/features/chat/components/ChannelSidebar";
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   return (

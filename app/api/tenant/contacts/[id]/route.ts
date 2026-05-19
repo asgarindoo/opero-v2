@@ -1,4 +1,4 @@
-import { createDomainItemHandlers } from "../../_domain-route";
+import { createDomainItemHandlers } from "@/lib/api/domain-route";
 import { deleteContact, updateContact } from "@/lib/server/services/contact.service";
 
 const handlers = createDomainItemHandlers({ update: updateContact, remove: deleteContact });

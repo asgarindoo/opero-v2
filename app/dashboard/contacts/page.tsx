@@ -2,16 +2,16 @@
 
 import React, { useState } from "react";
 import { LayoutList, LayoutGrid, Plus } from "lucide-react";
-import { ContactsProvider, useContacts } from "./context/ContactsContext";
-import ContactList from "./components/ContactList";
-import KanbanView from "./components/KanbanView";
-import ContactDrawer from "./components/ContactDrawer";
-import AddContactModal from "./components/AddContactModal";
+import { ContactsProvider, useContacts } from "@/features/contacts/context/ContactsContext";
+import ContactList from "@/features/contacts/components/ContactList";
+import KanbanView from "@/features/contacts/components/KanbanView";
+import ContactDrawer from "@/features/contacts/components/ContactDrawer";
+import AddContactModal from "@/features/contacts/components/AddContactModal";
 
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 type ViewMode = "kanban" | "list";
 type FilterMode = "all" | "customers" | "partners" | "suppliers";

@@ -2,16 +2,16 @@
 
 import React, { useState } from "react";
 import { Plus, LayoutList, LayoutGrid } from "lucide-react";
-import { SalesProvider, useSales } from "./context/SalesContext";
-import SalesList from "./components/SalesList";
-import SalesKanban from "./components/SalesKanban";
-import SalesDrawer from "./components/SalesDrawer";
-import AddSaleModal from "./components/AddSaleModal";
+import { SalesProvider, useSales } from "@/features/sales/context/SalesContext";
+import SalesList from "@/features/sales/components/SalesList";
+import SalesKanban from "@/features/sales/components/SalesKanban";
+import SalesDrawer from "@/features/sales/components/SalesDrawer";
+import AddSaleModal from "@/features/sales/components/AddSaleModal";
 
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 type ViewMode = "kanban" | "list";
 type FilterMode = "all" | "processing" | "shipped" | "completed";

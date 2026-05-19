@@ -2,16 +2,16 @@
 
 import React, { useState } from "react";
 import { Activity, CircleDot, Columns3, GanttChartSquare, LayoutList, Plus, SlidersHorizontal } from "lucide-react";
-import { CampaignsProvider, useCampaigns } from "./context/CampaignsContext";
-import CampaignList from "./components/CampaignList";
-import CampaignBoard from "./components/CampaignBoard";
-import CampaignTimeline from "./components/CampaignTimeline";
-import CampaignDrawer from "./components/CampaignDrawer";
-import AddCampaignModal from "./components/AddCampaignModal";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import { CampaignsProvider, useCampaigns } from "@/features/campaigns/context/CampaignsContext";
+import CampaignList from "@/features/campaigns/components/CampaignList";
+import CampaignBoard from "@/features/campaigns/components/CampaignBoard";
+import CampaignTimeline from "@/features/campaigns/components/CampaignTimeline";
+import CampaignDrawer from "@/features/campaigns/components/CampaignDrawer";
+import AddCampaignModal from "@/features/campaigns/components/AddCampaignModal";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 type ViewMode = "list" | "board" | "timeline";
 type FilterMode = "all" | "active" | "planning" | "paused";

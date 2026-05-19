@@ -1,4 +1,4 @@
-import { createDomainItemHandlers } from "../../_domain-route";
+import { createDomainItemHandlers } from "@/lib/api/domain-route";
 import { deleteAsset, updateAsset } from "@/lib/server/services/asset.service";
 
 const handlers = createDomainItemHandlers({ update: updateAsset, remove: deleteAsset });

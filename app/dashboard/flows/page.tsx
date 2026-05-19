@@ -2,17 +2,17 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { Plus, LayoutGrid, List } from "lucide-react";
-import { FLOW_CATEGORIES, type Flow, type FlowCategory } from "./types";
-import FlowCard from "./components/FlowCard";
-import FlowDetail from "./components/FlowDetail";
-import CreateFlowModal from "./components/CreateFlowModal";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
-import FlowListView from "./components/FlowListView";
+import { FLOW_CATEGORIES, type Flow, type FlowCategory } from "@/features/flows/types";
+import FlowCard from "@/features/flows/components/FlowCard";
+import FlowDetail from "@/features/flows/components/FlowDetail";
+import CreateFlowModal from "@/features/flows/components/CreateFlowModal";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
+import FlowListView from "@/features/flows/components/FlowListView";
 import { createFlow, deleteFlow, listFlows, updateFlow } from "@/lib/client/services/flow.service";
-import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "../components/shared/DataState";
+import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "@/components/common/DataState";
 
 export default function FlowsPage() {
   const [flows, setFlows] = useState<Flow[]>([]);

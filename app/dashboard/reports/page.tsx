@@ -2,15 +2,15 @@
 
 import { useState, useMemo } from "react";
 import { Plus, Inbox, TrendingUp, BarChart3 } from "lucide-react";
-import { ReportsProvider, useReports } from "./context/ReportsContext";
-import ReportListView from "./components/ReportListView";
-import ReportDetail from "./components/ReportDetail";
-import type { ReportType } from "./types";
+import { ReportsProvider, useReports } from "@/features/reports/context/ReportsContext";
+import ReportListView from "@/features/reports/components/ReportListView";
+import ReportDetail from "@/features/reports/components/ReportDetail";
+import type { ReportType } from "@/features/reports/types";
 
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 function ReportsContent() {
   const {

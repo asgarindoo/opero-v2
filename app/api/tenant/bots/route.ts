@@ -1,4 +1,4 @@
-import { createDomainCollectionHandlers } from "../_domain-route";
+import { createDomainCollectionHandlers } from "@/lib/api/domain-route";
 import { createBot, listBots } from "@/lib/server/services/bot.service";
 
 const handlers = createDomainCollectionHandlers({ list: listBots, create: createBot });

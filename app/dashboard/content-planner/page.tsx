@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import ContentCalendar from "./components/ContentCalendar";
-import ContentQueue from "./components/ContentQueue";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ContentCalendar from "@/features/content-planner/components/ContentCalendar";
+import ContentQueue from "@/features/content-planner/components/ContentQueue";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 import { Plus, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, ChevronDown, SlidersHorizontal } from "lucide-react";
-import { ContentPost, Asset, ContentStatus, Platform } from "./types";
+import { ContentPost, Asset, ContentStatus, Platform } from "@/features/content-planner/types";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const currentYear = new Date().getFullYear();

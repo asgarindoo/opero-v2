@@ -1,4 +1,4 @@
-import { createDomainItemHandlers } from "../../_domain-route";
+import { createDomainItemHandlers } from "@/lib/api/domain-route";
 import { deleteRole, updateRole } from "@/lib/server/services/role.service";
 
 const handlers = createDomainItemHandlers({ update: updateRole, remove: deleteRole });

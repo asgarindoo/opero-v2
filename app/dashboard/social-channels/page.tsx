@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 import { Plus, Globe, Edit2, X, Check, ArrowUpRight, Calendar, Activity, Users, Eye, ChevronDown } from "lucide-react";
 
 type ChannelStatus = "Active" | "Inactive" | "Archived";

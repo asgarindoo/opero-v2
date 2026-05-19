@@ -8,15 +8,15 @@ import {
   BarChart3,
   Inbox
 } from "lucide-react";
-import { InsightsProvider, useInsights } from "./context/InsightsContext";
-import MetricCard from "./components/MetricCard";
-import TrendOverview from "./components/TrendOverview";
-import ActivityHeatmap from "./components/ActivityHeatmap";
-import { InsightCategory } from "./types";
-import DateRangePicker from "../components/shared/DateRangePicker";
-import ExportButton from "../components/shared/ExportButton";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
+import { InsightsProvider, useInsights } from "@/features/insights/context/InsightsContext";
+import MetricCard from "@/features/insights/components/MetricCard";
+import TrendOverview from "@/features/insights/components/TrendOverview";
+import ActivityHeatmap from "@/features/insights/components/ActivityHeatmap";
+import { InsightCategory } from "@/features/insights/types";
+import DateRangePicker from "@/components/common/DateRangePicker";
+import ExportButton from "@/components/common/ExportButton";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
 
 function InsightsContent() {
   const {

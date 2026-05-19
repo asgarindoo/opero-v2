@@ -1,11 +1,11 @@
-import Header from "./components/Header";
-import HeroSection from "./components/HeroSection";
-import BentoSection from "./components/BentoSection";
-import TestimonialsSection from "./components/TestimonialsSection";
-import PricingSection from "./components/PricingSection";
-import FAQSection from "./components/FAQSection";
-import CTASection from "./components/CTASection";
-import Footer from "./components/Footer";
+import Header from "@/components/marketing/Header";
+import HeroSection from "@/components/marketing/HeroSection";
+import BentoSection from "@/components/marketing/BentoSection";
+import TestimonialsSection from "@/components/marketing/TestimonialsSection";
+import PricingSection from "@/components/marketing/PricingSection";
+import FAQSection from "@/components/marketing/FAQSection";
+import CTASection from "@/components/marketing/CTASection";
+import Footer from "@/components/marketing/Footer";
 
 export default function Home() {
   return (

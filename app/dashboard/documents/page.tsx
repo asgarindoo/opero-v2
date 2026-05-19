@@ -2,16 +2,16 @@
 
 import React, { useState, useMemo } from "react";
 import { Plus, Clock, Share2, Upload, Grid, List, BarChart3, Shield, Star } from "lucide-react";
-import { DocumentsProvider, useDocuments } from "./context/DocumentsContext";
-import DocumentTable from "./components/DocumentTable";
-import DocumentGrid from "./components/DocumentGrid";
-import DocumentDetail from "./components/DocumentDetail";
-import UploadModal from "./components/UploadModal";
+import { DocumentsProvider, useDocuments } from "@/features/documents/context/DocumentsContext";
+import DocumentTable from "@/features/documents/components/DocumentTable";
+import DocumentGrid from "@/features/documents/components/DocumentGrid";
+import DocumentDetail from "@/features/documents/components/DocumentDetail";
+import UploadModal from "@/features/documents/components/UploadModal";
 
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 type ViewMode = "list" | "grid";
 type FilterMode = "all" | "recent" | "shared" | "favorites";

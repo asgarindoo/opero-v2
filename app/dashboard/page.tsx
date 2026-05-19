@@ -1,15 +1,15 @@
 "use client";
 
-import { DashboardDataProvider } from "./components/DashboardDataContext";
-import DashboardHero from "./components/DashboardHero";
-import ActiveTasksWidget from "./components/widgets/ActiveTasksWidget";
-import RecentActivityWidget from "./components/widgets/RecentActivityWidget";
-import ProductivityWidget from "./components/widgets/ProductivityWidget";
-import TeamPerformanceWidget from "./components/widgets/TeamPerformanceWidget";
-import WorkflowProgressWidget from "./components/widgets/WorkflowProgressWidget";
-import SalesOverviewWidget from "./components/widgets/SalesOverviewWidget";
-import CalendarWidget from "./components/widgets/CalendarWidget";
-import PerformanceMetricsWidget from "./components/widgets/PerformanceMetricsWidget";
+import { DashboardDataProvider } from "@/features/dashboard/context/DashboardDataContext";
+import DashboardHero from "@/features/dashboard/components/DashboardHero";
+import ActiveTasksWidget from "@/features/dashboard/components/widgets/ActiveTasksWidget";
+import RecentActivityWidget from "@/features/dashboard/components/widgets/RecentActivityWidget";
+import ProductivityWidget from "@/features/dashboard/components/widgets/ProductivityWidget";
+import TeamPerformanceWidget from "@/features/dashboard/components/widgets/TeamPerformanceWidget";
+import WorkflowProgressWidget from "@/features/dashboard/components/widgets/WorkflowProgressWidget";
+import SalesOverviewWidget from "@/features/dashboard/components/widgets/SalesOverviewWidget";
+import CalendarWidget from "@/features/dashboard/components/widgets/CalendarWidget";
+import PerformanceMetricsWidget from "@/features/dashboard/components/widgets/PerformanceMetricsWidget";
 
 export default function DashboardPage() {
   return (

@@ -4,7 +4,7 @@ import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Key, Link as LinkIcon, ArrowRight, ArrowLeft, Clipboard, AlertCircle } from "lucide-react";
-import Button from "../../dashboard/components/ui/Button";
+import Button from "@/components/ui/Button";
 import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
 
 export default function JoinTenantPage() {

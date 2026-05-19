@@ -2,20 +2,20 @@
 import { useState, useMemo, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { createTask as createTaskRecord, deleteTask as deleteTaskRecord, listTasks, updateTask as updateTaskRecord } from "@/lib/client/services/task.service";
-import type { Task, Status } from "./types";
-import ViewSwitcher, { type ViewType } from "./views/ViewSwitcher";
-import ListView from "./views/ListView";
-import KanbanView from "./views/KanbanView";
-import TableView from "./views/TableView";
-import CalendarView from "./views/CalendarView";
-import TimelineView from "./views/TimelineView";
-import TaskDrawer from "./TaskDrawer";
-import CreateTaskModal from "./CreateTaskModal";
+import type { Task, Status } from "@/features/tasks/types";
+import ViewSwitcher, { type ViewType } from "@/features/tasks/views/ViewSwitcher";
+import ListView from "@/features/tasks/views/ListView";
+import KanbanView from "@/features/tasks/views/KanbanView";
+import TableView from "@/features/tasks/views/TableView";
+import CalendarView from "@/features/tasks/views/CalendarView";
+import TimelineView from "@/features/tasks/views/TimelineView";
+import TaskDrawer from "@/features/tasks/TaskDrawer";
+import CreateTaskModal from "@/features/tasks/CreateTaskModal";
 
-import ModuleHeader from "../components/shared/ModuleHeader";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
-import Dropdown from "../components/ui/Dropdown";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
+import Dropdown from "@/components/ui/Dropdown";
 
 type GroupBy = "status" | "priority" | "assignee";
 const GROUP_OPTIONS = [

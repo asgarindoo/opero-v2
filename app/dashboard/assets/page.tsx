@@ -2,15 +2,15 @@
 
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
-import { AssetsProvider, useAssets } from "./context/AssetsContext";
-import AssetTable from "./components/AssetTable";
-import AssetDrawer from "./components/AssetDrawer";
-import AddAssetModal from "./components/AddAssetModal";
+import { AssetsProvider, useAssets } from "@/features/assets/context/AssetsContext";
+import AssetTable from "@/features/assets/components/AssetTable";
+import AssetDrawer from "@/features/assets/components/AssetDrawer";
+import AddAssetModal from "@/features/assets/components/AddAssetModal";
 
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 type FilterMode = "all" | "in_use" | "maintenance" | "damaged";
 

@@ -1,4 +1,4 @@
-import { createDomainCollectionHandlers } from "../_domain-route";
+import { createDomainCollectionHandlers } from "@/lib/api/domain-route";
 import { createInvoice, listInvoices } from "@/lib/server/services/invoice.service";
 
 const handlers = createDomainCollectionHandlers({ list: listInvoices, create: createInvoice });

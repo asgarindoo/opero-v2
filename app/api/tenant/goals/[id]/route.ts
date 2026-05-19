@@ -1,4 +1,4 @@
-import { createDomainItemHandlers } from "../../_domain-route";
+import { createDomainItemHandlers } from "@/lib/api/domain-route";
 import { deleteGoal, getGoalById, updateGoal } from "@/lib/server/services/goal.service";
 
 const handlers = createDomainItemHandlers({ get: getGoalById, update: updateGoal, remove: deleteGoal });

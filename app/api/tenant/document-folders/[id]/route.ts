@@ -1,4 +1,4 @@
-import { createDomainItemHandlers } from "../../_domain-route";
+import { createDomainItemHandlers } from "@/lib/api/domain-route";
 import { deleteFolder, updateFolder } from "@/lib/server/services/document.service";
 
 const handlers = createDomainItemHandlers({ update: updateFolder, remove: deleteFolder });

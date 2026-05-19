@@ -3,9 +3,9 @@
 import React, { use, useState } from "react";
 import { Hash, Search, X, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useChat } from "../context/ChatContext";
-import MessageList from "../components/MessageList";
-import MessageComposer from "../components/MessageComposer";
+import { useChat } from "@/features/chat/context/ChatContext";
+import MessageList from "@/features/chat/components/MessageList";
+import MessageComposer from "@/features/chat/components/MessageComposer";
 
 export default function ChannelPage({ params }: { params: Promise<{ channelId: string }> }) {
   const resolvedParams = use(params);

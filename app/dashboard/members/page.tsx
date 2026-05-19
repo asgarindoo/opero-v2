@@ -2,20 +2,20 @@
 
 import React, { useState } from "react";
 import { Users, Shield, Clock, Plus, Hash, Copy, Check } from "lucide-react";
-import { useMembers } from "./context/MembersContext";
+import { useMembers } from "@/features/members/context/MembersContext";
 
 // Components
-import MembersDirectory from "./components/MembersDirectory";
-import RolesPermissions from "./components/RolesPermissions";
-import ActivityAuditLog from "./components/ActivityAuditLog";
-import InviteModal from "./components/InviteModal";
-import MemberDrawer from "./components/MemberDrawer";
+import MembersDirectory from "@/features/members/components/MembersDirectory";
+import RolesPermissions from "@/features/members/components/RolesPermissions";
+import ActivityAuditLog from "@/features/members/components/ActivityAuditLog";
+import InviteModal from "@/features/members/components/InviteModal";
+import MemberDrawer from "@/features/members/components/MemberDrawer";
 
 // Shared UI
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 type Tab = "directory" | "roles" | "activity";
 

@@ -1,4 +1,4 @@
-import { createDomainCollectionHandlers } from "../_domain-route";
+import { createDomainCollectionHandlers } from "@/lib/api/domain-route";
 import { createFlow, listFlows } from "@/lib/server/services/flow.service";
 
 const handlers = createDomainCollectionHandlers({ list: listFlows, create: createFlow });

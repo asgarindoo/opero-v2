@@ -7,16 +7,16 @@ import {
   ArrowDownRight,
   Plus
 } from "lucide-react";
-import { FinanceProvider, useFinance } from "./context/FinanceContext";
-import FinanceListView from "./components/FinanceListView";
-import FinanceDetail from "./components/FinanceDetail";
-import AddTransactionModal from "./components/AddTransactionModal";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import DateRangePicker from "../components/shared/DateRangePicker";
-import Button from "../components/ui/Button";
-import ExportButton from "../components/shared/ExportButton";
+import { FinanceProvider, useFinance } from "@/features/finance/context/FinanceContext";
+import FinanceListView from "@/features/finance/components/FinanceListView";
+import FinanceDetail from "@/features/finance/components/FinanceDetail";
+import AddTransactionModal from "@/features/finance/components/AddTransactionModal";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import DateRangePicker from "@/components/common/DateRangePicker";
+import Button from "@/components/ui/Button";
+import ExportButton from "@/components/common/ExportButton";
 
 function FinanceContent() {
   const { 

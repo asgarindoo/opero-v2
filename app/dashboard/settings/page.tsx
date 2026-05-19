@@ -21,9 +21,9 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
 import { getRootAppUrl } from "@/lib/tenant-url";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import Button from "../components/ui/Button";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import Button from "@/components/ui/Button";
 
 type SettingsTab = "tenant" | "billing" | "security";
 

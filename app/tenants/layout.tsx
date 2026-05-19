@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import SignOutButton from "./SignOutButton";
+import SignOutButton from "@/features/auth/components/SignOutButton";
 
 export const metadata: Metadata = {
   title: "Choose Workspace — OPERO",

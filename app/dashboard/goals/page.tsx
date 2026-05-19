@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { Plus, Search, LayoutGrid, List } from "lucide-react";
-import { useGoals } from "./context/GoalsContext";
-import GoalCard from "./components/GoalCard";
-import GoalListView from "./components/GoalListView";
-import GoalDetail from "./components/GoalDetail";
-import CreateGoalModal from "./components/CreateGoalModal";
-import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "../components/shared/DataState";
+import { useGoals } from "@/features/goals/context/GoalsContext";
+import GoalCard from "@/features/goals/components/GoalCard";
+import GoalListView from "@/features/goals/components/GoalListView";
+import GoalDetail from "@/features/goals/components/GoalDetail";
+import CreateGoalModal from "@/features/goals/components/CreateGoalModal";
+import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "@/components/common/DataState";
 
 type GoalFilter = "all" | "active" | "archive";
 

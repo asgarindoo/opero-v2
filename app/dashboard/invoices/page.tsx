@@ -6,14 +6,14 @@ import {
   Plus,
   Download
 } from "lucide-react";
-import { InvoicesProvider, useInvoices } from "./context/InvoicesContext";
-import InvoiceTable from "./components/InvoiceTable";
-import InvoiceDrawer from "./components/InvoiceDrawer";
-import AddInvoiceModal from "./components/AddInvoiceModal";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
+import { InvoicesProvider, useInvoices } from "@/features/invoices/context/InvoicesContext";
+import InvoiceTable from "@/features/invoices/components/InvoiceTable";
+import InvoiceDrawer from "@/features/invoices/components/InvoiceDrawer";
+import AddInvoiceModal from "@/features/invoices/components/AddInvoiceModal";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
 
 type FilterMode = "all" | "unpaid" | "paid" | "overdue";
 

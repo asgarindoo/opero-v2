@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import TenantLogo from "@/app/components/TenantLogo";
+import TenantLogo from "@/components/marketing/TenantLogo";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
 import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
 

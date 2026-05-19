@@ -2,11 +2,11 @@
 
 import React, { useState } from "react";
 import { Search, Plus, LayoutGrid, LayoutList, Bot as BotIcon, MessageCircle, Phone, Globe } from "lucide-react";
-import { BotProvider, useBots } from "./context/BotContext";
-import BotGrid from "./components/BotGrid";
-import BotList from "./components/BotList";
-import AddBotModal from "./components/AddBotModal";
-import BotDetailsDrawer from "./components/BotDetailsDrawer";
+import { BotProvider, useBots } from "@/features/bots/context/BotContext";
+import BotGrid from "@/features/bots/components/BotGrid";
+import BotList from "@/features/bots/components/BotList";
+import AddBotModal from "@/features/bots/components/AddBotModal";
+import BotDetailsDrawer from "@/features/bots/components/BotDetailsDrawer";
 
 type FilterMode = "all" | "telegram" | "whatsapp" | "web";
 type ViewMode = "grid" | "list";

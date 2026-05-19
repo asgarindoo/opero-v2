@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import { 
   Plus
 } from "lucide-react";
-import { InventoryProvider, useInventory } from "./context/InventoryContext";
-import ProductTable from "./components/ProductTable";
-import AddProductModal from "./components/AddProductModal";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import Button from "../components/ui/Button";
-import ExportButton from "../components/shared/ExportButton";
+import { InventoryProvider, useInventory } from "@/features/inventory/context/InventoryContext";
+import ProductTable from "@/features/inventory/components/ProductTable";
+import AddProductModal from "@/features/inventory/components/AddProductModal";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import Button from "@/components/ui/Button";
+import ExportButton from "@/components/common/ExportButton";
 
 function InventoryContent() {
   const { 

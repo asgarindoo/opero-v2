@@ -5,15 +5,15 @@ import {
   ChevronDown,
   Calendar as CalendarIcon
 } from "lucide-react";
-import { ActivityProvider, useActivity } from "./context/ActivityContext";
-import ActivityTimeline from "./components/ActivityTimeline";
-import ActivityDetailsDrawer from "./components/ActivityDetailsDrawer";
-import { ActivityModule } from "./types";
-import ModuleHeader from "../components/shared/ModuleHeader";
-import ModuleTabs from "../components/shared/ModuleTabs";
-import SearchInput from "../components/shared/SearchInput";
-import ExportButton from "../components/shared/ExportButton";
-import DateRangePicker from "../components/shared/DateRangePicker";
+import { ActivityProvider, useActivity } from "@/features/activity/context/ActivityContext";
+import ActivityTimeline from "@/features/activity/components/ActivityTimeline";
+import ActivityDetailsDrawer from "@/features/activity/components/ActivityDetailsDrawer";
+import { ActivityModule } from "@/features/activity/types";
+import ModuleHeader from "@/components/common/ModuleHeader";
+import ModuleTabs from "@/components/common/ModuleTabs";
+import SearchInput from "@/components/common/SearchInput";
+import ExportButton from "@/components/common/ExportButton";
+import DateRangePicker from "@/components/common/DateRangePicker";
 
 function ActivityContent() {
   const {
