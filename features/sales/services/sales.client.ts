@@ -1,6 +1,28 @@
-import { createDomainItem, deleteDomainItem, listDomainItems, updateDomainItem } from "@/lib/client/api";
+import { apiRequest } from "@/lib/client/api";
+
 const endpoint = "/api/tenant/sales";
-export const listSales = <T>() => listDomainItems<T>(endpoint);
-export const createSale = <T>(data: T) => createDomainItem<T>(endpoint, data);
-export const updateSale = <T>(id: string, data: Partial<T>) => updateDomainItem<T>(`${endpoint}/${id}`, data);
-export const deleteSale = (id: string) => deleteDomainItem(`${endpoint}/${id}`);
+
+export async function listSales<T>() {
+  const payload = await apiRequest<{ items: T[] }>(endpoint, { method: "GET" });
+  return payload.items ?? [];
+}
+
+export async function createSale<T>(data: T) {
+  const payload = await apiRequest<{ item: T }>(endpoint, {
+    method: "POST",
+    body: JSON.stringify({ data }),
+  });
+  return payload.item;
+}
+
+export async function updateSale<T>(id: string, data: Partial<T>) {
+  const payload = await apiRequest<{ item: T }>(`${endpoint}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ data }),
+  });
+  return payload.item;
+}
+
+export async function deleteSale(id: string) {
+  await apiRequest<{ success: boolean }>(`${endpoint}/${id}`, { method: "DELETE" });
+}

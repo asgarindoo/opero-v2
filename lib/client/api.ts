@@ -35,31 +35,6 @@ export async function apiRequest<T>(url: string, options?: RequestInit): Promise
   return payload as T;
 }
 
-export async function listDomainItems<T>(url: string): Promise<T[]> {
-  const payload = await apiRequest<{ items: T[] }>(url);
-  return payload.items ?? [];
-}
-
-export async function createDomainItem<T>(url: string, data: T): Promise<T> {
-  const payload = await apiRequest<{ item: T }>(url, {
-    method: "POST",
-    body: JSON.stringify({ data }),
-  });
-  return payload.item;
-}
-
-export async function updateDomainItem<T>(url: string, data: Partial<T>): Promise<T> {
-  const payload = await apiRequest<{ item: T }>(url, {
-    method: "PATCH",
-    body: JSON.stringify({ data }),
-  });
-  return payload.item;
-}
-
-export async function deleteDomainItem(url: string): Promise<void> {
-  await apiRequest<{ success: boolean }>(url, { method: "DELETE" });
-}
-
 type ProfileResponse = {
   user: { id: string; name?: string | null; email?: string | null } | null;
   tenant?: unknown;
