@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
-import { MoreHorizontal, Circle } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
+import { EmptyState } from "@/components/common/DataState";
 
 const roleColors: Record<string, string> = {
   Owner: "rgba(0,0,0,0.85)",
@@ -92,8 +93,7 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
             {/* Metadata (Right side) */}
             <div className="flex items-center gap-8 shrink-0 pr-2">
               {/* Role */}
-              <div className="w-24 flex items-center gap-2">
-                <Circle size={6} fill={roleColors[member.role] || "rgba(0,0,0,0.5)"} strokeWidth={0} />
+              <div className="w-24 flex items-center">
                 <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-70">
                   {member.role.toUpperCase()}
                 </span>
@@ -121,9 +121,11 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
         ))}
 
         {filteredMembers.length === 0 && !loading && (
-          <div className="py-20 text-center font-body-sm text-on-surface-variant opacity-60">
-            {searchQuery ? `No members found matching "${searchQuery}".` : "This workspace has no members yet."}
-          </div>
+          <EmptyState
+            icon="person_search"
+            title="No members found"
+            description={searchQuery ? `No members found matching "${searchQuery}".` : "This workspace has no members yet."}
+          />
         )}
       </div>
     </div>

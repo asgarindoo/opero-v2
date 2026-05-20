@@ -18,6 +18,7 @@ interface DropdownProps {
   className?: string;
   align?: "left" | "right";
   disabled?: boolean;
+  variant?: "default" | "minimal";
 }
 
 export default function Dropdown({
@@ -27,7 +28,8 @@ export default function Dropdown({
   label,
   className = "",
   align = "left",
-  disabled = false
+  disabled = false,
+  variant = "default"
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +45,7 @@ export default function Dropdown({
   }, []);
 
   const selectedOption = options.find(o => o.value === value);
+  const isMinimal = variant === "minimal";
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
@@ -50,12 +53,16 @@ export default function Dropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className="
+        className={isMinimal ? `
+          w-full flex items-center justify-between px-2 py-1 rounded
+          bg-transparent hover:bg-black/[0.04] transition-all font-display text-[12px] text-zinc-900 font-medium
+          disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none
+        ` : `
           w-full flex items-center justify-between px-3 py-2.5 rounded-md
           bg-[#fcfcfc] border border-black/[0.08] focus:bg-white focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100
           transition-all font-display text-[14px] text-zinc-900 shadow-sm
           disabled:opacity-50 disabled:cursor-not-allowed
-        "
+        `}
       >
         <div className="flex items-center gap-1.5 overflow-hidden">
           {label && <span className="text-zinc-400 font-medium text-[11px] uppercase tracking-wide mr-1">{label}:</span>}

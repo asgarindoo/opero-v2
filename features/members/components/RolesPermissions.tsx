@@ -5,10 +5,11 @@ import { useMembers } from "../context/MembersContext";
 export default function RolesPermissions() {
   const { roles, permissions, toggleRolePermission } = useMembers();
 
-  const [selectedRoleId, setSelectedRoleId] = useState<string>(roles[0].id);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const activeRole = roles.find(r => r.id === selectedRoleId);
+  const activeRoleId = selectedRoleId || roles[0]?.id;
+  const activeRole = roles.find(r => r.id === activeRoleId);
   const isOwner = activeRole?.id === "r1";
 
   // Group permissions by category
@@ -23,6 +24,14 @@ export default function RolesPermissions() {
       return permissions.some(p => p.category === cat && (p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)));
     });
   }, [categories, permissions, searchQuery]);
+
+  if (roles.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[400px] bg-background">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!activeRole) return null;
 
@@ -39,7 +48,7 @@ export default function RolesPermissions() {
         </div>
         <div className="p-2 flex flex-col gap-0.5">
           {roles.map(role => {
-            const isSelected = selectedRoleId === role.id;
+            const isSelected = activeRoleId === role.id;
             return (
               <button
                 key={role.id}

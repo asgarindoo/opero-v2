@@ -51,6 +51,7 @@ export interface Goal {
   startDate: string;
   targetDate: string;
   progress: number; // Auto-calculated in context based on Key Results
+  archived?: boolean;
   
   keyResults: KeyResult[];
   milestones: Milestone[];

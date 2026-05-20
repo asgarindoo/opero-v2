@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Flow, FlowStage } from "@/features/flows";
 import { CATEGORY_COLORS } from "@/features/flows";
+import Button from "@/components/ui/Button";
 
 interface FlowDetailProps {
   flow: Flow;
@@ -292,49 +293,60 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                 <MessageSquare size={14} className="text-zinc-400" />
               </div>
               <div className="space-y-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center shrink-0 border border-black/[0.04]">
-                    <User size={14} className="text-zinc-400" />
+                {/* Notes List */}
+                {flow.notes && flow.notes.length > 0 ? (
+                  <div className="space-y-6">
+                    {flow.notes.map(note => {
+                      const initials = note.user.name
+                        ? note.user.name.split(" ").map(n => n.charAt(0)).join("").substring(0, 2).toUpperCase()
+                        : "U";
+                      return (
+                        <div key={note.id} className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
+                            {initials}
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-display text-[13px] font-bold">{note.user.name}</span>
+                              <span className="text-[10px] text-on-surface-variant opacity-30">
+                                {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed">
+                              {note.text}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="flex-1 relative">
+                ) : null}
+
+                {/* Input Area */}
+                <div className="flex gap-4 pt-4 border-t border-black/[0.04]">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
+                    ME
+                  </div>
+                  <div className="flex-1 space-y-2">
                     <textarea
+                      rows={2}
                       value={newNoteText}
                       onChange={e => setNewNoteText(e.target.value)}
                       placeholder="Add a note, update, or log activity..."
-                      className="w-full bg-[#F9F9F9] border border-transparent rounded-lg p-3.5 font-display text-[14px] text-zinc-900 outline-none focus:bg-white focus:border-black/[0.1] focus:ring-4 focus:ring-black/[0.02] transition-all resize-none h-24 placeholder:text-zinc-400 shadow-sm"
+                      className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all resize-none h-20 placeholder:text-zinc-400"
                     />
-                    <button
-                      onClick={handleAddNote}
-                      disabled={!newNoteText.trim()}
-                      className="absolute right-3 bottom-3 px-3 py-1.5 bg-zinc-900 text-white font-display text-[11px] font-medium rounded-md hover:bg-zinc-700 transition-colors shadow-sm disabled:opacity-50"
-                    >
-                      Comment
-                    </button>
+                    <div className="flex items-center justify-end">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={!newNoteText.trim()}
+                        onClick={handleAddNote}
+                      >
+                        POST NOTE
+                      </Button>
+                    </div>
                   </div>
                 </div>
-
-                {flow.notes && flow.notes.length > 0 ? (
-                  <div className="space-y-6 pt-4">
-                    {flow.notes.map(note => (
-                      <div key={note.id} className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#F9F9F9] shrink-0 border border-black/[0.04] flex items-center justify-center">
-                          <span className="font-display text-[11px] font-medium text-zinc-500">{note.user.name.charAt(0)}</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <span className="font-display text-[13px] font-medium text-zinc-900">{note.user.name}</span>
-                            <span className="font-display text-[11px] text-zinc-400">
-                              {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <p className="font-display text-[14px] text-zinc-600 leading-relaxed">
-                            {note.text}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
               </div>
             </section>
           </div>
@@ -349,12 +361,8 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                 <h4 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Execution Overview</h4>
                 <span className="font-display text-[14px] font-semibold text-zinc-700 leading-none tracking-tight">{flow.progress}%</span>
               </div>
-              <div className="h-1.5 w-full bg-black/[0.06] rounded-full overflow-hidden mb-3">
-                <div className="h-full bg-zinc-800 transition-all duration-700 rounded-full" style={{ width: `${flow.progress}%` }} />
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-800 animate-pulse" />
-                <span className="font-display text-[11px] font-medium text-zinc-600">Active Execution</span>
+              <div className="h-1.5 w-full bg-black/[0.06] rounded-full overflow-hidden">
+                <div className="h-full bg-zinc-700 transition-all duration-700 rounded-full" style={{ width: `${flow.progress}%` }} />
               </div>
             </section>
 

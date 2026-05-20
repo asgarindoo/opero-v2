@@ -30,9 +30,9 @@ export default function GoalsPage() {
 
     // Status tab filter
     if (filter === "active") {
-      r = r.filter(g => g.status !== "completed");
+      r = r.filter(g => !g.archived);
     } else if (filter === "archive") {
-      r = r.filter(g => g.status === "completed");
+      r = r.filter(g => !!g.archived);
     }
 
     return r;

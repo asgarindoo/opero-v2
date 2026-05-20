@@ -15,7 +15,7 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group bg-white border border-black/[0.06] rounded-2xl p-5 hover:border-black/[0.12] hover:shadow-sm transition-all cursor-pointer flex flex-col"
+      className="group bg-white/40 border border-black/[0.04] rounded-xl p-6 hover:bg-white hover:shadow-xl hover:shadow-black/5 hover:-translate-y-px transition-all cursor-pointer relative overflow-hidden flex flex-col"
     >
       {/* Header: Category & Status */}
       <div className="flex items-start justify-between mb-4">
@@ -48,7 +48,7 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
           </div>
           <div className="h-1.5 w-full bg-black/[0.04] rounded-full overflow-hidden">
             <div
-              className="h-full bg-zinc-800 rounded-full transition-all duration-700 ease-out"
+              className="h-full bg-zinc-700 rounded-full transition-all duration-700 ease-out"
               style={{ width: `${flow.progress}%` }}
             />
           </div>

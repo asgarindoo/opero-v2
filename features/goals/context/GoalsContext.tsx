@@ -5,17 +5,23 @@ import { Goal, KeyResult, User, Milestone, Activity } from "@/features/goals";
 import { createGoal, deleteGoal as removeGoal, listGoals, updateGoal as saveGoal } from "@/features/goals/services/goals.client";
 
 // Helper to calculate progress
-function calculateGoalProgress(keyResults: KeyResult[]): number {
-  if (keyResults.length === 0) return 0;
-  const totalPercentage = keyResults.reduce((acc, kr) => {
-    // If target is 0, handle edge cases (like zero bugs). Assuming 100% if current <= target for inverted metrics, 
-    // but for simplicity, let's just do standard (current/target)*100
-    if (kr.target === 0) {
-      return acc + (kr.current <= 0 ? 100 : 0);
-    }
-    return acc + Math.min(100, Math.max(0, (kr.current / kr.target) * 100));
-  }, 0);
-  return Math.round(totalPercentage / keyResults.length);
+function calculateGoalProgress(keyResults: KeyResult[], milestones?: Milestone[]): number {
+  if (keyResults && keyResults.length > 0) {
+    const totalPercentage = keyResults.reduce((acc, kr) => {
+      // If target is 0, handle edge cases (like zero bugs). Assuming 100% if current <= target for inverted metrics, 
+      // but for simplicity, let's just do standard (current/target)*100
+      if (kr.target === 0) {
+        return acc + (kr.current <= 0 ? 100 : 0);
+      }
+      return acc + Math.min(100, Math.max(0, (kr.current / kr.target) * 100));
+    }, 0);
+    return Math.round(totalPercentage / keyResults.length);
+  }
+  if (milestones && milestones.length > 0) {
+    const completedCount = milestones.filter(m => m.completed).length;
+    return Math.round((completedCount / milestones.length) * 100);
+  }
+  return 0;
 }
 
 interface GoalsContextType {
@@ -49,7 +55,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       try {
         const items = await listGoals<Goal>();
         if (!cancelled) {
-          setGoals(items.map(g => ({ ...g, progress: calculateGoalProgress(g.keyResults) })));
+          setGoals(items.map(g => ({ ...g, progress: calculateGoalProgress(g.keyResults, g.milestones) })));
           setError(null);
         }
       } catch (err) {
@@ -67,7 +73,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addGoal = async (goal: Goal) => {
-    const next = { ...goal, progress: calculateGoalProgress(goal.keyResults) };
+    const next = { ...goal, progress: calculateGoalProgress(goal.keyResults, goal.milestones) };
     try {
       const created = await createGoal<Goal>(next);
       setGoals(prev => [created, ...prev]);
@@ -117,7 +123,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       if (g.id !== goalId) return g;
       const newKr: KeyResult = { ...krData, id: `kr_${Date.now()}` };
       const newKRs = [...g.keyResults, newKr];
-      const newProgress = calculateGoalProgress(newKRs);
+      const newProgress = calculateGoalProgress(newKRs, g.milestones);
       const updated = { ...g, keyResults: newKRs, progress: newProgress };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {
@@ -131,7 +137,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
       const newKRs = g.keyResults.map(kr => kr.id === krId ? { ...kr, ...updates } : kr);
-      const newProgress = calculateGoalProgress(newKRs);
+      const newProgress = calculateGoalProgress(newKRs, g.milestones);
       const updated = { ...g, keyResults: newKRs, progress: newProgress };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {
@@ -174,9 +180,12 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const toggleMilestone = (goalId: string, milestoneId: string) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
+      const nextMilestones = g.milestones.map(m => m.id === milestoneId ? { ...m, completed: !m.completed } : m);
+      const newProgress = calculateGoalProgress(g.keyResults, nextMilestones);
       const updated = {
         ...g,
-        milestones: g.milestones.map(m => m.id === milestoneId ? { ...m, completed: !m.completed } : m)
+        milestones: nextMilestones,
+        progress: newProgress
       };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {

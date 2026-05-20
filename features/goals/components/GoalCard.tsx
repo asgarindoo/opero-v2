@@ -26,9 +26,16 @@ export default function GoalCard({ goal, onClick }: GoalCardProps) {
       className="group bg-white/40 border border-black/[0.04] rounded-xl p-6 hover:bg-white hover:shadow-xl hover:shadow-black/5 hover:-translate-y-px transition-all cursor-pointer relative overflow-hidden"
     >
       <div className="flex items-start justify-between mb-4">
-        <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-label-caps text-[8px] font-bold uppercase tracking-wider ${conf.bg} ${conf.color}`}>
-          <StatusIcon size={10} strokeWidth={2.5} />
-          {conf.label}
+        <div className="flex items-center gap-1.5">
+          <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-label-caps text-[8px] font-bold uppercase tracking-wider ${conf.bg} ${conf.color}`}>
+            <StatusIcon size={10} strokeWidth={2.5} />
+            {conf.label}
+          </div>
+          {goal.archived && (
+            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-label-caps text-[8px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-100">
+              Archived
+            </div>
+          )}
         </div>
         <ChevronRight size={14} className="text-on-surface-variant opacity-10 group-hover:opacity-100 transition-all" />
       </div>
@@ -44,7 +51,7 @@ export default function GoalCard({ goal, onClick }: GoalCardProps) {
            <span className="font-display text-[11px] font-semibold text-zinc-500 leading-none">{goal.progress}%</span>
         </div>
         <div className="h-1.5 w-full bg-black/[0.04] rounded-full overflow-hidden">
-           <div className="h-full bg-zinc-800 rounded-full transition-all duration-700 ease-out" style={{ width: `${goal.progress}%` }} />
+           <div className="h-full bg-zinc-700 rounded-full transition-all duration-700 ease-out" style={{ width: `${goal.progress}%` }} />
         </div>
       </div>
 

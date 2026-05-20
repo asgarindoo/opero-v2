@@ -98,16 +98,23 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                          </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5 whitespace-nowrap">
-                       <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-label-caps text-[8.5px] font-bold uppercase tracking-widest ${conf.bg} ${conf.color}`}>
-                          <StatusIcon size={9} strokeWidth={2.5} />
-                          {conf.label}
-                       </div>
-                    </td>
+                     <td className="px-6 py-5 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                           <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-label-caps text-[8.5px] font-bold uppercase tracking-widest ${conf.bg} ${conf.color}`}>
+                              <StatusIcon size={9} strokeWidth={2.5} />
+                              {conf.label}
+                           </div>
+                           {goal.archived && (
+                              <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-label-caps text-[8px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-100">
+                                 Archived
+                              </div>
+                           )}
+                        </div>
+                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
                        <div className="flex items-center gap-3 w-32">
                           <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
-                             <div className="h-full bg-zinc-800 transition-all" style={{ width: `${goal.progress}%` }} />
+                             <div className="h-full bg-zinc-700 transition-all" style={{ width: `${goal.progress}%` }} />
                           </div>
                           <span className="font-display text-[11px] font-semibold text-zinc-500 tabular-nums w-8 leading-none">{goal.progress}%</span>
                        </div>
