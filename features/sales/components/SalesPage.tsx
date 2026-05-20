@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Plus, LayoutList, LayoutGrid } from "lucide-react";
-import { SalesProvider, useSales } from "@/features/sales/context/SalesContext";
+import { SalesProvider, useSales } from "@/features/sales";
 import SalesList from "@/features/sales/components/SalesList";
 import SalesKanban from "@/features/sales/components/SalesKanban";
 import SalesDrawer from "@/features/sales/components/SalesDrawer";

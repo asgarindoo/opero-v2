@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronRight, ListChecks, Calendar, User, Clock } from "lucide-react";
-import type { Flow } from "../types";
-import { CATEGORY_COLORS } from "../types";
+import type { Flow } from "@/features/flows";
+import { CATEGORY_COLORS } from "@/features/flows";
 
 interface FlowCardProps {
   flow: Flow;

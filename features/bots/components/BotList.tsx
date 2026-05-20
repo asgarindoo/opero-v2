@@ -1,6 +1,6 @@
 import React from "react";
 import { useBots } from "../context/BotContext";
-import { BotStatus } from "../types";
+import { BotStatus } from "@/features/bots";
 import { MoreHorizontal, MessageCircle, Phone, Globe, Activity } from "lucide-react";
 
 interface Props {

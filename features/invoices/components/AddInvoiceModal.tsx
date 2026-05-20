@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useInvoices } from "../context/InvoicesContext";
 import { X, User, Calendar, Plus, Trash2, FileText, DollarSign } from "lucide-react";
-import { InvoiceItem } from "../types";
+import { InvoiceItem } from "@/features/invoices";
 
 export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const { addInvoice } = useInvoices();

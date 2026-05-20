@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { Plus, LayoutGrid, List } from "lucide-react";
-import { FLOW_CATEGORIES, type Flow, type FlowCategory } from "@/features/flows/types";
+import { FLOW_CATEGORIES, type Flow, type FlowCategory } from "@/features/flows";
 import FlowCard from "@/features/flows/components/FlowCard";
 import FlowDetail from "@/features/flows/components/FlowDetail";
 import CreateFlowModal from "@/features/flows/components/CreateFlowModal";
@@ -11,7 +11,7 @@ import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
 import FlowListView from "@/features/flows/components/FlowListView";
-import { createFlow, deleteFlow, listFlows, updateFlow } from "@/features/flows/services/flows.client";
+import { createFlow, deleteFlow, listFlows, updateFlow } from "@/features/flows";
 import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "@/components/common/DataState";
 
 export default function FlowsPage() {

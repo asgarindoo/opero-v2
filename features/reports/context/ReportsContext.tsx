@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
-import { Report, ReportType, ReportStatus } from "../types";
-import { createReport, listReports, updateReport as saveReport } from "@/features/reports/services/reports.client";
+import { Report, ReportType, ReportStatus } from "@/features/reports";
+import { createReport, listReports, updateReport as saveReport } from "@/features/reports";
 
 interface ReportsContextType {
   reports: Report[];

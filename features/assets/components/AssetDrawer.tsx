@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
 import { X, Building2, Clock, Tag, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, Wrench, ShieldCheck, MapPin, Landmark, History } from "lucide-react";
-import { AssetStatus, AssetActivity } from "../types";
+import { AssetStatus, AssetActivity } from "@/features/assets";
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);

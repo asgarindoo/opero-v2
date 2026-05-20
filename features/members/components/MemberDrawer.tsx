@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, UserMinus, Shield, Mail, Building, Briefcase, Crown, User, Check, Edit2 } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
-import { RoleType } from "../types";
+import { RoleType } from "@/features/members";
 
 export default function MemberDrawer({ memberId, onClose }: { memberId: string, onClose: () => void }) {
   const { members, removeMember, updateMemberRole, updateMemberOrg, roles } = useMembers();

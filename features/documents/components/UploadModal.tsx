@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDocuments } from "../context/DocumentsContext";
 import { X, Upload, Tag, Layers, Lock, ChevronDown } from "lucide-react";
-import { FileType } from "../types";
+import { FileType } from "@/features/documents";
 
 export default function UploadModal({ onClose }: { onClose: () => void }) {
   const { addFile } = useDocuments();

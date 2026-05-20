@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from "react";
-import { Goal, KeyResult, User, Milestone, Activity } from "../types";
+import { Goal, KeyResult, User, Milestone, Activity } from "@/features/goals";
 import { createGoal, deleteGoal as removeGoal, listGoals, updateGoal as saveGoal } from "@/features/goals/services/goals.client";
 
 // Helper to calculate progress

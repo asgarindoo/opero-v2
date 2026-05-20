@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Task } from "../types";
-import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "../types";
+import type { Task } from "@/features/tasks";
+import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "@/features/tasks";
 
 interface Props {
   tasks: Task[];

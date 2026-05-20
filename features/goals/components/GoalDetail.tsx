@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Target, CheckCircle2, Circle, Clock, MoreHorizontal, Trash2, Edit3, Save, Plus, FileText, MessageSquare, TrendingUp, AlertCircle } from "lucide-react";
-import type { Goal, Milestone } from "../types";
+import type { Goal, Milestone } from "@/features/goals";
 
 interface GoalDetailProps {
   goal: Goal;

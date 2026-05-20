@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { X, Plus, Check } from "lucide-react";
-import { addCustomLabel, deleteCustomLabel, getLabels } from "./types";
+import { addCustomLabel, deleteCustomLabel, getLabels } from "@/features/tasks";
 
 interface Props {
   selected: string[];

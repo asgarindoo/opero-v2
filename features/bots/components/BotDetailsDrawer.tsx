@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useBots } from "../context/BotContext";
 import { X, Bot as BotIcon, MessageCircle, Phone, Globe, Activity, ToggleLeft, ToggleRight, Hash, PlaySquare, Trash2, PowerOff, Power } from "lucide-react";
-import { BotStatus } from "../types";
+import { BotStatus } from "@/features/bots";
 
 export default function BotDetailsDrawer({ botId, onClose }: { botId: string, onClose: () => void }) {
   const { bots, updateBot, updateStatus, deleteBot } = useBots();

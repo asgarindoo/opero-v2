@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useInventory } from "../context/InventoryContext";
 import { X, Building2, Clock, Tag, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, Package, ArrowUpRight, ArrowDownLeft, AlertTriangle } from "lucide-react";
-import { StockStatus, InventoryActivity } from "../types";
+import { StockStatus, InventoryActivity } from "@/features/inventory";
 
 export default function ProductDrawer({ productId, onClose }: { productId: string, onClose: () => void }) {
   const { products, adjustStock } = useInventory();

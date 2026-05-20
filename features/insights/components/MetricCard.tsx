@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
-import { Metric } from "../types";
+import { Metric } from "@/features/insights";
 
 export default function MetricCard({ metric }: { metric: Metric }) {
   const isPositive = metric.trend > 0;

@@ -9,7 +9,7 @@ import {
   Inbox,
   Trash2
 } from "lucide-react";
-import { SaleStatus, PaymentStatus } from "../types";
+import { SaleStatus, PaymentStatus } from "@/features/sales";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";

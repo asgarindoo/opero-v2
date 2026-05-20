@@ -2,10 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { Plus, Inbox, TrendingUp, BarChart3 } from "lucide-react";
-import { ReportsProvider, useReports } from "@/features/reports/context/ReportsContext";
+import { ReportsProvider, useReports } from "@/features/reports";
 import ReportListView from "@/features/reports/components/ReportListView";
 import ReportDetail from "@/features/reports/components/ReportDetail";
-import type { ReportType } from "@/features/reports/types";
+import type { ReportType } from "@/features/reports";
 
 import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";

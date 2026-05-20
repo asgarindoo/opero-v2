@@ -6,7 +6,7 @@ import {
   Plus,
   Download
 } from "lucide-react";
-import { InvoicesProvider, useInvoices } from "@/features/invoices/context/InvoicesContext";
+import { InvoicesProvider, useInvoices } from "@/features/invoices";
 import InvoiceTable from "@/features/invoices/components/InvoiceTable";
 import InvoiceDrawer from "@/features/invoices/components/InvoiceDrawer";
 import AddInvoiceModal from "@/features/invoices/components/AddInvoiceModal";

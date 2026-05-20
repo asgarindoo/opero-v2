@@ -1,7 +1,7 @@
 "use client";
 
 import { Target, TrendingUp, AlertCircle, Clock, CheckCircle2, ChevronRight } from "lucide-react";
-import type { Goal } from "../types";
+import type { Goal } from "@/features/goals";
 
 const statusConfig = {
   "on-track": { icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", label: "On Track" },

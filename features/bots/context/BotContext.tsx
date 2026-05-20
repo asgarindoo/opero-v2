@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Bot, BotStatus } from "../types";
-import { createBot, deleteBot as removeBot, listBots, updateBot as saveBot } from "@/features/bots/services/bots.client";
+import { Bot, BotStatus } from "@/features/bots";
+import { createBot, deleteBot as removeBot, listBots, updateBot as saveBot } from "@/features/bots";
 
 interface BotContextType {
   bots: Bot[];

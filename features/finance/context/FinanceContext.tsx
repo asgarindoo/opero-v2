@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Transaction, TransactionStatus, FinanceActivity, TransactionType, FinancialSummary, DateRange } from "../types";
+import { Transaction, TransactionStatus, FinanceActivity, TransactionType, FinancialSummary, DateRange } from "@/features/finance";
 import { createTransaction, deleteTransaction, listTransactions, updateTransaction as saveTransaction } from "@/features/finance/services/finance.client";
 
 interface FinanceContextType {

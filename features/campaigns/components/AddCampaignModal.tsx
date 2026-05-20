@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useCampaigns } from "../context/CampaignsContext";
 import { X, Target, Calendar, Tag, Flag, Clock } from "lucide-react";
-import { CampaignPriority } from "../types";
+import { CampaignPriority } from "@/features/campaigns";
 
 export default function AddCampaignModal({ onClose }: { onClose: () => void }) {
   const { addCampaign } = useCampaigns();

@@ -8,7 +8,7 @@ import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
 import { Plus, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, ChevronDown, SlidersHorizontal } from "lucide-react";
-import { ContentPost, Asset, ContentStatus, Platform } from "@/features/content-planner/types";
+import { ContentPost, Asset, ContentStatus, Platform } from "@/features/content-planner";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const currentYear = new Date().getFullYear();

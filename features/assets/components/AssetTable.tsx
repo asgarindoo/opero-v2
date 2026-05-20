@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
-import { AssetStatus } from "../types";
+import { AssetStatus } from "@/features/assets";
 import { 
   MoreVertical, 
   ChevronRight,

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { LayoutList, LayoutGrid, Plus } from "lucide-react";
-import { ContactsProvider, useContacts } from "@/features/contacts/context/ContactsContext";
+import { ContactsProvider, useContacts } from "@/features/contacts";
 import ContactList from "@/features/contacts/components/ContactList";
 import KanbanView from "@/features/contacts/components/KanbanView";
 import ContactDrawer from "@/features/contacts/components/ContactDrawer";

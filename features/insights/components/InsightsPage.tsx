@@ -8,11 +8,11 @@ import {
   BarChart3,
   Inbox
 } from "lucide-react";
-import { InsightsProvider, useInsights } from "@/features/insights/context/InsightsContext";
+import { InsightsProvider, useInsights } from "@/features/insights";
 import MetricCard from "@/features/insights/components/MetricCard";
 import TrendOverview from "@/features/insights/components/TrendOverview";
 import ActivityHeatmap from "@/features/insights/components/ActivityHeatmap";
-import { InsightCategory } from "@/features/insights/types";
+import { InsightCategory } from "@/features/insights";
 import DateRangePicker from "@/components/common/DateRangePicker";
 import ExportButton from "@/components/common/ExportButton";
 import ModuleHeader from "@/components/common/ModuleHeader";

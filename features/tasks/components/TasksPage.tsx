@@ -1,8 +1,8 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { Plus } from "lucide-react";
-import { createTask as createTaskRecord, deleteTask as deleteTaskRecord, listTasks, updateTask as updateTaskRecord } from "@/features/tasks/services/tasks.client";
-import type { Task, Status } from "@/features/tasks/types";
+import { createTask as createTaskRecord, deleteTask as deleteTaskRecord, listTasks, updateTask as updateTaskRecord } from "@/features/tasks";
+import type { Task, Status } from "@/features/tasks";
 import ViewSwitcher, { type ViewType } from "@/features/tasks/views/ViewSwitcher";
 import ListView from "@/features/tasks/views/ListView";
 import KanbanView from "@/features/tasks/views/KanbanView";

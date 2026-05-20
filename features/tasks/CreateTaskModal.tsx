@@ -5,9 +5,9 @@ import {
   Plus, Trash2, CheckSquare, Square, Link as LinkIcon,
   Paperclip,
 } from "lucide-react";
-import type { Task, Priority, Status, ChecklistItem } from "./types";
-import type { Member, ExternalLink, Attachment } from "./types";
-import { PRIORITY_META, STATUS_META, ALL_STATUSES, ALL_PRIORITIES } from "./types";
+import type { Task, Priority, Status, ChecklistItem } from "@/features/tasks";
+import type { Member, ExternalLink, Attachment } from "@/features/tasks";
+import { PRIORITY_META, STATUS_META, ALL_STATUSES, ALL_PRIORITIES } from "@/features/tasks";
 import MemberPicker from "@/features/tasks/components/MemberPicker";
 import LabelManager from "./LabelManager";
 import AttachmentZone from "./AttachmentZone";

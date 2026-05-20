@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link, ExternalLink as ExternalLinkIcon, Trash2, Plus } from "lucide-react";
-import type { ExternalLink } from "../types";
+import type { ExternalLink } from "@/features/tasks";
 
 interface Props {
   links: ExternalLink[];

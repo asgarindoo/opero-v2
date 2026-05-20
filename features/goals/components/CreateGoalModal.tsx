@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Trash2, CheckCircle2, Calendar, Target, AlignLeft, ListChecks } from "lucide-react";
-import type { Goal, Milestone, GoalStatus, Priority } from "../types";
+import type { Goal, Milestone, GoalStatus, Priority } from "@/features/goals";
 
 interface CreateGoalModalProps {
   onClose: () => void;

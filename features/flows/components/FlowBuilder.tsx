@@ -1,8 +1,8 @@
 "use client";
 
 import { X, CheckCircle2, Clock, GitBranch, ShieldCheck } from "lucide-react";
-import type { Flow, WorkflowStage } from "../types";
-import { STAGE_TYPE_META } from "../types";
+import type { Flow, WorkflowStage } from "@/features/flows";
+import { STAGE_TYPE_META } from "@/features/flows";
 import PipelinePreview from "./PipelinePreview";
 
 interface FlowBuilderProps {

@@ -7,7 +7,7 @@ import {
   ArrowDownRight,
   Plus
 } from "lucide-react";
-import { FinanceProvider, useFinance } from "@/features/finance/context/FinanceContext";
+import { FinanceProvider, useFinance } from "@/features/finance";
 import FinanceListView from "@/features/finance/components/FinanceListView";
 import FinanceDetail from "@/features/finance/components/FinanceDetail";
 import AddTransactionModal from "@/features/finance/components/AddTransactionModal";

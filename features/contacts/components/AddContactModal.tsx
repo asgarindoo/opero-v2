@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useContacts } from "../context/ContactsContext";
 import { X, User, Building2, Briefcase, Mail, DollarSign } from "lucide-react";
-import { ContactStatus, RelationshipType, ContactContextData } from "../types";
+import { ContactStatus, RelationshipType, ContactContextData } from "@/features/contacts";
 
 export default function AddContactModal({ onClose }: { onClose: () => void }) {
   const { addContact } = useContacts();

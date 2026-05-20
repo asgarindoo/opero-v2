@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ContentPost, ContentStatus } from "../types";
+import { ContentPost, ContentStatus } from "@/features/content-planner";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import { ChevronRight } from "lucide-react";
 

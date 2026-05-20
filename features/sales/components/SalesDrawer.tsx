@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSales } from "../context/SalesContext";
 import { X, Building2, Clock, Mail, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, Truck, MapPin, Receipt, ShieldCheck, Package } from "lucide-react";
-import { SaleStatus, PaymentStatus } from "../types";
+import { SaleStatus, PaymentStatus } from "@/features/sales";
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);

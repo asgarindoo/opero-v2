@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Search, Check, X } from "lucide-react";
-import { type Member } from "../types";
+import { type Member } from "@/features/tasks";
 
 interface Props {
   selected: Member[];

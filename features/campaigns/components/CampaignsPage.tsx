@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Activity, CircleDot, Columns3, GanttChartSquare, LayoutList, Plus, SlidersHorizontal } from "lucide-react";
-import { CampaignsProvider, useCampaigns } from "@/features/campaigns/context/CampaignsContext";
+import { CampaignsProvider, useCampaigns } from "@/features/campaigns";
 import CampaignList from "@/features/campaigns/components/CampaignList";
 import CampaignBoard from "@/features/campaigns/components/CampaignBoard";
 import CampaignTimeline from "@/features/campaigns/components/CampaignTimeline";

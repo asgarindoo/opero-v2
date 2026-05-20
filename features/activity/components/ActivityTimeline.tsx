@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useActivity } from "../context/ActivityContext";
-import { ActivityCategory } from "../types";
+import { ActivityCategory } from "@/features/activity";
 import ActivityEmptyState from "./ActivityEmptyState";
 
 const CATEGORY_COLORS: Record<ActivityCategory, { text: string; dot: string }> = {

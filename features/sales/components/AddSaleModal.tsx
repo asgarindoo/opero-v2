@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSales } from "../context/SalesContext";
 import { X, ShoppingCart, DollarSign, User, Calendar, MapPin, Package } from "lucide-react";
-import { SaleStatus, PaymentStatus, SalePriority } from "../types";
+import { SaleStatus, PaymentStatus, SalePriority } from "@/features/sales";
 
 export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const { addSale } = useSales();

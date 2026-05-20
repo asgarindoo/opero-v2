@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ChevronRight, Target, Clock, TrendingUp, AlertCircle, CheckCircle2, Trash2 } from "lucide-react";
-import type { Goal } from "../types";
+import type { Goal } from "@/features/goals";
 import { useGoals } from "../context/GoalsContext";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
-import { AssetsProvider, useAssets } from "@/features/assets/context/AssetsContext";
+import { AssetsProvider, useAssets } from "@/features/assets";
 import AssetTable from "@/features/assets/components/AssetTable";
 import AssetDrawer from "@/features/assets/components/AssetDrawer";
 import AddAssetModal from "@/features/assets/components/AddAssetModal";

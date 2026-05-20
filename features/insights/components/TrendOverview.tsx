@@ -1,6 +1,6 @@
 "use client";
 
-import { InsightTrend } from "../types";
+import { InsightTrend } from "@/features/insights";
 
 export default function TrendOverview({ trend }: { trend: InsightTrend }) {
   const values = trend.data.map(d => d.value);

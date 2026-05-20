@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useInvoices } from "../context/InvoicesContext";
-import { InvoiceStatus } from "../types";
+import { InvoiceStatus } from "@/features/invoices";
 import { 
   MoreVertical, 
   ChevronRight,

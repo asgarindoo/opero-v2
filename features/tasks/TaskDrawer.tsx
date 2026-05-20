@@ -11,8 +11,8 @@ import {
   Square,
   Clock
 } from "lucide-react";
-import type { Task, Comment } from "./types";
-import { PRIORITY_META, STATUS_META, ALL_STATUSES, ALL_PRIORITIES } from "./types";
+import type { Task, Comment } from "@/features/tasks";
+import { PRIORITY_META, STATUS_META, ALL_STATUSES, ALL_PRIORITIES } from "@/features/tasks";
 import AttachmentZone from "./AttachmentZone";
 import LabelManager from "./LabelManager";
 import MemberPicker from "@/features/tasks/components/MemberPicker";

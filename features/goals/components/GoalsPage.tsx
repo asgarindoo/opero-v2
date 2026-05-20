@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Plus, Search, LayoutGrid, List } from "lucide-react";
-import { useGoals } from "@/features/goals/context/GoalsContext";
+import { useGoals } from "@/features/goals";
 import GoalCard from "@/features/goals/components/GoalCard";
 import GoalListView from "@/features/goals/components/GoalListView";
 import GoalDetail from "@/features/goals/components/GoalDetail";

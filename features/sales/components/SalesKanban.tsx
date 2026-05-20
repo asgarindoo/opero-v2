@@ -1,6 +1,6 @@
 import React from "react";
 import { useSales } from "../context/SalesContext";
-import { SaleStatus } from "../types";
+import { SaleStatus } from "@/features/sales";
 import { Building2, DollarSign, Plus, MoreHorizontal } from "lucide-react";
 
 interface Props {

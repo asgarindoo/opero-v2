@@ -2,7 +2,7 @@
 
 import { useState, KeyboardEvent } from "react";
 import { CheckSquare, Square, Plus, Trash2, ChevronRight } from "lucide-react";
-import type { Subtask, SubSubtask } from "../types";
+import type { Subtask, SubSubtask } from "@/features/tasks";
 
 interface Props {
   subtasks: Subtask[];

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Plus, Clock, Share2, Upload, Grid, List, BarChart3, Shield, Star } from "lucide-react";
-import { DocumentsProvider, useDocuments } from "@/features/documents/context/DocumentsContext";
+import { DocumentsProvider, useDocuments } from "@/features/documents";
 import DocumentTable from "@/features/documents/components/DocumentTable";
 import DocumentGrid from "@/features/documents/components/DocumentGrid";
 import DocumentDetail from "@/features/documents/components/DocumentDetail";

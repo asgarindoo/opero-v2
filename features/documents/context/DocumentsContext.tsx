@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { FileEntry, Folder, FileStatus, DocumentActivity } from "../types";
+import { FileEntry, Folder, FileStatus, DocumentActivity } from "@/features/documents";
 import {
   createDocument,
   createFolder,

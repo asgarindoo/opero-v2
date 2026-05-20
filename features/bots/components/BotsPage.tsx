@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Search, Plus, LayoutGrid, LayoutList, Bot as BotIcon, MessageCircle, Phone, Globe } from "lucide-react";
-import { BotProvider, useBots } from "@/features/bots/context/BotContext";
+import { BotProvider, useBots } from "@/features/bots";
 import BotGrid from "@/features/bots/components/BotGrid";
 import BotList from "@/features/bots/components/BotList";
 import AddBotModal from "@/features/bots/components/AddBotModal";

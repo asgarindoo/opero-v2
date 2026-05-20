@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Task } from "../types";
-import { STATUS_META, PRIORITY_META } from "../types";
+import type { Task } from "@/features/tasks";
+import { STATUS_META, PRIORITY_META } from "@/features/tasks";
 
 interface Props {
   tasks: Task[];

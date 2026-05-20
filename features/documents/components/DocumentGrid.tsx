@@ -14,7 +14,7 @@ import {
   Star,
   Trash2
 } from "lucide-react";
-import { FileType } from "../types";
+import { FileType } from "@/features/documents";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 

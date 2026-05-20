@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Receipt, Download, Share2, Calendar, Filter, ChevronLeft, ChevronRight, MoreHorizontal, Shield, CreditCard, Banknote, Trash2, Edit3, CheckCircle2, AlertCircle, FileText, History } from "lucide-react";
-import type { Transaction } from "../types";
+import type { Transaction } from "@/features/finance";
 
 interface FinanceDetailProps {
   transaction: Transaction;

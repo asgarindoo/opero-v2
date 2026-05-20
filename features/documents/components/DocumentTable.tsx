@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Trash2
 } from "lucide-react";
-import { FileType } from "../types";
+import { FileType } from "@/features/documents";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import ListFooter from "@/components/common/ListFooter";

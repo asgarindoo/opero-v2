@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Invoice, InvoiceActivity } from "../types";
-import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/features/invoices/services/invoices.client";
+import { Invoice, InvoiceActivity } from "@/features/invoices";
+import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/features/invoices";
 
 interface InvoicesContextType {
   invoices: Invoice[];

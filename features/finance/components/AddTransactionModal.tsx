@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useFinance } from "../context/FinanceContext";
 import { X, DollarSign, Tag, User, Calendar, CreditCard, ArrowUpRight, ArrowDownLeft } from "lucide-react";
-import { TransactionType, PaymentMethod } from "../types";
+import { TransactionType, PaymentMethod } from "@/features/finance";
 
 export default function AddTransactionModal({ onClose }: { onClose: () => void }) {
   const { addTransaction } = useFinance();

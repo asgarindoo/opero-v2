@@ -3,7 +3,7 @@
 import React, { use, useState } from "react";
 import { Hash, Search, X, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useChat } from "@/features/chat/context/ChatContext";
+import { useChat } from "@/features/chat";
 import MessageList from "@/features/chat/components/MessageList";
 import MessageComposer from "@/features/chat/components/MessageComposer";
 

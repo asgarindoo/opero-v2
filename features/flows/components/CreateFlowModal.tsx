@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { X, Plus, Trash2, Layers, Info, ListChecks, Tag } from "lucide-react";
-import { FLOW_CATEGORIES, type Flow, type FlowCategory, type FlowStage } from "../types";
+import { FLOW_CATEGORIES, type Flow, type FlowCategory, type FlowStage } from "@/features/flows";
 
 interface CreateFlowModalProps {
   onClose: () => void;

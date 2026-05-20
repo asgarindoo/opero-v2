@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Reaction } from "../types";
+import type { Reaction } from "@/features/tasks";
 
 const QUICK_EMOJIS = ["👍", "✅", "🔥", "👀", "❤️", "🎉"];
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useInvoices } from "../context/InvoicesContext";
 import { X, Building2, Clock, Tag, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, Download, Printer, Mail, Share2, History, AlertCircle } from "lucide-react";
-import { InvoiceStatus, InvoiceActivity } from "../types";
+import { InvoiceStatus, InvoiceActivity } from "@/features/invoices";
 
 function formatCurrency(val: number, currency: string) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(val);

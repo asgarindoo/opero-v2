@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { Activity, CalendarDays, CheckCircle2, MessageSquare, Trash2, Inbox, ChevronRight, User } from "lucide-react";
 import { useCampaigns } from "../context/CampaignsContext";
-import type { Campaign, CampaignStatus } from "../types";
+import type { Campaign, CampaignStatus } from "@/features/campaigns";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";

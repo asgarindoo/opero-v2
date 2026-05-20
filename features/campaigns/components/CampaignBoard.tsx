@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useCampaigns } from "../context/CampaignsContext";
-import { CampaignStatus } from "../types";
+import { CampaignStatus } from "@/features/campaigns";
 import { Megaphone, Users, Plus, MoreHorizontal, Target } from "lucide-react";
 
 interface Props {

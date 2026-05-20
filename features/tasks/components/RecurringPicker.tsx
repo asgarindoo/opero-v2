@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, RefreshCw } from "lucide-react";
-import type { RecurringSchedule } from "../types";
-import { ALL_RECURRING } from "../types";
+import type { RecurringSchedule } from "@/features/tasks";
+import { ALL_RECURRING } from "@/features/tasks";
 
 interface Props {
   value: RecurringSchedule;

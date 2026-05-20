@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { ActivityLog, ActivityCategory, ActivityGroup, ActivityModule } from "../types";
-import { listActivities } from "@/features/activity/services/activity.client";
+import { ActivityLog, ActivityCategory, ActivityGroup, ActivityModule } from "@/features/activity";
+import { listActivities } from "@/features/activity";
 
 interface ActivityContextType {
   activities: ActivityLog[];

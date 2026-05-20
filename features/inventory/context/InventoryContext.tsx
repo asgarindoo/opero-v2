@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Product, StockStatus, InventoryActivity } from "../types";
-import { createProduct, deleteProduct, listProducts, updateProduct as saveProduct } from "@/features/inventory/services/inventory.client";
+import { Product, StockStatus, InventoryActivity } from "@/features/inventory";
+import { createProduct, deleteProduct, listProducts, updateProduct as saveProduct } from "@/features/inventory";
 
 interface InventoryContextType {
   products: Product[];

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Flow } from "../types";
+import type { Flow } from "@/features/flows";
 
 
 interface FlowOverviewCardsProps {

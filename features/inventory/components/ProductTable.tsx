@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useInventory } from "../context/InventoryContext";
-import { StockStatus } from "../types";
+import { StockStatus } from "@/features/inventory";
 import { 
   Package, 
   ChevronDown, 

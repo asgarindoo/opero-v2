@@ -1,11 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
-import { Metric, InsightTrend, ActivityPoint, InsightCategory } from "../types";
-import { listActivities } from "@/features/activity/services/activity.client";
-import { listTransactions } from "@/features/finance/services/finance.client";
-import { listSales } from "@/features/sales/services/sales.client";
-import { listTasks } from "@/features/tasks/services/tasks.client";
+import { Metric, InsightTrend, ActivityPoint, InsightCategory } from "@/features/insights";
+import { listActivities } from "@/features/activity";
+import { listTransactions } from "@/features/finance";
+import { listSales } from "@/features/sales";
+import { listTasks } from "@/features/tasks";
 
 interface InsightsContextType {
   metrics: Metric[];

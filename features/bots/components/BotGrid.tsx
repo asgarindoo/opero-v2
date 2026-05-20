@@ -1,6 +1,6 @@
 import React from "react";
 import { useBots } from "../context/BotContext";
-import { BotStatus } from "../types";
+import { BotStatus } from "@/features/bots";
 import { Bot as BotIcon, MessageCircle, Phone, Globe, Activity, CheckCircle2, AlertCircle, PlaySquare, Plus } from "lucide-react";
 
 interface Props {

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { 
   Plus
 } from "lucide-react";
-import { InventoryProvider, useInventory } from "@/features/inventory/context/InventoryContext";
+import { InventoryProvider, useInventory } from "@/features/inventory";
 import ProductTable from "@/features/inventory/components/ProductTable";
 import AddProductModal from "@/features/inventory/components/AddProductModal";
 import ModuleHeader from "@/components/common/ModuleHeader";

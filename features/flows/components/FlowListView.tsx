@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { ChevronRight, Clock, Activity, MoreHorizontal, Layers, Trash2 } from "lucide-react";
-import type { Flow } from "../types";
-import { CATEGORY_COLORS } from "../types";
+import type { Flow } from "@/features/flows";
+import { CATEGORY_COLORS } from "@/features/flows";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import Button from "@/components/ui/Button";

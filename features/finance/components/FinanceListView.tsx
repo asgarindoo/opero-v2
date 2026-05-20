@@ -10,7 +10,7 @@ import {
   Trash2,
   MoreVertical
 } from "lucide-react";
-import type { Transaction } from "../types";
+import type { Transaction } from "@/features/finance";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";

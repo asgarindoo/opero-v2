@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useContacts } from "../context/ContactsContext";
-import { ContactStatus } from "../types";
+import { ContactStatus } from "@/features/contacts";
 import { 
   ChevronRight,
   Search,

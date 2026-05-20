@@ -1,6 +1,6 @@
 "use client";
 
-import type { WorkflowStage } from "../types";
+import type { WorkflowStage } from "@/features/flows";
 
 interface PipelinePreviewProps {
   stages: WorkflowStage[];

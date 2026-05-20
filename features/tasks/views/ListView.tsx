@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
-import type { Task, Status } from "../types";
-import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "../types";
+import type { Task, Status } from "@/features/tasks";
+import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "@/features/tasks";
 import { EmptyState, RowSkeleton } from "@/components/common/DataState";
 
 interface Props {

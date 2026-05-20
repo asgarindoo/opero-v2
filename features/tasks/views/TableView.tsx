@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import type { Task, Status, Priority } from "../types";
-import { STATUS_META, PRIORITY_META } from "../types";
+import type { Task, Status, Priority } from "@/features/tasks";
+import { STATUS_META, PRIORITY_META } from "@/features/tasks";
 
 type SortKey = "id" | "title" | "status" | "priority" | "due" | "created";
 type SortDir = "asc" | "desc";

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link2, ArrowRight, ArrowLeft, RefreshCw, Copy, Plus, X } from "lucide-react";
-import type { TaskRelationship, RelationshipType, Task } from "../types";
+import type { TaskRelationship, RelationshipType, Task } from "@/features/tasks";
 
 const REL_META: Record<RelationshipType, { label: string; icon: React.ReactNode; color: string }> = {
   "blocks":      { label: "Blocks",      icon: <ArrowRight size={10} strokeWidth={2} />, color: "rgba(186,26,26,0.75)" },

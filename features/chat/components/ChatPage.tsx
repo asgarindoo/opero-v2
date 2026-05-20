@@ -1,6 +1,6 @@
 "use client";
 
-import { useChat } from "@/features/chat/context/ChatContext";
+import { useChat } from "@/features/chat";
 import { MessageSquarePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";

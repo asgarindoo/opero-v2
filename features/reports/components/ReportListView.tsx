@@ -1,7 +1,7 @@
 "use client";
 
 import { FileText, Download, Share2, MoreHorizontal, ChevronRight, Clock, User, Shield } from "lucide-react";
-import type { Report } from "../types";
+import type { Report } from "@/features/reports";
 
 const statusConfig = {
   Draft:      "bg-black/[0.04] text-on-surface-variant opacity-60",

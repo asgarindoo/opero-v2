@@ -13,8 +13,8 @@ import {
   Link as LinkIcon,
   FileText
 } from "lucide-react";
-import type { Flow, FlowStage } from "../types";
-import { CATEGORY_COLORS } from "../types";
+import type { Flow, FlowStage } from "@/features/flows";
+import { CATEGORY_COLORS } from "@/features/flows";
 
 interface FlowDetailProps {
   flow: Flow;

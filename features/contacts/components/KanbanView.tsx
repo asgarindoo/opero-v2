@@ -1,6 +1,6 @@
 import React from "react";
 import { useContacts } from "../context/ContactsContext";
-import { ContactStatus, RelationshipType } from "../types";
+import { ContactStatus, RelationshipType } from "@/features/contacts";
 import { MoreHorizontal, Briefcase, Mail, Clock } from "lucide-react";
 
 interface Props {

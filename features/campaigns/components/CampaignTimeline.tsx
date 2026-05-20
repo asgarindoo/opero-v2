@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { Activity, CalendarDays } from "lucide-react";
 import { useCampaigns } from "../context/CampaignsContext";
-import type { Campaign } from "../types";
+import type { Campaign } from "@/features/campaigns";
 
 interface Props {
   searchQuery: string;

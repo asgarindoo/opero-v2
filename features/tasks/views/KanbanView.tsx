@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { Plus } from "lucide-react";
-import type { Task, Status } from "../types";
-import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "../types";
+import type { Task, Status } from "@/features/tasks";
+import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "@/features/tasks";
 
 interface Props {
   tasks: Task[];

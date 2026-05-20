@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { ChatChannel, ChatMessage, User } from "../types";
+import { ChatChannel, ChatMessage, User } from "@/features/chat";
 
 // INITIAL MOCK DATA
 const MOCK_USERS: Record<string, User> = {};

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useBots } from "../context/BotContext";
 import { X, Bot as BotIcon, MessageCircle, Phone, Globe, ChevronRight } from "lucide-react";
-import { PlatformType } from "../types";
+import { PlatformType } from "@/features/bots";
 
 export default function AddBotModal({ onClose }: { onClose: () => void }) {
   const { addBot } = useBots();

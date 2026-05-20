@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Asset } from "../types";
+import { Asset } from "@/features/content-planner";
 import {
   Search,
   Upload,

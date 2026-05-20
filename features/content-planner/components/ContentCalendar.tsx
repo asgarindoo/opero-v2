@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
-import { ContentPost } from "../types";
+import { ContentPost } from "@/features/content-planner";
 
 interface ContentCalendarProps {
   posts: ContentPost[];

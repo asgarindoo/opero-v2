@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Member, Role, Permission, ActivityLog, RoleType, InviteLink } from "../types";
-import { listActivities } from "@/features/activity/services/activity.client";
+import { Member, Role, Permission, ActivityLog, RoleType, InviteLink } from "@/features/members";
+import { listActivities } from "@/features/activity";
 import { listRoles, updateRole } from "@/features/members/services/members.client";
 
 interface ApiMember {

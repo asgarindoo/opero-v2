@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Users, Shield, Clock, Plus, Hash, Copy, Check } from "lucide-react";
-import { useMembers } from "@/features/members/context/MembersContext";
+import { useMembers } from "@/features/members";
 
 // Components
 import MembersDirectory from "@/features/members/components/MembersDirectory";

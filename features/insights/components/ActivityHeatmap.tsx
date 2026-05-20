@@ -1,6 +1,6 @@
 "use client";
 
-import { ActivityPoint } from "../types";
+import { ActivityPoint } from "@/features/insights";
 
 export default function ActivityHeatmap({ data }: { data: ActivityPoint[] }) {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];

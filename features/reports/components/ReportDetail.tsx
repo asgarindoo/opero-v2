@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, FileText, Download, Printer, Share2, Calendar, Filter, ChevronLeft, ChevronRight, MoreHorizontal, Layout, Table, PieChart } from "lucide-react";
-import type { Report } from "../types";
+import type { Report } from "@/features/reports";
 
 interface ReportDetailProps {
   report: Report;

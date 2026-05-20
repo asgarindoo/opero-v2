@@ -5,7 +5,7 @@ import {
   Upload, FileText, FileSpreadsheet, Image as ImageIcon,
   File, X, Download, Edit2, Check,
 } from "lucide-react";
-import type { Attachment } from "./types";
+import type { Attachment } from "@/features/tasks";
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
