@@ -182,6 +182,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
             <span
               className="font-body-sm text-[12px] font-medium"
               style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}
+              suppressHydrationWarning
             >
               {tenantName}
             </span>
@@ -351,6 +352,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center font-display font-bold text-[11px] shrink-0"
                 style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
+                suppressHydrationWarning
               >
                 {userInitial}
               </div>
@@ -358,6 +360,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
               <span
                 className="hidden md:inline font-body-sm text-[12.5px] font-medium max-w-[96px] truncate"
                 style={{ color: "var(--color-on-surface)" }}
+                suppressHydrationWarning
               >
                 {userName}
               </span>

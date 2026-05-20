@@ -120,24 +120,32 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
                 </button>
               </div>
 
-              <div className="space-y-1">
+              <div className="relative pl-6 space-y-8 pt-4 pb-8">
+                {/* Roadmap Spine */}
+                <div className="absolute left-[7px] top-6 bottom-6 w-px bg-gradient-to-b from-black/[0.08] via-black/[0.08] to-transparent" />
+                
                 {goal.milestones.map((m) => (
-                  <div key={m.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-zinc-50 cursor-pointer group transition-colors">
-                     <div 
+                  <div key={m.id} className="relative flex items-start gap-6 group">
+                     {/* Roadmap Node */}
+                     <button 
                        onClick={() => toggleMilestone(m.id)}
-                       className={`mt-0.5 w-[16px] h-[16px] rounded border flex items-center justify-center shrink-0 transition-all shadow-sm ${
-                       m.completed ? "bg-zinc-800 border-zinc-800 text-white" : "bg-white border-zinc-300 group-hover:border-zinc-400"
-                     }`}>
-                        {m.completed && <CheckCircle2 size={10} strokeWidth={3} />}
-                     </div>
-                     <div className="flex-1 flex justify-between items-center gap-4">
-                       <span className={`font-display text-[14px] leading-relaxed transition-all ${
-                         m.completed ? "text-zinc-400 line-through decoration-zinc-300" : "text-zinc-700"
+                       className="absolute -left-[27px] top-[5px] z-10 w-[20px] h-[20px] bg-white rounded-full flex items-center justify-center cursor-pointer"
+                     >
+                       <div className={`w-[14px] h-[14px] rounded-full border-[2px] flex items-center justify-center transition-all ${
+                         m.completed ? "border-zinc-800 bg-zinc-800" : "border-zinc-300 bg-white group-hover:border-zinc-400"
+                       }`}>
+                          {m.completed && <CheckCircle2 size={10} strokeWidth={4} className="text-white" />}
+                       </div>
+                     </button>
+                     
+                     <div className="flex-1 flex flex-col pt-0.5">
+                       <span className="font-display text-[10px] font-bold text-zinc-400 tracking-[0.1em] uppercase mb-1.5">
+                         Target: {m.date}
+                       </span>
+                       <span className={`font-display text-[16px] leading-snug transition-all ${
+                         m.completed ? "text-zinc-400 line-through decoration-zinc-300" : "text-zinc-900 font-medium"
                        }`}>
                          {m.title}
-                       </span>
-                       <span className="font-display text-[11px] font-medium text-zinc-400 tracking-wide whitespace-nowrap">
-                         {m.date}
                        </span>
                      </div>
                   </div>
