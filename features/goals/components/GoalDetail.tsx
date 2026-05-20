@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Target, CheckCircle2, Circle, Clock, MoreHorizontal, Trash2, Edit3, Save, Plus, FileText, MessageSquare, TrendingUp, AlertCircle } from "lucide-react";
 import type { Goal, Milestone } from "@/features/goals";
 
@@ -14,6 +14,21 @@ interface GoalDetailProps {
 export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDelete }: GoalDetailProps) {
   const [goal, setFlow] = useState<Goal>(initialGoal);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Local edit states
+  const [editTitle, setEditTitle] = useState(initialGoal.title);
+  const [editTargetOutcome, setEditTargetOutcome] = useState(initialGoal.targetOutcome || "");
+  const [editDescription, setEditDescription] = useState(initialGoal.description || "");
+  const [editError, setEditError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFlow(initialGoal);
+    setEditTitle(initialGoal.title);
+    setEditTargetOutcome(initialGoal.targetOutcome || "");
+    setEditDescription(initialGoal.description || "");
+    setEditError(null);
+    setIsEditing(false);
+  }, [initialGoal]);
 
   function handleUpdate(updates: Partial<Goal>) {
     const next = { ...goal, ...updates };
@@ -32,6 +47,40 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
 
     handleUpdate({ milestones: nextMilestones, progress });
   }
+
+  const isEditValid = editTitle.trim() !== "" && editTargetOutcome.trim() !== "";
+
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      // Validate
+      const trimmedTitle = editTitle.trim();
+      const trimmedOutcome = editTargetOutcome.trim();
+      if (!trimmedTitle) {
+        setEditError("Goal title is required.");
+        return;
+      }
+      if (!trimmedOutcome) {
+        setEditError("Target outcome is required.");
+        return;
+      }
+      setEditError(null);
+      const next = {
+        ...goal,
+        title: trimmedTitle,
+        targetOutcome: trimmedOutcome,
+        description: editDescription.trim()
+      };
+      setFlow(next);
+      onUpdate(next);
+      setIsEditing(false);
+    } else {
+      setEditTitle(goal.title);
+      setEditTargetOutcome(goal.targetOutcome || "");
+      setEditDescription(goal.description || "");
+      setEditError(null);
+      setIsEditing(true);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white animate-fade-in overflow-hidden selection:bg-black/10">
@@ -57,15 +106,16 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-black/[0.08] font-display text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm"
+            onClick={handleToggleEdit}
+            disabled={isEditing && !isEditValid}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-black/[0.08] font-display text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm disabled:opacity-40"
           >
             {isEditing ? <><Save size={14} /> Save</> : <><Edit3 size={14} /> Edit</>}
           </button>
           <div className="w-px h-4 bg-black/[0.1]" />
           <button
             onClick={() => onDelete(goal.id)}
-            className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
+            className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
           >
             <Trash2 size={16} />
           </button>
@@ -77,20 +127,53 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
         {/* Left Content */}
         <div className="flex-1 overflow-y-auto p-10 bg-white custom-scrollbar">
           <div className="max-w-3xl mx-auto space-y-12">
+            
+            {/* Error banner */}
+            {isEditing && editError && (
+              <div className="p-3 py-2 bg-red-50 border border-red-100 rounded text-red-600 font-display text-[12px] flex items-center gap-2 animate-in fade-in duration-200">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>{editError}</span>
+              </div>
+            )}
+
             {/* Header Content */}
             <div className="space-y-4">
               {isEditing ? (
-                <input
-                  value={goal.title}
-                  onChange={e => handleUpdate({ title: e.target.value })}
-                  className="w-full font-display text-[32px] font-semibold text-zinc-900 bg-transparent outline-none border-b border-black/[0.1] pb-1 placeholder:text-zinc-300"
-                  placeholder="Goal Title"
-                  autoFocus
-                />
+                <div className="space-y-1">
+                  <label className="font-display text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                    Goal Title <span className="text-zinc-900">*</span>
+                  </label>
+                  <input
+                    value={editTitle}
+                    onChange={e => { setEditTitle(e.target.value); setEditError(null); }}
+                    className="w-full font-display text-[32px] font-semibold text-zinc-900 bg-transparent outline-none border-b border-black/[0.1] pb-1 placeholder:text-zinc-300 focus:border-zinc-900 transition-colors"
+                    placeholder="Goal Title *"
+                    autoFocus
+                  />
+                </div>
               ) : (
                 <h1 className="font-display text-[32px] font-semibold text-zinc-900 tracking-tight leading-tight">
                   {goal.title}
                 </h1>
+              )}
+            </div>
+
+            {/* Target Outcome */}
+            <div className="space-y-3">
+              <h2 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase border-b border-black/[0.06] pb-2">
+                Target Outcome {isEditing && <span className="text-zinc-900">*</span>}
+              </h2>
+              {isEditing ? (
+                <input
+                  value={editTargetOutcome}
+                  onChange={e => { setEditTargetOutcome(e.target.value); setEditError(null); }}
+                  className="w-full font-display text-[15px] text-zinc-700 bg-[#F9F9F9] rounded px-4 py-2.5 outline-none focus:bg-white border border-transparent focus:border-black/[0.1] focus:ring-4 focus:ring-black/[0.02] transition-all shadow-sm"
+                  placeholder="Define concrete, measurable success *..."
+                />
+              ) : (
+                <p className="font-display text-[15px] text-zinc-800 font-medium leading-relaxed max-w-2xl">
+                  {goal.targetOutcome || "No concrete target outcome defined."}
+                </p>
               )}
             </div>
 
@@ -99,9 +182,9 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
               <h2 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase border-b border-black/[0.06] pb-2">Goal Context</h2>
               {isEditing ? (
                 <textarea
-                  value={goal.description}
-                  onChange={e => handleUpdate({ description: e.target.value })}
-                  className="w-full font-display text-[15px] text-zinc-700 bg-[#F9F9F9] rounded-lg p-4 outline-none focus:bg-white border border-transparent focus:border-black/[0.1] focus:ring-4 focus:ring-black/[0.02] transition-all resize-none shadow-sm h-32"
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  className="w-full font-display text-[15px] text-zinc-700 bg-[#F9F9F9] rounded p-4 outline-none focus:bg-white border border-transparent focus:border-black/[0.1] focus:ring-4 focus:ring-black/[0.02] transition-all resize-none shadow-sm h-32"
                   placeholder="Provide context and strategy for this goal..."
                 />
               ) : (

@@ -46,6 +46,23 @@ export async function getFlowById(id: string) {
 export async function createFlow(data: Record<string, unknown>) {
   const ctx = await requireTenant();
   const title = getTitle(data);
+  
+  if (!title || title.trim() === "" || title.trim() === "Untitled") {
+    throw new Error("Flow name is required and cannot be empty.");
+  }
+
+  const stages = Array.isArray(data.stages) ? data.stages : [];
+  if (stages.length === 0) {
+    throw new Error("At least one stage is required.");
+  }
+
+  for (let i = 0; i < stages.length; i++) {
+    const s = stages[i];
+    if (!s || typeof s !== "object" || !s.name || !s.name.trim()) {
+      throw new Error(`Stage ${i + 1} name is required.`);
+    }
+  }
+
   const flow = await prisma.flow.create({
     data: {
       id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
@@ -66,6 +83,27 @@ export async function updateFlow(id: string, patch: Record<string, unknown>) {
   const ctx = await requireTenant();
   const current = await prisma.flow.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
+
+  if (patch.name !== undefined || patch.title !== undefined) {
+    const newTitle = getTitle(patch);
+    if (!newTitle || newTitle.trim() === "" || newTitle.trim() === "Untitled") {
+      throw new Error("Flow name cannot be empty.");
+    }
+  }
+
+  if (patch.stages !== undefined) {
+    const stages = Array.isArray(patch.stages) ? patch.stages : [];
+    if (stages.length === 0) {
+      throw new Error("At least one stage is required.");
+    }
+    for (let i = 0; i < stages.length; i++) {
+      const s = stages[i];
+      if (!s || typeof s !== "object" || !s.name || !s.name.trim()) {
+        throw new Error(`Stage ${i + 1} name is required.`);
+      }
+    }
+  }
+
   const currentPayload = parsePayload(current.payload);
   const mergedPayload = { ...currentPayload, ...patch };
   const result = await prisma.flow.updateMany({

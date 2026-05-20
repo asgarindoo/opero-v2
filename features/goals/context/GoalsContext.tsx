@@ -22,7 +22,7 @@ interface GoalsContextType {
   goals: Goal[];
   loading: boolean;
   error: string | null;
-  addGoal: (goal: Goal) => void;
+  addGoal: (goal: Goal) => Promise<Goal>;
   updateGoal: (goalId: string, updates: Partial<Goal>) => void;
   deleteGoal: (goalId: string) => void;
   deleteGoals: (ids: string[]) => void;
@@ -66,11 +66,16 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const addGoal = (goal: Goal) => {
+  const addGoal = async (goal: Goal) => {
     const next = { ...goal, progress: calculateGoalProgress(goal.keyResults) };
-    createGoal<Goal>(next)
-      .then((created) => setGoals(prev => [created, ...prev]))
-      .catch((err) => console.error("Failed to create goal:", err));
+    try {
+      const created = await createGoal<Goal>(next);
+      setGoals(prev => [created, ...prev]);
+      return created;
+    } catch (err) {
+      console.error("Failed to create goal:", err);
+      throw err;
+    }
   };
 
   const updateGoal = (goalId: string, updates: Partial<Goal>) => {

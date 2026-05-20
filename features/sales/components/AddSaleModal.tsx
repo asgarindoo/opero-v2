@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useSales } from "../context/SalesContext";
 import { X, ShoppingCart, DollarSign, User, Calendar, MapPin, Package } from "lucide-react";
+import Dropdown from "@/components/ui/Dropdown";
 import { SaleStatus, PaymentStatus, SalePriority } from "@/features/sales";
 
 export default function AddSaleModal({ onClose }: { onClose: () => void }) {
@@ -74,25 +75,27 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Initial Status</label>
-                <select
-                  value={status} onChange={e => setStatus(e.target.value as SaleStatus)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface appearance-none"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Processing">Processing</option>
-                </select>
+                <Dropdown
+                  value={status}
+                  onChange={(val) => setStatus(val as SaleStatus)}
+                  options={[
+                    { value: "Pending", label: "Pending" },
+                    { value: "Paid", label: "Paid" },
+                    { value: "Processing", label: "Processing" },
+                  ]}
+                />
               </div>
               <div>
                 <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Payment State</label>
-                <select
-                  value={paymentStatus} onChange={e => setPaymentStatus(e.target.value as PaymentStatus)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface appearance-none"
-                >
-                  <option value="Unpaid">Unpaid</option>
-                  <option value="Partially Paid">Partially Paid</option>
-                  <option value="Paid">Paid</option>
-                </select>
+                <Dropdown
+                  value={paymentStatus}
+                  onChange={(val) => setPaymentStatus(val as PaymentStatus)}
+                  options={[
+                    { value: "Unpaid", label: "Unpaid" },
+                    { value: "Partially Paid", label: "Partially Paid" },
+                    { value: "Paid", label: "Paid" },
+                  ]}
+                />
               </div>
             </div>
           </div>
@@ -113,14 +116,15 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
               </div>
               <div>
                 <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Priority</label>
-                <select
-                  value={priority} onChange={e => setPriority(e.target.value as SalePriority)}
-                  className="w-full px-3 py-2 rounded-lg border border-black/10 bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12px] text-on-surface appearance-none"
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
+                <Dropdown
+                  value={priority}
+                  onChange={(val) => setPriority(val as SalePriority)}
+                  options={[
+                    { value: "Low", label: "Low" },
+                    { value: "Medium", label: "Medium" },
+                    { value: "High", label: "High" },
+                  ]}
+                />
               </div>
             </div>
             <div>

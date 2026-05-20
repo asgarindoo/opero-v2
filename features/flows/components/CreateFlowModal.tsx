@@ -49,7 +49,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
 
   const handleCreate = () => {
     if (!name) return;
-    
+
     const newFlow: Flow = {
       id: `f-${Date.now()}`,
       name,
@@ -74,10 +74,10 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] border border-black/[0.08] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+      <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl border border-black/[0.08] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
         <header className="px-10 py-8 border-b border-black/[0.04] bg-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
+            <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
               <Layers size={24} />
             </div>
             <div>
@@ -85,7 +85,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
               <p className="font-display text-[13px] text-on-surface-variant opacity-40">Design a reusable execution path for your operations</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 rounded-2xl hover:bg-black/5 transition-all">
+          <button onClick={onClose} className="p-3 rounded-lg hover:bg-black/5 transition-all">
             <X size={20} className="text-on-surface-variant opacity-30" />
           </button>
         </header>
@@ -95,13 +95,13 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
           <div className="w-[340px] border-r border-black/[0.04] bg-black/[0.01] p-10 space-y-8 overflow-y-auto custom-scrollbar">
             <div className="space-y-6">
               <div className="flex items-center gap-2 text-primary">
-                 <Info size={14} />
-                 <span className="font-display text-[10px] font-bold uppercase tracking-widest">Process Details</span>
+                <Info size={14} />
+                <span className="font-display text-[10px] font-bold uppercase tracking-widest">Process Details</span>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Flow Name</label>
-                <input 
+                <input
                   autoFocus
                   value={name}
                   onChange={e => setName(e.target.value)}
@@ -114,7 +114,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
                 <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Category</label>
                 <div className="relative">
                   <Tag size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-30" />
-                  <select 
+                  <select
                     value={category}
                     onChange={e => setCategory(e.target.value as FlowCategory)}
                     className="w-full bg-white border border-black/[0.08] rounded-xl pl-10 pr-4 py-3 font-display text-[14px] outline-none appearance-none cursor-pointer"
@@ -128,7 +128,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
 
               <div className="space-y-2">
                 <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Objective</label>
-                <textarea 
+                <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Describe the process objective..."
@@ -141,69 +141,82 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
           {/* Stage Builder */}
           <div className="flex-1 p-10 overflow-y-auto custom-scrollbar bg-white">
             <div className="flex items-center justify-between mb-8">
-               <div className="flex items-center gap-2 text-primary">
-                  <ListChecks size={14} />
-                  <span className="font-display text-[10px] font-bold uppercase tracking-widest">Execution Stages</span>
-               </div>
-               <button onClick={addStage} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-all">
-                  <Plus size={14} />
-                  <span className="font-display text-[10px] font-bold uppercase tracking-wider">Add Stage</span>
-               </button>
+              <div className="flex items-center gap-2 text-primary">
+                <ListChecks size={14} />
+                <span className="font-display text-[10px] font-bold uppercase tracking-widest">Execution Stages</span>
+              </div>
+              <button onClick={addStage} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-all">
+                <Plus size={14} />
+                <span className="font-display text-[10px] font-bold uppercase tracking-wider">Add Stage</span>
+              </button>
             </div>
 
-            <div className="space-y-8">
-              {stages.map((stage, idx) => (
-                <div key={idx} className="relative group">
-                  {idx !== stages.length - 1 && (
-                    <div className="absolute left-[13.5px] top-10 bottom-[-32px] w-[1px] bg-black/[0.04]" />
-                  )}
-                  <div className="flex gap-6">
-                    <div className="w-7 h-7 rounded-lg bg-black/[0.04] flex items-center justify-center font-mono text-[11px] font-bold text-on-surface-variant opacity-40 shrink-0 mt-1">
-                      {idx + 1}
+            <div className="py-2 flex flex-col">
+              {stages.map((stage, idx) => {
+                const isLast = idx === stages.length - 1;
+                return (
+                  <div key={idx} className="w-full flex items-stretch text-left group transition-all">
+
+                    {/* Fixed Rail Column (Matches FlowDetail) */}
+                    <div className="relative w-12 shrink-0 flex flex-col items-center">
+                      {/* Stable Connector Line */}
+                      {stages.length > 1 && (
+                        <div className={`absolute w-[2px] bg-black/[0.06] left-1/2 -translate-x-1/2 ${idx === 0 ? "top-6 bottom-0" :
+                            isLast ? "top-0 h-6" :
+                              "top-0 bottom-0"
+                          }`} />
+                      )}
+
+                      {/* Fixed Wrapper for Node */}
+                      <div className="h-12 w-full flex items-center justify-center relative z-10">
+                        <div className="w-[18px] h-[18px] rounded-full border-[2px] flex items-center justify-center transition-all bg-white border-zinc-300 group-hover:border-zinc-400">
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 space-y-4">
+
+                    <div className="flex-1 pb-8 pt-[12px] pr-4 flex flex-col justify-start">
                       <div className="flex items-center gap-4">
-                        <input 
+                        <input
                           value={stage.name}
                           onChange={e => updateStage(idx, { name: e.target.value })}
-                          placeholder={`Stage ${idx + 1} Title`}
-                          className="flex-1 bg-transparent font-display text-[18px] font-semibold text-on-surface outline-none border-b border-transparent focus:border-primary/20 pb-1 transition-all"
+                          placeholder={`Stage ${idx + 1} Name`}
+                          className="flex-1 bg-transparent font-display text-[15px] font-semibold text-zinc-900 outline-none border-b border-transparent focus:border-zinc-300 pb-1 transition-all placeholder:text-zinc-400"
                         />
-                        <button onClick={() => removeStage(idx)} className="text-red-500 opacity-0 group-hover:opacity-40 hover:opacity-100 transition-opacity">
-                          <Trash2 size={16} />
+                        <button onClick={() => removeStage(idx)} className="text-zinc-400 opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity hover:text-red-500">
+                          <Trash2 size={14} />
                         </button>
                       </div>
 
-                      <div className="space-y-3 ml-2">
-                         {stage.checklist?.map((item, itemIdx) => (
-                           <div key={itemIdx} className="flex items-center gap-3 group/item">
-                             <div className="w-4 h-4 rounded border-2 border-black/10 shrink-0" />
-                             <input 
-                               value={item.text}
-                               onChange={e => updateChecklistItem(idx, itemIdx, e.target.value)}
-                               placeholder="Process item..."
-                               className="flex-1 bg-transparent font-display text-[14px] text-on-surface outline-none border-b border-black/[0.03] focus:border-primary/20 transition-all"
-                             />
-                           </div>
-                         ))}
-                         <button onClick={() => addChecklistItem(idx)} className="flex items-center gap-2 font-display text-[11px] font-bold text-primary opacity-40 hover:opacity-100 transition-all uppercase tracking-widest">
-                           <Plus size={14} />
-                           Add item
-                         </button>
+                      <div className="space-y-3 mt-4">
+                        {stage.checklist?.map((item, itemIdx) => (
+                          <div key={itemIdx} className="flex items-center gap-3 group/item">
+                            <div className="w-3.5 h-3.5 rounded border border-zinc-300 bg-zinc-50 shrink-0" />
+                            <input
+                              value={item.text}
+                              onChange={e => updateChecklistItem(idx, itemIdx, e.target.value)}
+                              placeholder="Process item..."
+                              className="flex-1 bg-transparent font-display text-[13px] text-zinc-700 outline-none border-b border-black/[0.03] focus:border-zinc-300 transition-all placeholder:text-zinc-400"
+                            />
+                          </div>
+                        ))}
+                        <button onClick={() => addChecklistItem(idx)} className="flex items-center gap-1.5 font-display text-[11px] font-bold text-zinc-400 hover:text-zinc-800 transition-all uppercase tracking-widest mt-2">
+                          <Plus size={12} />
+                          Add item
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
 
         <footer className="px-10 py-6 border-t border-black/[0.04] bg-white flex items-center justify-end gap-6 shrink-0">
           <button onClick={onClose} className="font-display text-[12px] font-bold text-on-surface-variant opacity-40 hover:opacity-100 uppercase tracking-widest transition-all">Cancel</button>
-          <button 
+          <button
             onClick={handleCreate}
-            className="px-8 py-3 bg-primary text-on-primary rounded-2xl font-display text-[12px] font-bold uppercase tracking-widest shadow-xl shadow-primary/20 hover:shadow-2xl hover:-translate-y-px transition-all"
+            className="px-8 py-3 bg-primary text-on-primary rounded-lg font-display text-[12px] font-bold uppercase tracking-widest shadow-xl shadow-primary/20 hover:shadow-2xl hover:-translate-y-px transition-all"
           >
             Create Process Flow
           </button>

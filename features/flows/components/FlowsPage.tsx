@@ -72,13 +72,8 @@ export default function FlowsPage() {
 
   // Handler for creating a new flow
   const handleCreateFlow = async (newFlow: Flow) => {
-    try {
-      const saved = await createFlow<Flow>(newFlow);
-      setFlows(prev => [saved, ...prev]);
-      setIsCreateModalOpen(false);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create flow");
-    }
+    const saved = await createFlow<Flow>(newFlow);
+    setFlows(prev => [saved, ...prev]);
   };
 
   // Handler for updating a flow

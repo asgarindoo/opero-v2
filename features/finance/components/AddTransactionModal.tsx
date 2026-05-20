@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useFinance } from "../context/FinanceContext";
 import { X, DollarSign, Tag, User, Calendar, CreditCard, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import Dropdown from "@/components/ui/Dropdown";
 import { TransactionType, PaymentMethod } from "@/features/finance";
 
 export default function AddTransactionModal({ onClose }: { onClose: () => void }) {
@@ -115,19 +116,17 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
               </div>
               <div>
                 <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Payment Method</label>
-                <div className="relative flex items-center">
-                  <CreditCard size={13} className="absolute left-3 text-on-surface-variant opacity-60" />
-                  <select 
-                    value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
-                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-black/10 bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12px] text-on-surface appearance-none"
-                  >
-                    <option>Bank Transfer</option>
-                    <option>Credit Card</option>
-                    <option>PayPal</option>
-                    <option>Stripe</option>
-                    <option>Cash</option>
-                  </select>
-                </div>
+                <Dropdown
+                  value={paymentMethod}
+                  onChange={(val) => setPaymentMethod(val as PaymentMethod)}
+                  options={[
+                    { value: "Bank Transfer", label: "Bank Transfer", icon: <CreditCard size={13} /> },
+                    { value: "Credit Card", label: "Credit Card", icon: <CreditCard size={13} /> },
+                    { value: "PayPal", label: "PayPal", icon: <CreditCard size={13} /> },
+                    { value: "Stripe", label: "Stripe", icon: <CreditCard size={13} /> },
+                    { value: "Cash", label: "Cash", icon: <CreditCard size={13} /> },
+                  ]}
+                />
               </div>
             </div>
           </div>

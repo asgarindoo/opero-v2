@@ -57,5 +57,6 @@ export interface Goal {
   linkedItems: LinkedItem[];
   activities: Activity[];
   
+  targetOutcome?: string; // Strategic target outcome
   parentId?: string; // For hierarchy
 }

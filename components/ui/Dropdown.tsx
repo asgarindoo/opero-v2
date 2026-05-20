@@ -17,6 +17,7 @@ interface DropdownProps {
   label?: string;
   className?: string;
   align?: "left" | "right";
+  disabled?: boolean;
 }
 
 export default function Dropdown({
@@ -25,7 +26,8 @@ export default function Dropdown({
   onChange,
   label,
   className = "",
-  align = "left"
+  align = "left",
+  disabled = false
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,11 +48,13 @@ export default function Dropdown({
     <div className={`relative ${className}`} ref={containerRef}>
       <button
         type="button"
+        disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
         className="
           w-full flex items-center justify-between px-3 py-2.5 rounded-md
           bg-[#fcfcfc] border border-black/[0.08] focus:bg-white focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100
           transition-all font-display text-[14px] text-zinc-900 shadow-sm
+          disabled:opacity-50 disabled:cursor-not-allowed
         "
       >
         <div className="flex items-center gap-1.5 overflow-hidden">
