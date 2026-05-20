@@ -92,45 +92,63 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
         <aside className="w-[280px] border-r border-black/[0.06] bg-[#F9F9F9] flex flex-col overflow-y-auto custom-scrollbar">
            <div className="p-6">
               <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide mb-4">STAGES</h3>
-              <div className="relative py-2 space-y-0">
-                 {/* Pipeline Rail */}
-                 <div className="absolute left-[17px] top-6 bottom-6 w-[2px] bg-black/[0.04]" />
-                 
+              <div className="py-2 flex flex-col">
                  {flow.stages.map((stage, idx) => {
                    const isActive = activeStageId === stage.id;
                    const isCompleted = stage.isCompleted;
                    const completedTasks = stage.checklist.filter(i => i.isCompleted).length;
                    const totalTasks = stage.checklist.length;
+                   const isLast = idx === flow.stages.length - 1;
                    
                    return (
                      <button
                        key={stage.id}
                        onClick={() => setActiveStageId(stage.id)}
-                       className={`relative w-full flex items-start gap-4 py-3 pl-2 pr-3 rounded-none transition-all text-left group ${
-                         isActive ? "opacity-100" : "opacity-50 hover:opacity-100"
+                       className={`w-full flex items-stretch text-left group transition-all ${
+                         isActive ? "opacity-100" : "opacity-60 hover:opacity-100"
                        }`}
                      >
-                        <div className="relative z-10 flex flex-col items-center pt-0.5">
-                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-[2px] transition-all bg-[#F9F9F9] ${
-                             isCompleted ? "border-zinc-800" : 
-                             isActive ? "border-zinc-800 ring-4 ring-black/[0.04]" : "border-zinc-300 group-hover:border-zinc-400"
-                           }`}>
-                             {isCompleted ? <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" /> : isActive ? <div className="w-2 h-2 rounded-full bg-zinc-800" /> : null}
+                        {/* Fixed Rail Column */}
+                        <div className="relative w-12 shrink-0 flex flex-col items-center">
+                           {/* Stable Connector Line */}
+                           {flow.stages.length > 1 && (
+                             <div className={`absolute w-[2px] bg-black/[0.06] left-1/2 -translate-x-1/2 ${
+                               idx === 0 ? "top-6 bottom-0" : 
+                               isLast ? "top-0 h-6" : 
+                               "top-0 bottom-0"
+                             }`} />
+                           )}
+                           
+                           {/* Fixed Wrapper for Node */}
+                           <div className="h-12 w-full flex items-center justify-center relative z-10">
+                              <div className={`w-[18px] h-[18px] rounded-full border-[2px] flex items-center justify-center transition-all bg-[#F9F9F9] ${
+                                isActive ? "border-zinc-800" : "border-zinc-300 group-hover:border-zinc-400"
+                              }`}>
+                                {isCompleted && !isActive ? (
+                                   <div className="w-2 h-2 rounded-full bg-zinc-300" />
+                                ) : isActive ? (
+                                   <div className="w-2 h-2 rounded-full bg-zinc-800" />
+                                ) : null}
+                              </div>
                            </div>
                         </div>
-                        <div className="flex-1 min-w-0 pt-1">
-                           <h4 className={`font-display text-[13px] truncate transition-all ${isActive ? "text-zinc-900 font-semibold" : "text-zinc-700 font-medium"}`}>
+
+                        {/* Fixed Content Column */}
+                        <div className="flex-1 pb-6 pt-[14px] pr-4 flex flex-col justify-start">
+                           <h4 className={`font-display text-[13px] leading-tight transition-all ${isActive ? "text-zinc-900 font-semibold" : "text-zinc-700 font-medium"}`}>
                              {stage.name}
                            </h4>
+                           
+                           {/* Progress Indicator - Integrated and stable */}
                            {isActive && (
-                             <div className="flex items-center gap-2 mt-2.5">
-                               <div className="h-[3px] flex-1 bg-black/[0.06] rounded-full overflow-hidden">
+                             <div className="flex items-center gap-3 mt-3 opacity-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                               <div className="h-[3px] flex-1 bg-black/[0.04] rounded-full overflow-hidden">
                                  <div 
-                                   className={`h-full rounded-full transition-all ${isCompleted ? 'bg-zinc-800' : 'bg-zinc-800'}`} 
+                                   className="h-full rounded-full transition-all duration-500 bg-zinc-800" 
                                    style={{ width: `${(completedTasks / Math.max(totalTasks, 1)) * 100}%` }}
                                  />
                                </div>
-                               <span className="font-mono text-[9px] text-zinc-500 font-medium">
+                               <span className="font-mono text-[10px] text-zinc-500 font-medium">
                                  {completedTasks}/{totalTasks}
                                </span>
                              </div>

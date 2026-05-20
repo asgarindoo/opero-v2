@@ -49,7 +49,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
 
   const handleCreate = () => {
     if (!name) return;
-    
+
     const newFlow: Flow = {
       id: `f-${Date.now()}`,
       name,
@@ -73,51 +73,51 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] border border-black/[0.08] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-        <header className="px-10 py-8 border-b border-black/[0.04] bg-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
-              <Layers size={24} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-black/5 animate-in zoom-in-95 duration-200">
+
+        {/* Modal Header */}
+        <header className="px-8 py-5 border-b border-black/[0.06] bg-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-900 border border-black/5">
+              <Layers size={20} />
             </div>
             <div>
-              <h2 className="font-display text-[20px] font-bold text-on-surface tracking-tight">New Operational Flow</h2>
-              <p className="font-display text-[13px] text-on-surface-variant opacity-40">Design a reusable execution path for your operations</p>
+              <h2 className="font-display text-[16px] font-semibold text-zinc-900 tracking-tight leading-tight">New Operational Flow</h2>
+              <p className="font-display text-[13px] text-zinc-500 mt-0.5">Design a repeatable execution pipeline</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 rounded-2xl hover:bg-black/5 transition-all">
-            <X size={20} className="text-on-surface-variant opacity-30" />
+          <button onClick={onClose} className="p-2 rounded-md hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors">
+            <X size={18} />
           </button>
         </header>
 
-        <div className="flex-1 overflow-hidden flex">
-          {/* Identity Info */}
-          <div className="w-[340px] border-r border-black/[0.04] bg-black/[0.01] p-10 space-y-8 overflow-y-auto custom-scrollbar">
+        {/* Modal Body */}
+        <div className="flex-1 overflow-hidden flex bg-[#fcfcfc]">
+
+          {/* Left Configuration */}
+          <div className="w-[320px] border-r border-black/[0.06] bg-white p-8 space-y-8 overflow-y-auto custom-scrollbar">
             <div className="space-y-6">
-              <div className="flex items-center gap-2 text-primary">
-                 <Info size={14} />
-                 <span className="font-display text-[10px] font-bold uppercase tracking-widest">Process Details</span>
-              </div>
-              
+
               <div className="space-y-2">
-                <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Flow Name</label>
-                <input 
+                <label className="font-display text-[11px] font-medium text-zinc-400 uppercase tracking-wide">Flow Name</label>
+                <input
                   autoFocus
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="e.g. Employee Onboarding"
-                  className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3 font-display text-[14px] outline-none focus:border-primary/40 transition-all"
+                  className="w-full bg-[#fcfcfc] border border-black/[0.08] rounded-md px-3 py-2.5 font-display text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none focus:bg-white focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 transition-all shadow-sm"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Category</label>
+                <label className="font-display text-[11px] font-medium text-zinc-400 uppercase tracking-wide">Category</label>
                 <div className="relative">
-                  <Tag size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-30" />
-                  <select 
+                  <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <select
                     value={category}
                     onChange={e => setCategory(e.target.value as FlowCategory)}
-                    className="w-full bg-white border border-black/[0.08] rounded-xl pl-10 pr-4 py-3 font-display text-[14px] outline-none appearance-none cursor-pointer"
+                    className="w-full bg-[#fcfcfc] border border-black/[0.08] rounded-md pl-9 pr-3 py-2.5 font-display text-[14px] text-zinc-900 outline-none appearance-none cursor-pointer focus:bg-white focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 transition-all shadow-sm"
                   >
                     {FLOW_CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -127,85 +127,103 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
               </div>
 
               <div className="space-y-2">
-                <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Objective</label>
-                <textarea 
+                <label className="font-display text-[11px] font-medium text-zinc-400 uppercase tracking-wide">Objective</label>
+                <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="Describe the process objective..."
-                  className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3 font-display text-[14px] outline-none h-32 resize-none leading-relaxed"
+                  placeholder="Define the purpose of this execution pipeline..."
+                  className="w-full bg-[#fcfcfc] border border-black/[0.08] rounded-md px-3 py-2.5 font-display text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none h-28 resize-none focus:bg-white focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 transition-all shadow-sm"
                 />
               </div>
+
             </div>
           </div>
 
-          {/* Stage Builder */}
-          <div className="flex-1 p-10 overflow-y-auto custom-scrollbar bg-white">
-            <div className="flex items-center justify-between mb-8">
-               <div className="flex items-center gap-2 text-primary">
-                  <ListChecks size={14} />
-                  <span className="font-display text-[10px] font-bold uppercase tracking-widest">Execution Stages</span>
-               </div>
-               <button onClick={addStage} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-all">
-                  <Plus size={14} />
-                  <span className="font-display text-[10px] font-bold uppercase tracking-wider">Add Stage</span>
-               </button>
-            </div>
+          {/* Right Stage Builder */}
+          <div className="flex-1 p-10 overflow-y-auto custom-scrollbar">
 
-            <div className="space-y-8">
-              {stages.map((stage, idx) => (
-                <div key={idx} className="relative group">
-                  {idx !== stages.length - 1 && (
-                    <div className="absolute left-[13.5px] top-10 bottom-[-32px] w-[1px] bg-black/[0.04]" />
-                  )}
-                  <div className="flex gap-6">
-                    <div className="w-7 h-7 rounded-lg bg-black/[0.04] flex items-center justify-center font-mono text-[11px] font-bold text-on-surface-variant opacity-40 shrink-0 mt-1">
-                      {idx + 1}
+            <div className="max-w-3xl space-y-8 pb-12 mx-auto">
+              <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
+                <div className="flex items-center gap-2 text-zinc-900">
+                  <ListChecks size={16} />
+                  <span className="font-display text-[13px] font-semibold">Execution Pipeline</span>
+                </div>
+                <button onClick={addStage} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-black/[0.06] bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors shadow-sm">
+                  <Plus size={14} />
+                  <span className="font-display text-[11px] font-medium">Add Stage</span>
+                </button>
+              </div>
+
+              <div className="relative pl-2">
+                {/* Continuous Pipeline Rail */}
+                <div className="absolute left-[15px] top-4 bottom-0 w-[2px] bg-black/[0.04]" />
+
+                {stages.map((stage, idx) => (
+                  <div key={idx} className="relative flex items-start gap-6 group mb-10 last:mb-0">
+
+                    {/* Stage Node */}
+                    <div className="relative z-10 flex flex-col items-center shrink-0 mt-1">
+                      <div className="w-4 h-4 rounded-full border-[2px] border-zinc-300 bg-[#fcfcfc] flex items-center justify-center group-hover:border-zinc-400 transition-colors">
+                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 group-hover:bg-zinc-400 transition-colors" />
+                      </div>
                     </div>
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-center gap-4">
-                        <input 
+
+                    {/* Stage Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 group/header">
+                        <input
                           value={stage.name}
                           onChange={e => updateStage(idx, { name: e.target.value })}
-                          placeholder={`Stage ${idx + 1} Title`}
-                          className="flex-1 bg-transparent font-display text-[18px] font-semibold text-on-surface outline-none border-b border-transparent focus:border-primary/20 pb-1 transition-all"
+                          placeholder={`Stage ${idx + 1}`}
+                          className="flex-1 bg-transparent font-display text-[16px] font-semibold text-zinc-900 outline-none placeholder:text-zinc-300 transition-colors border-b border-transparent focus:border-zinc-300 pb-0.5"
                         />
-                        <button onClick={() => removeStage(idx)} className="text-red-500 opacity-0 group-hover:opacity-40 hover:opacity-100 transition-opacity">
-                          <Trash2 size={16} />
+                        <button onClick={() => removeStage(idx)} className="text-zinc-300 hover:text-red-500 opacity-0 group-hover/header:opacity-100 transition-all p-1">
+                          <Trash2 size={14} />
                         </button>
                       </div>
 
-                      <div className="space-y-3 ml-2">
-                         {stage.checklist?.map((item, itemIdx) => (
-                           <div key={itemIdx} className="flex items-center gap-3 group/item">
-                             <div className="w-4 h-4 rounded border-2 border-black/10 shrink-0" />
-                             <input 
-                               value={item.text}
-                               onChange={e => updateChecklistItem(idx, itemIdx, e.target.value)}
-                               placeholder="Process item..."
-                               className="flex-1 bg-transparent font-display text-[14px] text-on-surface outline-none border-b border-black/[0.03] focus:border-primary/20 transition-all"
-                             />
-                           </div>
-                         ))}
-                         <button onClick={() => addChecklistItem(idx)} className="flex items-center gap-2 font-display text-[11px] font-bold text-primary opacity-40 hover:opacity-100 transition-all uppercase tracking-widest">
-                           <Plus size={14} />
-                           Add item
-                         </button>
+                      {/* Subtasks (Checklist) */}
+                      <div className="mt-3 space-y-1">
+                        {stage.checklist?.map((item, itemIdx) => (
+                          <div key={itemIdx} className="flex items-center gap-3 group/item py-1">
+                            <div className="w-[14px] h-[14px] rounded-[3px] border border-zinc-300 shrink-0 bg-white shadow-sm" />
+                            <input
+                              value={item.text}
+                              onChange={e => updateChecklistItem(idx, itemIdx, e.target.value)}
+                              placeholder="Add a required action..."
+                              className="flex-1 bg-transparent font-display text-[13px] text-zinc-700 outline-none placeholder:text-zinc-300 border-b border-transparent focus:border-zinc-300 transition-colors"
+                            />
+                          </div>
+                        ))}
+
+                        <button onClick={() => addChecklistItem(idx)} className="flex items-center gap-2 mt-2 font-display text-[12px] font-medium text-zinc-500 hover:text-zinc-900 transition-colors px-1">
+                          <Plus size={12} />
+                          Add subtask
+                        </button>
                       </div>
                     </div>
+
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+
           </div>
         </div>
 
-        <footer className="px-10 py-6 border-t border-black/[0.04] bg-white flex items-center justify-end gap-6 shrink-0">
-          <button onClick={onClose} className="font-display text-[12px] font-bold text-on-surface-variant opacity-40 hover:opacity-100 uppercase tracking-widest transition-all">Cancel</button>
-          <button 
-            onClick={handleCreate}
-            className="px-8 py-3 bg-primary text-on-primary rounded-2xl font-display text-[12px] font-bold uppercase tracking-widest shadow-xl shadow-primary/20 hover:shadow-2xl hover:-translate-y-px transition-all"
+        {/* Modal Footer */}
+        <footer className="px-8 py-4 border-t border-black/[0.06] bg-zinc-50 flex items-center justify-end gap-3 shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 font-display text-[13px] font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
           >
-            Create Process Flow
+            Cancel
+          </button>
+          <button
+            onClick={handleCreate}
+            className="px-5 py-2 bg-zinc-900 text-white rounded-md font-display text-[13px] font-medium hover:bg-zinc-800 transition-all shadow-sm flex items-center gap-2"
+          >
+            Create Pipeline
           </button>
         </footer>
       </div>
