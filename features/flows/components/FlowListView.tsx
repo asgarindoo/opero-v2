@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronRight, Clock, Activity, MoreHorizontal, Layers, Trash2 } from "lucide-react";
+import { ChevronRight, Clock, Waypoints, Layers, Trash2 } from "lucide-react";
 import type { Flow } from "@/features/flows";
-import { CATEGORY_COLORS } from "@/features/flows";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import Button from "@/components/ui/Button";
@@ -51,98 +50,92 @@ export default function FlowListView({ flows, onFlowClick, onBulkDelete }: FlowL
 
   return (
     <div className="w-full animate-fade-in relative">
-      <div className="min-w-full inline-block align-middle">
-        <div className="border border-black/[0.06] rounded-2xl overflow-hidden bg-white">
-          <table className="min-w-full border-separate border-spacing-0">
-            <thead>
-              <tr className="bg-[#fbf5f5] border-b border-black/[0.05]">
-                <th className="px-6 py-4 text-left font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Process Name</th>
-                <th className="px-6 py-4 text-left font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Completion</th>
-                <th className="px-6 py-4 text-left font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Stages</th>
-                <th className="px-6 py-4 text-left font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Updated</th>
-                <th className="px-6 py-4 text-right font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/[0.04]">
-              {flows.map((flow) => {
-                const updatedDate = new Date(flow.updated).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                const isSelected = selectedIds.has(flow.id);
-                const progress = flow.progress;
+      <div className="w-full">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b bg-[#fcf5f5] border-black/[0.04]">
+              <th className="px-8 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[40%]">Process Name</th>
+              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[20%]">Completion</th>
+              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[15%]">Stages</th>
+              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[15%]">Updated</th>
+              <th className="px-8 py-2.5 text-right font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[10%]">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/[0.03]">
+            {flows.map((flow) => {
+              const updatedDate = new Date(flow.updated).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              const isSelected = selectedIds.has(flow.id);
+              const progress = flow.progress;
 
-                return (
-                  <tr 
-                    key={flow.id} 
-                    onClick={() => onFlowClick(flow)}
-                    className={`group hover:bg-black/[0.015] cursor-pointer transition-colors ${isSelected ? "bg-primary/[0.02]" : ""}`}
-                  >
-                    <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="flex items-center gap-4">
-                         <div className="w-9 h-9 rounded-xl bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:bg-primary/5 group-hover:text-primary group-hover:opacity-100 transition-all">
-                            <Layers size={15} />
-                         </div>
-                         <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                               <span className={`px-1.5 py-0.5 rounded font-display text-[8px] font-bold uppercase tracking-wider ${CATEGORY_COLORS[flow.category] || "text-slate-500 bg-slate-50"}`}>
-                                 {flow.category}
-                               </span>
-                               {flow.status === "Active" && <span className="w-1 h-1 rounded-full bg-emerald-500" />}
-                            </div>
-                            <span className="font-display text-[14px] font-semibold text-on-surface tracking-tight transition-colors opacity-90 group-hover:text-primary">{flow.name}</span>
-                         </div>
+              return (
+                <tr
+                  key={flow.id}
+                  onClick={() => onFlowClick(flow)}
+                  className={`group hover:bg-zinc-50/80 cursor-pointer transition-colors ${isSelected ? "bg-zinc-50" : ""}`}
+                >
+                  <td className="px-8 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-md bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200/60 group-hover:text-zinc-600 transition-colors shrink-0">
+                        <Layers size={13} />
                       </div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="flex items-center gap-3 w-32">
-                         <div className="flex-1 h-1 bg-black/[0.05] rounded-full overflow-hidden">
-                            <div className="h-full bg-primary/60 transition-all duration-700" style={{ width: `${progress}%` }} />
-                         </div>
-                         <span className="font-display text-[11px] font-bold text-on-surface-variant opacity-60 leading-none">{progress}%</span>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 rounded-[3px] font-display text-[8px] font-bold uppercase tracking-wider text-zinc-500 bg-zinc-100/80">
+                            {flow.category}
+                          </span>
+                        </div>
+                        <span className="font-display text-[13px] font-medium text-zinc-800 group-hover:text-black transition-colors">{flow.name}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap">
-                       <div className="flex items-center gap-2 text-on-surface opacity-60 font-display">
-                          <Activity size={11} className="opacity-60" />
-                          <span className="font-display text-[12px] font-bold">{flow.stages.length} <span className="opacity-60 font-medium">Stages</span></span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap">
-                       <div className="flex items-center gap-2 text-on-surface-variant opacity-60 font-display">
-                          <Clock size={11} className="opacity-60" />
-                          <span className="font-display text-[12px] font-medium">{updatedDate}</span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-right">
-                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-on-surface-variant opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
-                            onClick={(e) => handleDeleteOne(e, flow.id)}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-on-surface-variant opacity-60">
-                            <MoreHorizontal size={14} />
-                          </Button>
-                          <ChevronRight size={14} className="text-on-surface-variant opacity-60 ml-1" />
-                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="flex items-center gap-3 w-28">
+                      <div className="flex-1 h-1 bg-zinc-100 rounded-full overflow-hidden shrink-0">
+                        <div className="h-full bg-zinc-700 transition-all duration-700" style={{ width: `${progress}%` }} />
+                      </div>
+                      <span className="font-display text-[11px] font-medium text-zinc-400 tabular-nums w-8">{progress}%</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="flex items-center gap-1.5 text-zinc-400">
+                      <Waypoints size={12} strokeWidth={2.5} />
+                      <span className="font-display text-[12px] font-medium text-zinc-600">{flow.stages.length} <span className="text-zinc-400">Stages</span></span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="flex items-center gap-1.5 text-zinc-400">
+                      <Clock size={12} strokeWidth={2.5} />
+                      <span className="font-display text-[12px] font-medium text-zinc-500">{updatedDate}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-zinc-300 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        onClick={(e) => handleDeleteOne(e, flow.id)}
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                      <ChevronRight size={13} className="text-zinc-300 ml-1 group-hover:text-zinc-600 transition-colors" />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      <SelectionBar 
+      <SelectionBar
         count={selectedIds.size}
         onClear={() => setSelectedIds(new Set())}
         onDelete={() => setIsDeleteModalOpen(true)}
         label="flows"
       />
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);

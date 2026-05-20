@@ -168,9 +168,9 @@ export default function FlowsPage() {
         )}
       />
 
-      <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+      <main className={`flex-1 overflow-y-auto custom-scrollbar ${view === "grid" ? "p-8" : "py-4"}`}>
         {loading ? (
-          view === "grid" ? <CardGridSkeleton /> : <RowSkeleton rows={9} />
+          view === "grid" ? <CardGridSkeleton /> : <div className="px-8"><RowSkeleton rows={9} /></div>
         ) : error ? (
           <ErrorState message={error} />
         ) : filtered.length > 0 ? (

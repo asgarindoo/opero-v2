@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import Button from "./Button";
 
 interface DropdownOption {
@@ -45,29 +45,33 @@ export default function Dropdown({
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="
-          flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] 
-          bg-black/[0.02] border border-black/[0.06] hover:bg-black/[0.04] 
-          transition-all font-display text-[12px] font-medium text-on-surface
+          w-full flex items-center justify-between px-3 py-2.5 rounded-md
+          bg-[#fcfcfc] border border-black/[0.08] focus:bg-white focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100
+          transition-all font-display text-[14px] text-zinc-900 shadow-sm
         "
       >
-        {label && <span className="opacity-40 font-label-caps text-[9px] font-bold uppercase tracking-wider mr-0.5">{label}:</span>}
-        <span>{selectedOption?.label}</span>
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          {label && <span className="text-zinc-400 font-medium text-[11px] uppercase tracking-wide mr-1">{label}:</span>}
+          <span className="truncate">{selectedOption?.label || "Select..."}</span>
+        </div>
         <ChevronDown 
-          size={12} 
-          className={`opacity-30 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+          size={14} 
+          className={`text-zinc-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
         />
       </button>
 
       {isOpen && (
         <div className={`
-          absolute top-full mt-1.5 z-[100] py-1 rounded-[8px] shadow-xl bg-white 
-          border border-black/[0.08] min-w-[160px] animate-in fade-in slide-in-from-top-1
+          absolute top-full mt-1.5 z-[100] py-1 rounded-lg shadow-lg bg-white 
+          border border-black/[0.08] min-w-full w-max animate-in fade-in zoom-in-95 duration-100
           ${align === "right" ? "right-0" : "left-0"}
         `}>
           {options.map(option => (
             <button
+              type="button"
               key={option.value}
               onClick={() => {
                 onChange(option.value);
@@ -75,17 +79,16 @@ export default function Dropdown({
               }}
               className={`
                 w-full flex items-center justify-between px-3 py-2 
-                hover:bg-black/[0.03] transition-colors text-left
-                ${value === option.value ? 'bg-primary/[0.03]' : ''}
+                hover:bg-zinc-50 transition-colors text-left
               `}
             >
               <div className="flex items-center gap-2">
-                {option.icon && <span className="opacity-40">{option.icon}</span>}
-                <span className={`font-display text-[12.5px] ${value === option.value ? 'font-semibold text-primary' : 'text-on-surface opacity-80'}`}>
+                {option.icon && <span className="text-zinc-400">{option.icon}</span>}
+                <span className={`font-display text-[13px] ${value === option.value ? 'font-medium text-zinc-900' : 'text-zinc-600'}`}>
                   {option.label}
                 </span>
               </div>
-              {value === option.value && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+              {value === option.value && <Check size={14} className="text-zinc-900 shrink-0" />}
             </button>
           ))}
         </div>
