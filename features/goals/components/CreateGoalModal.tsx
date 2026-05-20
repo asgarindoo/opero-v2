@@ -85,7 +85,7 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
         linkedItems: [],
         activities: []
       };
-      
+
       if (onCreate) {
         await onCreate(newGoal);
       }
@@ -98,109 +98,111 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
   }
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-900/30 backdrop-blur-[2px] animate-in fade-in duration-200" 
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-300"
       onClick={loading ? undefined : onClose}
     >
-      <div 
-        className="bg-white w-full max-w-3xl h-[85vh] rounded-lg shadow-lg flex flex-col overflow-hidden border border-black/10 animate-in zoom-in-95 duration-100" 
+      <div
+        className="bg-white w-full max-w-3xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-black/[0.08] animate-in slide-in-from-bottom-4 duration-500"
         onClick={e => e.stopPropagation()}
       >
-        
+
         {/* Modal Header */}
-        <header className="px-8 py-5 border-b border-black/[0.05] bg-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-900">
-              <Target size={16} />
+        <header className="px-10 py-8 border-b border-black/[0.04] bg-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+              <Target size={24} />
             </div>
             <div>
-              <h2 className="font-display text-[14px] font-semibold text-zinc-950 tracking-tight leading-tight">Define Strategic Goal</h2>
-              <p className="font-display text-[11px] text-zinc-400 mt-0.5">Establish direction, outcome metrics, and key milestones</p>
+              <h2 className="font-display text-[18px] font-semibold text-zinc-900 tracking-tight">Define Strategic Goal</h2>
+              <p className="font-display text-[13px] text-zinc-500">Establish direction, outcome metrics, and key milestones</p>
             </div>
           </div>
-          <button 
+          <button
             disabled={loading}
-            onClick={onClose} 
-            className="p-1.5 rounded hover:bg-zinc-50 text-zinc-400 hover:text-zinc-900 transition-colors disabled:opacity-50"
+            onClick={onClose}
+            className="p-3 rounded-md hover:bg-black/5 transition-all text-zinc-400 hover:text-zinc-600 disabled:opacity-50"
           >
-            <X size={15} />
+            <X size={20} />
           </button>
         </header>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-[#fafafa] custom-scrollbar">
-          
+        <div className="flex-1 overflow-y-auto px-10 py-10 space-y-10 bg-[#fafafa] custom-scrollbar">
+
           {/* Section 1: Vision & Objective */}
-          <section className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="font-display text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                Goal Title <span className="text-zinc-900">*</span>
-              </label>
+          <section className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between ml-1">
+                <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Goal Title</label>
+                <span className="font-display text-[10px] font-medium text-zinc-400">{title.length}/50</span>
+              </div>
               <input
+                maxLength={50}
                 autoFocus
                 disabled={loading}
                 value={title}
                 onChange={e => { setTitle(e.target.value); setError(null); }}
                 placeholder="e.g. Q3 Sales Expansion"
-                className="w-full bg-transparent font-display text-[20px] font-bold text-zinc-950 outline-none placeholder:text-zinc-300 border-b border-black/[0.05] focus:border-zinc-900 pb-1.5 transition-colors"
+                className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3.5 font-display text-[15px] font-semibold text-zinc-900 outline-none placeholder:text-zinc-300 placeholder:font-normal focus:border-zinc-900/40 transition-all shadow-sm"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Target Outcome */}
-              <div className="space-y-1.5">
-                <label className="font-display text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                  Target Outcome <span className="text-zinc-900">*</span>
-                </label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Target Outcome</label>
+                  <span className="font-display text-[10px] font-medium text-zinc-400">{targetOutcome.length}/100</span>
+                </div>
                 <input
+                  maxLength={100}
                   disabled={loading}
                   value={targetOutcome}
                   onChange={e => { setTargetOutcome(e.target.value); setError(null); }}
-                  placeholder="Define concrete, measurable success..."
-                  className="w-full bg-white border border-black/[0.06] rounded px-3 py-2 font-display text-[13px] text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-900 transition-all shadow-sm"
+                  placeholder="Measurable success metric..."
+                  className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3 font-display text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-900/40 transition-all shadow-sm"
                 />
               </div>
 
               {/* Deadline */}
-              <div className="space-y-1.5">
-                <label className="font-display text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                  Deadline <span className="text-zinc-900">*</span>
-                </label>
+              <div className="space-y-2">
+                <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider ml-1">Deadline</label>
                 <div className="relative">
-                  <Calendar size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
                   <input
                     disabled={loading}
                     type="date"
                     value={targetDate}
                     onChange={e => { setTargetDate(e.target.value); setError(null); }}
-                    className="w-full bg-white border border-black/[0.06] rounded pl-9 pr-3 py-2 font-display text-[13px] text-zinc-900 outline-none focus:border-zinc-900 transition-all shadow-sm"
+                    className="w-full bg-white border border-black/[0.08] rounded-xl pl-10 pr-4 py-3 font-display text-[14px] text-zinc-900 outline-none focus:border-zinc-900/40 transition-all shadow-sm"
                   />
                 </div>
               </div>
             </div>
 
             {/* Context / Purpose */}
-            <div className="space-y-1.5">
-              <label className="font-display text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                Context & Purpose
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between ml-1">
+                <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Context & Purpose</label>
+                <span className="font-display text-[10px] font-medium text-zinc-400">{description.length}/300</span>
+              </div>
               <textarea
+                maxLength={300}
                 disabled={loading}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                placeholder="Rationale behind this objective, strategic alignment, and context..."
-                className="w-full bg-white border border-black/[0.06] rounded px-3 py-2 font-display text-[13px] text-zinc-900 placeholder:text-zinc-400 outline-none h-20 resize-none focus:border-zinc-900 transition-all shadow-sm"
+                placeholder="Rationale behind this objective and strategic alignment..."
+                className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3.5 font-display text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none h-24 resize-none focus:border-zinc-900/40 transition-all shadow-sm leading-relaxed"
               />
             </div>
           </section>
 
           {/* Section 2: Strategic Metadata */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-black/[0.04]">
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 border-t border-black/[0.04]">
             {/* Priority */}
-            <div className="space-y-1.5">
-              <label className="font-display text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                Priority / Impact
-              </label>
+            <div className="space-y-2">
+              <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider ml-1">Priority / Impact</label>
               <Dropdown
                 disabled={loading}
                 value={priority}
@@ -215,10 +217,8 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
             </div>
 
             {/* Status */}
-            <div className="space-y-1.5">
-              <label className="font-display text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                Planning Status <span className="text-zinc-900">*</span>
-              </label>
+            <div className="space-y-2">
+              <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider ml-1">Planning Status</label>
               <Dropdown
                 disabled={loading}
                 value={status}
@@ -234,80 +234,97 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
           </section>
 
           {/* Section 3: Roadmap Checkpoints */}
-          <section className="space-y-4 pt-4 border-t border-black/[0.04]">
-            <div className="flex items-center justify-between border-b border-black/[0.04] pb-2">
-              <div className="space-y-0.5">
-                <h3 className="font-display text-[12px] font-semibold text-zinc-950">Roadmap Checkpoints</h3>
-                <p className="font-display text-[11px] text-zinc-400">Establish key achievement milestones along the path</p>
+          <section className="space-y-6 pt-8 border-t border-black/[0.04]">
+            <div className="flex items-center justify-between border-b border-black/[0.04] pb-4">
+              <div className="flex items-center gap-2 text-zinc-900">
+                <Target size={14} className="text-zinc-400" />
+                <span className="font-display text-[12px] font-semibold uppercase tracking-wider">Roadmap Checkpoints</span>
               </div>
-              <button 
+              <button
                 type="button"
                 disabled={loading}
                 onClick={addMilestone}
-                className="flex items-center gap-1 px-2 py-1 rounded border border-black/[0.06] bg-white text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-colors shadow-sm text-[11px] font-medium font-display"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900/5 text-zinc-900 hover:bg-zinc-900/10 transition-all shadow-sm"
               >
-                <Plus size={12} />
-                <span>Add Checkpoint</span>
+                <Plus size={14} />
+                <span className="font-display text-[11px] font-medium">Add Checkpoint</span>
               </button>
             </div>
 
-            {/* Checkpoint list - Calm, lightweight, horizontal, no connectors */}
-            <div className="space-y-2">
-              {tempMilestones.map((m, idx) => (
-                <div key={m.id} className="flex items-center gap-3 py-1.5 px-2 hover:bg-zinc-50 rounded transition-colors group bg-white border border-black/[0.02]">
-                  {/* Subtle Achievement Marker - Diamond-like Dot */}
-                  <div className="w-1.5 h-1.5 rotate-45 bg-zinc-900 shrink-0" />
-                  
-                  <div className="flex-1 grid grid-cols-5 gap-3">
-                    <input
-                      disabled={loading}
-                      value={m.title}
-                      onChange={e => updateMilestone(m.id, { title: e.target.value })}
-                      placeholder="Checkpoint description..."
-                      className="col-span-3 bg-transparent font-display text-[13px] font-semibold text-zinc-900 outline-none border-b border-transparent focus:border-zinc-300 pb-0.5 transition-colors"
-                    />
-                    <div className="col-span-2 flex items-center gap-1.5 border-b border-transparent focus-within:border-zinc-300 pb-0.5 transition-colors">
-                      <Calendar size={11} className="text-zinc-400 shrink-0" />
-                      <input
-                        disabled={loading}
-                        type="date"
-                        value={m.date}
-                        onChange={e => updateMilestone(m.id, { date: e.target.value })}
-                        className="bg-transparent font-display text-[12px] text-zinc-500 outline-none w-full"
-                      />
+            <div className="py-2 flex flex-col pl-4">
+              {tempMilestones.map((m, idx) => {
+                const isLast = idx === tempMilestones.length - 1;
+                return (
+                  <div key={m.id} className="relative w-full flex items-stretch text-left group transition-all">
+
+                    {/* Anchor/Connector Column */}
+                    <div className="relative w-10 shrink-0 flex flex-col items-center">
+                      {/* Vertical connector line */}
+                      {tempMilestones.length > 1 && (
+                        <div className={`absolute w-px left-1/2 -translate-x-1/2 bg-gradient-to-b from-black/[0.08] via-black/[0.08] to-transparent ${idx === 0 ? "top-6 bottom-0" :
+                          isLast ? "top-0 h-6" :
+                            "top-0 bottom-0"
+                          }`} />
+                      )}
+
+                      {/* Circle Checkpoint Node */}
+                      <div className="h-12 w-full flex items-center justify-center relative z-10">
+                        <div className="w-[14px] h-[14px] rounded-full border-[2px] bg-white border-zinc-300 group-hover:border-zinc-400 transition-all shadow-sm" />
+                      </div>
+                    </div>
+
+                    {/* Content Column */}
+                    <div className="flex-1 pb-6 pt-[10px] flex flex-col justify-start">
+                      <div className="flex items-center gap-4 transition-all">
+                        <input
+                          disabled={loading}
+                          value={m.title}
+                          onChange={e => updateMilestone(m.id, { title: e.target.value })}
+                          placeholder={`Checkpoint ${idx + 1}`}
+                          className="flex-1 bg-transparent font-display text-[14px] font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 placeholder:font-normal"
+                        />
+                        <div className="flex items-center gap-2 border-l border-black/[0.06] pl-4">
+                          <Calendar size={14} className="text-zinc-400 shrink-0" />
+                          <input
+                            disabled={loading}
+                            type="date"
+                            value={m.date}
+                            onChange={e => updateMilestone(m.id, { date: e.target.value })}
+                            className="bg-transparent font-display text-[13px] text-zinc-600 outline-none"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          disabled={loading || tempMilestones.length <= 1}
+                          onClick={() => removeMilestone(m.id)}
+                          className="ml-2 p-1.5 rounded-md text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/5 hover:text-red-500 disabled:opacity-30 disabled:pointer-events-none shrink-0"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <button 
-                    type="button"
-                    disabled={loading || tempMilestones.length <= 1}
-                    onClick={() => removeMilestone(m.id)}
-                    className="p-1 rounded text-zinc-300 hover:text-red-500 disabled:opacity-30 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
-
         </div>
 
         {/* Error Alert bar inside modal */}
         {error && (
-          <div className="px-8 py-2 bg-red-50 border-t border-red-100 text-red-600 font-display text-[11px] flex items-center gap-2">
+          <div className="px-10 py-3 bg-red-50 border-t border-red-100 text-red-600 font-display text-[12px] flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Modal Footer */}
-        <footer className="px-8 py-3.5 border-t border-black/[0.05] bg-zinc-50 flex items-center justify-end gap-3 shrink-0">
+        <footer className="px-10 py-6 border-t border-black/[0.04] bg-white flex items-center justify-end gap-4 shrink-0">
           <button
             type="button"
             disabled={loading}
             onClick={onClose}
-            className="px-3.5 py-1.5 font-display text-[12px] font-medium text-zinc-500 hover:text-zinc-900 transition-colors disabled:opacity-40"
+            className="font-display text-[13px] font-medium text-zinc-500 hover:text-zinc-800 transition-all px-4 py-2 disabled:opacity-40"
           >
             Cancel
           </button>
@@ -315,7 +332,10 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
             type="button"
             disabled={!isFormValid || loading}
             onClick={handleSubmit}
-            className="px-4 py-1.5 bg-zinc-900 text-white rounded font-display text-[12px] font-medium hover:bg-zinc-800 transition-all disabled:opacity-30 disabled:hover:bg-zinc-900 flex items-center gap-1.5 shadow-sm"
+            className={`px-6 py-2.5 rounded-md font-display text-[13px] font-medium transition-all flex items-center gap-1.5 ${isFormValid && !loading
+              ? "bg-zinc-900 text-white shadow-sm hover:shadow hover:-translate-y-px"
+              : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+              }`}
           >
             {loading ? "Establishing..." : "Establish Goal"}
           </button>

@@ -11,7 +11,7 @@ interface FlowCardProps {
 
 export default function FlowCard({ flow, onClick }: FlowCardProps) {
   const lastUpdate = new Date(flow.updated).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  
+
   return (
     <div
       onClick={onClick}
@@ -41,15 +41,15 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
       {/* Progress & Stats */}
       <div className="space-y-4">
         {/* Progress Bar */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">
-            <span className="opacity-60">Progress</span>
-            <span className="text-primary font-mono">{flow.progress}%</span>
+        <div className="space-y-2">
+          <div className="flex items-end justify-between text-[10px] uppercase tracking-wider">
+            <span className="font-display font-semibold text-zinc-400">Progress</span>
+            <span className="font-display text-[11px] font-semibold text-zinc-500 leading-none">{flow.progress}%</span>
           </div>
-          <div className="h-1 w-full bg-black/[0.03] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-700 ease-out" 
-              style={{ width: `${flow.progress}%` }} 
+          <div className="h-1.5 w-full bg-black/[0.04] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-zinc-800 rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${flow.progress}%` }}
             />
           </div>
         </div>
@@ -72,11 +72,11 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
           {/* Owner Avatar Placeholder */}
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-black/[0.04] border border-white flex items-center justify-center overflow-hidden">
-               {flow.owner.avatar ? (
-                 <img src={flow.owner.avatar} alt={flow.owner.name} className="w-full h-full object-cover" />
-               ) : (
-                 <User size={10} className="text-on-surface-variant opacity-60" />
-               )}
+              {flow.owner.avatar ? (
+                <img src={flow.owner.avatar} alt={flow.owner.name} className="w-full h-full object-cover" />
+              ) : (
+                <User size={10} className="text-on-surface-variant opacity-60" />
+              )}
             </div>
           </div>
         </div>

@@ -105,12 +105,12 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                        </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="flex items-center gap-3 w-32">
-                         <div className="flex-1 h-1 bg-black/[0.05] rounded-full overflow-hidden">
-                            <div className="h-full bg-primary/60 transition-all" style={{ width: `${goal.progress}%` }} />
-                         </div>
-                         <span className="font-display text-[10.5px] font-bold text-on-surface-variant opacity-40 leading-none">{goal.progress}%</span>
-                      </div>
+                       <div className="flex items-center gap-3 w-32">
+                          <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
+                             <div className="h-full bg-zinc-800 transition-all" style={{ width: `${goal.progress}%` }} />
+                          </div>
+                          <span className="font-display text-[11px] font-semibold text-zinc-500 tabular-nums w-8 leading-none">{goal.progress}%</span>
+                       </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
                        <span className="font-body-sm text-[12px] font-medium text-on-surface opacity-50 font-display">

@@ -90,10 +90,10 @@ export default function FlowListView({ flows, onFlowClick, onBulkDelete }: FlowL
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-3 w-28">
-                      <div className="flex-1 h-1 bg-zinc-100 rounded-full overflow-hidden shrink-0">
-                        <div className="h-full bg-zinc-700 transition-all duration-700" style={{ width: `${progress}%` }} />
+                      <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden shrink-0">
+                        <div className="h-full bg-zinc-800 transition-all duration-700" style={{ width: `${progress}%` }} />
                       </div>
-                      <span className="font-display text-[11px] font-medium text-zinc-400 tabular-nums w-8">{progress}%</span>
+                      <span className="font-display text-[11px] font-semibold text-zinc-500 tabular-nums w-8">{progress}%</span>
                     </div>
                   </td>
                   <td className="px-6 py-3">

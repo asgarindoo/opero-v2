@@ -38,13 +38,13 @@ export default function GoalCard({ goal, onClick }: GoalCardProps) {
         <p className="font-body-md text-[12px] text-on-surface-variant opacity-60 leading-relaxed line-clamp-2">{goal.description}</p>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-end justify-between">
-           <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Progress</span>
-           <span className="font-display text-[13px] font-bold text-on-surface">{goal.progress}%</span>
+      <div className="space-y-2">
+        <div className="flex items-end justify-between text-[10px] uppercase tracking-wider">
+           <span className="font-display font-semibold text-zinc-400">Progress</span>
+           <span className="font-display text-[11px] font-semibold text-zinc-500 leading-none">{goal.progress}%</span>
         </div>
-        <div className="h-1 w-full bg-black/[0.04] rounded-full overflow-hidden">
-           <div className="h-full bg-primary/70 transition-all duration-700" style={{ width: `${goal.progress}%` }} />
+        <div className="h-1.5 w-full bg-black/[0.04] rounded-full overflow-hidden">
+           <div className="h-full bg-zinc-800 rounded-full transition-all duration-700 ease-out" style={{ width: `${goal.progress}%` }} />
         </div>
       </div>
 

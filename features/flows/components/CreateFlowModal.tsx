@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Plus, Trash2, Layers, Info, ListChecks, Tag } from "lucide-react";
 import { FLOW_CATEGORIES, type Flow, type FlowCategory, type FlowStage } from "@/features/flows";
+import Dropdown from "@/components/ui/Dropdown";
 
 interface CreateFlowModalProps {
   onClose: () => void;
@@ -14,7 +15,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<FlowCategory>("Operations");
   const [stages, setStages] = useState<Partial<FlowStage>[]>([
-    { id: "s1", name: "Initial Stage", order: 0, checklist: [] }
+    { id: "s1", name: "", order: 0, checklist: [] }
   ]);
 
   const addStage = () => {
@@ -47,8 +48,10 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
     setStages(next);
   };
 
+  const isFormValid = name.trim() !== "" && stages.length > 0 && stages.every(s => (s.name || "").trim() !== "");
+
   const handleCreate = () => {
-    if (!name) return;
+    if (!isFormValid) return;
 
     const newFlow: Flow = {
       id: `f-${Date.now()}`,
@@ -77,15 +80,15 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
       <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl border border-black/[0.08] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
         <header className="px-10 py-8 border-b border-black/[0.04] bg-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
+            <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center text-primary">
               <Layers size={24} />
             </div>
             <div>
-              <h2 className="font-display text-[20px] font-bold text-on-surface tracking-tight">New Operational Flow</h2>
-              <p className="font-display text-[13px] text-on-surface-variant opacity-40">Design a reusable execution path for your operations</p>
+              <h2 className="font-display text-[18px] font-semibold text-zinc-900 tracking-tight">New Operational Flow</h2>
+              <p className="font-display text-[13px] text-zinc-500">Design a reusable execution path for your operations</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 rounded-lg hover:bg-black/5 transition-all">
+          <button onClick={onClose} className="p-3 rounded-md hover:bg-black/5 transition-all">
             <X size={20} className="text-on-surface-variant opacity-30" />
           </button>
         </header>
@@ -96,12 +99,16 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
             <div className="space-y-6">
               <div className="flex items-center gap-2 text-primary">
                 <Info size={14} />
-                <span className="font-display text-[10px] font-bold uppercase tracking-widest">Process Details</span>
+                <span className="font-display text-[11px] font-medium uppercase tracking-wider">Process Details</span>
               </div>
 
               <div className="space-y-2">
-                <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Flow Name</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Flow Name</label>
+                  <span className="font-display text-[10px] font-medium text-zinc-400">{name.length}/50</span>
+                </div>
                 <input
+                  maxLength={50}
                   autoFocus
                   value={name}
                   onChange={e => setName(e.target.value)}
@@ -111,24 +118,21 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
               </div>
 
               <div className="space-y-2">
-                <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Category</label>
-                <div className="relative">
-                  <Tag size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-30" />
-                  <select
-                    value={category}
-                    onChange={e => setCategory(e.target.value as FlowCategory)}
-                    className="w-full bg-white border border-black/[0.08] rounded-xl pl-10 pr-4 py-3 font-display text-[14px] outline-none appearance-none cursor-pointer"
-                  >
-                    {FLOW_CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
+                <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider ml-1">Category</label>
+                <Dropdown
+                  value={category}
+                  options={FLOW_CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+                  onChange={(val) => setCategory(val as FlowCategory)}
+                />
               </div>
 
               <div className="space-y-2">
-                <label className="font-display text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest ml-1">Objective</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Description (Objective)</label>
+                  <span className="font-display text-[10px] text-zinc-400">{description.length}/300</span>
+                </div>
                 <textarea
+                  maxLength={300}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Describe the process objective..."
@@ -143,11 +147,11 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2 text-primary">
                 <ListChecks size={14} />
-                <span className="font-display text-[10px] font-bold uppercase tracking-widest">Execution Stages</span>
+                <span className="font-display text-[11px] font-medium uppercase tracking-wider">Execution Stages</span>
               </div>
-              <button onClick={addStage} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-all">
+              <button onClick={addStage} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/5 text-primary hover:bg-primary/10 transition-all">
                 <Plus size={14} />
-                <span className="font-display text-[10px] font-bold uppercase tracking-wider">Add Stage</span>
+                <span className="font-display text-[11px] font-medium uppercase tracking-wider">Add Stage</span>
               </button>
             </div>
 
@@ -162,8 +166,8 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
                       {/* Stable Connector Line */}
                       {stages.length > 1 && (
                         <div className={`absolute w-[2px] bg-black/[0.06] left-1/2 -translate-x-1/2 ${idx === 0 ? "top-6 bottom-0" :
-                            isLast ? "top-0 h-6" :
-                              "top-0 bottom-0"
+                          isLast ? "top-0 h-6" :
+                            "top-0 bottom-0"
                           }`} />
                       )}
 
@@ -179,7 +183,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
                         <input
                           value={stage.name}
                           onChange={e => updateStage(idx, { name: e.target.value })}
-                          placeholder={`Stage ${idx + 1} Name`}
+                          placeholder={`Stage ${idx + 1}`}
                           className="flex-1 bg-transparent font-display text-[15px] font-semibold text-zinc-900 outline-none border-b border-transparent focus:border-zinc-300 pb-1 transition-all placeholder:text-zinc-400"
                         />
                         <button onClick={() => removeStage(idx)} className="text-zinc-400 opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity hover:text-red-500">
@@ -212,11 +216,17 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
           </div>
         </div>
 
-        <footer className="px-10 py-6 border-t border-black/[0.04] bg-white flex items-center justify-end gap-6 shrink-0">
-          <button onClick={onClose} className="font-display text-[12px] font-bold text-on-surface-variant opacity-40 hover:opacity-100 uppercase tracking-widest transition-all">Cancel</button>
+        <footer className="px-10 py-6 border-t border-black/[0.04] bg-white flex items-center justify-end gap-4 shrink-0">
+          <button onClick={onClose} className="font-display text-[13px] font-medium text-zinc-500 hover:text-zinc-800 transition-all px-4 py-2">
+            Cancel
+          </button>
           <button
             onClick={handleCreate}
-            className="px-8 py-3 bg-primary text-on-primary rounded-lg font-display text-[12px] font-bold uppercase tracking-widest shadow-xl shadow-primary/20 hover:shadow-2xl hover:-translate-y-px transition-all"
+            disabled={!isFormValid}
+            className={`px-5 py-2 rounded-md font-display text-[13px] font-medium transition-all ${isFormValid
+              ? "bg-primary text-on-primary shadow-sm hover:shadow hover:-translate-y-px"
+              : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+              }`}
           >
             Create Process Flow
           </button>
