@@ -56,32 +56,32 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#fef8f8] h-full overflow-hidden animate-fade-in">
+    <div className="flex-1 flex flex-col bg-white h-full overflow-hidden animate-fade-in selection:bg-black/10">
       {/* ── Detail Navbar ── */}
-      <header className="px-8 py-5 border-b border-black/[0.04] bg-white flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-6">
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-black/5 transition-all text-on-surface-variant opacity-60 hover:opacity-100">
-            <X size={20} />
+      <header className="px-6 py-4 border-b border-black/[0.06] bg-white flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-black/5 transition-all text-zinc-500 hover:text-zinc-900">
+            <X size={18} />
           </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`px-1.5 py-0.5 rounded font-display text-[9px] font-bold uppercase tracking-wider ${CATEGORY_COLORS[flow.category] || "text-slate-500 bg-slate-50"}`}>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-0.5 rounded-sm font-display text-[10px] font-medium tracking-wide ${CATEGORY_COLORS[flow.category] || "text-zinc-600 bg-zinc-100"}`}>
                 {flow.category}
               </span>
-              <span className="w-1 h-1 rounded-full bg-black/10" />
-              <span className="font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Workspace Flow</span>
+              <span className="font-display text-[11px] font-medium text-zinc-300">/</span>
+              <span className="font-display text-[11px] font-medium text-zinc-500">Workspace Flow</span>
             </div>
-            <h1 className="font-display text-[18px] font-semibold text-on-surface tracking-tight">{flow.name}</h1>
+            <h1 className="font-display text-[14px] font-semibold text-zinc-900 tracking-tight">{flow.name}</h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/[0.08] font-display text-[12px] font-bold text-on-surface-variant hover:border-black/[0.15] transition-all">
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-black/[0.08] font-display text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm">
             <LinkIcon size={14} />
-            SHARE
+            Share
           </button>
-          <button className="p-2.5 rounded-xl hover:bg-black/5 text-on-surface-variant opacity-60 hover:opacity-100 transition-all">
-            <MoreVertical size={20} />
+          <button className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all">
+            <MoreVertical size={18} />
           </button>
         </div>
       </header>
@@ -89,175 +89,202 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
       {/* ── Main Detail Workspace ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Stage Navigation */}
-        <aside className="w-[300px] border-r border-black/[0.04] bg-white/40 flex flex-col overflow-hidden">
-           <div className="p-8 space-y-8">
-              <div>
-                 <h3 className="font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest mb-6">Workflow Progress</h3>
-                 <div className="space-y-3">
-                    {flow.stages.map((stage, idx) => (
-                      <button
-                        key={stage.id}
-                        onClick={() => setActiveStageId(stage.id)}
-                        className={`w-full flex items-start gap-4 p-3 rounded-2xl transition-all text-left ${
-                          activeStageId === stage.id ? "bg-white border-black/[0.08] shadow-sm" : "hover:bg-black/[0.02] border-transparent"
-                        } border`}
-                      >
-                         <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                           stage.isCompleted ? "bg-emerald-500 text-white" : activeStageId === stage.id ? "bg-primary text-white" : "bg-black/[0.04] text-on-surface-variant opacity-60"
-                         }`}>
-                           {stage.isCompleted ? <CheckCircle2 size={14} /> : <span className="font-mono text-[11px] font-bold">{idx + 1}</span>}
-                         </div>
-                         <div className="flex-1 min-w-0">
-                            <h4 className={`font-display text-[13px] font-semibold truncate ${activeStageId === stage.id ? "text-on-surface" : "text-on-surface-variant opacity-60"}`}>
-                              {stage.name}
-                            </h4>
-                            <p className="font-display text-[10px] text-on-surface-variant opacity-60 font-medium">
-                              {stage.checklist.filter(i => i.isCompleted).length} / {stage.checklist.length} Tasks
-                            </p>
-                         </div>
-                      </button>
-                    ))}
-                 </div>
+        <aside className="w-[280px] border-r border-black/[0.06] bg-[#F9F9F9] flex flex-col overflow-y-auto custom-scrollbar">
+           <div className="p-6">
+              <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide mb-4">STAGES</h3>
+              <div className="relative pl-3 space-y-1">
+                 {/* Connecting Line */}
+                 <div className="absolute left-[19px] top-4 bottom-4 w-px bg-black/[0.08]" />
+                 
+                 {flow.stages.map((stage, idx) => {
+                   const isActive = activeStageId === stage.id;
+                   const isCompleted = stage.isCompleted;
+                   const completedTasks = stage.checklist.filter(i => i.isCompleted).length;
+                   const totalTasks = stage.checklist.length;
+                   
+                   return (
+                     <button
+                       key={stage.id}
+                       onClick={() => setActiveStageId(stage.id)}
+                       className={`relative w-full flex items-start gap-3 p-2.5 rounded-md transition-all text-left group ${
+                         isActive ? "bg-white shadow-sm ring-1 ring-black/[0.04]" : "hover:bg-black/[0.03]"
+                       }`}
+                     >
+                        <div className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 border transition-all ${
+                          isCompleted ? "bg-zinc-800 border-zinc-800 text-white" : 
+                          isActive ? "bg-white border-zinc-400 text-zinc-900 shadow-sm" : "bg-[#F9F9F9] border-zinc-300 text-zinc-400 group-hover:border-zinc-400"
+                        }`}>
+                          {isCompleted ? <CheckCircle2 size={10} strokeWidth={3} /> : <span className="font-mono text-[9px] font-medium leading-none">{idx + 1}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                           <h4 className={`font-display text-[13px] font-medium truncate ${isActive ? "text-zinc-900" : "text-zinc-500 group-hover:text-zinc-900"}`}>
+                             {stage.name}
+                           </h4>
+                           <div className="flex items-center gap-2 mt-1.5">
+                             <div className="h-[3px] flex-1 bg-black/[0.04] rounded-full overflow-hidden">
+                               <div 
+                                 className={`h-full rounded-full transition-all ${isCompleted ? 'bg-zinc-800' : 'bg-zinc-300'}`} 
+                                 style={{ width: `${(completedTasks / Math.max(totalTasks, 1)) * 100}%` }}
+                               />
+                             </div>
+                             <span className="font-mono text-[9px] text-zinc-400 font-medium tracking-wide">
+                               {completedTasks}/{totalTasks}
+                             </span>
+                           </div>
+                        </div>
+                     </button>
+                   );
+                 })}
               </div>
            </div>
         </aside>
 
         {/* Center: Stage Contents */}
-        <main className="flex-1 overflow-y-auto p-12 custom-scrollbar bg-white/20">
+        <main className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-white">
            <div className="max-w-3xl mx-auto space-y-12 animate-fade-in">
-              <section className="space-y-6">
+              <section className="space-y-4">
                  <div>
-                   <h2 className="font-display text-[24px] font-bold text-on-surface tracking-tight mb-2">{activeStage.name}</h2>
-                   <p className="font-display text-[14px] text-on-surface-variant opacity-60 leading-relaxed">
+                   <h1 className="font-display text-[32px] font-semibold text-zinc-900 tracking-tight leading-tight mb-3">
+                     {activeStage.name}
+                   </h1>
+                   <p className="font-display text-[15px] text-zinc-500 leading-relaxed max-w-2xl">
                      {activeStage.description || "No detailed description for this stage."}
                    </p>
                  </div>
+              </section>
 
-                 <div className="bg-white border border-black/[0.06] rounded-3xl p-8 space-y-8 shadow-sm shadow-black/[0.02]">
-                    <div className="flex items-center justify-between">
-                       <h3 className="font-display text-[12px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Stage Checklist</h3>
-                       <button className="text-primary font-display text-[12px] font-bold hover:underline transition-opacity">
-                         + Add Item
-                       </button>
-                    </div>
+              <section>
+                 <div className="flex items-center justify-between border-b border-black/[0.06] pb-3 mb-4">
+                    <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Execution Checklist</h3>
+                    <button className="text-zinc-400 hover:text-zinc-900 font-display text-[12px] font-medium transition-colors flex items-center gap-1">
+                      <Plus size={14} /> Add Task
+                    </button>
+                 </div>
 
-                    <div className="space-y-4">
-                       {activeStage.checklist.map(item => (
-                         <div 
-                           key={item.id}
-                           onClick={() => toggleChecklistItem(activeStage.id, item.id)}
-                           className="flex items-center gap-4 group cursor-pointer"
-                         >
-                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                              item.isCompleted ? "bg-emerald-500 border-emerald-500 text-white" : "border-black/[0.12] group-hover:border-primary/40"
-                            }`}>
-                               {item.isCompleted && <CheckCircle2 size={12} strokeWidth={3} />}
-                            </div>
-                            <span className={`font-display text-[14px] transition-all ${item.isCompleted ? "text-on-surface-variant opacity-60 line-through" : "text-on-surface opacity-80"}`}>
-                              {item.text}
-                            </span>
+                 <div className="space-y-1">
+                    {activeStage.checklist.map(item => (
+                      <div 
+                        key={item.id}
+                        onClick={() => toggleChecklistItem(activeStage.id, item.id)}
+                        className="flex items-start gap-3 p-2 rounded-md hover:bg-zinc-50 cursor-pointer group transition-colors"
+                      >
+                         <div className={`mt-0.5 w-[16px] h-[16px] rounded border flex items-center justify-center shrink-0 transition-all shadow-sm ${
+                           item.isCompleted ? "bg-zinc-800 border-zinc-800 text-white" : "bg-white border-zinc-300 group-hover:border-zinc-400"
+                         }`}>
+                            {item.isCompleted && <CheckCircle2 size={10} strokeWidth={3} />}
                          </div>
-                       ))}
-                    </div>
+                         <span className={`font-display text-[14px] leading-relaxed transition-all ${
+                           item.isCompleted ? "text-zinc-400 line-through decoration-zinc-300" : "text-zinc-700"
+                         }`}>
+                           {item.text}
+                         </span>
+                      </div>
+                    ))}
+                    {activeStage.checklist.length === 0 && (
+                      <div className="py-8 flex justify-center border border-dashed border-black/[0.06] rounded-md">
+                         <span className="font-display text-[13px] text-zinc-400">No tasks in this stage.</span>
+                      </div>
+                    )}
                  </div>
               </section>
 
               {/* Notes Section */}
-              <section className="pt-12 border-t border-black/[0.06] space-y-8">
-                 <div className="flex items-center justify-between">
-                    <h3 className="font-display text-[12px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Operational Notes</h3>
-                    <MessageSquare size={16} className="text-on-surface-variant opacity-60" />
+              <section className="pt-8 border-t border-black/[0.06]">
+                 <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Operational Notes</h3>
+                    <MessageSquare size={14} className="text-zinc-400" />
                  </div>
-
                  <div className="space-y-6">
-                    <div className="relative">
-                       <textarea 
-                         placeholder="Add a note or update..."
-                         className="w-full bg-white border border-black/[0.06] rounded-2xl p-4 font-display text-[14px] outline-none focus:border-primary/20 transition-all resize-none h-24"
-                       />
-                       <button className="absolute right-4 bottom-4 px-4 py-1.5 bg-primary text-on-primary font-display text-[11px] font-bold rounded-lg uppercase tracking-wider shadow-lg shadow-primary/20">
-                         Post
-                       </button>
+                    <div className="flex items-start gap-3">
+                       <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center shrink-0 border border-black/[0.04]">
+                         <User size={14} className="text-zinc-400" />
+                       </div>
+                       <div className="flex-1 relative">
+                          <textarea 
+                            placeholder="Add a note, update, or log activity..."
+                            className="w-full bg-[#F9F9F9] border border-transparent rounded-lg p-3.5 font-display text-[14px] text-zinc-900 outline-none focus:bg-white focus:border-black/[0.1] focus:ring-4 focus:ring-black/[0.02] transition-all resize-none h-24 placeholder:text-zinc-400 shadow-sm"
+                          />
+                          <button className="absolute right-3 bottom-3 px-3 py-1.5 bg-zinc-900 text-white font-display text-[11px] font-medium rounded-md hover:bg-zinc-700 transition-colors shadow-sm">
+                            Comment
+                          </button>
+                       </div>
                     </div>
 
                     {flow.notes && flow.notes.length > 0 ? (
-                      <div className="space-y-6">
+                      <div className="space-y-6 pt-4">
                         {flow.notes.map(note => (
-                          <div key={note.id} className="flex gap-4">
-                             <div className="w-8 h-8 rounded-full bg-black/[0.04] shrink-0" />
-                             <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                   <span className="font-display text-[13px] font-bold text-on-surface">{note.user.name}</span>
-                                   <span className="font-display text-[11px] text-on-surface-variant opacity-60">{new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <div key={note.id} className="flex gap-3">
+                             <div className="w-8 h-8 rounded-full bg-[#F9F9F9] shrink-0 border border-black/[0.04] flex items-center justify-center">
+                               <span className="font-display text-[11px] font-medium text-zinc-500">{note.user.name.charAt(0)}</span>
+                             </div>
+                             <div className="flex-1">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                   <span className="font-display text-[13px] font-medium text-zinc-900">{note.user.name}</span>
+                                   <span className="font-display text-[11px] text-zinc-400">
+                                     {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                   </span>
                                 </div>
-                                <p className="font-display text-[13px] text-on-surface-variant opacity-70 leading-relaxed">
+                                <p className="font-display text-[14px] text-zinc-600 leading-relaxed">
                                   {note.text}
                                 </p>
                              </div>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <div className="py-12 border border-dashed border-black/[0.08] rounded-2xl flex flex-col items-center justify-center opacity-60">
-                         <MessageSquare size={24} className="mb-2" />
-                         <span className="font-display text-[10px] font-bold uppercase tracking-widest">No notes yet</span>
-                      </div>
-                    )}
+                    ) : null}
                  </div>
               </section>
            </div>
         </main>
 
         {/* Right Sidebar: Operational Context */}
-        <aside className="w-[320px] border-l border-black/[0.04] bg-white/40 flex flex-col overflow-y-auto custom-scrollbar">
-           <div className="p-8 space-y-10">
+        <aside className="w-[260px] border-l border-black/[0.06] bg-[#F9F9F9] flex flex-col overflow-y-auto custom-scrollbar">
+           <div className="p-6 space-y-8">
               {/* Overall Progress */}
               <section>
-                 <h4 className="font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest mb-6">Execution Overview</h4>
-                 <div className="bg-white border border-black/[0.04] rounded-2xl p-6 shadow-sm shadow-black/[0.01]">
-                    <div className="flex items-end justify-between mb-4">
-                       <span className="font-display text-[32px] font-bold text-on-surface tracking-tighter leading-none">{flow.progress}%</span>
-                       <span className="font-display text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1.5">Active</span>
-                    </div>
-                    <div className="h-2 w-full bg-black/[0.03] rounded-full overflow-hidden">
-                       <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${flow.progress}%` }} />
-                    </div>
+                 <div className="flex items-end justify-between mb-3">
+                   <h4 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Execution Overview</h4>
+                   <span className="font-display text-[20px] font-semibold text-zinc-900 leading-none tracking-tight">{flow.progress}%</span>
+                 </div>
+                 <div className="h-1.5 w-full bg-black/[0.06] rounded-full overflow-hidden mb-3">
+                    <div className="h-full bg-zinc-800 transition-all duration-700 rounded-full" style={{ width: `${flow.progress}%` }} />
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-800 animate-pulse" />
+                    <span className="font-display text-[11px] font-medium text-zinc-600">Active Execution</span>
                  </div>
               </section>
 
               {/* Operational Metadata */}
-              <section className="space-y-6">
-                 <h4 className="font-display text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Flow Details</h4>
+              <section>
+                 <h4 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase mb-4 border-b border-black/[0.06] pb-2">Properties</h4>
                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-2.5">
-                          <User size={14} className="text-on-surface-variant opacity-60" />
-                          <span className="font-display text-[12px] text-on-surface-variant opacity-60">Owner</span>
-                       </div>
-                       <span className="font-display text-[12px] font-bold text-on-surface">{flow.owner.name}</span>
+                    <div className="flex items-center">
+                       <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0 flex items-center gap-1.5">
+                         <User size={12} /> Owner
+                       </span>
+                       <span className="font-display text-[12px] font-medium text-zinc-900 truncate">{flow.owner.name}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-2.5">
-                          <Calendar size={14} className="text-on-surface-variant opacity-60" />
-                          <span className="font-display text-[12px] text-on-surface-variant opacity-60">Due Date</span>
-                       </div>
-                       <span className="font-display text-[12px] font-bold text-on-surface">{flow.dueDate || "Not set"}</span>
+                    <div className="flex items-center">
+                       <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0 flex items-center gap-1.5">
+                         <Calendar size={12} /> Due Date
+                       </span>
+                       <span className="font-display text-[12px] font-medium text-zinc-900">{flow.dueDate || "Not set"}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-2.5">
-                          <FileText size={14} className="text-on-surface-variant opacity-60" />
-                          <span className="font-display text-[12px] text-on-surface-variant opacity-60">Assets</span>
-                       </div>
-                       <span className="font-display text-[12px] font-bold text-on-surface">{flow.relatedDocsCount || 0}</span>
+                    <div className="flex items-center">
+                       <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0 flex items-center gap-1.5">
+                         <FileText size={12} /> Assets
+                       </span>
+                       <span className="font-display text-[12px] font-medium text-zinc-900">{flow.relatedDocsCount || 0}</span>
                     </div>
                  </div>
               </section>
 
               {/* Action Sidebar */}
-              <section className="pt-10 border-t border-black/[0.04] space-y-4">
+              <section className="pt-4">
                  <button 
                    onClick={() => onDelete(flow.id)}
-                   className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-50 text-red-500 font-display text-[11px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100 transition-all"
+                   className="w-full flex items-center justify-center gap-2 p-2.5 rounded-md border border-black/[0.08] text-zinc-600 font-display text-[12px] font-medium hover:bg-zinc-100 hover:text-zinc-900 transition-all shadow-sm bg-white"
                  >
                    <Trash2 size={14} />
                    Archive Flow
