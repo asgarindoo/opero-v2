@@ -199,63 +199,26 @@ async function getSession(request: NextRequest) {
 
 // ─── Tenant resolution ────────────────────────────────────────────────────────
 
-/**
- * Resolve and authorize a tenant request.
- * Returns an appropriate NextResponse for all outcomes:
- *   - Tenant not found  → 302 /tenant-not-found
- *   - Tenant inactive   → 302 /tenant-inactive
- *   - Not a member      → 302 /unauthorized
- *   - Authorized        → NextResponse.next() with tenant headers injected
- */
 async function resolveTenant(
   request:    NextRequest,
   tenantSlug: string,
   userId:     string
 ): Promise<NextResponse> {
-  const tenant = await prisma.organization.findUnique({
-    where:  { slug: tenantSlug },
-    select: { id: true, slug: true, status: true },
-  });
-
-  if (!tenant) {
-    console.log(`[PROXY] tenant not found: "${tenantSlug}"`);
-    return NextResponse.redirect(buildRootUrl("/tenant-not-found"));
-  }
-
-  if (tenant.status !== "active") {
-    console.log(`[PROXY] tenant inactive: "${tenantSlug}"`);
-    return NextResponse.redirect(buildRootUrl("/tenant-inactive"));
-  }
-
-  const membership = await prisma.member.findUnique({
-    where: {
-      organizationId_userId: { organizationId: tenant.id, userId },
-    },
-    select: { role: true, status: true },
-  });
-
-  if (!membership || membership.status !== "active") {
-    console.log(`[PROXY] user ${userId} not a member of "${tenantSlug}"`);
-    return NextResponse.redirect(buildRootUrl("/unauthorized"));
-  }
-
   // Inject trusted tenant context headers — read in Server Components via headers()
+  // Note: We no longer run heavy Prisma queries here. Next.js Server Components
+  // (via requireTenant/getTenantContext) will validate tenant existence and membership.
   const requestHeaders = sanitizeHeaders(request.headers);
-  requestHeaders.set("x-tenant-id",   tenant.id);
-  requestHeaders.set("x-tenant-slug", tenant.slug);
+  requestHeaders.set("x-tenant-slug", tenantSlug);
   requestHeaders.set("x-user-id",     userId);
-  requestHeaders.set("x-user-role",   membership.role);
 
   // Rewrite short paths to /dashboard/<path>
   const normalPath = normalizeToTenantPath(request.nextUrl.pathname);
   if (normalPath !== request.nextUrl.pathname) {
     const rewriteUrl      = request.nextUrl.clone();
     rewriteUrl.pathname   = normalPath;
-    console.log(`[PROXY] ✓ rewrite → ${normalPath} [${tenantSlug}]`);
     return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
   }
 
-  console.log(`[PROXY] ✓ serving ${request.nextUrl.pathname} [${tenantSlug}] (${membership.role})`);
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
@@ -269,9 +232,9 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   const handoff      = request.nextUrl.searchParams.get("__handoff");
 
   // ── Debug ─────────────────────────────────────────────────────────────────
-  console.log(`\n[PROXY] ${request.method} ${pathname}`);
-  console.log(`[PROXY] host=${host}  tenant=${tenantSlug ?? "(root)"}  session=${hasSession}`);
-  console.log(`[PROXY] ROOT_URL=${getRootUrl()}`);
+  // We only log handoffs or important redirects to keep the terminal clean
+  // console.log(`\n[PROXY] ${request.method} ${pathname}`);
+  // console.log(`[PROXY] host=${host}  tenant=${tenantSlug ?? "(root)"}  session=${hasSession}`);
 
   // ── 1. Static / internal — always pass through ────────────────────────────
   if (isStaticOrInternal(pathname)) return passThrough(request);
@@ -390,16 +353,13 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
 
   // ── 8. Load full session ──────────────────────────────────────────────────
   const session = await getSession(request);
-  console.log(`[PROXY]   getSession result: ${session?.user?.id ? `✓ userId=${session.user.id}` : "✗ null (stale/invalid cookie)"}`);
   if (!session?.user?.id) {
-    console.log(`[PROXY] ✗ stale session cookie → ${buildRootUrl("/login").href}`);
     const res  = NextResponse.redirect(buildRootUrl("/login"));
     if (tenantSlug) res.cookies.set("pendingTenantSlug", tenantSlug, pendingSlugCookieOpts());
     return res;
   }
 
   const userId = session.user.id;
-  console.log(`[PROXY] userId=${userId}`);
 
   // ── 9. Tenant subdomain — resolve tenant + check membership ──────────────
   if (tenantSlug) {

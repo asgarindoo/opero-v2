@@ -13,6 +13,8 @@
  */
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { cache } from "react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -52,8 +54,9 @@ export interface TenantContext extends TenantMembership {
 /**
  * Get the current Better Auth session from request headers.
  * Returns null if no valid session exists.
+ * Wrapped in cache() to avoid multiple DB lookups per request.
  */
-async function getSession() {
+export const getSession = cache(async function getSession() {
   try {
     const hdrs = await headers();
     const session = await auth.api.getSession({ headers: hdrs });
@@ -61,7 +64,7 @@ async function getSession() {
   } catch {
     return null;
   }
-}
+});
 
 // ── Public utilities ──────────────────────────────────────────────────────────
 
@@ -69,7 +72,7 @@ async function getSession() {
  * Returns the currently authenticated user, or null if not authenticated.
  * Use in Server Components that need to conditionally render auth-gated UI.
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await getSession();
   if (!session?.user) return null;
 
@@ -79,13 +82,13 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     email: session.user.email,
     image: session.user.image ?? null,
   };
-}
+});
 
 /**
  * Returns the active organization (tenant) from the current session, or null.
  * The active org is set by `authClient.organization.setActive()` on the client.
  */
-export async function getCurrentTenant(): Promise<CurrentTenant | null> {
+export const getCurrentTenant = cache(async function getCurrentTenant(): Promise<CurrentTenant | null> {
   const session = await getSession();
   if (!session?.session?.activeOrganizationId) return null;
 
@@ -95,7 +98,7 @@ export async function getCurrentTenant(): Promise<CurrentTenant | null> {
   });
 
   return org ?? null;
-}
+});
 
 /**
  * Asserts that the current request is authenticated.
@@ -184,7 +187,7 @@ export async function requireRole(
  * Resolves a tenant slug from the `x-tenant-slug` header injected by middleware.
  * Falls back to the active org in session if header is absent (local dev).
  */
-export async function resolveTenantFromRequest(): Promise<CurrentTenant | null> {
+export const resolveTenantFromRequest = cache(async function resolveTenantFromRequest(): Promise<CurrentTenant | null> {
   const hdrs = await headers();
   const slugFromHeader = hdrs.get("x-tenant-slug");
 
@@ -198,7 +201,7 @@ export async function resolveTenantFromRequest(): Promise<CurrentTenant | null> 
 
   // Fallback: use active org from session
   return getCurrentTenant();
-}
+});
 
 /**
  * Resolves the tenant context from trusted server state only.
@@ -208,26 +211,22 @@ export async function resolveTenantFromRequest(): Promise<CurrentTenant | null> 
  * Proxy may inject x-tenant-* headers after validation; server handlers still
  * re-check session, tenant status, and membership here before touching data.
  */
-export async function getTenantContext(): Promise<TenantContext | null> {
+export const getTenantContext = cache(async function getTenantContext(): Promise<TenantContext | null> {
+  console.log("[CACHE MISS] getTenantContext resolving...");
   const hdrs = await headers();
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const headerTenantId = hdrs.get("x-tenant-id");
+  // We only get slug from proxy now
   const headerTenantSlug = hdrs.get("x-tenant-slug");
   const sessionTenant = await getCurrentTenant();
 
-  const tenant = headerTenantId
+  const tenant = headerTenantSlug
     ? await prisma.organization.findUnique({
-        where: { id: headerTenantId },
+        where: { slug: headerTenantSlug },
         select: { id: true, name: true, slug: true, logo: true, status: true },
       })
-    : headerTenantSlug
-      ? await prisma.organization.findUnique({
-          where: { slug: headerTenantSlug },
-          select: { id: true, name: true, slug: true, logo: true, status: true },
-        })
-      : sessionTenant;
+    : sessionTenant;
 
   if (!tenant || tenant.status !== "active") return null;
 
@@ -248,15 +247,12 @@ export async function getTenantContext(): Promise<TenantContext | null> {
     tenantSlug: tenant.slug,
     userId: user.id,
   };
-}
+});
 
 export async function requireTenant(): Promise<TenantContext> {
   const context = await getTenantContext();
   if (!context) {
-    throw new Response(JSON.stringify({ error: "Tenant access required" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+    redirect("/unauthorized");
   }
   return context;
 }

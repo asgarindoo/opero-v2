@@ -40,7 +40,7 @@ export async function GET(
       return new NextResponse(Buffer.from(base64, "base64"), {
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "no-store",
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
         },
       });
     }
@@ -58,7 +58,7 @@ export async function GET(
     return new NextResponse(data.stream(), {
       headers: {
         "Content-Type": data.type || "application/octet-stream",
-        "Cache-Control": "no-store",
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
       },
     });
   } catch (err) {
