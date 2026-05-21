@@ -79,6 +79,7 @@ model User {
 
   // TenantActivity back-reference
   tenantActivities TenantActivity[]
+  presenceRecords  UserPresence[]
 
   @@map("user")
 }
@@ -171,6 +172,7 @@ model Organization {
   chatChannels     ChatChannel[]
   chatMessages     ChatMessage[]
   tenantActivities TenantActivity[]
+  userPresence     UserPresence[]
 
   // Custom OPERO extensions
   inviteCode     String?         @unique // Permanent join code (e.g., OP-XXXX-XXXX)
@@ -307,6 +309,24 @@ model TenantActivity {
 // ─────────────────────────────────────────────────────────
 // NEW FEATURE MODELS (TENANT AWARE)
 // ─────────────────────────────────────────────────────────
+
+/// Lightweight tenant-scoped online presence heartbeat
+model UserPresence {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  lastSeenAt     DateTime @updatedAt
+  currentPage    String?
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([lastSeenAt])
+  @@map("user_presence")
+}
 
 model Task {
   id             String   @id @default(cuid())

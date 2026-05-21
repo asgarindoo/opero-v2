@@ -8,6 +8,7 @@ import TenantLogo from "@/components/marketing/TenantLogo";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
 import { Settings, ChevronsUpDown } from "lucide-react";
 import { NAV_GROUPS } from "./navConfig";
+import { usePresence } from "@/features/presence";
 
 interface Props {
   collapsed: boolean;
@@ -25,10 +26,9 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
   const userRole = mounted ? (session?.user as { role?: string })?.role ?? "member" : "member";
   const tenantName = mounted ? activeOrg?.name ?? "OPERO" : "OPERO";
   const tenantLogo = mounted ? getTenantLogoSrc(activeOrg?.id ?? "", activeOrg?.logo ?? null) : null;
-
-  // Dynamic presence placeholder (could be replaced with real-time socket/presence data)
-  const onlineCount = mounted && activeOrg ? 1 : 0;
+  const { onlineCount, isLoading: isPresenceLoading } = usePresence();
   const showTenantLoading = !mounted || isOrgLoading;
+  const onlineLabel = isPresenceLoading ? "..." : onlineCount.toString();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -107,7 +107,7 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
                 className="font-body-sm text-[10.5px] font-medium mt-0.5"
                 style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}
               >
-                {onlineCount} online
+                {onlineLabel} online
               </div>
             </div>
           </div>

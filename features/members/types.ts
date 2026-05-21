@@ -17,6 +17,7 @@ export interface Role {
 
 export interface Member {
   id: string;
+  userId: string;
   name: string;
   email: string;
   role: RoleType;
@@ -26,6 +27,8 @@ export interface Member {
   initials: string;
   joinedAt?: string;
   lastActive?: string;
+  presenceLastSeenAt?: string;
+  isOnline?: boolean;
 }
 
 export interface ActivityLog {
@@ -44,5 +47,4 @@ export interface InviteLink {
   expiresAt: string | null;
   uses: number;
 }
-
 

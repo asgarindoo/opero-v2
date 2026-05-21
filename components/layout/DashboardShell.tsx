@@ -3,13 +3,15 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import { PresenceProvider } from "@/features/presence";
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed]     = useState(false);
   const [mobileOpen, setMobileOpen]   = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--color-background)" }}>
+    <PresenceProvider>
+      <div className="flex h-screen overflow-hidden" style={{ background: "var(--color-background)" }}>
 
       {/* Mobile backdrop */}
       {mobileOpen && (
@@ -38,6 +40,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           {children}
         </main>
       </div>
-    </div>
+      </div>
+    </PresenceProvider>
   );
 }

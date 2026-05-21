@@ -1,7 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
 import { EmptyState } from "@/components/common/DataState";
+import { usePresence } from "@/features/presence";
 
 const roleColors: Record<string, string> = {
   Owner: "rgba(0,0,0,0.85)",
@@ -12,6 +13,14 @@ const roleColors: Record<string, string> = {
 
 export default function MembersDirectory({ searchQuery, onSelectMember }: { searchQuery: string, onSelectMember: (id: string) => void }) {
   const { members, loading } = useMembers();
+  const { presence } = usePresence();
+  const [now, setNow] = useState(() => Date.now());
+  const presenceByUserId = useMemo(() => new Map(presence.map((record) => [record.userId, record])), [presence]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const filteredMembers = useMemo(() => {
     if (!searchQuery) return members;
@@ -23,6 +32,32 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
       (m.department && m.department.toLowerCase().includes(q))
     );
   }, [members, searchQuery]);
+
+  function formatLastActive(lastSeenAt?: string) {
+    if (!lastSeenAt) return "Never active";
+
+    const date = new Date(lastSeenAt);
+    if (Number.isNaN(date.getTime())) return "Never active";
+
+    const diffMs = now - date.getTime();
+    const minuteMs = 60 * 1000;
+    const hourMs = 60 * minuteMs;
+    const dayMs = 24 * hourMs;
+
+    if (diffMs < minuteMs) return "Last active just now";
+    if (diffMs < hourMs) {
+      const minutes = Math.max(1, Math.floor(diffMs / minuteMs));
+      return `Last active ${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+    }
+    if (diffMs < dayMs) {
+      const hours = Math.max(1, Math.floor(diffMs / hourMs));
+      return `Last active ${hours} hour${hours === 1 ? "" : "s"} ago`;
+    }
+    if (diffMs < 2 * dayMs) return "Last active yesterday";
+
+    const days = Math.floor(diffMs / dayMs);
+    return `Last active ${days} days ago`;
+  }
 
   if (loading) {
     return (
@@ -44,18 +79,29 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
   return (
     <div className="p-6">
       <div className="flex flex-col gap-1">
-        {filteredMembers.map((member) => (
-          <div
-            key={member.id}
-            onClick={() => onSelectMember(member.id)}
-            className="group flex items-center gap-4 p-3 rounded-lg transition-all cursor-pointer border border-transparent hover:border-black/[0.04] hover:bg-black/[0.01]"
-          >
+        {filteredMembers.map((member) => {
+          const memberPresence = presenceByUserId.get(member.userId);
+          const isOnline = memberPresence?.isOnline ?? false;
+          const lastSeenAt = memberPresence?.lastSeenAt ?? member.lastActive;
+
+          return (
+            <div
+              key={member.id}
+              onClick={() => onSelectMember(member.id)}
+              className="group flex items-center gap-4 p-3 rounded-lg transition-all cursor-pointer border border-transparent hover:border-black/[0.04] hover:bg-black/[0.01]"
+            >
             {/* Avatar */}
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[12px] shrink-0"
+              className="relative w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[12px] shrink-0"
               style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
             >
               {member.initials}
+              {isOnline && (
+                <span
+                  className="absolute right-0 bottom-0 w-2.5 h-2.5 rounded-full border-2"
+                  style={{ background: "#22c55e", borderColor: "var(--color-background)" }}
+                />
+              )}
             </div>
 
             {/* Info */}
@@ -101,11 +147,11 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
 
               {/* Status/Activity */}
               <div className="w-24 hidden md:flex flex-col items-end">
-                <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60">
-                  Joined
-                </span>
-                <span className="font-body-sm text-[12px] font-medium text-on-surface-variant opacity-80">
-                  {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : "Unknown"}
+                <span
+                  className="font-body-sm text-[12px] font-medium text-right"
+                  style={{ color: isOnline ? "#16a34a" : "var(--color-on-surface-variant)", opacity: isOnline ? 1 : 0.72 }}
+                >
+                  {isOnline ? "Online" : formatLastActive(lastSeenAt)}
                 </span>
               </div>
 
@@ -117,8 +163,9 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
                 <MoreHorizontal size={16} />
               </button>
             </div>
-          </div>
-        ))}
+            </div>
+          );
+        })}
 
         {filteredMembers.length === 0 && !loading && (
           <EmptyState
