@@ -316,6 +316,7 @@ model UserPresence {
   userId         String
   organizationId String
   lastSeenAt     DateTime @updatedAt
+  isOnline       Boolean  @default(true)
   currentPage    String?
   createdAt      DateTime @default(now())
 

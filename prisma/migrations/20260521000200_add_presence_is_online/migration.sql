@@ -1,0 +1,1 @@
+ALTER TABLE "user_presence" ADD COLUMN IF NOT EXISTS "isOnline" BOOLEAN NOT NULL DEFAULT true;

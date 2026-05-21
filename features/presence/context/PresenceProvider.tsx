@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { fetchPresence, sendPresenceHeartbeat } from "../services/presence.client";
 import type { PresenceState } from "../types";
 
-const HEARTBEAT_INTERVAL_MS = 45_000;
+const HEARTBEAT_INTERVAL_MS = 30_000;
 const PRESENCE_POLL_INTERVAL_MS = 30_000;
 
 const initialState: PresenceState = {
@@ -22,9 +22,10 @@ const PresenceContext = createContext<PresenceState>(initialState);
 export function PresenceProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [state, setState] = useState<PresenceState>(initialState);
+  const [heartbeatReady, setHeartbeatReady] = useState(false);
 
-  usePresenceHeartbeat(pathname, setState);
-  useTenantPresence(setState);
+  usePresenceHeartbeat(pathname, setState, setHeartbeatReady);
+  useTenantPresence(heartbeatReady, setState);
 
   const value = useMemo(() => state, [state]);
 
@@ -33,7 +34,8 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
 
 export function usePresenceHeartbeat(
   currentPage: string,
-  setPresenceState?: Dispatch<SetStateAction<PresenceState>>
+  setPresenceState?: Dispatch<SetStateAction<PresenceState>>,
+  setHeartbeatReady?: Dispatch<SetStateAction<boolean>>
 ) {
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +61,9 @@ export function usePresenceHeartbeat(
           isLoading: false,
           lastUpdatedAt: new Date().toISOString(),
         });
-      } catch {
+        setHeartbeatReady?.(true);
+      } catch (err) {
+        console.error("[presence] heartbeat error", err);
         if (!cancelled) {
           setPresenceState?.((current) => ({ ...current, isLoading: false }));
         }
@@ -82,13 +86,16 @@ export function usePresenceHeartbeat(
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [currentPage, setPresenceState]);
+  }, [currentPage, setHeartbeatReady, setPresenceState]);
 }
 
 export function useTenantPresence(
+  enabled = true,
   setPresenceState?: Dispatch<SetStateAction<PresenceState>>
 ) {
   useEffect(() => {
+    if (!enabled) return;
+
     let cancelled = false;
 
     async function loadPresence() {
@@ -112,7 +119,8 @@ export function useTenantPresence(
           isLoading: false,
           lastUpdatedAt: new Date().toISOString(),
         });
-      } catch {
+      } catch (err) {
+        console.error("[presence] poll error", err);
         if (!cancelled) {
           setPresenceState?.((current) => ({ ...current, isLoading: false }));
         }
@@ -126,7 +134,7 @@ export function useTenantPresence(
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [setPresenceState]);
+  }, [enabled, setPresenceState]);
 }
 
 export function usePresence() {

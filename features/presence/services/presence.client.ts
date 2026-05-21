@@ -40,3 +40,23 @@ export async function fetchPresence(): Promise<PresenceResponse> {
   console.log("[presence] fetch response", data);
   return data;
 }
+
+export async function markPresenceOffline(): Promise<PresenceResponse | null> {
+  console.log("[presence] deleting presence before logout", { url: PRESENCE_ENDPOINT });
+
+  const response = await fetch(PRESENCE_ENDPOINT, {
+    method: "DELETE",
+    cache: "no-store",
+    credentials: "include",
+    keepalive: true,
+  });
+
+  if (!response.ok) {
+    console.log("[presence] logout presence delete failed", { status: response.status });
+    return null;
+  }
+
+  const data = await response.json();
+  console.log("[presence] logout presence delete response", data);
+  return data;
+}

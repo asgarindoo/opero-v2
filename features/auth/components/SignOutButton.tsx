@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getRootAppUrl } from "@/lib/tenant-url";
+import { markPresenceOffline } from "@/features/presence";
 
 export default function SignOutButton() {
   const [signingOut, setSigningOut] = useState(false);
@@ -11,6 +12,7 @@ export default function SignOutButton() {
     setSigningOut(true);
 
     try {
+      await markPresenceOffline().catch(() => null);
       window.location.assign(getRootAppUrl("/logout"));
     } finally {
       setSigningOut(false);

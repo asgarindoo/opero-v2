@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { getRootAppUrl } from "@/lib/tenant-url";
+import { markPresenceOffline } from "@/features/presence";
 
 export default function LogoutPage() {
   const [message, setMessage] = useState("Signing out");
@@ -10,7 +11,9 @@ export default function LogoutPage() {
   useEffect(() => {
     let cancelled = false;
 
-    authClient.signOut()
+    markPresenceOffline()
+      .catch(() => null)
+      .then(() => authClient.signOut())
       .catch(() => {
         if (!cancelled) setMessage("Finishing sign out");
       })

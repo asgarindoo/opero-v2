@@ -21,6 +21,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
 import { getRootAppUrl } from "@/lib/tenant-url";
+import { markPresenceOffline } from "@/features/presence";
 import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
 import Button from "@/components/ui/Button";
@@ -209,6 +210,7 @@ export default function SettingsPage() {
   };
 
   const handleSignOut = async () => {
+    await markPresenceOffline().catch(() => null);
     window.location.assign(getRootAppUrl("/logout"));
   };
 

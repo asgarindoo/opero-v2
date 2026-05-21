@@ -5,6 +5,7 @@ import { useSession, useActiveOrganization, useListOrganizations } from "@/lib/a
 import { usePathname, useRouter } from "next/navigation";
 import { NAV_GROUPS } from "./navConfig";
 import { getRootAppUrl } from "@/lib/tenant-url";
+import { markPresenceOffline } from "@/features/presence";
 
 /* ─── Command palette items (searchable) ─── */
 interface CommandItem {
@@ -136,6 +137,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
 
   /* ── Logout ── */
   async function handleLogout() {
+    await markPresenceOffline().catch(() => null);
     window.location.assign(getRootAppUrl("/logout"));
   }
 
