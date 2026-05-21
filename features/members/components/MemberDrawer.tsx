@@ -1,16 +1,24 @@
-import React, { useState } from "react";
-import { X, UserMinus, Shield, Mail, Building, Briefcase, Crown, User, Check, Edit2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { X, UserMinus, Shield, Building, Briefcase, Crown, User, Check, Edit2 } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
 import { RoleType } from "@/features/members";
+import { usePresence } from "@/features/presence";
 
 export default function MemberDrawer({ memberId, onClose }: { memberId: string, onClose: () => void }) {
-  const { members, removeMember, updateMemberRole, updateMemberOrg, roles } = useMembers();
+  const { members, removeMember, updateMemberRole, updateMemberOrg, roles, permissions } = useMembers();
+  const { presence } = usePresence();
   const member = members.find(m => m.id === memberId);
   const [isEditingRole, setIsEditingRole] = useState(false);
 
   const [isEditingOrg, setIsEditingOrg] = useState(false);
   const [editDept, setEditDept] = useState("");
   const [editTitle, setEditTitle] = useState("");
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   if (!member) return null;
 
@@ -33,6 +41,52 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
   };
 
   const roleObj = roles.find(r => r.name === member.role);
+  const memberPresence = presence.find((record) => record.userId === member.userId);
+  const isOnline = memberPresence?.isOnline ?? false;
+  const lastSeenAt = memberPresence?.lastSeenAt ?? member.lastActive;
+
+  function formatDateTime(value?: string) {
+    if (!value) return "Unknown";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Unknown";
+    return `${date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })} at ${date.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+  }
+
+  function formatLastActive(value?: string) {
+    if (isOnline) return "Online";
+    if (!value) return "Never active";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Never active";
+
+    const diffMs = now - date.getTime();
+    const minuteMs = 60 * 1000;
+    const hourMs = 60 * minuteMs;
+    const dayMs = 24 * hourMs;
+
+    if (diffMs < minuteMs) return "Last active just now";
+    if (diffMs < hourMs) {
+      const minutes = Math.max(1, Math.floor(diffMs / minuteMs));
+      return `Last active ${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+    }
+    if (diffMs < dayMs) {
+      const hours = Math.max(1, Math.floor(diffMs / hourMs));
+      return `Last active ${hours} hour${hours === 1 ? "" : "s"} ago`;
+    }
+    if (diffMs < 2 * dayMs) return "Last active yesterday";
+
+    const days = Math.floor(diffMs / dayMs);
+    return `Last active ${days} days ago`;
+  }
+
+  const permissionById = new Map(permissions.map((permission) => [permission.id, permission]));
   // Get permissions for this role to display
   const grantedPerms = roleObj?.permissions || [];
   return (
@@ -61,10 +115,16 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
           {/* Identity (Soft, compact) */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center font-display font-bold text-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] shrink-0"
+              className="relative w-16 h-16 rounded-full flex items-center justify-center font-display font-bold text-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] shrink-0"
               style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
             >
               {member.initials}
+              {isOnline && (
+                <span
+                  className="absolute right-1 bottom-1 w-3 h-3 rounded-full border-2"
+                  style={{ background: "#22c55e", borderColor: "var(--color-surface-container-lowest)" }}
+                />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-display font-bold text-[18px] text-on-surface truncate mb-0.5">{member.name}</h3>
@@ -74,11 +134,6 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
                   {member.role === "Owner" ? <Crown size={10} /> : member.role === "Admin" ? <Shield size={10} /> : <User size={10} />}
                   {member.role.toUpperCase()}
                 </span>
-                {member.status === "invited" && (
-                  <span className="font-label-caps text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600">
-                    PENDING
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -87,15 +142,16 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
             {/* Activity Stats */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-xl bg-black/[0.01] border border-black/[0.03]">
-                <div className="font-label-caps text-[8px] text-on-surface-variant opacity-50 uppercase tracking-widest mb-1">Joined Date</div>
-                <div className="font-body-sm text-[12px] font-medium text-on-surface opacity-80">
-                  {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : "Unknown"}
+                <div className="font-label-caps text-[8px] text-on-surface-variant opacity-70 uppercase tracking-widest mb-1">Joined Date</div>
+                <div className="font-body-sm text-[11px] font-medium text-on-surface opacity-80">
+                  {formatDateTime(member.joinedAt)}
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-black/[0.01] border border-black/[0.03]">
-                <div className="font-label-caps text-[8px] text-on-surface-variant opacity-50 uppercase tracking-widest mb-1">Last Active</div>
-                <div className="font-body-sm text-[12px] font-medium text-on-surface opacity-80">
-                  {member.lastActive ? new Date(member.lastActive).toLocaleDateString() : "Never"}
+                <div className="font-label-caps text-[8px] text-on-surface-variant opacity-70 uppercase tracking-widest mb-1">Last Active</div>
+                <div
+                  className="font-body-sm text-[11px] font-medium text-on-surface opacity-80"                >
+                  {formatLastActive(lastSeenAt)}
                 </div>
               </div>
             </div>
@@ -213,7 +269,7 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
                     <div className="flex flex-wrap gap-1.5">
                       {grantedPerms.map(permId => (
                         <span key={permId} className="px-2 py-1 rounded-md bg-black/[0.03] text-on-surface-variant font-body-sm text-[10px] border border-black/[0.03]">
-                          {permId.replace("_", " ")}
+                          {permissionById.get(permId)?.name ?? permId.replace("_", " ")}
                         </span>
                       ))}
                     </div>

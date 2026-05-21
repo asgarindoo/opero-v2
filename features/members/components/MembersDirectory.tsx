@@ -1,15 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { MoreHorizontal } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
 import { EmptyState } from "@/components/common/DataState";
 import { usePresence } from "@/features/presence";
-
-const roleColors: Record<string, string> = {
-  Owner: "rgba(0,0,0,0.85)",
-  Admin: "rgba(0,0,0,0.7)",
-  Staff: "rgba(0,0,0,0.6)",
-  Guest: "rgba(0,0,0,0.6)"
-};
 
 export default function MembersDirectory({ searchQuery, onSelectMember }: { searchQuery: string, onSelectMember: (id: string) => void }) {
   const { members, loading } = useMembers();
@@ -57,6 +49,22 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
 
     const days = Math.floor(diffMs / dayMs);
     return `Last active ${days} days ago`;
+  }
+
+  function formatJoinedAt(joinedAt?: string) {
+    if (!joinedAt) return "Joined date unknown";
+
+    const date = new Date(joinedAt);
+    if (Number.isNaN(date.getTime())) return "Joined date unknown";
+
+    return `Joined ${date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })} at ${date.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
   }
 
   if (loading) {
@@ -137,7 +145,7 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
             </div>
 
             {/* Metadata (Right side) */}
-            <div className="flex items-center gap-8 shrink-0 pr-2">
+            <div className="flex items-center gap-6 shrink-0 pr-2">
               {/* Role */}
               <div className="w-24 flex items-center">
                 <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-70">
@@ -145,23 +153,25 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
                 </span>
               </div>
 
+             
+
               {/* Status/Activity */}
-              <div className="w-24 hidden md:flex flex-col items-end">
+              <div className="w-36 hidden md:flex flex-col items-end">
                 <span
-                  className="font-body-sm text-[12px] font-medium text-right"
+                  className="font-body-sm text-[11px] font-medium text-right"
                   style={{ color: isOnline ? "#16a34a" : "var(--color-on-surface-variant)", opacity: isOnline ? 1 : 0.72 }}
                 >
                   {isOnline ? "Online" : formatLastActive(lastSeenAt)}
                 </span>
               </div>
 
-              {/* Actions */}
-              <button
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-on-surface-variant hover:bg-black/[0.04] transition-all"
-                onClick={(e) => { e.stopPropagation(); onSelectMember(member.id); }}
-              >
-                <MoreHorizontal size={16} />
-              </button>
+              {/* Joined */}
+              <div className="w-24 hidden lg:flex justify-end">
+                <span className="font-body-sm text-[11px] font-medium text-right text-on-surface-variant opacity-70">
+                  {formatJoinedAt(member.joinedAt)}
+                </span>
+              </div>
+          
             </div>
             </div>
           );
