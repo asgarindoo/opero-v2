@@ -4,11 +4,17 @@ import React, { useState, useEffect } from "react";
 import { useSales } from "../context/SalesContext";
 import { listProducts } from "@/features/products/services/products.client";
 import type { Product } from "@/features/products/types";
-import { ShoppingCart, Plus, Trash2, Package, Wrench, Store, FileText, ChevronDown } from "lucide-react";
+import { ShoppingCart, Plus, Trash2, Package, Wrench, Store, FileText } from "lucide-react";
 import { SaleStatus, PaymentStatus, SaleType, SaleItem } from "@/features/sales";
-import OperationModal from "@/components/ui/OperationModal";
-import OperationInput from "@/components/ui/OperationInput";
-import OperationTextarea from "@/components/ui/OperationTextarea";
+
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
+import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
+import { GlobalSelect } from "@/components/ui/global/form/GlobalSelect";
+import { FormSection } from "@/components/ui/global/form/FormField";
 
 const SALE_TYPES: { value: SaleType; label: string; icon: React.ReactNode }[] = [
   { value: "Product Sale", label: "Product Sale", icon: <Package size={12} strokeWidth={1.75} /> },
@@ -89,31 +95,17 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
-  const footer = (
-    <>
-      <div className="font-display text-[12px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
-        {items.filter(it => it.name.trim()).length} item{items.filter(it => it.name.trim()).length !== 1 ? "s" : ""} · {formatCurrency(total)}
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
-          Cancel
-        </button>
-        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
-          Create Sale
-        </button>
-      </div>
-    </>
+  const footerSummary = (
+    <div className="font-display text-[12px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
+      {items.filter(it => it.name.trim()).length} item{items.filter(it => it.name.trim()).length !== 1 ? "s" : ""} · {formatCurrency(total)}
+    </div>
   );
 
   return (
-    <OperationModal
-      onClose={onClose}
-      title="New Sale"
-      icon={<ShoppingCart size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
-      maxWidth={640}
-      footer={footer}
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <ModalShell onClose={onClose} maxWidth={640}>
+      <ModalHeader title="New Sale" icon={<ShoppingCart size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+      
+      <ModalContent className="space-y-6">
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
@@ -137,7 +129,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <OperationInput
+          <GlobalInput
             label="Sale Title"
             maxLength={100}
             autoFocus
@@ -145,7 +137,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
             value={title}
             onChange={e => setTitle(e.target.value)}
           />
-          <OperationInput
+          <GlobalInput
             label="Customer"
             maxLength={80}
             placeholder="Customer name or walk-in"
@@ -252,24 +244,16 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
 
         <div className="flex gap-6 items-start pt-2">
           <div className="flex-1">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                Payment Status
-              </span>
-            </div>
-            <div className="relative">
-              <select
-                value={paymentStatus}
-                onChange={e => setPaymentStatus(e.target.value as PaymentStatus)}
-                className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
-                style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
-              >
-                <option value="Unpaid">Unpaid</option>
-                <option value="Partially Paid">Partially Paid</option>
-                <option value="Paid">Paid</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-            </div>
+            <GlobalSelect
+              label="Payment Status"
+              options={[
+                { value: "Unpaid", label: "Unpaid" },
+                { value: "Partially Paid", label: "Partially Paid" },
+                { value: "Paid", label: "Paid" },
+              ]}
+              value={paymentStatus}
+              onChange={e => setPaymentStatus(e.target.value as PaymentStatus)}
+            />
           </div>
 
           <div className="w-[200px] space-y-2 pt-1">
@@ -290,7 +274,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <OperationTextarea
+        <GlobalTextarea
           label="Notes (optional)"
           maxLength={500}
           rows={2}
@@ -298,7 +282,16 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
           value={notes}
           onChange={e => setNotes(e.target.value)}
         />
-      </form>
-    </OperationModal>
+      </ModalContent>
+
+      <ModalFooter summary={footerSummary}>
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          Create Sale
+        </button>
+      </ModalFooter>
+    </ModalShell>
   );
 }

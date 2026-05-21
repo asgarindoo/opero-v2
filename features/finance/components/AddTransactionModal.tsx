@@ -2,11 +2,17 @@
 
 import React, { useState } from "react";
 import { useFinance } from "../context/FinanceContext";
-import { DollarSign, User, ChevronDown, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { DollarSign, User, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { TransactionType, PaymentMethod } from "@/features/finance";
-import OperationModal from "@/components/ui/OperationModal";
-import OperationInput from "@/components/ui/OperationInput";
-import OperationTextarea from "@/components/ui/OperationTextarea";
+
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
+import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
+import { GlobalSelect } from "@/components/ui/global/form/GlobalSelect";
+import { FormSection } from "@/components/ui/global/form/FormField";
 
 export default function AddTransactionModal({ onClose }: { onClose: () => void }) {
   const { addTransaction } = useFinance();
@@ -37,29 +43,11 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
     onClose();
   };
 
-  const footer = (
-    <>
-      <div />
-      <div className="flex items-center gap-2 shrink-0">
-        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
-          Cancel
-        </button>
-        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
-          Create Transaction
-        </button>
-      </div>
-    </>
-  );
-
   return (
-    <OperationModal
-      onClose={onClose}
-      title="New Transaction"
-      icon={<DollarSign size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
-      maxWidth={480}
-      footer={footer}
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <ModalShell onClose={onClose} maxWidth={480}>
+      <ModalHeader title="New Transaction" icon={<DollarSign size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+      
+      <ModalContent className="space-y-6">
         <div>
           <div className="flex p-1 rounded-[8px]" style={{ background: "rgba(0,0,0,0.03)" }}>
             <button
@@ -106,7 +94,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <OperationInput
+            <GlobalInput
               label="Reference #"
               required
               maxLength={40}
@@ -114,7 +102,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
               value={reference}
               onChange={e => setReference(e.target.value)}
             />
-            <OperationInput
+            <GlobalInput
               label="Category"
               maxLength={40}
               placeholder="Infrastructure"
@@ -124,14 +112,9 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
           </div>
         </div>
 
-        <div className="p-4 rounded-[8px] space-y-4" style={{ background: "rgba(0,0,0,0.01)", border: "1px dashed rgba(0,0,0,0.09)" }}>
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-              Entity & Payment
-            </span>
-          </div>
+        <FormSection title="Entity & Payment">
           <div className="grid grid-cols-2 gap-4">
-            <OperationInput
+            <GlobalInput
               label="Entity/Contact"
               icon={<User size={11} strokeWidth={1.75} />}
               maxLength={60}
@@ -139,32 +122,22 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
               value={contactName}
               onChange={e => setContactName(e.target.value)}
             />
-            <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                  Payment Method
-                </span>
-              </div>
-              <div className="relative">
-                <select
-                  value={paymentMethod}
-                  onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
-                  className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
-                  style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
-                >
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="PayPal">PayPal</option>
-                  <option value="Stripe">Stripe</option>
-                  <option value="Cash">Cash</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-              </div>
-            </div>
+            <GlobalSelect
+              label="Payment Method"
+              options={[
+                { value: "Bank Transfer", label: "Bank Transfer" },
+                { value: "Credit Card", label: "Credit Card" },
+                { value: "PayPal", label: "PayPal" },
+                { value: "Stripe", label: "Stripe" },
+                { value: "Cash", label: "Cash" },
+              ]}
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
+            />
           </div>
-        </div>
+        </FormSection>
 
-        <OperationTextarea
+        <GlobalTextarea
           label="Notes"
           maxLength={300}
           rows={2}
@@ -172,7 +145,16 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
           value={notes}
           onChange={e => setNotes(e.target.value)}
         />
-      </form>
-    </OperationModal>
+      </ModalContent>
+
+      <ModalFooter>
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          Create Transaction
+        </button>
+      </ModalFooter>
+    </ModalShell>
   );
 }

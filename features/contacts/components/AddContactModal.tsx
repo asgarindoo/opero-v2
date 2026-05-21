@@ -2,10 +2,16 @@
 
 import React, { useState } from "react";
 import { useContacts } from "../context/ContactsContext";
-import { User, Building2, Briefcase, Mail, DollarSign, ChevronDown } from "lucide-react";
+import { User, Building2, Briefcase, Mail, DollarSign } from "lucide-react";
 import { ContactStatus, RelationshipType, ContactContextData } from "@/features/contacts";
-import OperationModal from "@/components/ui/OperationModal";
-import OperationInput from "@/components/ui/OperationInput";
+
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
+import { GlobalSelect } from "@/components/ui/global/form/GlobalSelect";
+import { FormSection } from "@/components/ui/global/form/FormField";
 
 export default function AddContactModal({ onClose }: { onClose: () => void }) {
   const { addContact } = useContacts();
@@ -49,30 +55,12 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
 
   const isFinancialType = ["Customer", "Reseller", "Distributor", "Affiliate", "Investor", "Supplier", "Vendor"].includes(relationshipType);
 
-  const footer = (
-    <>
-      <div />
-      <div className="flex items-center gap-2 shrink-0">
-        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
-          Cancel
-        </button>
-        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
-          Add Contact
-        </button>
-      </div>
-    </>
-  );
-
   return (
-    <OperationModal
-      onClose={onClose}
-      title="New Contact"
-      icon={<User size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
-      maxWidth={480}
-      footer={footer}
-    >
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <OperationInput
+    <ModalShell onClose={onClose} maxWidth={480}>
+      <ModalHeader title="New Contact" icon={<User size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+      
+      <ModalContent className="space-y-5">
+        <GlobalInput
           label="Company / Contact Name"
           icon={<Building2 size={11} strokeWidth={1.75} />}
           required
@@ -84,56 +72,37 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
         />
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Briefcase size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                Relationship
-              </span>
-            </div>
-            <div className="relative">
-              <select
-                value={relationshipType}
-                onChange={e => setRelationshipType(e.target.value as RelationshipType)}
-                className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
-                style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
-              >
-                <option value="Customer">Customer</option>
-                <option value="Partner">Partner</option>
-                <option value="Supplier">Supplier</option>
-                <option value="Investor">Investor</option>
-                <option value="Vendor">Vendor</option>
-                <option value="Reseller">Reseller</option>
-                <option value="Distributor">Distributor</option>
-                <option value="Affiliate">Affiliate</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                Status
-              </span>
-            </div>
-            <div className="relative">
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value as ContactStatus)}
-                className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
-                style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
-              >
-                <option value="Lead">Lead</option>
-                <option value="Onboarding">Onboarding</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-            </div>
-          </div>
+          <GlobalSelect
+            label="Relationship"
+            icon={<Briefcase size={11} strokeWidth={1.75} />}
+            options={[
+              { value: "Customer", label: "Customer" },
+              { value: "Partner", label: "Partner" },
+              { value: "Supplier", label: "Supplier" },
+              { value: "Investor", label: "Investor" },
+              { value: "Vendor", label: "Vendor" },
+              { value: "Reseller", label: "Reseller" },
+              { value: "Distributor", label: "Distributor" },
+              { value: "Affiliate", label: "Affiliate" },
+            ]}
+            value={relationshipType}
+            onChange={e => setRelationshipType(e.target.value as RelationshipType)}
+          />
+
+          <GlobalSelect
+            label="Status"
+            options={[
+              { value: "Lead", label: "Lead" },
+              { value: "Onboarding", label: "Onboarding" },
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
+            ]}
+            value={status}
+            onChange={e => setStatus(e.target.value as ContactStatus)}
+          />
         </div>
 
-        <OperationInput
+        <GlobalInput
           label="Industry"
           maxLength={50}
           placeholder="e.g. Software, Logistics"
@@ -142,14 +111,9 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
         />
 
         {isFinancialType && (
-          <div className="p-4 rounded-[8px] space-y-4" style={{ background: "rgba(0,0,0,0.01)", border: "1px dashed rgba(0,0,0,0.09)" }}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                Relationship Overview
-              </span>
-            </div>
+          <FormSection title="Relationship Overview">
             <div className="grid grid-cols-2 gap-4">
-              <OperationInput
+              <GlobalInput
                 label="Deal Value"
                 type="number"
                 icon={<DollarSign size={11} strokeWidth={1.75} />}
@@ -157,7 +121,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
                 value={dealValue}
                 onChange={e => setDealValue(e.target.value)}
               />
-              <OperationInput
+              <GlobalInput
                 label="Sales Stage"
                 maxLength={40}
                 placeholder="e.g. Qualified, Proposal"
@@ -165,7 +129,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
                 onChange={e => setSalesStage(e.target.value)}
               />
             </div>
-          </div>
+          </FormSection>
         )}
 
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
@@ -176,7 +140,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
               Primary Contact <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: "normal", fontWeight: "normal" }}>(Optional)</span>
             </span>
           </div>
-          <OperationInput
+          <GlobalInput
             label="Contact Person Name"
             icon={<User size={11} strokeWidth={1.75} />}
             maxLength={60}
@@ -184,7 +148,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
             value={personName}
             onChange={e => setPersonName(e.target.value)}
           />
-          <OperationInput
+          <GlobalInput
             label="Email Address"
             icon={<Mail size={11} strokeWidth={1.75} />}
             type="email"
@@ -194,7 +158,16 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
             onChange={e => setPersonEmail(e.target.value)}
           />
         </div>
-      </form>
-    </OperationModal>
+      </ModalContent>
+
+      <ModalFooter>
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          Add Contact
+        </button>
+      </ModalFooter>
+    </ModalShell>
   );
 }

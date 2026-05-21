@@ -4,8 +4,14 @@ import React, { useState } from "react";
 import { useDocuments } from "../context/DocumentsContext";
 import { Upload, Tag, Layers, Lock, ChevronDown } from "lucide-react";
 import { FileType } from "@/features/documents";
-import OperationModal from "@/components/ui/OperationModal";
-import OperationInput from "@/components/ui/OperationInput";
+
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
+import { GlobalSelect } from "@/components/ui/global/form/GlobalSelect";
+import { FormSection } from "@/components/ui/global/form/FormField";
 
 export default function UploadModal({ onClose }: { onClose: () => void }) {
   const { addFile } = useDocuments();
@@ -69,29 +75,11 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const footer = (
-    <>
-      <div />
-      <div className="flex items-center gap-2 shrink-0">
-        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
-          Cancel
-        </button>
-        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
-          {isUploading ? "Uploading..." : "Start Upload"}
-        </button>
-      </div>
-    </>
-  );
-
   return (
-    <OperationModal
-      onClose={onClose}
-      title="Upload Documents"
-      icon={<Upload size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
-      maxWidth={480}
-      footer={footer}
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <ModalShell onClose={onClose} maxWidth={480}>
+      <ModalHeader title="Upload Documents" icon={<Upload size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+      
+      <ModalContent className="space-y-6">
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
@@ -132,7 +120,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="space-y-4">
-          <OperationInput
+          <GlobalInput
             label="Document Name"
             required
             maxLength={100}
@@ -143,31 +131,21 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
           />
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                  File Type
-                </span>
-              </div>
-              <div className="relative">
-                <select
-                  value={type}
-                  onChange={e => setType(e.target.value as FileType)}
-                  className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
-                  style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
-                >
-                  <option value="other">General</option>
-                  <option value="pdf">PDF Document</option>
-                  <option value="document">Office Document</option>
-                  <option value="spreadsheet">Spreadsheet</option>
-                  <option value="image">Image / Media</option>
-                  <option value="design">Design Asset</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-              </div>
-            </div>
+            <GlobalSelect
+              label="File Type"
+              options={[
+                { value: "other", label: "General" },
+                { value: "pdf", label: "PDF Document" },
+                { value: "document", label: "Office Document" },
+                { value: "spreadsheet", label: "Spreadsheet" },
+                { value: "image", label: "Image / Media" },
+                { value: "design", label: "Design Asset" },
+              ]}
+              value={type}
+              onChange={e => setType(e.target.value as FileType)}
+            />
 
-            <OperationInput
+            <GlobalInput
               label="Tags"
               icon={<Tag size={11} strokeWidth={1.75} />}
               maxLength={60}
@@ -178,12 +156,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="p-4 rounded-[8px] space-y-4" style={{ background: "rgba(0,0,0,0.01)", border: "1px dashed rgba(0,0,0,0.09)" }}>
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-              Visibility & Links
-            </span>
-          </div>
+        <FormSection title="Visibility & Links">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -209,8 +182,17 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
-        </div>
-      </form>
-    </OperationModal>
+        </FormSection>
+      </ModalContent>
+
+      <ModalFooter>
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          {isUploading ? "Uploading..." : "Start Upload"}
+        </button>
+      </ModalFooter>
+    </ModalShell>
   );
 }
