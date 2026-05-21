@@ -56,6 +56,36 @@ export const PERMISSIONS: Permission[] = [
   { id: "settings_manage", category: "Settings", name: "Workspace Settings", description: "Can manage billing, domains, and global settings." },
 ];
 
+const defaultRoles: Role[] = [
+  {
+    id: "owner",
+    name: "Owner",
+    description: "Full workspace access and billing ownership.",
+    permissions: PERMISSIONS.map((permission) => permission.id),
+  },
+  {
+    id: "admin",
+    name: "Admin",
+    description: "Manage workspace operations, members, and most settings.",
+    permissions: PERMISSIONS
+      .filter((permission) => permission.id !== "settings_manage")
+      .map((permission) => permission.id),
+  },
+  {
+    id: "member",
+    name: "Staff",
+    description: "Access daily workspace tools and assigned work.",
+    permissions: PERMISSIONS
+      .filter((permission) => (
+        permission.id.endsWith("_view") ||
+        permission.id === "chat_access" ||
+        permission.id === "tasks_create" ||
+        permission.id === "goals_view"
+      ))
+      .map((permission) => permission.id),
+  },
+];
+
 const roleMap: Record<string, RoleType> = {
   owner: "Owner",
   admin: "Admin",
@@ -148,7 +178,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
         fetch("/api/tenant/invite"),
       ]);
 
-      setRoles(rolesData);
+      setRoles(rolesData.length > 0 ? rolesData : defaultRoles);
 
       if (inviteRes.ok) {
         const inviteData = await inviteRes.json();
@@ -243,7 +273,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
 
   // Access Control
   const toggleRolePermission = useCallback(async (roleId: string, permissionId: string) => {
-    if (roleId === "r1") return; // Owner role is locked
+    if (roleId === "r1" || roleId === "owner") return; // Owner role is locked
 
     const current = roles.find(r => r.id === roleId);
     if (!current) return;
@@ -253,7 +283,12 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       ? current.permissions.filter(p => p !== permissionId)
       : [...current.permissions, permissionId];
 
-    const recordId = (current as { recordId?: string }).recordId ?? current.id;
+    const recordId = (current as { recordId?: string }).recordId;
+    if (!recordId) {
+      setRoles(prev => prev.map(r => r.id === roleId ? { ...r, permissions: newPerms } : r));
+      return;
+    }
+
     try {
       const updated = await updateRole<Role>(recordId, { permissions: newPerms });
       setRoles(prev => prev.map(r => r.id === roleId ? updated : r));

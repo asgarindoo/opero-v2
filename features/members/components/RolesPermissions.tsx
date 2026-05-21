@@ -10,7 +10,7 @@ export default function RolesPermissions() {
 
   const activeRoleId = selectedRoleId || roles[0]?.id;
   const activeRole = roles.find(r => r.id === activeRoleId);
-  const isOwner = activeRole?.id === "r1";
+  const isOwner = activeRole?.id === "r1" || activeRole?.id === "owner" || activeRole?.name === "Owner";
 
   // Group permissions by category
   const categories = Array.from(new Set(permissions.map(p => p.category)));
