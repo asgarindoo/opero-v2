@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
-import { X, Landmark, Tag, User, MapPin, DollarSign, Calendar } from "lucide-react";
+import { X, Landmark, Tag, User, MapPin, DollarSign, Calendar, CheckSquare, Square } from "lucide-react";
+import { createTransaction } from "@/features/finance/services/finance.client";
 
 export default function AddAssetModal({ onClose }: { onClose: () => void }) {
   const { addAsset } = useAssets();
@@ -12,9 +13,13 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
   const [purchaseValue, setPurchaseValue] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
 
+  const [recordExpense, setRecordExpense] = useState(false);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !assetCode.trim()) return;
+
+    const pValue = parseFloat(purchaseValue);
 
     addAsset({
       name,
@@ -22,10 +27,25 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
       assetCode,
       location,
       department,
-      purchaseValue: parseFloat(purchaseValue) || undefined,
+      purchaseValue: pValue || undefined,
       purchaseDate: purchaseDate || undefined,
       status: "Active"
     });
+
+    if (recordExpense && pValue > 0) {
+      createTransaction({
+        id: "tx" + Date.now(),
+        type: "Expense",
+        amount: pValue,
+        description: `Asset Purchase: ${name} (${assetCode})`,
+        date: purchaseDate || new Date().toISOString().split("T")[0],
+        category: category || "Asset Purchase",
+        paymentMethod: "Bank Transfer",
+        status: "Completed",
+        notes: "Auto-recorded from Asset Registration"
+      }).catch(err => console.error("Failed to record expense:", err));
+    }
+
     onClose();
   };
 
@@ -129,6 +149,18 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Record Expense Toggle */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setRecordExpense(!recordExpense)}
+              className="flex items-center gap-2 text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              {recordExpense ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} className="opacity-50" />}
+              <span className="font-body-sm text-[12px] opacity-80">Automatically record this purchase as an Expense in Finance</span>
+            </button>
           </div>
         </form>
 

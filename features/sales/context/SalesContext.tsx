@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { SaleOpportunity, SaleStatus, PaymentStatus, SaleType, SaleActivity, SaleItem } from "@/features/sales";
 import { createSale, deleteSale, listSales, updateSale as saveSale } from "@/features/sales";
+import { listProducts, updateProduct } from "@/features/products/services/products.client";
+import type { Product, StockActivity } from "@/features/products/types";
 
 interface SalesContextType {
   sales: SaleOpportunity[];
@@ -109,7 +111,35 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Auto-deduct stock when status → Completed for Product Sales
-      // (stock deduction happens in the ProductsContext via the same pattern)
+      if (updates.status === "Completed" && s.status !== "Completed" && updated.items.length > 0) {
+        (async () => {
+          try {
+            const products = await listProducts<Product>();
+            for (const item of updated.items) {
+              if (item.productId && item.quantity > 0) {
+                const product = products.find(p => p.id === item.productId);
+                if (product && product.type === "Physical") {
+                  const newActivity: StockActivity = {
+                    id: Math.random().toString(36).substring(7),
+                    type: "stock_out",
+                    quantity: -item.quantity,
+                    description: `Sold via Sale ${updated.orderNumber}`,
+                    timestamp: new Date().toISOString(),
+                    author: "System"
+                  };
+                  const recordId = (product as any).recordId ?? product.id;
+                  await updateProduct<Product>(recordId, {
+                    totalQuantity: Math.max(0, product.totalQuantity - item.quantity),
+                    activities: [newActivity, ...product.activities]
+                  });
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Failed to auto-deduct stock:", err);
+          }
+        })();
+      }
 
       const recordId = (s as { recordId?: string }).recordId ?? s.id;
       saveSale<SaleOpportunity>(recordId, updated).catch((err) => {

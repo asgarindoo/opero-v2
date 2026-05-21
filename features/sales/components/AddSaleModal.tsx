@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useSales } from "../context/SalesContext";
-import { useProducts } from "@/features/products/context/ProductsContext";
+import { listProducts } from "@/features/products/services/products.client";
+import type { Product } from "@/features/products/types";
 import { X, ShoppingCart, User, Plus, Trash2, Package, Wrench, Briefcase, Store, FileText, ChevronDown } from "lucide-react";
 import { SaleStatus, PaymentStatus, SaleType, SaleItem } from "@/features/sales";
 import Dropdown from "@/components/ui/Dropdown";
@@ -45,7 +46,15 @@ function formatCurrency(val: number) {
 
 export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const { addSale } = useSales();
-  const { allProducts } = useProducts();
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    listProducts<Product>()
+      .then(res => active && setAllProducts(res))
+      .catch(console.error);
+    return () => { active = false; };
+  }, []);
 
   const [saleType, setSaleType] = useState<SaleType>("Product Sale");
   const [title, setTitle] = useState("");

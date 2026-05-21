@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useSales } from "../context/SalesContext";
 import { X, Clock, User, DollarSign, TrendingUp, FileText, Truck, Package, CheckCircle2, Star } from "lucide-react";
 import { SaleStatus, PaymentStatus, SaleType } from "@/features/sales";
+import { createInvoice } from "@/features/invoices/services/invoices.client";
+import type { Invoice, InvoiceItem } from "@/features/invoices/types";
 import Dropdown from "@/components/ui/Dropdown";
 
 function formatCurrency(val: number) {
@@ -33,6 +35,50 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
   const handleMarkPaid = () => {
     updateSale(sale.id, { paymentStatus: "Paid", status: "Completed" });
+  };
+
+  const handleGenerateInvoice = async () => {
+    const totalAmount = sale.items.reduce((acc, curr) => acc + curr.subtotal, 0);
+    const invoiceItems: InvoiceItem[] = sale.items.map(it => ({
+      id: Math.random().toString(36).substring(7),
+      description: it.name,
+      quantity: it.quantity,
+      unitPrice: it.price,
+      discount: it.discount,
+      amount: it.subtotal
+    }));
+
+    const newInvoice: Invoice = {
+      id: "inv" + Date.now(),
+      invoiceNumber: "INV-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 1000),
+      contactName: sale.contactName,
+      contactId: sale.contactId,
+      saleId: sale.id,
+      saleOrderNumber: sale.orderNumber,
+      issueDate: new Date().toISOString().split("T")[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 14 days
+      status: "Unpaid",
+      items: invoiceItems,
+      subtotal: totalAmount,
+      taxTotal: 0,
+      discountTotal: sale.discountTotal,
+      totalAmount: sale.total,
+      currency: "USD",
+      notes: "Auto-generated from sale " + sale.orderNumber,
+      activities: [],
+      attachments: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await createInvoice<Invoice>(newInvoice);
+      addActivity(sale.id, { type: "note", description: `Generated invoice ${newInvoice.invoiceNumber}` });
+      alert(`Invoice ${newInvoice.invoiceNumber} generated successfully!`);
+    } catch (err) {
+      console.error("Failed to generate invoice", err);
+      alert("Failed to generate invoice");
+    }
   };
 
   return (
@@ -118,6 +164,15 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
               <span className="font-label-caps text-[9px] font-bold tracking-widest text-emerald-700">PAYMENT RECEIVED — {formatCurrency(sale.total)}</span>
             </div>
           )}
+
+          <div className="flex justify-end mb-6">
+            <button
+              onClick={handleGenerateInvoice}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-low border border-black/5 hover:bg-black/5 text-on-surface-variant font-label-caps text-[9px] font-bold tracking-wide transition-colors"
+            >
+              <FileText size={11} /> GENERATE INVOICE
+            </button>
+          </div>
 
           {/* Financial Summary */}
           <div className="grid grid-cols-2 gap-3 mb-6">
