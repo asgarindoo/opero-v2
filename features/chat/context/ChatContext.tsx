@@ -18,11 +18,13 @@ interface ChatContextType {
   messages: Record<string, ChatMessage[]>;
   unreadCounts: Record<string, number>;
   initialLoadingChannels: Record<string, boolean>;
+  refetchingChannels: Record<string, boolean>;
+  hasLoadedChannels: Record<string, boolean>;
   loadingChannels: boolean;
   loadingMessages: boolean;
   error: string | null;
   currentUserId: string | null;
-  loadMessages: (channelId: string) => Promise<void>;
+  loadMessages: (channelId: string, options?: { silent?: boolean; countUnread?: boolean }) => Promise<void>;
   sendMessage: (channelId: string, content: string) => Promise<void>;
   createChannel: (name: string, description: string) => Promise<string>;
   deleteChannel: (channelId: string) => Promise<void>;
@@ -174,6 +176,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [initialLoadingChannels, setInitialLoadingChannels] = useState<Record<string, boolean>>({});
+  const [refetchingChannels, setRefetchingChannels] = useState<Record<string, boolean>>({});
+  const [hasLoadedChannels, setHasLoadedChannels] = useState<Record<string, boolean>>({});
   const [loadingChannels, setLoadingChannels] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -206,6 +210,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setMessages({});
       setUnreadCounts({});
       setInitialLoadingChannels({});
+      setRefetchingChannels({});
+      setHasLoadedChannels({});
       setError(null);
       setCurrentUserId(sessionUserId);
     }, 0);
@@ -261,8 +267,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (loadingMessagesRef.current.has(channelId)) return;
 
     loadingMessagesRef.current.add(channelId);
-    const isInitialChannelLoad = messages[channelId] === undefined && !options?.silent;
-    if (isInitialChannelLoad) {
+    const hasCached = messages[channelId] !== undefined;
+    const isSilent = Boolean(options?.silent || hasCached);
+
+    if (isSilent) {
+      setRefetchingChannels((current) => ({ ...current, [channelId]: true }));
+    } else {
       setInitialLoadingChannels((current) => ({ ...current, [channelId]: true }));
     }
     if (!options?.silent) setLoadingMessages(true);
@@ -292,6 +302,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         return { ...current, [channelId]: merged.list };
       });
+      
+      setHasLoadedChannels((current) => ({ ...current, [channelId]: true }));
+
       if (!options?.silent) {
         const organizationId = payload.messages[0]?.organizationId ?? channels.find((channel) => channel.id === channelId)?.organizationId;
         if (organizationId) {
@@ -303,7 +316,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : "Failed to load messages.");
     } finally {
       loadingMessagesRef.current.delete(channelId);
-      if (isInitialChannelLoad) {
+      if (isSilent) {
+        setRefetchingChannels((current) => ({ ...current, [channelId]: false }));
+      } else {
         setInitialLoadingChannels((current) => ({ ...current, [channelId]: false }));
       }
       if (!options?.silent) setLoadingMessages(false);
@@ -600,6 +615,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     messages,
     unreadCounts,
     initialLoadingChannels,
+    refetchingChannels,
+    hasLoadedChannels,
     loadingChannels,
     loadingMessages,
     error,
@@ -608,7 +625,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     sendMessage,
     createChannel,
     deleteChannel,
-  }), [channels, messages, unreadCounts, initialLoadingChannels, loadingChannels, loadingMessages, error, currentUserId, loadMessages, sendMessage, createChannel, deleteChannel]);
+  }), [
+    channels,
+    messages,
+    unreadCounts,
+    initialLoadingChannels,
+    refetchingChannels,
+    hasLoadedChannels,
+    loadingChannels,
+    loadingMessages,
+    error,
+    currentUserId,
+    loadMessages,
+    sendMessage,
+    createChannel,
+    deleteChannel,
+  ]);
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }

@@ -40,34 +40,33 @@ export default function MessageComposer({ channelId }: { channelId: string }) {
   }, [content]);
 
   return (
-    <div className="p-4 bg-surface/80 backdrop-blur-md relative">
-      <div className="bg-surface-container-lowest rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all focus-within:shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+    <div className="p-4 bg-white border-t border-black/5 relative">
+      <div className="bg-white border border-black/[0.06] rounded-xl transition-all focus-within:border-black/25 focus-within:shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden shadow-sm">
         <textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message..."
-          className="w-full bg-transparent px-5 py-4 outline-none resize-none font-body-md text-[14.5px] text-on-surface placeholder:text-on-surface-variant/50 min-h-[56px] max-h-[160px]"
+          placeholder="Type a message..."
+          className="w-full bg-transparent px-4 py-3 outline-none resize-none font-aspekta text-[12.5px] text-black placeholder:text-black/35 min-h-[44px] max-h-[140px] leading-relaxed"
           rows={1}
         />
-        <div className="flex items-center justify-end px-3 pb-3">
+        <div className="flex items-center justify-end px-3 pb-2">
           <button
             onClick={() => void handleSend()}
             disabled={!content.trim() || isSending}
-            className={`p-2 rounded-full transition-all duration-200 ${
-              content.trim() && !isSending
-                ? "bg-primary text-white hover:scale-105 shadow-md hover:shadow-lg"
-                : "bg-surface-container-highest text-on-surface-variant/40 cursor-not-allowed"
-            }`}
+            className={`p-1.5 rounded-lg transition-all ${content.trim() && !isSending
+                ? "bg-[#18181b] text-white hover:bg-black/90 active:scale-[0.98]"
+                : "bg-transparent text-black/20 cursor-not-allowed"
+              }`}
             title="Send message"
           >
-            <Send size={16} className={content.trim() ? "translate-x-[1px] translate-y-[-1px]" : ""} />
+            <Send size={13} className={content.trim() ? "translate-x-[0.5px]" : ""} />
           </button>
         </div>
       </div>
-      <div className="mt-2 text-center text-[10px] text-on-surface-variant opacity-50 font-medium">
-        <strong>Return</strong> to send, <strong>Shift + Return</strong> for new line
+      <div className="mt-2 text-center text-[10px] text-black/35 font-aspekta select-none">
+        Press <kbd className="font-semibold bg-black/5 px-1 py-0.5 rounded text-[9px]">Return</kbd> to send, <kbd className="font-semibold bg-black/5 px-1 py-0.5 rounded text-[9px]">Shift + Return</kbd> for a new line
       </div>
     </div>
   );
