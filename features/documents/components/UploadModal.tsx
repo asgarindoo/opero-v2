@@ -1,7 +1,11 @@
+"use client";
+
 import React, { useState } from "react";
 import { useDocuments } from "../context/DocumentsContext";
-import { X, Upload, Tag, Layers, Lock, ChevronDown } from "lucide-react";
+import { Upload, Tag, Layers, Lock, ChevronDown } from "lucide-react";
 import { FileType } from "@/features/documents";
+import OperationModal from "@/components/ui/OperationModal";
+import OperationInput from "@/components/ui/OperationInput";
 
 export default function UploadModal({ onClose }: { onClose: () => void }) {
   const { addFile } = useDocuments();
@@ -24,9 +28,11 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
     else if (["doc", "docx"].includes(ext ?? "")) setType("document");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !file || isUploading) return;
+  const isValid = name.trim() && file && !isUploading;
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!isValid) return;
 
     setIsUploading(true);
     setError(null);
@@ -63,82 +69,92 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const footer = (
+    <>
+      <div />
+      <div className="flex items-center gap-2 shrink-0">
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          {isUploading ? "Uploading..." : "Start Upload"}
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/10 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      
-      <div className="relative w-full max-w-[480px] bg-surface-container-lowest rounded-2xl shadow-2xl animate-scale-in border border-black/5 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/[0.04]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Upload size={14} />
-            </div>
-            <h2 className="font-display font-semibold text-[15px] text-on-surface">Upload Documents</h2>
+    <OperationModal
+      onClose={onClose}
+      title="Upload Documents"
+      icon={<Upload size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
+      maxWidth={480}
+      footer={footer}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragOver(false);
+            const dropped = e.dataTransfer.files[0];
+            if (dropped) selectFile(dropped);
+          }}
+          className="relative aspect-[21/9] rounded-[12px] border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all cursor-pointer"
+          style={isDragOver ? { borderColor: "var(--color-primary)", background: "rgba(0,0,0,0.03)" } : { borderColor: "rgba(0,0,0,0.1)", background: "rgba(0,0,0,0.01)" }}
+        >
+          <div className="w-10 h-10 rounded-[10px] bg-white shadow-sm flex items-center justify-center text-on-surface-variant opacity-40">
+            <Upload size={18} strokeWidth={1.75} />
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-on-surface-variant opacity-50 hover:opacity-100 hover:bg-black/5 transition-colors">
-            <X size={16} />
-          </button>
+          <div className="text-center px-4">
+            <p className="font-display font-semibold text-[13px] text-on-surface opacity-80 truncate max-w-[300px]">
+              {file ? file.name : "Click or drag files to upload"}
+            </p>
+            <p className="font-body-md text-[11px] mt-1" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
+              {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "PDF, DOCX, XLSX, Images up to 30MB"}
+            </p>
+          </div>
+          <input
+            type="file"
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            onChange={(e) => {
+              const selected = e.target.files?.[0];
+              if (selected) selectFile(selected);
+            }}
+          />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 max-h-[75vh] overflow-y-auto px-6 py-6 space-y-6">
-          
-          {/* Dropzone */}
-          <div 
-            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragOver(false);
-              const dropped = e.dataTransfer.files[0];
-              if (dropped) selectFile(dropped);
-            }}
-            className={`relative aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all ${isDragOver ? "border-primary bg-primary/5" : "border-black/5 bg-surface-container-low"}`}
-          >
-             <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-on-surface-variant opacity-40">
-                <Upload size={20} />
-             </div>
-             <div className="text-center">
-                <p className="font-display font-bold text-[13px] text-on-surface opacity-80">
-                  {file ? file.name : "Click or drag files to upload"}
-                </p>
-                <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40 mt-1">
-                  {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "PDF, DOCX, XLSX, Images up to 30MB"}
-                </p>
-             </div>
-             <input
-               type="file"
-               className="absolute inset-0 opacity-0 cursor-pointer"
-               onChange={(e) => {
-                 const selected = e.target.files?.[0];
-                 if (selected) selectFile(selected);
-               }}
-             />
-          </div>
+        {error && (
+          <p className="font-body-md text-[12px] px-3 py-2 rounded-[6px]" style={{ background: "rgba(186,26,26,0.05)", color: "rgba(186,26,26,0.9)" }}>
+            {error}
+          </p>
+        )}
 
-          {error && (
-            <p className="font-body-sm text-[12px] text-red-600">
-              {error}
-            </p>
-          )}
+        <div className="space-y-4">
+          <OperationInput
+            label="Document Name"
+            required
+            maxLength={100}
+            autoFocus
+            placeholder="e.g. Sales Report Q1.pdf"
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Document Name</label>
-              <input 
-                type="text" autoFocus required value={name} onChange={e => setName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                placeholder="e.g. Sales Report Q1.pdf"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">File Type</label>
-                <select 
-                  value={type} onChange={e => setType(e.target.value as FileType)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low font-body-sm text-[12.5px] text-on-surface appearance-none"
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                  File Type
+                </span>
+              </div>
+              <div className="relative">
+                <select
+                  value={type}
+                  onChange={e => setType(e.target.value as FileType)}
+                  className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
+                  style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
                 >
                   <option value="other">General</option>
                   <option value="pdf">PDF Document</option>
@@ -147,53 +163,54 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
                   <option value="image">Image / Media</option>
                   <option value="design">Design Asset</option>
                 </select>
-              </div>
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Tags (comma separated)</label>
-                <div className="relative flex items-center">
-                  <Tag size={13} className="absolute left-3 text-on-surface-variant opacity-40" />
-                  <input 
-                    type="text" value={tags} onChange={e => setTags(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                    placeholder="finance, invoice..."
-                  />
-                </div>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
               </div>
             </div>
-          </div>
 
-          <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03] space-y-4">
-            <h3 className="font-display font-medium text-[12px] text-on-surface opacity-80">Visibility & Links</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Privacy</label>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-lowest border border-black/5">
-                   <Lock size={12} className="text-on-surface-variant opacity-40" />
-                   <span className="font-body-sm text-[11px] text-on-surface opacity-70">Internal Only</span>
-                   <ChevronDown size={10} className="ml-auto opacity-40" />
-                </div>
-              </div>
-              <div>
-                <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Link Entity</label>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-lowest border border-black/5">
-                   <Layers size={12} className="text-on-surface-variant opacity-40" />
-                   <span className="font-body-sm text-[11px] text-on-surface opacity-30">Select module...</span>
-                </div>
-              </div>
-            </div>
+            <OperationInput
+              label="Tags"
+              icon={<Tag size={11} strokeWidth={1.75} />}
+              maxLength={60}
+              placeholder="finance, invoice..."
+              value={tags}
+              onChange={e => setTags(e.target.value)}
+            />
           </div>
-        </form>
-
-        <div className="px-6 py-4 bg-surface-container-low border-t border-black/[0.04] flex justify-end gap-3 shrink-0">
-          <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide text-on-surface-variant hover:bg-black/5 transition-colors">CANCEL</button>
-          <button 
-            type="submit" onClick={handleSubmit} disabled={!name.trim() || !file || isUploading}
-            className="px-6 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide bg-primary text-on-primary hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all disabled:opacity-50"
-          >
-            {isUploading ? "UPLOADING..." : "START UPLOAD"}
-          </button>
         </div>
-      </div>
-    </div>
+
+        <div className="p-4 rounded-[8px] space-y-4" style={{ background: "rgba(0,0,0,0.01)", border: "1px dashed rgba(0,0,0,0.09)" }}>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+              Visibility & Links
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                  Privacy
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-[6px]" style={{ border: "1px solid rgba(0,0,0,0.09)", background: "#fff" }}>
+                <Lock size={12} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+                <span className="font-body-md text-[12.5px]" style={{ color: "var(--color-on-surface)", opacity: 0.7 }}>Internal Only</span>
+                <ChevronDown size={12} className="ml-auto" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                  Link Entity
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-[6px]" style={{ border: "1px solid rgba(0,0,0,0.09)", background: "#fff" }}>
+                <Layers size={12} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+                <span className="font-body-md text-[12.5px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>Select module...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </OperationModal>
   );
 }

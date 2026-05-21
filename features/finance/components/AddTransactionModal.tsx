@@ -1,8 +1,12 @@
+"use client";
+
 import React, { useState } from "react";
 import { useFinance } from "../context/FinanceContext";
-import { X, DollarSign, Tag, User, Calendar, CreditCard, ArrowUpRight, ArrowDownLeft } from "lucide-react";
-import Dropdown from "@/components/ui/Dropdown";
+import { DollarSign, User, ChevronDown, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { TransactionType, PaymentMethod } from "@/features/finance";
+import OperationModal from "@/components/ui/OperationModal";
+import OperationInput from "@/components/ui/OperationInput";
+import OperationTextarea from "@/components/ui/OperationTextarea";
 
 export default function AddTransactionModal({ onClose }: { onClose: () => void }) {
   const { addTransaction } = useFinance();
@@ -14,16 +18,18 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Bank Transfer");
   const [notes, setNotes] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!amount || !reference) return;
+  const isValid = amount.trim() && reference.trim();
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!isValid) return;
 
     addTransaction({
       type,
       amount: parseFloat(amount),
-      category: category || "General",
-      reference,
-      contactName: contactName || undefined,
+      category: category.trim() || "General",
+      reference: reference.trim(),
+      contactName: contactName.trim() || undefined,
       paymentMethod,
       notes,
       status: "Pending"
@@ -31,126 +37,142 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
     onClose();
   };
 
+  const footer = (
+    <>
+      <div />
+      <div className="flex items-center gap-2 shrink-0">
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          Create Transaction
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/10 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      
-      <div className="relative w-full max-w-[480px] bg-surface-container-lowest rounded-2xl shadow-2xl animate-scale-in border border-black/5 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/[0.04]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <DollarSign size={14} />
-            </div>
-            <h2 className="font-display font-semibold text-[15px] text-on-surface">New Transaction</h2>
+    <OperationModal
+      onClose={onClose}
+      title="New Transaction"
+      icon={<DollarSign size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
+      maxWidth={480}
+      footer={footer}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <div className="flex p-1 rounded-[8px]" style={{ background: "rgba(0,0,0,0.03)" }}>
+            <button
+              type="button"
+              onClick={() => setType("Expense")}
+              className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-[6px] font-label-caps text-[9px] font-bold transition-all"
+              style={type === "Expense" ? { background: "#fff", color: "rgba(186,26,26,0.9)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" } : { color: "var(--color-on-surface-variant)", opacity: 0.6 }}
+            >
+              <ArrowUpRight size={12} strokeWidth={2} /> EXPENSE
+            </button>
+            <button
+              type="button"
+              onClick={() => setType("Income")}
+              className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-[6px] font-label-caps text-[9px] font-bold transition-all"
+              style={type === "Income" ? { background: "#fff", color: "rgba(0,120,60,0.9)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" } : { color: "var(--color-on-surface-variant)", opacity: 0.6 }}
+            >
+              <ArrowDownLeft size={12} strokeWidth={2} /> INCOME
+            </button>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-on-surface-variant opacity-70 hover:opacity-100 hover:bg-black/5 transition-colors">
-            <X size={16} />
-          </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 max-h-[75vh] overflow-y-auto px-6 py-6 space-y-6">
-          {/* Type Toggle */}
-          <div className="flex p-1 rounded-xl bg-black/[0.03] gap-1">
-             <button 
-               type="button" onClick={() => setType("Expense")}
-               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-label-caps text-[9px] font-bold transition-all ${type === "Expense" ? "bg-white shadow-sm text-red-600" : "text-on-surface-variant opacity-60 hover:opacity-100"}`}
-             >
-               <ArrowUpRight size={12} /> EXPENSE
-             </button>
-             <button 
-               type="button" onClick={() => setType("Income")}
-               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-label-caps text-[9px] font-bold transition-all ${type === "Income" ? "bg-white shadow-sm text-green-600" : "text-on-surface-variant opacity-60 hover:opacity-100"}`}
-             >
-               <ArrowDownLeft size={12} /> INCOME
-             </button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Amount *</label>
-              <div className="relative flex items-center">
-                <span className="absolute left-4 font-display font-bold text-[14px] text-on-surface opacity-60">$</span>
-                <input 
-                  type="number" autoFocus required value={amount} onChange={e => setAmount(e.target.value)}
-                  className="w-full pl-8 pr-4 py-3 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-display font-bold text-[18px] text-on-surface"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Reference # *</label>
-                <input 
-                  type="text" required value={reference} onChange={e => setReference(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                  placeholder="INV-001"
-                />
-              </div>
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Category</label>
-                <input 
-                  type="text" value={category} onChange={e => setCategory(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                  placeholder="Infrastructure"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03] space-y-4">
-            <h3 className="font-display font-medium text-[12px] text-on-surface opacity-80">Entity & Payment</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Entity/Contact</label>
-                <div className="relative flex items-center">
-                  <User size={13} className="absolute left-3 text-on-surface-variant opacity-60" />
-                  <input 
-                    type="text" value={contactName} onChange={e => setContactName(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-black/10 bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12px] text-on-surface"
-                    placeholder="Vendor name"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Payment Method</label>
-                <Dropdown
-                  value={paymentMethod}
-                  onChange={(val) => setPaymentMethod(val as PaymentMethod)}
-                  options={[
-                    { value: "Bank Transfer", label: "Bank Transfer", icon: <CreditCard size={13} /> },
-                    { value: "Credit Card", label: "Credit Card", icon: <CreditCard size={13} /> },
-                    { value: "PayPal", label: "PayPal", icon: <CreditCard size={13} /> },
-                    { value: "Stripe", label: "Stripe", icon: <CreditCard size={13} /> },
-                    { value: "Cash", label: "Cash", icon: <CreditCard size={13} /> },
-                  ]}
-                />
-              </div>
-            </div>
-          </div>
-
+        <div className="space-y-4">
           <div>
-            <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Notes</label>
-            <textarea 
-              value={notes} onChange={e => setNotes(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface h-20 resize-none"
-              placeholder="Internal record notes..."
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                Amount *
+              </span>
+            </div>
+            <div className="relative flex items-center">
+              <span className="absolute left-4 font-display font-bold text-[16px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>$</span>
+              <input
+                type="number"
+                autoFocus
+                required
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                className="w-full pl-8 pr-4 py-3 rounded-[8px] outline-none transition-all font-display font-bold text-[18px]"
+                style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+                onFocus={(e) => { e.target.style.background = "rgba(0,0,0,0.04)"; e.target.style.borderColor = "rgba(0,0,0,0.2)"; }}
+                onBlur={(e) => { e.target.style.background = "rgba(0,0,0,0.02)"; e.target.style.borderColor = "rgba(0,0,0,0.09)"; }}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <OperationInput
+              label="Reference #"
+              required
+              maxLength={40}
+              placeholder="INV-001"
+              value={reference}
+              onChange={e => setReference(e.target.value)}
+            />
+            <OperationInput
+              label="Category"
+              maxLength={40}
+              placeholder="Infrastructure"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
             />
           </div>
-        </form>
-
-        <div className="px-6 py-4 bg-surface-container-low border-t border-black/[0.04] flex justify-end gap-3 shrink-0">
-          <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide text-on-surface-variant hover:bg-black/5 transition-colors">CANCEL</button>
-          <button 
-            type="submit" onClick={handleSubmit} disabled={!amount || !reference}
-            className="px-6 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide bg-primary text-on-primary hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all disabled:opacity-50"
-          >
-            CREATE TRANSACTION
-          </button>
         </div>
-      </div>
-    </div>
+
+        <div className="p-4 rounded-[8px] space-y-4" style={{ background: "rgba(0,0,0,0.01)", border: "1px dashed rgba(0,0,0,0.09)" }}>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+              Entity & Payment
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <OperationInput
+              label="Entity/Contact"
+              icon={<User size={11} strokeWidth={1.75} />}
+              maxLength={60}
+              placeholder="Vendor name"
+              value={contactName}
+              onChange={e => setContactName(e.target.value)}
+            />
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                  Payment Method
+                </span>
+              </div>
+              <div className="relative">
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
+                  className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
+                  style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+                >
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="PayPal">PayPal</option>
+                  <option value="Stripe">Stripe</option>
+                  <option value="Cash">Cash</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <OperationTextarea
+          label="Notes"
+          maxLength={300}
+          rows={2}
+          placeholder="Internal record notes..."
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+        />
+      </form>
+    </OperationModal>
   );
 }

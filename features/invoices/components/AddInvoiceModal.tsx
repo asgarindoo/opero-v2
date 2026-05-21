@@ -1,7 +1,12 @@
+"use client";
+
 import React, { useState } from "react";
 import { useInvoices } from "../context/InvoicesContext";
-import { X, User, Calendar, Plus, Trash2, FileText, DollarSign } from "lucide-react";
+import { User, Calendar, Plus, Trash2, FileText, Hash } from "lucide-react";
 import { InvoiceItem } from "@/features/invoices";
+import OperationModal from "@/components/ui/OperationModal";
+import OperationInput from "@/components/ui/OperationInput";
+import OperationTextarea from "@/components/ui/OperationTextarea";
 
 export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const { addInvoice } = useInvoices();
@@ -33,153 +38,173 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (items.some(it => !it.description)) return;
+  const total = items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  const isValid = items.some(it => it.description?.trim()) && invoiceNumber.trim() && dueDate;
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!isValid) return;
 
     addInvoice({
       contactName: contactName.trim() || undefined,
       invoiceNumber,
       dueDate,
       notes,
-      items: items as InvoiceItem[],
+      items: items.filter(it => it.description?.trim()) as InvoiceItem[],
       status: "Unpaid"
     });
     onClose();
   };
 
-  const total = items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  const footer = (
+    <>
+      <div />
+      <div className="flex items-center gap-2 shrink-0">
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          Generate Invoice
+        </button>
+      </div>
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/10 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      
-      <div className="relative w-full max-w-[640px] bg-surface-container-lowest rounded-2xl shadow-2xl animate-scale-in border border-black/5 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/[0.04]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <FileText size={14} />
-            </div>
-            <h2 className="font-display font-semibold text-[15px] text-on-surface">New Operational Invoice</h2>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-on-surface-variant opacity-70 hover:opacity-100 hover:bg-black/5 transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 max-h-[75vh] overflow-y-auto px-6 py-6 space-y-8">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">
-                Customer Name <span className="opacity-40">(optional)</span>
-              </label>
-                <div className="relative flex items-center">
-                  <User size={13} className="absolute left-3 text-on-surface-variant opacity-60" />
-                  <input 
-                    type="text" autoFocus value={contactName} onChange={e => setContactName(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                    placeholder="Client name (optional)"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Invoice Number</label>
-                <input 
-                  type="text" required value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low font-mono text-[11px] text-on-surface opacity-80"
-                />
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Due Date *</label>
-                <div className="relative flex items-center">
-                  <Calendar size={13} className="absolute left-3 text-on-surface-variant opacity-60" />
-                  <input 
-                    type="date" required value={dueDate} onChange={e => setDueDate(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Line Items */}
-          <div className="space-y-3">
-             <div className="flex items-center justify-between mb-1">
-                <h3 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-widest">Line Items</h3>
-                <button type="button" onClick={addItem} className="flex items-center gap-1.5 text-[10.5px] font-medium text-primary hover:underline">
-                  <Plus size={12} /> Add Item
-                </button>
-             </div>
-             <div className="space-y-2">
-                {items.map((item, index) => (
-                  <div key={item.id} className="flex gap-2 group animate-fade-in">
-                     <div className="flex-[4]">
-                       <input 
-                         placeholder="Item description..." value={item.description} onChange={e => updateItem(item.id!, "description", e.target.value)}
-                         className="w-full px-3 py-2 rounded-lg border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12px] text-on-surface"
-                       />
-                     </div>
-                     <div className="flex-[1]">
-                       <input 
-                         type="number" placeholder="Qty" value={item.quantity} onChange={e => updateItem(item.id!, "quantity", parseInt(e.target.value))}
-                         className="w-full px-3 py-2 rounded-lg border border-black/10 bg-surface-container-low text-center font-body-sm text-[12px] text-on-surface"
-                       />
-                     </div>
-                     <div className="flex-[2]">
-                       <div className="relative flex items-center">
-                         <span className="absolute left-2 text-on-surface opacity-30 text-[10px]">$</span>
-                         <input 
-                           type="number" placeholder="Price" value={item.unitPrice} onChange={e => updateItem(item.id!, "unitPrice", parseFloat(e.target.value))}
-                           className="w-full pl-5 pr-2 py-2 rounded-lg border border-black/10 bg-surface-container-low font-body-sm text-[12px] text-on-surface"
-                         />
-                       </div>
-                     </div>
-                     <button type="button" onClick={() => removeItem(item.id!)} className="p-2 rounded-lg text-on-surface-variant opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity">
-                        <Trash2 size={14} />
-                     </button>
-                  </div>
-                ))}
-             </div>
-          </div>
-
-          <div className="flex justify-end pt-4">
-             <div className="w-[180px] space-y-1.5 px-2">
-                <div className="flex justify-between items-center text-on-surface-variant opacity-60 font-body-sm text-[11px]">
-                   <span>Tax (10%)</span>
-                   <span>${(total * 0.1).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center font-display font-bold text-[15px] text-on-surface pt-1 border-t border-black/5">
-                   <span>Total</span>
-                   <span>${(total * 1.1).toFixed(2)}</span>
-                </div>
-             </div>
-          </div>
-
-          <div>
-            <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Invoice Notes</label>
-            <textarea 
-              value={notes} onChange={e => setNotes(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface h-20 resize-none"
-              placeholder="Terms and conditions..."
+    <OperationModal
+      onClose={onClose}
+      title="New Invoice"
+      icon={<FileText size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
+      maxWidth={640}
+      footer={footer}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <OperationInput
+              label="Customer Name"
+              icon={<User size={11} strokeWidth={1.75} />}
+              maxLength={80}
+              autoFocus
+              placeholder="Client name (optional)"
+              value={contactName}
+              onChange={e => setContactName(e.target.value)}
+            />
+            <OperationInput
+              label="Invoice Number"
+              icon={<Hash size={11} strokeWidth={1.75} />}
+              required
+              maxLength={30}
+              value={invoiceNumber}
+              onChange={e => setInvoiceNumber(e.target.value)}
             />
           </div>
-        </form>
-
-        <div className="px-6 py-4 bg-surface-container-low border-t border-black/[0.04] flex justify-end gap-3 shrink-0">
-          <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide text-on-surface-variant hover:bg-black/5 transition-colors">CANCEL</button>
-          <button 
-            type="submit" onClick={handleSubmit} disabled={items.some(it => !it.description)}
-            className="px-6 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide bg-primary text-on-primary hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all disabled:opacity-60"
-          >
-            GENERATE INVOICE
-          </button>
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Calendar size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                  Due Date *
+                </span>
+              </div>
+              <input
+                type="date"
+                required
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="w-full font-body-md text-[13px] rounded-[6px] px-3 py-2.5 outline-none transition-all"
+                style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+                onFocus={(e) => { e.target.style.background = "rgba(0,0,0,0.04)"; e.target.style.borderColor = "rgba(0,0,0,0.2)"; }}
+                onBlur={(e) => { e.target.style.background = "rgba(0,0,0,0.02)"; e.target.style.borderColor = "rgba(0,0,0,0.09)"; }}
+              />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+              Line Items
+            </span>
+            <button type="button" onClick={addItem} className="flex items-center gap-1.5 text-[10.5px] font-medium" style={{ color: "var(--color-primary)" }}>
+              <Plus size={12} strokeWidth={2} /> Add Item
+            </button>
+          </div>
+
+          <div className="grid grid-cols-[1fr_60px_100px_40px] gap-2">
+            <span className="font-label-caps text-[8px] uppercase tracking-[0.12em] font-semibold opacity-40">Description</span>
+            <span className="font-label-caps text-[8px] uppercase tracking-[0.12em] font-semibold opacity-40 text-center">Qty</span>
+            <span className="font-label-caps text-[8px] uppercase tracking-[0.12em] font-semibold opacity-40">Price</span>
+            <span />
+          </div>
+
+          <div className="space-y-2">
+            {items.map((item) => (
+              <div key={item.id} className="group">
+                <div className="grid grid-cols-[1fr_60px_100px_40px] gap-2 items-center">
+                  <input
+                    placeholder="Item description..."
+                    value={item.description}
+                    onChange={e => updateItem(item.id!, "description", e.target.value)}
+                    className="w-full font-body-md text-[12px] rounded-[6px] px-3 py-2 outline-none transition-all"
+                    style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+                    onFocus={(e) => { e.target.style.background = "rgba(0,0,0,0.04)"; e.target.style.borderColor = "rgba(0,0,0,0.2)"; }}
+                    onBlur={(e) => { e.target.style.background = "rgba(0,0,0,0.02)"; e.target.style.borderColor = "rgba(0,0,0,0.09)"; }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Qty"
+                    value={item.quantity}
+                    onChange={e => updateItem(item.id!, "quantity", parseInt(e.target.value) || 0)}
+                    className="w-full text-center font-body-md text-[12px] rounded-[6px] px-2 py-2 outline-none transition-all"
+                    style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-[10px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>$</span>
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      value={item.unitPrice}
+                      onChange={e => updateItem(item.id!, "unitPrice", parseFloat(e.target.value) || 0)}
+                      className="w-full pl-5 pr-2 py-2 font-body-md text-[12px] rounded-[6px] outline-none transition-all"
+                      style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id!)}
+                    className="p-1.5 rounded-[6px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/[0.06] flex items-center justify-center"
+                  >
+                    <Trash2 size={13} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.55)" }} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <div className="w-[200px] space-y-2">
+            <div className="flex justify-between items-center text-[11.5px]">
+              <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Tax (10%)</span>
+              <span className="font-display" style={{ opacity: 0.7 }}>${(total * 0.1).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-1.5" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+              <span className="font-label-caps text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Total</span>
+              <span className="font-display font-bold text-[15px]" style={{ color: "var(--color-on-surface)", opacity: 0.9 }}>${(total * 1.1).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <OperationTextarea
+          label="Invoice Notes"
+          maxLength={500}
+          rows={2}
+          placeholder="Terms and conditions..."
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+        />
+      </form>
+    </OperationModal>
   );
 }

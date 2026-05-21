@@ -1,7 +1,11 @@
+"use client";
+
 import React, { useState } from "react";
 import { useContacts } from "../context/ContactsContext";
-import { X, User, Building2, Briefcase, Mail, DollarSign } from "lucide-react";
+import { User, Building2, Briefcase, Mail, DollarSign, ChevronDown } from "lucide-react";
 import { ContactStatus, RelationshipType, ContactContextData } from "@/features/contacts";
+import OperationModal from "@/components/ui/OperationModal";
+import OperationInput from "@/components/ui/OperationInput";
 
 export default function AddContactModal({ onClose }: { onClose: () => void }) {
   const { addContact } = useContacts();
@@ -12,13 +16,14 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
   const [personName, setPersonName] = useState("");
   const [personEmail, setPersonEmail] = useState("");
 
-  // Standard Relationship Data
   const [dealValue, setDealValue] = useState("");
   const [salesStage, setSalesStage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+  const isValid = name.trim().length > 0;
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!isValid) return;
 
     const contextData: ContactContextData = {
       value: dealValue ? Number(dealValue) : undefined,
@@ -26,15 +31,15 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
     };
 
     addContact({
-      name,
-      industry: industry || "Unspecified",
+      name: name.trim(),
+      industry: industry.trim() || "Unspecified",
       relationshipType,
       status,
       contextData,
-      persons: personName ? [{
+      persons: personName.trim() ? [{
         id: "p" + Date.now(),
-        name: personName,
-        email: personEmail || "",
+        name: personName.trim(),
+        email: personEmail.trim() || "",
         role: "Contact Person",
         isPrimary: true
       }] : []
@@ -44,178 +49,152 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
 
   const isFinancialType = ["Customer", "Reseller", "Distributor", "Affiliate", "Investor", "Supplier", "Vendor"].includes(relationshipType);
 
+  const footer = (
+    <>
+      <div />
+      <div className="flex items-center gap-2 shrink-0">
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          Add Contact
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/10 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
-      
-      {/* Modal Box */}
-      <div className="relative w-full max-w-[440px] bg-surface-container-lowest rounded-2xl shadow-2xl animate-scale-in border border-black/5 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/[0.04]">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-primary/5 flex items-center justify-center text-primary">
-              <User size={13} />
+    <OperationModal
+      onClose={onClose}
+      title="New Contact"
+      icon={<User size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />}
+      maxWidth={480}
+      footer={footer}
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <OperationInput
+          label="Company / Contact Name"
+          icon={<Building2 size={11} strokeWidth={1.75} />}
+          required
+          maxLength={80}
+          autoFocus
+          placeholder="e.g. Acme Corp"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Briefcase size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                Relationship
+              </span>
             </div>
-            <h2 className="font-display font-medium text-[14px] text-on-surface">New Contact</h2>
+            <div className="relative">
+              <select
+                value={relationshipType}
+                onChange={e => setRelationshipType(e.target.value as RelationshipType)}
+                className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
+                style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+              >
+                <option value="Customer">Customer</option>
+                <option value="Partner">Partner</option>
+                <option value="Supplier">Supplier</option>
+                <option value="Investor">Investor</option>
+                <option value="Vendor">Vendor</option>
+                <option value="Reseller">Reseller</option>
+                <option value="Distributor">Distributor</option>
+                <option value="Affiliate">Affiliate</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+            </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-on-surface-variant opacity-70 hover:opacity-100 hover:bg-black/5 transition-colors">
-            <X size={16} />
-          </button>
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                Status
+              </span>
+            </div>
+            <div className="relative">
+              <select
+                value={status}
+                onChange={e => setStatus(e.target.value as ContactStatus)}
+                className="w-full appearance-none font-body-md text-[13px] rounded-[6px] pl-3 pr-8 py-2.5 outline-none transition-all cursor-pointer"
+                style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
+              >
+                <option value="Lead">Lead</option>
+                <option value="Onboarding">Onboarding</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+            </div>
+          </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 max-h-[70vh] overflow-y-auto px-6 py-6 space-y-6">
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Company / Contact Name *</label>
-              <div className="relative flex items-center">
-                <Building2 size={13} className="absolute left-3.5 text-on-surface-variant opacity-60" />
-                <input 
-                  type="text" 
-                  autoFocus
-                  required
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/5 bg-surface-container-low/50 focus:bg-surface-container-lowest focus:border-primary/30 focus:shadow-[0_4px_16px_rgba(0,0,0,0.02)] outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                  placeholder="e.g. Acme Corp"
-                />
-              </div>
-            </div>
+        <OperationInput
+          label="Industry"
+          maxLength={50}
+          placeholder="e.g. Software, Logistics"
+          value={industry}
+          onChange={e => setIndustry(e.target.value)}
+        />
 
+        {isFinancialType && (
+          <div className="p-4 rounded-[8px] space-y-4" style={{ background: "rgba(0,0,0,0.01)", border: "1px dashed rgba(0,0,0,0.09)" }}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+                Relationship Overview
+              </span>
+            </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Relationship</label>
-                <div className="relative flex items-center">
-                  <Briefcase size={13} className="absolute left-3.5 text-on-surface-variant opacity-60" />
-                  <select
-                    value={relationshipType}
-                    onChange={e => setRelationshipType(e.target.value as RelationshipType)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/5 bg-surface-container-low/50 focus:bg-surface-container-lowest focus:border-primary/30 outline-none transition-all font-body-sm text-[12.5px] text-on-surface appearance-none"
-                  >
-                    <option value="Customer">Customer</option>
-                    <option value="Partner">Partner</option>
-                    <option value="Supplier">Supplier</option>
-                    <option value="Investor">Investor</option>
-                    <option value="Vendor">Vendor</option>
-                    <option value="Reseller">Reseller</option>
-                    <option value="Distributor">Distributor</option>
-                    <option value="Affiliate">Affiliate</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Status</label>
-                <select
-                  value={status}
-                  onChange={e => setStatus(e.target.value as ContactStatus)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-black/5 bg-surface-container-low/50 focus:bg-surface-container-lowest focus:border-primary/30 outline-none transition-all font-body-sm text-[12.5px] text-on-surface appearance-none"
-                >
-                  <option value="Lead">Lead</option>
-                  <option value="Onboarding">Onboarding</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Industry</label>
-              <input 
-                type="text" 
-                value={industry}
-                onChange={e => setIndustry(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-black/5 bg-surface-container-low/50 focus:bg-surface-container-lowest focus:border-primary/30 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                placeholder="e.g. Software, Logistics"
+              <OperationInput
+                label="Deal Value"
+                type="number"
+                icon={<DollarSign size={11} strokeWidth={1.75} />}
+                placeholder="0.00"
+                value={dealValue}
+                onChange={e => setDealValue(e.target.value)}
+              />
+              <OperationInput
+                label="Sales Stage"
+                maxLength={40}
+                placeholder="e.g. Qualified, Proposal"
+                value={salesStage}
+                onChange={e => setSalesStage(e.target.value)}
               />
             </div>
           </div>
+        )}
 
-          {/* Unified Business Details Section */}
-          {isFinancialType && (
-            <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03] animate-fade-in space-y-4">
-              <h3 className="font-display font-medium text-[12px] text-on-surface opacity-80">Relationship Overview</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-70 mb-1.5 uppercase tracking-wider">Deal Value</label>
-                  <div className="relative flex items-center">
-                    <DollarSign size={13} className="absolute left-3 text-on-surface-variant opacity-60" />
-                    <input 
-                      type="number" 
-                      value={dealValue}
-                      onChange={e => setDealValue(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-black/10 bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12px] text-on-surface"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-label-caps text-[8.5px] text-on-surface-variant opacity-70 mb-1.5 uppercase tracking-wider">Sales Stage</label>
-                  <input 
-                    type="text"
-                    value={salesStage}
-                    onChange={e => setSalesStage(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-black/10 bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12px] text-on-surface"
-                    placeholder="e.g. Qualified, Proposal"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+        <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
-          <div className="h-px bg-black/[0.04] w-full" />
-
-          <div className="space-y-4 pb-2">
-             <h3 className="font-display font-medium text-[13px] text-on-surface mb-2">Primary Contact (Optional)</h3>
-             <div>
-              <div className="relative flex items-center mb-3">
-                <User size={14} className="absolute left-3 text-on-surface-variant opacity-60" />
-                <input 
-                  type="text" 
-                  value={personName}
-                  onChange={e => setPersonName(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[13px] text-on-surface"
-                  placeholder="Contact Person Name"
-                />
-              </div>
-              <div className="relative flex items-center">
-                <Mail size={14} className="absolute left-3 text-on-surface-variant opacity-60" />
-                <input 
-                  type="email" 
-                  value={personEmail}
-                  onChange={e => setPersonEmail(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[13px] text-on-surface"
-                  placeholder="Email Address"
-                />
-              </div>
-            </div>
+        <div className="space-y-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+              Primary Contact <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: "normal", fontWeight: "normal" }}>(Optional)</span>
+            </span>
           </div>
-
-        </form>
-
-        {/* Footer */}
-        <div className="px-6 py-4 bg-surface-container-low border-t border-black/[0.04] flex justify-end gap-3 shrink-0">
-          <button 
-            type="button" 
-            onClick={onClose}
-            className="px-5 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide text-on-surface-variant hover:bg-black/5 transition-colors"
-          >
-            CANCEL
-          </button>
-          <button 
-            type="submit"
-            onClick={handleSubmit}
-            disabled={!name.trim()}
-            className="px-6 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide bg-primary text-on-primary hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all disabled:opacity-60 disabled:hover:shadow-none"
-          >
-            ADD CONTACT
-          </button>
+          <OperationInput
+            label="Contact Person Name"
+            icon={<User size={11} strokeWidth={1.75} />}
+            maxLength={60}
+            placeholder="Person Name"
+            value={personName}
+            onChange={e => setPersonName(e.target.value)}
+          />
+          <OperationInput
+            label="Email Address"
+            icon={<Mail size={11} strokeWidth={1.75} />}
+            type="email"
+            maxLength={80}
+            placeholder="email@example.com"
+            value={personEmail}
+            onChange={e => setPersonEmail(e.target.value)}
+          />
         </div>
-      </div>
-    </div>
+      </form>
+    </OperationModal>
   );
 }
