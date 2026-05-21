@@ -84,7 +84,6 @@ export async function listTenantChannels() {
     FROM chat_channel
     WHERE "organizationId" = ${ctx.tenantId}
       AND name IS NOT NULL
-      AND name <> 'general'
     ORDER BY "createdAt" ASC
   `;
 

@@ -4,17 +4,23 @@ import type { ChatChannel, ChatMessage } from "../types";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
+let _browserClient: ReturnType<typeof createClient> | null = null;
+
 export function getSupabaseBrowserClient() {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase browser client is not configured.");
   }
 
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  if (!_browserClient) {
+    _browserClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  return _browserClient;
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

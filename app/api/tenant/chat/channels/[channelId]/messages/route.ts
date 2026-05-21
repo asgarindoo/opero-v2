@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createTenantMessage, listTenantMessages } from "@/features/chat/services/chat.server";
 import { CreateMessageSchema } from "@/features/chat/validators/chat";
 
-export async function GET(_req: NextRequest, ctx: RouteContext<"/api/tenant/chat/channels/[channelId]/messages">) {
+type Ctx = { params: Promise<{ channelId: string }> };
+
+export async function GET(_req: NextRequest, ctx: Ctx) {
   try {
     const { channelId } = await ctx.params;
     const messages = await listTenantMessages(channelId);
@@ -15,7 +17,7 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/tenant/chat
   }
 }
 
-export async function POST(req: NextRequest, ctx: RouteContext<"/api/tenant/chat/channels/[channelId]/messages">) {
+export async function POST(req: NextRequest, ctx: Ctx) {
   try {
     const { channelId } = await ctx.params;
     const parsed = CreateMessageSchema.safeParse(await req.json().catch(() => ({})));
