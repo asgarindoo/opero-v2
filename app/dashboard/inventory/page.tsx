@@ -1,5 +1,5 @@
-import InventoryPage from "@/features/inventory/components/InventoryPage";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <InventoryPage />;
+  redirect("/dashboard/products");
 }

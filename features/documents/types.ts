@@ -27,7 +27,7 @@ export interface FileEntry {
   folderId?: string;
   tags: string[];
   relatedTo?: {
-    type: "Contact" | "Sale" | "Invoice" | "Asset" | "Project";
+    type: "Contact" | "Sale" | "Invoice" | "Asset";
     name: string;
     id: string;
   };

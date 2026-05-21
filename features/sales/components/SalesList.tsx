@@ -2,16 +2,13 @@
 
 import React, { useState } from "react";
 import { useSales } from "../context/SalesContext";
-import { 
-  Building2, 
-  MoreVertical, 
+import {
   ChevronRight,
-  Inbox,
-  Trash2
+  Trash2,
+  User,
 } from "lucide-react";
-import { SaleStatus, PaymentStatus } from "@/features/sales";
+import { SaleStatus, PaymentStatus, SaleType } from "@/features/sales";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
-import Badge from "@/components/ui/Badge";
 import { EmptyState } from "@/components/common/DataState";
 import Button from "@/components/ui/Button";
 import ListFooter from "@/components/common/ListFooter";
@@ -28,6 +25,27 @@ function formatCurrency(val: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
 }
 
+const SALE_TYPE_LABELS: Record<SaleType, string> = {
+  "Product Sale": "Product",
+  "Service Order": "Service",
+  "Retail": "Retail",
+  "Manual": "Manual",
+};
+
+const STATUS_STYLE: Record<SaleStatus, string> = {
+  "Pending": "bg-black/5 text-on-surface-variant",
+  "Processing": "bg-amber-50 text-amber-700",
+  "Completed": "bg-emerald-50 text-emerald-700",
+  "Cancelled": "bg-red-50 text-red-600",
+};
+
+const PAYMENT_STYLE: Record<PaymentStatus, string> = {
+  "Unpaid": "text-red-500",
+  "Partially Paid": "text-amber-600",
+  "Paid": "text-emerald-600",
+  "Refunded": "text-on-surface-variant opacity-60",
+};
+
 export default function SalesList({ searchQuery, filterMode, onSelectSale }: Props) {
   const { sales, deleteSales } = useSales();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -37,42 +55,21 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
   const itemsPerPage = 15;
 
   const filteredSales = sales.filter(s => {
-    const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      s.contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.orderNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      s.title.toLowerCase().includes(q) ||
+      (s.contactName ?? "").toLowerCase().includes(q) ||
+      s.orderNumber.toLowerCase().includes(q);
+
     if (filterMode === "all") return matchesSearch;
-    if (filterMode === "processing") return matchesSearch && (s.status === "Processing" || s.status === "Paid" || s.status === "Packed");
-    if (filterMode === "shipped") return matchesSearch && s.status === "Shipped";
+    if (filterMode === "pending") return matchesSearch && s.status === "Pending";
+    if (filterMode === "paid") return matchesSearch && s.paymentStatus === "Paid";
     if (filterMode === "completed") return matchesSearch && s.status === "Completed";
-    
     return matchesSearch;
   });
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedSales = filteredSales.slice(startIndex, startIndex + itemsPerPage);
-
-  const getStatusVariant = (status: SaleStatus): any => {
-    switch (status) {
-      case "Completed": return "success";
-      case "Shipped": return "info";
-      case "Packed":
-      case "Processing": return "warning";
-      case "Paid": return "success";
-      case "Pending": return "neutral";
-      case "Cancelled": return "error";
-      default: return "neutral";
-    }
-  };
-
-  const getPaymentVariant = (status: PaymentStatus): any => {
-    switch (status) {
-      case "Paid": return "success";
-      case "Unpaid": return "error";
-      case "Partially Paid": return "warning";
-      default: return "neutral";
-    }
-  };
 
   const toggleAll = () => {
     if (selectedIds.size === paginatedSales.length) {
@@ -109,10 +106,10 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
 
   if (filteredSales.length === 0) {
     return (
-      <EmptyState 
+      <EmptyState
         icon="shopping_bag"
-        title="No orders found"
-        description="Try adjusting your filters or create a new order."
+        title="No sales found"
+        description="Try adjusting your filters or create a new sale."
       />
     );
   }
@@ -125,8 +122,8 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
             <TableRow>
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={selectedIds.size > 0 && selectedIds.size === paginatedSales.length}
                     onChange={toggleAll}
                     className="w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
@@ -134,12 +131,12 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
                 </div>
               </TableHead>
               <TableHead>Order #</TableHead>
-              <TableHead className="w-[30%] ml-3">Opportunity</TableHead>
+              <TableHead className="w-[32%]">Sale</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Payment</TableHead>
-              <TableHead className="text-right">Value</TableHead>
-              <TableHead className="px-6 py-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right pr-6">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -147,15 +144,15 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
               const isSelected = selectedIds.has(sale.id);
 
               return (
-                <TableRow 
+                <TableRow
                   key={sale.id}
                   onClick={() => onSelectSale(sale.id)}
                   className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
                 >
                   <TableCell onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={isSelected}
                         onChange={(e) => toggleOne(sale.id, e as any)}
                         className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
@@ -163,46 +160,55 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight">
+                    <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-50 tracking-tight">
                       {sale.orderNumber}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-0.5 ml-3">
+                    <div className="flex flex-col gap-0.5 ml-2">
                       <span className="font-display font-semibold text-[13px] text-on-surface opacity-90 group-hover:text-primary transition-colors leading-tight">
                         {sale.title}
                       </span>
-                      <span className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate uppercase tracking-widest font-bold leading-none">
-                        {sale.items.length} items • {sale.items[0]?.sku || "N/A"}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-label-caps text-[7.5px] font-bold px-1 py-0.5 rounded bg-black/[0.04] text-on-surface-variant opacity-60 uppercase tracking-wide">
+                          {SALE_TYPE_LABELS[sale.saleType]}
+                        </span>
+                        <span className="font-body-sm text-[9px] text-on-surface-variant opacity-50">
+                          {sale.items.length} item{sale.items.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-on-surface-variant opacity-60">
-                      <Building2 size={11} className="opacity-60" />
-                      <span className="font-display text-[11.5px] truncate max-w-[120px]">{sale.contactName}</span>
+                    {sale.contactName ? (
+                      <div className="flex items-center gap-1.5 text-on-surface-variant opacity-60">
+                        <User size={11} className="opacity-60 shrink-0" />
+                        <span className="font-display text-[11.5px] truncate max-w-[120px]">{sale.contactName}</span>
+                      </div>
+                    ) : (
+                      <span className="font-display text-[11.5px] text-on-surface-variant opacity-30">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className={`inline-flex px-2 py-0.5 rounded-[4px] ${STATUS_STYLE[sale.status]}`}>
+                      <span className="font-label-caps text-[8px] font-bold tracking-wider uppercase">{sale.status}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(sale.status)}>
-                      {sale.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getPaymentVariant(sale.paymentStatus)} dot={false} className="opacity-70">
+                    <span className={`font-display text-[11.5px] font-semibold ${PAYMENT_STYLE[sale.paymentStatus]}`}>
                       {sale.paymentStatus}
-                    </Badge>
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <span className="font-bold text-on-surface font-display text-[12.5px] opacity-80">
-                      {formatCurrency(sale.value)}
+                      {formatCurrency(sale.total)}
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-5 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-7 w-7 text-on-surface-variant opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
                         onClick={(e) => handleDeleteOne(e, sale.id)}
                       >
@@ -218,30 +224,30 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
         </Table>
       </div>
 
-      <ListFooter 
+      <ListFooter
         totalItems={filteredSales.length}
         itemsPerPage={itemsPerPage}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
-        label="orders"
+        label="sales"
       />
 
-      <SelectionBar 
+      <SelectionBar
         count={selectedIds.size}
         onClear={() => setSelectedIds(new Set())}
         onDelete={() => setIsDeleteModalOpen(true)}
-        label="orders"
+        label="sales"
       />
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
           setSaleToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={saleToDelete ? "Delete Order" : "Delete Selected Orders"}
-        description={saleToDelete ? "Are you sure you want to delete this order? This will permanently remove all item associations and transaction history." : `Are you sure you want to delete ${selectedIds.size} selected orders? This action cannot be undone.`}
+        title={saleToDelete ? "Delete Sale" : "Delete Selected Sales"}
+        description={saleToDelete ? "Are you sure you want to delete this sale? This will permanently remove all item associations and transaction history." : `Are you sure you want to delete ${selectedIds.size} selected sales? This action cannot be undone.`}
       />
     </div>
   );

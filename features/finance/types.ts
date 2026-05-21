@@ -25,7 +25,11 @@ export interface Transaction {
   paymentMethod: PaymentMethod;
   notes: string;
   activities: FinanceActivity[];
-  attachments: string[]; // URLs or file names
+  attachments: string[];
+  /** Traces back to a sale or invoice that created this transaction */
+  sourceRef?: string;
+  /** "sale" | "invoice" | "manual" */
+  sourceType?: "sale" | "invoice" | "manual";
   createdAt: string;
   updatedAt: string;
 }

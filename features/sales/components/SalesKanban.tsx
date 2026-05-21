@@ -1,7 +1,7 @@
 import React from "react";
 import { useSales } from "../context/SalesContext";
 import { SaleStatus } from "@/features/sales";
-import { Building2, DollarSign, Plus, MoreHorizontal } from "lucide-react";
+import { User, DollarSign, Plus, MoreHorizontal } from "lucide-react";
 
 interface Props {
   searchQuery: string;
@@ -10,7 +10,7 @@ interface Props {
   onAddNew: () => void;
 }
 
-const STATUSES: SaleStatus[] = ["Pending", "Processing", "Packed", "Shipped", "Completed"];
+const STATUSES: SaleStatus[] = ["Pending", "Processing", "Completed"];
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
@@ -20,15 +20,16 @@ export default function SalesKanban({ searchQuery, filterMode, onSelectSale, onA
   const { sales } = useSales();
 
   const filteredSales = sales.filter(s => {
-    const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      s.contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.orderNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = s.title.toLowerCase().includes(q) ||
+      (s.contactName ?? "").toLowerCase().includes(q) ||
+      s.orderNumber.toLowerCase().includes(q);
+
     if (filterMode === "all") return matchesSearch;
-    if (filterMode === "processing") return matchesSearch && (s.status === "Processing" || s.status === "Paid" || s.status === "Packed");
-    if (filterMode === "shipped") return matchesSearch && s.status === "Shipped";
+    if (filterMode === "pending") return matchesSearch && s.status === "Pending";
+    if (filterMode === "paid") return matchesSearch && s.paymentStatus === "Paid";
     if (filterMode === "completed") return matchesSearch && s.status === "Completed";
-    
+
     return matchesSearch;
   });
 
@@ -36,7 +37,7 @@ export default function SalesKanban({ searchQuery, filterMode, onSelectSale, onA
     <div className="flex-1 flex gap-1 p-6 min-h-full overflow-x-auto bg-surface-container-low/30">
       {STATUSES.map(status => {
         const stageSales = filteredSales.filter(s => s.status === status);
-        const stageTotal = stageSales.reduce((acc, curr) => acc + curr.value, 0);
+        const stageTotal = stageSales.reduce((acc, curr) => acc + curr.total, 0);
 
         return (
           <div key={status} className="flex-1 min-w-[260px] max-w-[300px] flex flex-col gap-3">
@@ -65,27 +66,27 @@ export default function SalesKanban({ searchQuery, filterMode, onSelectSale, onA
                       <MoreHorizontal size={12} className="shrink-0 opacity-0 group-hover:opacity-60" />
                     </div>
                     <div className="font-mono text-[10px] text-on-surface-variant opacity-60 mb-1.5 tracking-tight font-bold">{sale.orderNumber}</div>
-                    <div className="flex items-center gap-1.5 font-body-sm text-[11px] text-on-surface-variant opacity-60">
-                      <Building2 size={10} />
-                      {sale.contactName}
-                    </div>
+                    {sale.contactName && (
+                      <div className="flex items-center gap-1.5 font-body-sm text-[11px] text-on-surface-variant opacity-60">
+                        <User size={10} />
+                        {sale.contactName}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-1.5 font-body-sm text-[12px] font-medium text-on-surface opacity-80">
                       <DollarSign size={10} className="text-on-surface-variant opacity-60" />
-                      {formatCurrency(sale.value)}
+                      {formatCurrency(sale.total)}
                     </div>
-                    <div className="flex items-center gap-1">
-                       <span className="font-label-caps text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-black/5 text-on-surface-variant opacity-60 border border-black/[0.02]">
-                         {sale.paymentStatus.toUpperCase()}
-                       </span>
-                    </div>
+                    <span className="font-label-caps text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-black/5 text-on-surface-variant opacity-60 border border-black/[0.02]">
+                      {sale.paymentStatus.toUpperCase()}
+                    </span>
                   </div>
                 </button>
               ))}
-              
-              <button 
+
+              <button
                 onClick={onAddNew}
                 className="flex items-center justify-center py-2.5 rounded-lg border border-dashed border-black/5 text-on-surface-variant opacity-60 hover:opacity-100 hover:border-black/10 hover:bg-black/[0.01] transition-all"
               >

@@ -21,8 +21,10 @@ export interface InvoiceActivity {
 export interface Invoice {
   id: string;
   invoiceNumber: string;
-  contactName: string;
+  contactName?: string; // Optional — not required
   contactId?: string;
+  saleId?: string; // Optional link to a Sale
+  saleOrderNumber?: string; // Display reference to sale
   issueDate: string;
   dueDate: string;
   status: InvoiceStatus;

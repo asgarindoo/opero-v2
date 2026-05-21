@@ -9,6 +9,8 @@ interface FinanceContextType {
   addTransaction: (tx: Partial<Transaction>) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   approveTransaction: (id: string) => void;
+  addIncomeFromSale: (saleOrderNumber: string, amount: number, contactName?: string) => void;
+  addIncomeFromInvoice: (invoiceNumber: string, amount: number, contactName?: string) => void;
   summary: FinancialSummary;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -78,6 +80,56 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     }));
+  }, []);
+
+  const addIncomeFromSale = useCallback((saleOrderNumber: string, amount: number, contactName?: string) => {
+    const newTx: Transaction = {
+      id: "t" + Date.now(),
+      date: new Date().toISOString().split("T")[0],
+      type: "Income",
+      category: "Sales Revenue",
+      amount,
+      currency: "USD",
+      status: "Paid",
+      reference: saleOrderNumber,
+      contactName,
+      paymentMethod: "Cash",
+      notes: `Auto-recorded from sale ${saleOrderNumber}`,
+      activities: [],
+      attachments: [],
+      sourceRef: saleOrderNumber,
+      sourceType: "sale",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    createTransaction<Transaction>(newTx)
+      .then((created) => setTransactions(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to record sale income:", err));
+  }, []);
+
+  const addIncomeFromInvoice = useCallback((invoiceNumber: string, amount: number, contactName?: string) => {
+    const newTx: Transaction = {
+      id: "t" + Date.now(),
+      date: new Date().toISOString().split("T")[0],
+      type: "Income",
+      category: "Invoice Payment",
+      amount,
+      currency: "USD",
+      status: "Paid",
+      reference: invoiceNumber,
+      contactName,
+      paymentMethod: "Bank Transfer",
+      notes: `Auto-recorded from invoice ${invoiceNumber}`,
+      activities: [],
+      attachments: [],
+      sourceRef: invoiceNumber,
+      sourceType: "invoice",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    createTransaction<Transaction>(newTx)
+      .then((created) => setTransactions(prev => [created, ...prev]))
+      .catch((err) => console.error("Failed to record invoice income:", err));
   }, []);
 
   const approveTransaction = useCallback((id: string) => {
@@ -156,6 +208,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     addTransaction,
     updateTransaction,
     approveTransaction,
+    addIncomeFromSale,
+    addIncomeFromInvoice,
     summary,
     searchQuery,
     setSearchQuery,
@@ -164,7 +218,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     dateRange,
     setDateRange,
     deleteTransactions
-  }), [filteredTransactions, addTransaction, updateTransaction, approveTransaction, summary, searchQuery, selectedType, dateRange, deleteTransactions]);
+  }), [filteredTransactions, addTransaction, updateTransaction, approveTransaction, addIncomeFromSale, addIncomeFromInvoice, summary, searchQuery, selectedType, dateRange, deleteTransactions]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 }

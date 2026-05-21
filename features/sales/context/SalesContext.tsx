@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { SaleOpportunity, SaleStatus, PaymentStatus, SalePriority, SaleActivity } from "@/features/sales";
+import { SaleOpportunity, SaleStatus, PaymentStatus, SaleType, SaleActivity, SaleItem } from "@/features/sales";
 import { createSale, deleteSale, listSales, updateSale as saveSale } from "@/features/sales";
 
 interface SalesContextType {
@@ -10,12 +10,16 @@ interface SalesContextType {
   updateSale: (id: string, updates: Partial<SaleOpportunity>) => void;
   addActivity: (saleId: string, activity: Omit<SaleActivity, "id" | "timestamp" | "author">) => void;
   deleteSales: (ids: string[]) => void;
+  /** Callback bridge: when a sale is marked Paid, this fires so Finance can record income */
+  onSalePaid?: (sale: SaleOpportunity) => void;
+  setSalePaidCallback: (cb: ((sale: SaleOpportunity) => void) | undefined) => void;
 }
 
 const SalesContext = createContext<SalesContextType | undefined>(undefined);
 
 export function SalesProvider({ children }: { children: React.ReactNode }) {
   const [sales, setSales] = useState<SaleOpportunity[]>([]);
+  const [onSalePaid, setOnSalePaid] = useState<((sale: SaleOpportunity) => void) | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,27 +39,47 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const setSalePaidCallback = useCallback((cb: ((sale: SaleOpportunity) => void) | undefined) => {
+    setOnSalePaid(() => cb);
+  }, []);
+
+  /** Compute subtotal and total from items */
+  function computeTotals(items: SaleItem[], discountTotal = 0) {
+    const subtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
+    const total = Math.max(0, subtotal - discountTotal);
+    return { subtotal, total };
+  }
+
   const addSale = useCallback((partial: Partial<SaleOpportunity>) => {
-    const nextOrderNum = "ORD-2024-" + (sales.length + 1).toString().padStart(3, "0");
+    const nextOrderNum = "SAL-" + new Date().getFullYear() + "-" + (sales.length + 1).toString().padStart(3, "0");
+    const items = partial.items || [];
+    const { subtotal, total } = computeTotals(items, partial.discountTotal || 0);
+
+    const partialWithoutTotals = { ...partial };
+    delete (partialWithoutTotals as any).subtotal;
+    delete (partialWithoutTotals as any).total;
+
     const newSale: SaleOpportunity = {
       id: "s" + Date.now(),
       orderNumber: nextOrderNum,
-      title: partial.title || "New Order",
-      contactName: partial.contactName || "Unknown Contact",
-      contactId: partial.contactId || "",
+      title: partial.title || "New Sale",
+      saleType: partial.saleType || "Product Sale",
+      contactName: partial.contactName || undefined,
+      contactId: partial.contactId || undefined,
       status: partial.status || "Pending",
       paymentStatus: partial.paymentStatus || "Unpaid",
-      priority: partial.priority || "Medium",
-      value: partial.value || 0,
       currency: "USD",
       assignedStaff: ["You"],
-      items: partial.items || [],
+      items,
+      subtotal,
+      discountTotal: partial.discountTotal || 0,
+      total,
       activities: [],
       attachments: [],
       notes: partial.notes || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      ...partial
+      ...partialWithoutTotals,
     };
     createSale<SaleOpportunity>(newSale)
       .then((created) => setSales(prev => [created, ...prev]))
@@ -65,14 +89,35 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
   const updateSale = useCallback((id: string, updates: Partial<SaleOpportunity>) => {
     setSales(prev => prev.map(s => {
       if (s.id !== id) return s;
-      const updated = { ...s, ...updates, updatedAt: new Date().toISOString() };
+
+      // Recompute totals if items changed
+      const items = updates.items ?? s.items;
+      const discountTotal = updates.discountTotal ?? s.discountTotal;
+      const { subtotal, total } = computeTotals(items, discountTotal);
+
+      const updated = {
+        ...s,
+        ...updates,
+        subtotal,
+        total,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Auto-trigger Finance income record when paymentStatus → Paid
+      if (updates.paymentStatus === "Paid" && s.paymentStatus !== "Paid") {
+        onSalePaid?.(updated);
+      }
+
+      // Auto-deduct stock when status → Completed for Product Sales
+      // (stock deduction happens in the ProductsContext via the same pattern)
+
       const recordId = (s as { recordId?: string }).recordId ?? s.id;
       saveSale<SaleOpportunity>(recordId, updated).catch((err) => {
         console.error("Failed to update sale:", err);
       });
       return updated;
     }));
-  }, []);
+  }, [onSalePaid]);
 
   const addActivity = useCallback((saleId: string, activity: Omit<SaleActivity, "id" | "timestamp" | "author">) => {
     setSales(prev => prev.map(s => {
@@ -114,8 +159,10 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     addSale,
     updateSale,
     addActivity,
-    deleteSales
-  }), [sales, addSale, updateSale, addActivity, deleteSales]);
+    deleteSales,
+    onSalePaid,
+    setSalePaidCallback,
+  }), [sales, addSale, updateSale, addActivity, deleteSales, onSalePaid, setSalePaidCallback]);
 
   return <SalesContext.Provider value={value}>{children}</SalesContext.Provider>;
 }
@@ -127,4 +174,3 @@ export function useSales() {
   }
   return context;
 }
-

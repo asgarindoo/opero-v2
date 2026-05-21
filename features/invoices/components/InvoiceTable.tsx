@@ -37,7 +37,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
 
   const filteredInvoices = invoices.filter(inv => {
     const matchesSearch = inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      inv.contactName.toLowerCase().includes(searchQuery.toLowerCase());
+      (inv.contactName ?? "").toLowerCase().includes(searchQuery.toLowerCase());
     
     if (filterMode === "all") return matchesSearch;
     if (filterMode === "paid") return matchesSearch && inv.status === "Paid";
@@ -162,7 +162,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                   <TableCell>
                     <div className="min-w-0 ml-3">
                       <p className="font-display font-semibold text-[13px] text-on-surface opacity-90 truncate group-hover:text-primary transition-colors leading-tight">
-                        {inv.contactName}
+                        {inv.contactName ?? <span className="opacity-30">—</span>}
                       </p>
                       <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate uppercase tracking-widest font-bold leading-none mt-0.5">
                         {inv.items.length} items

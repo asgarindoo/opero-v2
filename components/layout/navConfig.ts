@@ -62,13 +62,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "BUSINESS",
     items: [
-      { id: "contacts",  label: "Contacts",  icon: UserRound,   materialIcon: "contacts",    href: "/dashboard/contacts"  },
-      { id: "sales",     label: "Sales",     icon: ShoppingCart,materialIcon: "shopping_cart",href: "/dashboard/sales"     },
-      { id: "inventory", label: "Inventory", icon: Package,     materialIcon: "inventory_2", href: "/dashboard/inventory" },
-      { id: "assets",    label: "Assets",    icon: Landmark,    materialIcon: "account_balance",href: "/dashboard/assets"  },
-      { id: "finance",   label: "Finance",   icon: CreditCard,  materialIcon: "credit_card",  href: "/dashboard/finance"  },
-      { id: "invoices",  label: "Invoices",  icon: Receipt,     materialIcon: "receipt",      href: "/dashboard/invoices" },
-      { id: "documents", label: "Documents", icon: FileText,    materialIcon: "description",  href: "/dashboard/documents"},
+      { id: "contacts",  label: "Contacts",  icon: UserRound,   materialIcon: "contacts",      href: "/dashboard/contacts"  },
+      { id: "sales",     label: "Sales",     icon: ShoppingCart,materialIcon: "shopping_cart",  href: "/dashboard/sales"     },
+      { id: "products",  label: "Products",  icon: Package,     materialIcon: "inventory_2",   href: "/dashboard/products"  },
+      { id: "finance",   label: "Finance",   icon: CreditCard,  materialIcon: "credit_card",   href: "/dashboard/finance"   },
+      { id: "invoices",  label: "Invoices",  icon: Receipt,     materialIcon: "receipt",       href: "/dashboard/invoices"  },
+      { id: "documents", label: "Documents", icon: FileText,    materialIcon: "description",   href: "/dashboard/documents" },
+      { id: "assets",    label: "Assets",    icon: Landmark,    materialIcon: "account_balance",href: "/dashboard/assets"    },
     ],
   },
   {

@@ -35,10 +35,10 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactName.trim() || items.some(it => !it.description)) return;
+    if (items.some(it => !it.description)) return;
 
     addInvoice({
-      contactName,
+      contactName: contactName.trim() || undefined,
       invoiceNumber,
       dueDate,
       notes,
@@ -73,13 +73,15 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">Customer Name *</label>
+                <label className="block font-label-caps text-[9px] text-on-surface-variant opacity-60 mb-1.5 uppercase tracking-wider">
+                Customer Name <span className="opacity-40">(optional)</span>
+              </label>
                 <div className="relative flex items-center">
                   <User size={13} className="absolute left-3 text-on-surface-variant opacity-60" />
                   <input 
-                    type="text" autoFocus required value={contactName} onChange={e => setContactName(e.target.value)}
+                    type="text" autoFocus value={contactName} onChange={e => setContactName(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary/40 outline-none transition-all font-body-sm text-[12.5px] text-on-surface"
-                    placeholder="Search or enter customer..."
+                    placeholder="Client name (optional)"
                   />
                 </div>
               </div>
@@ -171,7 +173,7 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
         <div className="px-6 py-4 bg-surface-container-low border-t border-black/[0.04] flex justify-end gap-3 shrink-0">
           <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide text-on-surface-variant hover:bg-black/5 transition-colors">CANCEL</button>
           <button 
-            type="submit" onClick={handleSubmit} disabled={!contactName.trim() || items.some(it => !it.description)}
+            type="submit" onClick={handleSubmit} disabled={items.some(it => !it.description)}
             className="px-6 py-2 rounded-lg font-label-caps text-[10px] font-bold tracking-wide bg-primary text-on-primary hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all disabled:opacity-60"
           >
             GENERATE INVOICE

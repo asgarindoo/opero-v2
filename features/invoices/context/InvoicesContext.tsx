@@ -40,7 +40,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
     const newInvoice: Invoice = {
       id: "inv" + Date.now(),
       invoiceNumber: partial.invoiceNumber || "INV-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 1000),
-      contactName: partial.contactName || "New Customer",
+      contactName: partial.contactName || undefined,
       issueDate: new Date().toISOString().split("T")[0],
       dueDate: partial.dueDate || new Date().toISOString().split("T")[0],
       status: "Draft",
