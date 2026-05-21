@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button";
 import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { EmptyState } from "@/components/common/DataState";
 
 interface Props {
   filterMode: string;
@@ -90,10 +91,11 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
 
   if (filteredContacts.length === 0) {
      return (
-       <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant opacity-60">
-         <Search size={40} strokeWidth={1} className="mb-4" />
-         <p className="font-display text-[13px] tracking-wide uppercase">No contacts found</p>
-       </div>
+       <EmptyState
+         icon="contacts"
+         title="No contacts found"
+         description="Add a contact to get started with your customer relationships."
+       />
      );
   }
 

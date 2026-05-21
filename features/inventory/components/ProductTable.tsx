@@ -19,6 +19,7 @@ import {
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import Button from "@/components/ui/Button";
+import { EmptyState } from "@/components/common/DataState";
 
 const STATUS_CONFIG: Record<StockStatus, { label: string; color: string; bg: string; icon: any }> = {
   "In Stock": { label: "In Stock", color: "#10B981", bg: "bg-[#10B981]/10", icon: CheckCircle2 },
@@ -69,10 +70,11 @@ export default function ProductTable() {
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant opacity-60">
-        <Package size={40} strokeWidth={1} className="mb-4" />
-        <p className="font-display text-[13px] tracking-wide uppercase">No products found</p>
-      </div>
+      <EmptyState
+        icon="inventory_2"
+        title="No products found"
+        description="Add products to start tracking your inventory."
+      />
     );
   }
 

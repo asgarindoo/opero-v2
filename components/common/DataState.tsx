@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 export function EmptyState({
   icon,
@@ -9,10 +10,10 @@ export function EmptyState({
 }: {
   icon: string;
   title: string;
-  description: string;
+  description?: string;
 }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] gap-4 p-8 text-center">
       <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.02)" }}>
         <span className="material-symbols-outlined" style={{ fontSize: 32, color: "var(--color-on-surface-variant)", opacity: 0.3 }}>
           {icon}
@@ -20,7 +21,9 @@ export function EmptyState({
       </div>
       <div className="text-center space-y-1 max-w-xs">
         <p className="font-display font-bold text-[14px] text-on-surface">{title}</p>
-        <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 leading-relaxed">{description}</p>
+        {description && (
+          <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 leading-relaxed">{description}</p>
+        )}
       </div>
     </div>
   );

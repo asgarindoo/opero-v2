@@ -19,6 +19,7 @@ import Button from "@/components/ui/Button";
 import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { EmptyState } from "@/components/common/DataState";
 
 interface Props {
   searchQuery: string;
@@ -92,6 +93,16 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
     }
     setIsDeleteModalOpen(false);
   };
+
+  if (filteredInvoices.length === 0) {
+    return (
+      <EmptyState
+        icon="receipt_long"
+        title="No invoices found"
+        description="Create an invoice to request payments from clients."
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#fef8f8] relative">

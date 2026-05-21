@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button";
 import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { EmptyState } from "@/components/common/DataState";
 
 interface Props {
   searchQuery: string;
@@ -93,10 +94,11 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
 
   if (filteredAssets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant opacity-60">
-        <Search size={40} strokeWidth={1} className="mb-4" />
-        <p className="font-display text-[13px] tracking-wide uppercase">No assets found</p>
-      </div>
+      <EmptyState
+        icon="web_asset"
+        title="No assets found"
+        description="Register your business assets to monitor assignment and maintenance."
+      />
     );
   }
 

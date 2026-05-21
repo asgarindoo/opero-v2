@@ -13,7 +13,7 @@ import {
 import type { Transaction } from "@/features/finance";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
-import EmptyState from "@/components/ui/EmptyState";
+import { EmptyState } from "@/components/common/DataState";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import Button from "@/components/ui/Button";
@@ -81,7 +81,7 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
   if (transactions.length === 0) {
     return (
       <EmptyState 
-        icon={Inbox}
+        icon="account_balance_wallet"
         title="No transactions found"
         description="Try adjusting your filters or search query to find what you're looking for."
       />

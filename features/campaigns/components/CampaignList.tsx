@@ -6,7 +6,7 @@ import { useCampaigns } from "../context/CampaignsContext";
 import type { Campaign, CampaignStatus } from "@/features/campaigns";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
-import EmptyState from "@/components/ui/EmptyState";
+import { EmptyState } from "@/components/common/DataState";
 import Button from "@/components/ui/Button";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
@@ -92,9 +92,9 @@ export default function CampaignList({ searchQuery, filterMode, onSelectCampaign
   if (!filteredCampaigns.length) {
     return (
       <EmptyState 
-        icon={Inbox}
+        icon="campaign"
         title="No campaigns found"
-        description="Try adjusting your filters or search query."
+        description="Try adjusting your filters or create a new campaign."
       />
     );
   }

@@ -17,6 +17,7 @@ import {
 import { FileType } from "@/features/documents";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { EmptyState } from "@/components/common/DataState";
 
 interface Props {
   searchQuery: string;
@@ -79,6 +80,16 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
     }
     setIsDeleteModalOpen(false);
   };
+
+  if (filteredFiles.length === 0) {
+    return (
+      <EmptyState
+        icon="folder"
+        title="No documents found"
+        description="Try adjusting your filters or search query."
+      />
+    );
+  }
 
   return (
     <div className="p-6 overflow-y-auto h-full relative db-sidebar">

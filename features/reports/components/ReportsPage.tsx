@@ -12,6 +12,8 @@ import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
 
+import { EmptyState } from "@/components/common/DataState";
+
 function ReportsContent() {
   const {
     reports,
@@ -109,10 +111,11 @@ function ReportsContent() {
             onReportClick={(r) => setSelectedReportId(r.id)}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center py-40 text-on-surface-variant opacity-60">
-            <Inbox size={48} strokeWidth={1} className="mb-6" />
-            <p className="font-display text-[14px] font-semibold tracking-[0.2em] uppercase">No reports found</p>
-          </div>
+          <EmptyState
+            icon="analytics"
+            title="No reports found"
+            description="There are no reports matching your current query or filters."
+          />
         )}
       </main>
     </div>

@@ -22,6 +22,7 @@ import Button from "@/components/ui/Button";
 import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { EmptyState } from "@/components/common/DataState";
 
 interface Props {
   searchQuery: string;
@@ -105,6 +106,16 @@ export default function DocumentTable({ searchQuery, filterMode, onSelectFile }:
     }
     setIsDeleteModalOpen(false);
   };
+
+  if (filteredFiles.length === 0) {
+    return (
+      <EmptyState
+        icon="folder"
+        title="No documents found"
+        description="Try adjusting your filters or search query."
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-background relative">

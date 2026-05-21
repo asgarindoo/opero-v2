@@ -12,7 +12,7 @@ import {
 import { SaleStatus, PaymentStatus } from "@/features/sales";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
-import EmptyState from "@/components/ui/EmptyState";
+import { EmptyState } from "@/components/common/DataState";
 import Button from "@/components/ui/Button";
 import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
@@ -110,9 +110,9 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
   if (filteredSales.length === 0) {
     return (
       <EmptyState 
-        icon={Inbox}
+        icon="shopping_bag"
         title="No orders found"
-        description="Try adjusting your filters or search query."
+        description="Try adjusting your filters or create a new order."
       />
     );
   }

@@ -116,17 +116,10 @@ function FinanceContent() {
       />
 
       <main className="flex-1 overflow-y-auto">
-         {filtered.length > 0 ? (
-           <FinanceListView 
-             transactions={filtered} 
-             onTransactionClick={(tx) => setSelectedTxId(tx.id)} 
-           />
-         ) : (
-           <div className="flex flex-col items-center justify-center py-40 text-on-surface-variant opacity-60">
-             <Inbox size={48} strokeWidth={1} className="mb-6" />
-             <p className="font-display text-[14px] font-semibold tracking-[0.2em] uppercase">No transactions found</p>
-           </div>
-         )}
+         <FinanceListView 
+           transactions={filtered} 
+           onTransactionClick={(tx) => setSelectedTxId(tx.id)} 
+         />
       </main>
 
       {isAddModalOpen && (
