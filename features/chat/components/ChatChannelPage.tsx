@@ -1,8 +1,7 @@
 "use client";
 
 import React, { use, useState } from "react";
-import { Hash, Search, X, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Hash, Search, X } from "lucide-react";
 import { useChat } from "@/features/chat";
 import MessageList from "@/features/chat/components/MessageList";
 import MessageComposer from "@/features/chat/components/MessageComposer";
@@ -10,18 +9,24 @@ import MessageComposer from "@/features/chat/components/MessageComposer";
 export default function ChannelPage({ params }: { params: Promise<{ channelId: string }> }) {
   const resolvedParams = use(params);
   const { channelId } = resolvedParams;
-  const { channels, deleteChannel } = useChat();
-  const router = useRouter();
+  const { channels, loadingChannels } = useChat();
   const [searchQuery, setSearchQuery] = useState("");
 
   const channel = channels.find(c => c.id === channelId);
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this channel?")) {
-      deleteChannel(channelId);
-      router.push("/dashboard/chat");
-    }
-  };
+  if (!channel && loadingChannels) {
+    return (
+      <div className="flex-1 flex flex-col bg-surface">
+        <div className="h-16 shrink-0 px-6 flex items-center bg-surface-container-lowest/80">
+          <div className="h-5 w-40 rounded bg-black/[0.04] animate-pulse" />
+        </div>
+        <div className="flex-1 p-6 space-y-4">
+          <div className="h-10 w-64 rounded-[18px] bg-black/[0.035] animate-pulse" />
+          <div className="h-10 w-72 rounded-[18px] bg-black/[0.03] animate-pulse ml-auto" />
+        </div>
+      </div>
+    );
+  }
 
   if (!channel) {
     return (
@@ -73,14 +78,6 @@ export default function ChannelPage({ params }: { params: Promise<{ channelId: s
              )}
           </div>
           
-          <div className="w-px h-3 bg-outline-variant/30 mx-1" />
-          <button 
-            onClick={handleDelete}
-            className="p-1.5 text-on-surface-variant opacity-40 hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all"
-            title="Delete channel"
-          >
-            <Trash2 size={14} />
-          </button>
         </div>
       </div>
 

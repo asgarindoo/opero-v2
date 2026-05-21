@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Hash, User as UserIcon, X } from "lucide-react";
+import { Search, Hash, X, type LucideIcon } from "lucide-react";
 import { useChat } from "../context/ChatContext";
 
 export default function ChatSearchModal({ onClose }: { onClose: () => void }) {
-  const { channels, users } = useChat();
+  const { channels } = useChat();
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -18,19 +18,13 @@ export default function ChatSearchModal({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  // Mock search results with explicit type to fix TS error
-  const results: Array<{ type: string, icon: any, title: string, subtitle: string }> = [];
+  const results: Array<{ type: string; icon: LucideIcon; title: string; subtitle: string }> = [];
   
   if (query.trim()) {
     const q = query.toLowerCase();
     channels.forEach(c => {
       if (c.name.toLowerCase().includes(q)) {
         results.push({ type: "channel", icon: Hash, title: c.name, subtitle: "Channel" });
-      }
-    });
-    Object.values(users).forEach(u => {
-      if (u.name.toLowerCase().includes(q)) {
-        results.push({ type: "user", icon: UserIcon, title: u.name, subtitle: "Team Member" });
       }
     });
   }

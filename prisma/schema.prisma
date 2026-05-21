@@ -719,6 +719,9 @@ model ContentAsset {
 model ChatChannel {
   id             String   @id @default(cuid())
   organizationId String
+  name           String?
+  description    String?
+  type           String   @default("public")
   title          String?
   status         String?
   payload        Json?
@@ -738,6 +741,10 @@ model ChatChannel {
 model ChatMessage {
   id             String   @id @default(cuid())
   organizationId String
+  channelId      String?
+  senderId       String?
+  content        String?
+  type           String   @default("text")
   title          String?
   status         String?
   payload        Json?
@@ -751,5 +758,7 @@ model ChatMessage {
   updatedBy    User?        @relation("ChatMessageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
+  @@index([organizationId, channelId])
+  @@index([channelId, createdAt])
   @@map("chat_message")
 }

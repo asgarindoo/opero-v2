@@ -1,43 +1,39 @@
-export type PresenceStatus = "online" | "away" | "offline";
+export type ChatChannelType = "public";
+export type ChatMessageType = "text" | "system";
 
-export interface User {
+export interface ChatUser {
   id: string;
   name: string;
-  avatarUrl?: string;
-  status: PresenceStatus;
+  email?: string;
+  image?: string | null;
 }
 
 export interface ChatChannel {
   id: string;
-  tenant_id: string;
+  organizationId: string;
   name: string;
-  description?: string;
-  is_private: boolean;
-  members?: string[];
-  created_at: string;
-}
-
-export interface ChatReaction {
-  id: string;
-  emoji: string;
-  user_id: string;
+  description: string | null;
+  type: ChatChannelType;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ChatMessage {
   id: string;
-  channel_id: string;
-  user_id: string;
+  clientId?: string;
+  organizationId: string;
+  channelId: string;
+  senderId: string | null;
   content: string;
-  attachments?: { type: string; url: string; name: string }[];
-  reactions: ChatReaction[];
-  created_at: string;
-  edited_at?: string;
+  type: ChatMessageType;
+  createdAt: string;
+  updatedAt: string;
+  sender: ChatUser | null;
+  isPending?: boolean;
 }
 
-// For Mock Data
 export interface ChatState {
   channels: ChatChannel[];
-  messages: Record<string, ChatMessage[]>; // channel_id -> messages
-  users: Record<string, User>; // user_id -> user
-  currentUserId: string;
+  messages: Record<string, ChatMessage[]>;
 }

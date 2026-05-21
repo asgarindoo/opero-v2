@@ -11,10 +11,10 @@ export default function CreateChannelModal({ onClose }: { onClose: () => void })
   const { createChannel } = useChat();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const newId = createChannel(name, description);
+    const newId = await createChannel(name, description);
     onClose();
     router.push(`/dashboard/chat/${newId}`);
   };
