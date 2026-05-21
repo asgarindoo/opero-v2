@@ -89,7 +89,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
     const hasItems = items.some(it => it.name.trim());
     if (!title.trim() && !hasItems) return;
 
-    const cleanTitle = title.trim() || (items[0]?.name ? `${saleType} — ${items[0].name}` : "New Sale");
+    const cleanTitle = title.trim() || (items[0]?.name ? items[0].name : "New Sale");
     const cleanItems = items.filter(it => it.name.trim());
 
     addSale({
