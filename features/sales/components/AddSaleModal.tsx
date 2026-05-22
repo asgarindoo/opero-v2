@@ -248,8 +248,14 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                   </button>
                 </div>
                 {item.subtotal > 0 && (
-                  <div className="text-right pr-8 mt-0.5">
-                    <span className="font-display text-[10px] break-all" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>{formatCurrency(item.subtotal, currency)}</span>
+                  <div className="text-right pr-8 mt-0.5 min-w-0">
+                    <span 
+                      className="font-display text-[10px] truncate block" 
+                      style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}
+                      title={formatCurrency(item.subtotal, currency)}
+                    >
+                      {formatCurrency(item.subtotal, currency)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -271,20 +277,38 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          <div className="w-[200px] space-y-2 pt-1">
-            <div className="flex justify-between text-[11.5px]">
-              <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Subtotal</span>
-              <span className="font-display break-all ml-2 text-right" style={{ opacity: 0.7 }}>{formatCurrency(subtotal, currency)}</span>
+          <div className="w-[200px] space-y-2 pt-1 min-w-0">
+            <div className="flex justify-between text-[11.5px] gap-2">
+              <span className="font-body-sm shrink-0" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Subtotal</span>
+              <span 
+                className="font-display truncate text-right" 
+                style={{ opacity: 0.7 }}
+                title={formatCurrency(subtotal, currency)}
+              >
+                {formatCurrency(subtotal, currency)}
+              </span>
             </div>
             {discountAmt > 0 && (
-              <div className="flex justify-between text-[11.5px]">
-                <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Discount</span>
-                <span className="font-display break-all ml-2 text-right" style={{ color: "rgba(186,26,26,0.8)" }}>−{formatCurrency(discountAmt, currency)}</span>
+              <div className="flex justify-between text-[11.5px] gap-2">
+                <span className="font-body-sm shrink-0" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Discount</span>
+                <span 
+                  className="font-display truncate text-right" 
+                  style={{ color: "rgba(186,26,26,0.8)" }}
+                  title={`−${formatCurrency(discountAmt, currency)}`}
+                >
+                  −{formatCurrency(discountAmt, currency)}
+                </span>
               </div>
             )}
-            <div className="flex justify-between items-center pt-1.5" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-              <span className="font-label-caps text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Total</span>
-              <span className="font-display font-bold text-[15px] break-all ml-2 text-right" style={{ color: "var(--color-on-surface)", opacity: 0.9 }}>{formatCurrency(total, currency)}</span>
+            <div className="flex justify-between items-center pt-1.5 gap-2" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+              <span className="font-label-caps text-[9px] font-bold uppercase tracking-[0.12em] shrink-0" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Total</span>
+              <span 
+                className="font-display font-bold text-[15px] truncate text-right" 
+                style={{ color: "var(--color-on-surface)", opacity: 0.9 }}
+                title={formatCurrency(total, currency)}
+              >
+                {formatCurrency(total, currency)}
+              </span>
             </div>
           </div>
         </div>

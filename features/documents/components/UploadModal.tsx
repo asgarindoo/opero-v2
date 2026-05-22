@@ -96,7 +96,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
             <Upload size={18} strokeWidth={1.75} />
           </div>
           <div className="text-center px-4">
-            <p className="font-display font-semibold text-[13px] text-on-surface opacity-80 truncate max-w-[300px]">
+            <p className="font-display font-medium text-[13px] text-center px-4 truncate max-w-full" style={{ color: "var(--color-on-surface)" }} title={file ? file.name : ""}>
               {file ? file.name : "Click or drag files to upload"}
             </p>
             <p className="font-body-md text-[11px] mt-1" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>

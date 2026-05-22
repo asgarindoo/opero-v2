@@ -15,25 +15,30 @@ export default function FinanceDetail({ transaction, onClose }: FinanceDetailPro
   return (
     <div className="flex-1 flex flex-col h-full bg-background animate-fade-in overflow-hidden">
       {/* Header */}
-      <header className="px-8 py-5 border-b border-black/[0.05] flex items-center justify-between bg-white/60 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center gap-6">
+      <header className="px-8 py-5 border-b border-black/[0.05] flex items-center justify-between bg-white/60 backdrop-blur-md sticky top-0 z-10 gap-6">
+        <div className="flex items-center gap-6 min-w-0 flex-1">
           <button 
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-black/5 transition-all text-on-surface-variant opacity-60 hover:opacity-100"
+            className="p-2 rounded-lg hover:bg-black/5 transition-all text-on-surface-variant opacity-60 hover:opacity-100 shrink-0"
           >
             <ChevronLeft size={18} />
           </button>
-          <div className="h-8 w-px bg-black/[0.05]" />
-          <div>
+          <div className="h-8 w-px bg-black/[0.05] shrink-0" />
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className={`font-label-caps text-[9px] font-bold uppercase tracking-widest ${transaction.type === 'Income' ? 'text-emerald-600' : 'text-red-600'}`}>
+              <span className={`font-label-caps text-[9px] font-bold uppercase tracking-widest shrink-0 ${transaction.type === 'Income' ? 'text-emerald-600' : 'text-red-600'}`}>
                 {transaction.type}
               </span>
-              <span className="w-1 h-1 rounded-full bg-black/10" />
-              <span className="font-label-caps text-[9px] font-semibold text-on-surface-variant opacity-60 uppercase tracking-widest">Ref: {transaction.reference}</span>
+              <span className="w-1 h-1 rounded-full bg-black/10 shrink-0" />
+              <span 
+                className="font-label-caps text-[9px] font-semibold text-on-surface-variant opacity-60 uppercase tracking-widest truncate"
+                title={`Ref: ${transaction.reference}`}
+              >
+                Ref: {transaction.reference}
+              </span>
             </div>
             <h1 
-              className="font-display text-[18px] font-semibold text-on-surface tracking-tight break-words break-all line-clamp-3"
+              className="font-display text-[18px] font-semibold text-on-surface tracking-tight truncate"
               title={transaction.contactName || "Untitled Transaction"}
             >
               {transaction.contactName || "Untitled Transaction"}
@@ -60,10 +65,10 @@ export default function FinanceDetail({ transaction, onClose }: FinanceDetailPro
             {/* Amount Summary Card */}
             <div className="p-10 rounded-[32px] bg-white border border-black/[0.03] shadow-sm flex flex-col items-center justify-center text-center">
                <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] mb-4">Total Amount</span>
-               <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-display text-[16px] font-medium text-on-surface-variant opacity-60">{transaction.currency}</span>
+               <div className="flex items-baseline gap-2 mb-2 max-w-full">
+                  <span className="font-display text-[16px] font-medium text-on-surface-variant opacity-60 shrink-0">{transaction.currency}</span>
                   <span 
-                    className="font-display text-[48px] font-bold text-on-surface tracking-tighter leading-none break-all"
+                    className="font-display text-[48px] font-bold text-on-surface tracking-tighter leading-none truncate"
                     title={transaction.amount.toLocaleString()}
                   >
                     {transaction.amount.toLocaleString()}
@@ -86,15 +91,15 @@ export default function FinanceDetail({ transaction, onClose }: FinanceDetailPro
                         <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Date</span>
                         <span className="font-display text-[13px] font-semibold text-on-surface">{dateStr}</span>
                      </div>
-                     <div className="flex items-center justify-between">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Category</span>
-                        <span className="font-display text-[13px] font-semibold text-on-surface">{transaction.category}</span>
+                     <div className="flex items-start justify-between gap-4">
+                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Category</span>
+                        <span className="font-display text-[13px] font-semibold text-on-surface text-right break-words break-all">{transaction.category}</span>
                      </div>
-                     <div className="flex items-center justify-between">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Payment Method</span>
-                        <div className="flex items-center gap-2">
+                     <div className="flex items-start justify-between gap-4">
+                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Payment Method</span>
+                        <div className="flex items-center gap-2 shrink-0">
                            <CreditCard size={14} className="opacity-60" />
-                           <span className="font-display text-[13px] font-semibold text-on-surface">{transaction.paymentMethod}</span>
+                           <span className="font-display text-[13px] font-semibold text-on-surface text-right break-words break-all">{transaction.paymentMethod}</span>
                         </div>
                      </div>
                   </div>
@@ -103,19 +108,19 @@ export default function FinanceDetail({ transaction, onClose }: FinanceDetailPro
                <section className="space-y-6">
                   <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Compliance & Safety</h4>
                   <div className="p-6 rounded-2xl border border-black/[0.04] bg-white/50 space-y-5">
-                     <div className="flex items-center justify-between">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Reference</span>
-                        <span className="font-display text-[13px] font-semibold text-on-surface select-all">{transaction.reference}</span>
+                     <div className="flex items-start justify-between gap-4">
+                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Reference</span>
+                        <span className="font-display text-[13px] font-semibold text-on-surface select-all text-right break-words break-all">{transaction.reference}</span>
                      </div>
                      <div className="flex items-center justify-between">
                         <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Verification</span>
-                        <div className="flex items-center gap-1.5 text-emerald-600 font-label-caps text-[9px] font-bold uppercase">
+                        <div className="flex items-center gap-1.5 text-emerald-600 font-label-caps text-[9px] font-bold uppercase shrink-0">
                            <Shield size={12} /> SECURE
                         </div>
                      </div>
-                     <div className="flex items-center justify-between">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Internal ID</span>
-                        <span className="font-display text-[11px] text-on-surface-variant opacity-60">{transaction.id}</span>
+                     <div className="flex items-start justify-between gap-4">
+                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Internal ID</span>
+                        <span className="font-display text-[11px] text-on-surface-variant opacity-60 text-right break-words break-all">{transaction.id}</span>
                      </div>
                   </div>
                </section>

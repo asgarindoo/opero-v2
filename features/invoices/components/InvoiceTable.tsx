@@ -190,9 +190,9 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                   <TableCell className="text-right">
                     <span 
                       className="font-bold text-on-surface font-display text-[12.5px] opacity-80 block truncate max-w-[100px] ml-auto"
-                      title={`$${inv.totalAmount.toLocaleString()}`}
+                      title={new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
                     >
-                      ${inv.totalAmount.toLocaleString()}
+                      {new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-5 whitespace-nowrap text-right">

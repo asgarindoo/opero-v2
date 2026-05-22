@@ -184,29 +184,29 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
           {/* Financial Summary */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03] space-y-1">
+            <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03] space-y-1 min-w-0">
               <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider flex items-center gap-1">
                 <DollarSign size={10} /> Subtotal
               </div>
               <div 
-                className="font-display font-bold text-[16px] text-on-surface opacity-70 break-all"
+                className="font-display font-bold text-[16px] text-on-surface opacity-70 truncate"
                 title={formatCurrency(sale.subtotal, sale.currency)}
               >
                 {formatCurrency(sale.subtotal, sale.currency)}
               </div>
               {sale.discountTotal > 0 && (
                 <div 
-                  className="font-body-sm text-[10px] text-red-500 opacity-70 break-all"
+                  className="font-body-sm text-[10px] text-red-500 opacity-70 truncate"
                   title={`−${formatCurrency(sale.discountTotal, sale.currency)} discount`}
                 >
                   −{formatCurrency(sale.discountTotal, sale.currency)} discount
                 </div>
               )}
             </div>
-            <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
+            <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03] min-w-0">
               <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Total</div>
               <div 
-                className="font-display font-bold text-[17px] text-on-surface opacity-90 break-all"
+                className="font-display font-bold text-[17px] text-on-surface opacity-90 truncate"
                 title={formatCurrency(sale.total, sale.currency)}
               >
                 {formatCurrency(sale.total, sale.currency)}
@@ -240,9 +240,14 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                         </p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80 break-all">{formatCurrency(item.subtotal, sale.currency)}</p>
-                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 break-all">{formatCurrency(item.price, sale.currency)} ea</p>
+                    <div className="text-right shrink-0 min-w-[60px]">
+                      <p 
+                        className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80 truncate"
+                        title={formatCurrency(item.subtotal, sale.currency)}
+                      >
+                        {formatCurrency(item.subtotal, sale.currency)}
+                      </p>
+                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate">{formatCurrency(item.price, sale.currency)} ea</p>
                     </div>
                   </div>
                 ))

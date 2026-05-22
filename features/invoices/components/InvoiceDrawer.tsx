@@ -40,8 +40,8 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-8 pb-12 pt-6">
           
-          <div className="mb-10 flex justify-between items-start">
-            <div>
+          <div className="mb-10 flex justify-between items-start gap-4">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-3">
                 <span className={`font-label-caps text-[9px] font-bold px-2 py-0.5 rounded bg-black/5 border border-black/[0.03] ${inv.status === "Paid" ? "text-on-surface opacity-90" : inv.status === "Overdue" ? "text-red-600" : "text-on-surface opacity-60"}`}>
                   {inv.status.toUpperCase()}
@@ -82,10 +82,10 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
                <tbody className="divide-y divide-black/[0.02]">
                  {inv.items.map(item => (
                    <tr key={item.id}>
-                     <td className="px-4 py-3 font-body-sm text-[12px] text-on-surface opacity-80">{item.description}</td>
+                     <td className="px-4 py-3 font-body-sm text-[12px] text-on-surface opacity-80 break-words break-all max-w-[200px]">{item.description}</td>
                      <td className="px-3 py-3 font-body-sm text-[12px] text-on-surface opacity-60 text-center">{item.quantity}</td>
-                     <td className="px-3 py-3 font-body-sm text-[12px] text-on-surface opacity-60 text-right">{formatCurrency(item.unitPrice, inv.currency)}</td>
-                     <td className="px-4 py-3 font-display font-medium text-[12px] text-on-surface opacity-90 text-right">{formatCurrency(item.amount, inv.currency)}</td>
+                     <td className="px-3 py-3 font-body-sm text-[12px] text-on-surface opacity-60 text-right break-all max-w-[100px]">{formatCurrency(item.unitPrice, inv.currency)}</td>
+                     <td className="px-4 py-3 font-display font-medium text-[12px] text-on-surface opacity-90 text-right break-all max-w-[120px]">{formatCurrency(item.amount, inv.currency)}</td>
                    </tr>
                  ))}
                </tbody>
@@ -94,26 +94,41 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
 
           {/* Financial Summary */}
           <div className="flex justify-end mb-10">
-            <div className="w-[240px] space-y-2">
-               <div className="flex justify-between items-center px-1">
-                 <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60">Subtotal</span>
-                 <span className="font-body-sm text-[12px] text-on-surface opacity-80">{formatCurrency(inv.subtotal, inv.currency)}</span>
+            <div className="w-[240px] space-y-2 min-w-0">
+               <div className="flex justify-between items-center px-1 gap-2">
+                 <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60 shrink-0">Subtotal</span>
+                 <span 
+                   className="font-body-sm text-[12px] text-on-surface opacity-80 truncate text-right"
+                   title={formatCurrency(inv.subtotal, inv.currency)}
+                 >
+                   {formatCurrency(inv.subtotal, inv.currency)}
+                 </span>
                </div>
-               <div className="flex justify-between items-center px-1">
-                 <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60">Tax (10%)</span>
-                 <span className="font-body-sm text-[12px] text-on-surface opacity-80">{formatCurrency(inv.taxTotal, inv.currency)}</span>
+               <div className="flex justify-between items-center px-1 gap-2">
+                 <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60 shrink-0">Tax (10%)</span>
+                 <span 
+                   className="font-body-sm text-[12px] text-on-surface opacity-80 truncate text-right"
+                   title={formatCurrency(inv.taxTotal, inv.currency)}
+                 >
+                   {formatCurrency(inv.taxTotal, inv.currency)}
+                 </span>
                </div>
                {inv.discountTotal > 0 && (
-                 <div className="flex justify-between items-center px-1 text-red-500">
-                   <span className="font-body-sm text-[12px] opacity-60">Discount</span>
-                   <span className="font-body-sm text-[12px] opacity-80">-{formatCurrency(inv.discountTotal, inv.currency)}</span>
+                 <div className="flex justify-between items-center px-1 text-red-500 gap-2">
+                   <span className="font-body-sm text-[12px] opacity-60 shrink-0">Discount</span>
+                   <span 
+                     className="font-body-sm text-[12px] opacity-80 truncate text-right"
+                     title={`-${formatCurrency(inv.discountTotal, inv.currency)}`}
+                   >
+                     -{formatCurrency(inv.discountTotal, inv.currency)}
+                   </span>
                  </div>
                )}
                <div className="h-px bg-black/5 my-2" />
-               <div className="flex justify-between items-center px-1 pt-1">
-                 <span className="font-display font-bold text-[14px] text-on-surface opacity-90">Total Amount</span>
+               <div className="flex justify-between items-center px-1 pt-1 gap-2">
+                 <span className="font-display font-bold text-[14px] text-on-surface opacity-90 shrink-0">Total Amount</span>
                  <span 
-                   className="font-display font-bold text-[18px] text-on-surface break-all"
+                   className="font-display font-bold text-[18px] text-on-surface truncate text-right"
                    title={formatCurrency(inv.totalAmount, inv.currency)}
                  >
                    {formatCurrency(inv.totalAmount, inv.currency)}

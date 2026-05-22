@@ -62,11 +62,16 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                  <h3 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-wider mb-4">Overview</h3>
                  <div className="grid grid-cols-2 gap-4">
                     {contact.contextData.value !== undefined && (
-                      <div className="p-3 rounded-xl bg-surface-container-low/50 border border-black/5">
-                         <div className="flex items-center gap-1.5 font-body-sm text-[11px] text-on-surface-variant opacity-70 mb-1">
+                      <div className="p-3 rounded-xl bg-surface-container-low/50 border border-black/5 min-w-0">
+                         <div className="flex items-center gap-1.5 font-body-sm text-[11px] text-on-surface-variant opacity-70 mb-1 shrink-0">
                            <DollarSign size={12} /> Deal Value
                          </div>
-                         <p className="font-display font-semibold text-[14px] text-on-surface">${contact.contextData.value.toLocaleString()}</p>
+                         <p 
+                           className="font-display font-semibold text-[14px] text-on-surface truncate"
+                           title={new Intl.NumberFormat("en-US", { style: "currency", currency: contact.contextData.currency || "USD" }).format(contact.contextData.value)}
+                         >
+                           {new Intl.NumberFormat("en-US", { style: "currency", currency: contact.contextData.currency || "USD" }).format(contact.contextData.value)}
+                         </p>
                       </div>
                     )}
                     {contact.contextData.stage !== undefined && (

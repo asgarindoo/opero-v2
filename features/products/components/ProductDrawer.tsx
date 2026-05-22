@@ -79,7 +79,10 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
           <div className={`grid gap-4 mb-8 ${isService ? "grid-cols-2" : "grid-cols-3"}`}>
             <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
               <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Price</div>
-              <div className="font-display font-bold text-[18px] text-on-surface opacity-90">
+              <div 
+                className="font-display font-bold text-[18px] text-on-surface opacity-90 break-all"
+                title={product.price > 0 ? formatPrice(product.price) : undefined}
+              >
                 {product.price > 0 ? formatPrice(product.price) : <span className="text-[14px] opacity-40">Not set</span>}
               </div>
             </div>
@@ -87,13 +90,21 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
               <>
                 <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
                   <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Total Stock</div>
-                  <div className={`font-display font-bold text-[18px] ${product.totalQuantity <= product.minThreshold ? "text-amber-600" : "text-on-surface opacity-90"}`}>
-                    {product.totalQuantity}
+                  <div 
+                    className={`font-display font-bold text-[18px] break-all ${product.totalQuantity <= product.minThreshold ? "text-amber-600" : "text-on-surface opacity-90"}`}
+                    title={product.totalQuantity.toLocaleString()}
+                  >
+                    {product.totalQuantity.toLocaleString()}
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
                   <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Alert Threshold</div>
-                  <div className="font-display font-bold text-[18px] text-on-surface opacity-40">{product.minThreshold}</div>
+                  <div 
+                    className="font-display font-bold text-[18px] text-on-surface opacity-40 break-all"
+                    title={product.minThreshold.toLocaleString()}
+                  >
+                    {product.minThreshold.toLocaleString()}
+                  </div>
                 </div>
               </>
             )}
