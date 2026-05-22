@@ -138,7 +138,10 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                         {isIncome ? <ArrowUpRight size={12} className="text-emerald-600" /> : <ArrowDownRight size={12} className="text-red-500 opacity-60" />}
                      </div>
                      <div>
-                        <span className="font-display text-[12.5px] font-semibold text-on-surface tracking-tight group-hover:text-primary transition-colors block leading-tight opacity-90">
+                        <span 
+                          className="font-display text-[12.5px] font-semibold text-on-surface tracking-tight group-hover:text-primary transition-colors block leading-tight opacity-90 truncate max-w-[100px] md:max-w-[150px] lg:max-w-[200px]"
+                          title={tx.contactName || "Direct Ledger Entry"}
+                        >
                           {tx.contactName || "Direct Ledger Entry"}
                         </span>
                         <span className="font-mono text-[8.5px] text-on-surface-variant opacity-60 uppercase tracking-tighter">

@@ -35,7 +35,12 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
               <span className="w-1 h-1 rounded-full bg-black/10" />
               <span className="font-label-caps text-[9px] font-semibold text-on-surface-variant opacity-30 uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
             </div>
-            <h1 className="font-display text-[18px] font-semibold text-on-surface tracking-tight">{file.name}</h1>
+            <h1 
+              className="font-display text-[18px] font-semibold text-on-surface tracking-tight break-words break-all line-clamp-3"
+              title={file.name}
+            >
+              {file.name}
+            </h1>
           </div>
         </div>
 

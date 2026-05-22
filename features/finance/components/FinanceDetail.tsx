@@ -32,7 +32,10 @@ export default function FinanceDetail({ transaction, onClose }: FinanceDetailPro
               <span className="w-1 h-1 rounded-full bg-black/10" />
               <span className="font-label-caps text-[9px] font-semibold text-on-surface-variant opacity-60 uppercase tracking-widest">Ref: {transaction.reference}</span>
             </div>
-            <h1 className="font-display text-[18px] font-semibold text-on-surface tracking-tight">
+            <h1 
+              className="font-display text-[18px] font-semibold text-on-surface tracking-tight break-words break-all line-clamp-3"
+              title={transaction.contactName || "Untitled Transaction"}
+            >
               {transaction.contactName || "Untitled Transaction"}
             </h1>
           </div>

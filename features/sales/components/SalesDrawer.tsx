@@ -89,7 +89,10 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-surface-container-lowest z-10 sticky top-0">
           <div className="flex items-center gap-2">
-            <div className="px-2 py-1 rounded bg-black/5 font-mono text-[10px] font-bold text-on-surface-variant opacity-70">
+            <div 
+              className="px-2 py-1 rounded bg-black/5 font-mono text-[10px] font-bold text-on-surface-variant opacity-70 truncate max-w-[150px] sm:max-w-[200px]"
+              title={sale.orderNumber}
+            >
               {sale.orderNumber}
             </div>
             <span className="font-label-caps text-[8px] font-bold px-1.5 py-0.5 rounded bg-black/[0.04] text-on-surface-variant opacity-60 uppercase tracking-wide">

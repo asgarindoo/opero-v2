@@ -48,7 +48,12 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
                 </span>
                 <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60">Issue Date: {new Date(inv.issueDate).toLocaleDateString()}</span>
               </div>
-              <h3 className="font-display font-bold text-[24px] text-on-surface leading-tight mb-1">{inv.contactName ?? <span className="opacity-40 text-[18px]">No Customer</span>}</h3>
+              <h3 
+                className="font-display font-bold text-[24px] text-on-surface leading-tight mb-1 break-words break-all line-clamp-3"
+                title={inv.contactName}
+              >
+                {inv.contactName ?? <span className="opacity-40 text-[18px]">No Customer</span>}
+              </h3>
               <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 flex items-center gap-2">
                 <CalendarClock size={12} /> Due on {new Date(inv.dueDate).toLocaleDateString()}
               </p>

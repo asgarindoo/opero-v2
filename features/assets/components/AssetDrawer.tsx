@@ -48,7 +48,12 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                 {asset.category.toUpperCase()}
               </span>
             </div>
-            <h3 className="font-display font-bold text-[20px] text-on-surface leading-tight mb-2">{asset.name}</h3>
+            <h3 
+              className="font-display font-bold text-[20px] text-on-surface leading-tight mb-2 break-words break-all line-clamp-3"
+              title={asset.name}
+            >
+              {asset.name}
+            </h3>
             <div className="flex items-center gap-4 text-on-surface-variant opacity-70">
               <div className="flex items-center gap-1.5 font-body-sm text-[12px]">
                 <MapPin size={13} /> {asset.location || "Unlocated"}

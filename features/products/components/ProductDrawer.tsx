@@ -58,7 +58,12 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                 </span>
               )}
             </div>
-            <h3 className="font-display font-bold text-[20px] text-on-surface leading-tight mb-2">{product.name}</h3>
+            <h3 
+              className="font-display font-bold text-[20px] text-on-surface leading-tight mb-2 break-words break-all line-clamp-3"
+              title={product.name}
+            >
+              {product.name}
+            </h3>
             <div className="flex items-center gap-4 text-on-surface-variant opacity-70">
               <div className="flex items-center gap-1.5 font-body-sm text-[12px]">
                 <DollarSign size={13} />

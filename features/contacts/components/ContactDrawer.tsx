@@ -35,7 +35,12 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                  {contact.initials}
               </div>
               <div>
-                 <h2 className="font-display font-semibold text-[18px] text-on-surface leading-tight mb-1">{contact.name}</h2>
+                 <h2 
+                   className="font-display font-semibold text-[18px] text-on-surface leading-tight mb-1 break-words break-all line-clamp-3"
+                   title={contact.name}
+                 >
+                   {contact.name}
+                 </h2>
                  <p className="font-body-sm text-[13px] text-on-surface-variant opacity-70">{contact.industry}</p>
                  <div className="flex items-center gap-2 mt-2">
                     <span className="font-label-caps text-[9px] font-bold px-2 py-0.5 rounded-full bg-black/5 text-on-surface opacity-80">

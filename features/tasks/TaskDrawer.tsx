@@ -138,7 +138,8 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
           ) : (
             <h1 
               onClick={() => setEditTitle(true)} 
-              className="font-display text-[22px] font-bold text-on-surface tracking-tight cursor-text hover:opacity-70 transition-opacity"
+              className="font-display text-[22px] font-bold text-on-surface tracking-tight cursor-text hover:opacity-70 transition-opacity break-words break-all line-clamp-3"
+              title={task.title}
             >
               {task.title}
             </h1>

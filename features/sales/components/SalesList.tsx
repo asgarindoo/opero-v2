@@ -160,9 +160,12 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-50 tracking-tight">
+                    <div 
+                      className="font-mono text-[10.5px] font-bold text-on-surface opacity-50 tracking-tight truncate max-w-[80px] md:max-w-[120px]"
+                      title={sale.orderNumber}
+                    >
                       {sale.orderNumber}
-                    </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5 ml-2">

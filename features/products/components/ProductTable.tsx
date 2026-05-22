@@ -151,10 +151,13 @@ export default function ProductTable({ onSelectProduct }: Props) {
                       <Package size={13} strokeWidth={1.5} />
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-display font-semibold text-[13px] text-on-surface tracking-tight truncate group-hover:text-primary transition-colors opacity-90">
+                  <div className="flex flex-col min-w-0 gap-0.5">
+                    <span 
+                      className="font-display font-semibold text-[13px] text-on-surface tracking-tight opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[100px] md:max-w-[150px] lg:max-w-[200px] xl:max-w-[280px]"
+                      title={product.name}
+                    >
                       {product.name}
-                    </h3>
+                    </span>
                     <div className="flex items-center gap-2">
                       <p className="font-body-sm text-[9px] text-on-surface-variant opacity-50 truncate uppercase tracking-widest font-bold">
                         {product.sku}

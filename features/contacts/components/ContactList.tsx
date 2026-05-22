@@ -149,10 +149,13 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                       <div className="w-6.5 h-6.5 rounded-md bg-black/5 flex items-center justify-center font-display font-semibold text-[9px] text-on-surface shrink-0 group-hover:bg-primary/5 group-hover:text-primary transition-all">
                         {contact.initials}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-display font-semibold text-[12px] text-on-surface truncate group-hover:text-primary transition-colors opacity-90 leading-tight">
+                      <div className="flex flex-col min-w-0 gap-0.5">
+                        <span 
+                          className="font-display font-semibold text-[12px] text-on-surface opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[100px] md:max-w-[150px] lg:max-w-[200px] xl:max-w-[280px]"
+                          title={contact.name}
+                        >
                           {contact.name}
-                        </p>
+                        </span>
                         <p className="font-body-sm text-[7px] text-on-surface-variant opacity-60 truncate uppercase font-bold tracking-[0.2em] leading-none mt-1">
                           {contact.industry}
                         </p>
