@@ -21,8 +21,8 @@ interface Props {
   onSelectSale: (id: string) => void;
 }
 
-function formatCurrency(val: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
+function formatCurrency(val: number, currency: string = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(val);
 }
 
 const SALE_TYPE_LABELS: Record<SaleType, string> = {
@@ -206,8 +206,11 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <span className="font-bold text-on-surface font-display text-[12.5px] opacity-80">
-                      {formatCurrency(sale.total)}
+                    <span 
+                      className="font-bold text-on-surface font-display text-[12.5px] opacity-80 block truncate max-w-[100px] ml-auto"
+                      title={formatCurrency(sale.total, sale.currency)}
+                    >
+                      {formatCurrency(sale.total, sale.currency)}
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-5 whitespace-nowrap text-right">

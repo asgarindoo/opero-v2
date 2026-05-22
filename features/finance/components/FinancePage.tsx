@@ -46,6 +46,10 @@ function FinanceContent() {
     transactions.find(tx => tx.id === selectedTxId) || null
   , [transactions, selectedTxId]);
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
+  };
+
   if (selectedTx) {
     return (
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
@@ -66,17 +70,17 @@ function FinanceContent() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
                <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Balance</span>
-               <span className="font-display text-[14px] font-bold text-on-surface">${summary.balance.toLocaleString()}</span>
+               <span className="font-display text-[14px] font-bold text-on-surface">{formatCurrency(summary.balance)}</span>
             </div>
             <div className="h-4 w-px bg-black/[0.06]" />
             <div className="flex items-center gap-5">
               <div className="flex items-center gap-2">
                  <ArrowUpRight size={12} className="text-emerald-500 opacity-60" />
-                 <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase">Income: ${summary.totalIncome.toLocaleString()}</span>
+                 <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase">Income: {formatCurrency(summary.totalIncome)}</span>
               </div>
               <div className="flex items-center gap-2">
                  <ArrowDownRight size={12} className="text-red-500 opacity-60" />
-                 <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase">Expense: ${summary.totalExpense.toLocaleString()}</span>
+                 <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase">Expense: {formatCurrency(summary.totalExpense)}</span>
               </div>
             </div>
           </div>

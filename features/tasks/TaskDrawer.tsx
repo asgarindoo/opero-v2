@@ -195,7 +195,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
           {tab === "details" && (
             <div className="space-y-8">
               <Section label="Description">
-                <p className="font-display text-[13.5px] leading-relaxed text-on-surface-variant/80">
+                <p className="font-display text-[13.5px] leading-relaxed text-on-surface-variant/80 break-words break-all whitespace-pre-wrap">
                   {task.description || "No description provided."}
                 </p>
               </Section>
@@ -215,8 +215,8 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                         onClick={() => toggleCheck(item.id)} 
                         className="flex items-start gap-3 p-2 rounded-[8px] hover:bg-black/[0.02] cursor-pointer transition-all group"
                       >
-                        {item.done ? <CheckSquare size={16} className="text-emerald-500 mt-0.5" /> : <Square size={16} className="text-on-surface-variant opacity-20 group-hover:opacity-40 mt-0.5" />}
-                        <span className={`font-display text-[13.5px] ${item.done ? 'text-on-surface-variant opacity-40 line-through' : 'text-on-surface'}`}>
+                        {item.done ? <CheckSquare size={16} className="text-emerald-500 mt-0.5 shrink-0" /> : <Square size={16} className="text-on-surface-variant opacity-20 group-hover:opacity-40 mt-0.5 shrink-0" />}
+                        <span className={`font-display text-[13.5px] break-words break-all ${item.done ? 'text-on-surface-variant opacity-40 line-through' : 'text-on-surface'}`}>
                           {item.text}
                         </span>
                       </div>
@@ -236,12 +236,12 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                       <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
                         {c.initials}
                       </div>
-                      <div className="flex-1 space-y-1">
+                      <div className="flex-1 space-y-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-display text-[13px] font-bold">{c.author}</span>
                           <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
                         </div>
-                        <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed">{c.body}</p>
+                        <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.body}</p>
                         <ReactionsBar reactions={c.reactions ?? {}} onToggle={e => handleCommentReaction(c.id, e)} />
                       </div>
                     </div>

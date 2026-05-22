@@ -164,8 +164,11 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                    </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className={`font-display text-[13px] font-bold ${isIncome ? "text-emerald-600" : "text-on-surface opacity-70"}`}>
-                    {isIncome ? "+" : "-"}${tx.amount.toLocaleString()}
+                  <div 
+                    className={`font-display text-[13px] font-bold truncate max-w-[100px] ml-auto ${isIncome ? "text-emerald-600" : "text-on-surface opacity-70"}`}
+                    title={`${isIncome ? "+" : "-"}${new Intl.NumberFormat("en-US", { style: "currency", currency: tx.currency || "USD" }).format(tx.amount)}`}
+                  >
+                    {isIncome ? "+" : "-"}{new Intl.NumberFormat("en-US", { style: "currency", currency: tx.currency || "USD" }).format(tx.amount)}
                   </div>
                 </TableCell>
                 <TableCell className="px-6 py-5 whitespace-nowrap text-right">

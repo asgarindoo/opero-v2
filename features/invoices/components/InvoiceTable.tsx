@@ -188,7 +188,10 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <span className="font-bold text-on-surface font-display text-[12.5px] opacity-80">
+                    <span 
+                      className="font-bold text-on-surface font-display text-[12.5px] opacity-80 block truncate max-w-[100px] ml-auto"
+                      title={`$${inv.totalAmount.toLocaleString()}`}
+                    >
                       ${inv.totalAmount.toLocaleString()}
                     </span>
                   </TableCell>

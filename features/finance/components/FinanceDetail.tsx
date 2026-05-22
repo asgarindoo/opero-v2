@@ -62,7 +62,10 @@ export default function FinanceDetail({ transaction, onClose }: FinanceDetailPro
                <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] mb-4">Total Amount</span>
                <div className="flex items-baseline gap-2 mb-2">
                   <span className="font-display text-[16px] font-medium text-on-surface-variant opacity-60">{transaction.currency}</span>
-                  <span className="font-display text-[48px] font-bold text-on-surface tracking-tighter leading-none">
+                  <span 
+                    className="font-display text-[48px] font-bold text-on-surface tracking-tighter leading-none break-all"
+                    title={transaction.amount.toLocaleString()}
+                  >
                     {transaction.amount.toLocaleString()}
                   </span>
                </div>
@@ -122,7 +125,7 @@ export default function FinanceDetail({ transaction, onClose }: FinanceDetailPro
             <section className="space-y-6">
                <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Operational Notes</h4>
                <div className="p-8 rounded-2xl border border-black/[0.04] bg-white/50">
-                  <p className="font-body-md text-[14px] text-on-surface-variant leading-relaxed italic">
+                  <p className="font-body-md text-[14px] text-on-surface-variant leading-relaxed italic break-words break-all whitespace-pre-wrap">
                      {transaction.notes || "No additional notes provided for this transaction."}
                   </p>
                </div>

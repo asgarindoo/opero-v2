@@ -6,8 +6,8 @@ import { createInvoice } from "@/features/invoices/services/invoices.client";
 import type { Invoice, InvoiceItem } from "@/features/invoices/types";
 import Dropdown from "@/components/ui/Dropdown";
 
-function formatCurrency(val: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(val);
+function formatCurrency(val: number, currency: string = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(val);
 }
 
 const STATUSES: SaleStatus[] = ["Pending", "Processing", "Completed", "Cancelled"];
@@ -162,14 +162,14 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
               onClick={handleMarkPaid}
               className="w-full mb-6 py-2.5 rounded-xl bg-on-surface text-surface-container-lowest font-label-caps text-[9px] font-bold tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
-              <CheckCircle2 size={13} /> MARK AS PAID — {formatCurrency(sale.total)}
+              <CheckCircle2 size={13} /> MARK AS PAID — {formatCurrency(sale.total, sale.currency)}
             </button>
           )}
 
           {sale.paymentStatus === "Paid" && (
             <div className="w-full mb-6 py-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center gap-2">
               <CheckCircle2 size={13} className="text-emerald-600" />
-              <span className="font-label-caps text-[9px] font-bold tracking-widest text-emerald-700">PAYMENT RECEIVED — {formatCurrency(sale.total)}</span>
+              <span className="font-label-caps text-[9px] font-bold tracking-widest text-emerald-700">PAYMENT RECEIVED — {formatCurrency(sale.total, sale.currency)}</span>
             </div>
           )}
 
@@ -188,14 +188,29 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
               <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider flex items-center gap-1">
                 <DollarSign size={10} /> Subtotal
               </div>
-              <div className="font-display font-bold text-[16px] text-on-surface opacity-70">{formatCurrency(sale.subtotal)}</div>
+              <div 
+                className="font-display font-bold text-[16px] text-on-surface opacity-70 break-all"
+                title={formatCurrency(sale.subtotal, sale.currency)}
+              >
+                {formatCurrency(sale.subtotal, sale.currency)}
+              </div>
               {sale.discountTotal > 0 && (
-                <div className="font-body-sm text-[10px] text-red-500 opacity-70">−{formatCurrency(sale.discountTotal)} discount</div>
+                <div 
+                  className="font-body-sm text-[10px] text-red-500 opacity-70 break-all"
+                  title={`−${formatCurrency(sale.discountTotal, sale.currency)} discount`}
+                >
+                  −{formatCurrency(sale.discountTotal, sale.currency)} discount
+                </div>
               )}
             </div>
             <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
               <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Total</div>
-              <div className="font-display font-bold text-[17px] text-on-surface opacity-90">{formatCurrency(sale.total)}</div>
+              <div 
+                className="font-display font-bold text-[17px] text-on-surface opacity-90 break-all"
+                title={formatCurrency(sale.total, sale.currency)}
+              >
+                {formatCurrency(sale.total, sale.currency)}
+              </div>
             </div>
           </div>
 
@@ -225,9 +240,9 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80">{formatCurrency(item.subtotal)}</p>
-                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60">{formatCurrency(item.price)} ea</p>
+                    <div className="text-right shrink-0">
+                      <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80 break-all">{formatCurrency(item.subtotal, sale.currency)}</p>
+                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 break-all">{formatCurrency(item.price, sale.currency)} ea</p>
                     </div>
                   </div>
                 ))

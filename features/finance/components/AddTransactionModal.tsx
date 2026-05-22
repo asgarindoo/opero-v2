@@ -19,6 +19,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
   const [type, setType] = useState<TransactionType>("Expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
+  const [currency, setCurrency] = useState("USD");
   const [reference, setReference] = useState("");
   const [contactName, setContactName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Bank Transfer");
@@ -33,6 +34,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
     addTransaction({
       type,
       amount: parseFloat(amount),
+      currency,
       category: category.trim() || "General",
       reference: reference.trim(),
       contactName: contactName.trim() || undefined,
@@ -93,7 +95,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <GlobalInput
               label="Reference #"
               required
@@ -108,6 +110,18 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
               placeholder="Infrastructure"
               value={category}
               onChange={e => setCategory(e.target.value)}
+            />
+            <GlobalSelect
+              label="Currency"
+              options={[
+                { value: "USD", label: "USD ($)" },
+                { value: "IDR", label: "IDR (Rp)" },
+                { value: "EUR", label: "EUR (€)" },
+                { value: "GBP", label: "GBP (£)" },
+                { value: "SGD", label: "SGD ($)" }
+              ]}
+              value={currency}
+              onChange={e => setCurrency(e.target.value)}
             />
           </div>
         </div>

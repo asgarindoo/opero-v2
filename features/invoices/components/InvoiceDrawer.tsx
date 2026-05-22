@@ -112,7 +112,12 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
                <div className="h-px bg-black/5 my-2" />
                <div className="flex justify-between items-center px-1 pt-1">
                  <span className="font-display font-bold text-[14px] text-on-surface opacity-90">Total Amount</span>
-                 <span className="font-display font-bold text-[18px] text-on-surface">{formatCurrency(inv.totalAmount, inv.currency)}</span>
+                 <span 
+                   className="font-display font-bold text-[18px] text-on-surface break-all"
+                   title={formatCurrency(inv.totalAmount, inv.currency)}
+                 >
+                   {formatCurrency(inv.totalAmount, inv.currency)}
+                 </span>
                </div>
             </div>
           </div>
@@ -123,7 +128,7 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
           <div className="grid grid-cols-2 gap-8 mb-8">
              <section>
                  <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider mb-3">Invoice Notes</h4>
-                <div className="p-3 rounded-lg bg-surface-container-low/30 border border-black/[0.02] font-body-sm text-[11.5px] text-on-surface-variant opacity-70 leading-relaxed">
+                <div className="p-3 rounded-lg bg-surface-container-low/30 border border-black/[0.02] font-body-sm text-[11.5px] text-on-surface-variant opacity-70 leading-relaxed break-words break-all whitespace-pre-wrap">
                   {inv.notes || "No special instructions."}
                 </div>
              </section>

@@ -32,8 +32,8 @@ function SalesPageContent() {
   const totalRevenue = sales.filter(s => s.paymentStatus === "Paid").reduce((acc, s) => acc + s.total, 0);
   const unpaidCount = sales.filter(s => s.paymentStatus === "Unpaid").length;
 
-  function formatCurrency(val: number) {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
+  function formatCurrency(val: number, currency: string = "USD") {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(val);
   }
 
   return (

@@ -111,7 +111,12 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                 <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1 flex items-center gap-1">
                   <DollarSign size={10} /> Value
                 </div>
-                <div className="font-display font-bold text-[17px] text-on-surface opacity-90">{asset.purchaseValue ? formatCurrency(asset.purchaseValue) : "—"}</div>
+                <div 
+                  className="font-display font-bold text-[17px] text-on-surface opacity-90 break-all"
+                  title={asset.purchaseValue ? formatCurrency(asset.purchaseValue) : undefined}
+                >
+                  {asset.purchaseValue ? formatCurrency(asset.purchaseValue) : "—"}
+                </div>
               </div>
               <div>
                 <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Supplier</div>

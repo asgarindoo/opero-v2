@@ -12,8 +12,8 @@ interface Props {
 
 const STATUSES: SaleStatus[] = ["Pending", "Processing", "Completed"];
 
-function formatCurrency(val: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
+function formatCurrency(val: number, currency: string = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(val);
 }
 
 export default function SalesKanban({ searchQuery, filterMode, onSelectSale, onAddNew }: Props) {
@@ -75,9 +75,9 @@ export default function SalesKanban({ searchQuery, filterMode, onSelectSale, onA
                   </div>
 
                   <div className="flex items-center justify-between mt-1">
-                    <div className="flex items-center gap-1.5 font-body-sm text-[12px] font-medium text-on-surface opacity-80">
-                      <DollarSign size={10} className="text-on-surface-variant opacity-60" />
-                      {formatCurrency(sale.total)}
+                    <div className="flex items-center gap-1.5 font-body-sm text-[12px] font-medium text-on-surface opacity-80 break-all">
+                      <DollarSign size={10} className="text-on-surface-variant opacity-60 shrink-0" />
+                      {formatCurrency(sale.total, sale.currency)}
                     </div>
                     <span className="font-label-caps text-[7.5px] font-bold px-1.5 py-0.5 rounded bg-black/5 text-on-surface-variant opacity-60 border border-black/[0.02]">
                       {sale.paymentStatus.toUpperCase()}

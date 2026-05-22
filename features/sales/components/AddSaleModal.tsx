@@ -31,8 +31,8 @@ function calcSubtotal(item: SaleItem): number {
   return item.price * item.quantity * (1 - item.discount / 100);
 }
 
-function formatCurrency(val: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(val);
+function formatCurrency(val: number, currency: string = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(val);
 }
 
 export default function AddSaleModal({ onClose }: { onClose: () => void }) {
@@ -51,6 +51,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("Unpaid");
   const [items, setItems] = useState<SaleItem[]>([newItem()]);
   const [orderDiscount, setOrderDiscount] = useState("");
+  const [currency, setCurrency] = useState("USD");
   const [notes, setNotes] = useState("");
 
   const addLineItem = () => setItems(prev => [...prev, newItem()]);
@@ -90,6 +91,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
       discountTotal: discountAmt,
       subtotal,
       total,
+      currency,
       notes,
     });
     onClose();
@@ -97,7 +99,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
 
   const footerSummary = (
     <div className="font-display text-[12px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
-      {items.filter(it => it.name.trim()).length} item{items.filter(it => it.name.trim()).length !== 1 ? "s" : ""} · {formatCurrency(total)}
+      {items.filter(it => it.name.trim()).length} item{items.filter(it => it.name.trim()).length !== 1 ? "s" : ""} · {formatCurrency(total, currency)}
     </div>
   );
 
@@ -128,7 +130,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <GlobalInput
             label="Sale Title"
             maxLength={40}
@@ -143,6 +145,18 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
             placeholder="Customer name or walk-in"
             value={contactName}
             onChange={e => setContactName(e.target.value)}
+          />
+          <GlobalSelect
+            label="Currency"
+            options={[
+              { value: "USD", label: "USD ($)" },
+              { value: "IDR", label: "IDR (Rp)" },
+              { value: "EUR", label: "EUR (€)" },
+              { value: "GBP", label: "GBP (£)" },
+              { value: "SGD", label: "SGD ($)" }
+            ]}
+            value={currency}
+            onChange={e => setCurrency(e.target.value)}
           />
         </div>
 
@@ -235,7 +249,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                 </div>
                 {item.subtotal > 0 && (
                   <div className="text-right pr-8 mt-0.5">
-                    <span className="font-display text-[10px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>{formatCurrency(item.subtotal)}</span>
+                    <span className="font-display text-[10px] break-all" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>{formatCurrency(item.subtotal, currency)}</span>
                   </div>
                 )}
               </div>
@@ -260,17 +274,17 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
           <div className="w-[200px] space-y-2 pt-1">
             <div className="flex justify-between text-[11.5px]">
               <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Subtotal</span>
-              <span className="font-display" style={{ opacity: 0.7 }}>{formatCurrency(subtotal)}</span>
+              <span className="font-display break-all ml-2 text-right" style={{ opacity: 0.7 }}>{formatCurrency(subtotal, currency)}</span>
             </div>
             {discountAmt > 0 && (
               <div className="flex justify-between text-[11.5px]">
                 <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Discount</span>
-                <span className="font-display" style={{ color: "rgba(186,26,26,0.8)" }}>−{formatCurrency(discountAmt)}</span>
+                <span className="font-display break-all ml-2 text-right" style={{ color: "rgba(186,26,26,0.8)" }}>−{formatCurrency(discountAmt, currency)}</span>
               </div>
             )}
             <div className="flex justify-between items-center pt-1.5" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
               <span className="font-label-caps text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Total</span>
-              <span className="font-display font-bold text-[15px]" style={{ color: "var(--color-on-surface)", opacity: 0.9 }}>{formatCurrency(total)}</span>
+              <span className="font-display font-bold text-[15px] break-all ml-2 text-right" style={{ color: "var(--color-on-surface)", opacity: 0.9 }}>{formatCurrency(total, currency)}</span>
             </div>
           </div>
         </div>
