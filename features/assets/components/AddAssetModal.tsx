@@ -70,7 +70,7 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
         <GlobalInput
           label="Asset Name"
           required
-          maxLength={80}
+          maxLength={50}
           autoFocus
           placeholder="e.g. MacBook Pro 16"
           value={name}
@@ -82,14 +82,14 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
             label="Asset Code / Serial"
             icon={<Tag size={11} strokeWidth={1.75} />}
             required
-            maxLength={40}
+            maxLength={30}
             placeholder="SN-123456"
             value={assetCode}
             onChange={e => setAssetCode(e.target.value)}
           />
           <GlobalInput
             label="Category"
-            maxLength={40}
+            maxLength={30}
             placeholder="Computing"
             value={category}
             onChange={e => setCategory(e.target.value)}
@@ -100,7 +100,7 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-4">
             <GlobalInput
               label="Department"
-              maxLength={60}
+              maxLength={30}
               placeholder="IT Dept"
               value={department}
               onChange={e => setDepartment(e.target.value)}
@@ -108,7 +108,7 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
             <GlobalInput
               label="Initial Location"
               icon={<MapPin size={11} strokeWidth={1.75} />}
-              maxLength={60}
+              maxLength={40}
               placeholder="Floor 2"
               value={location}
               onChange={e => setLocation(e.target.value)}

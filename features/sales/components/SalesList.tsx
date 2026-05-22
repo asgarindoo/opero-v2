@@ -166,7 +166,10 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5 ml-2">
-                      <span className="font-display font-semibold text-[13px] text-on-surface opacity-90 group-hover:text-primary transition-colors leading-tight">
+                      <span 
+                        className="font-display font-semibold text-[13px] text-on-surface opacity-90 group-hover:text-primary transition-colors leading-tight truncate max-w-[100px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[240px] xl:max-w-[300px] block"
+                        title={sale.title}
+                      >
                         {sale.title}
                       </span>
                       <div className="flex items-center gap-1.5">

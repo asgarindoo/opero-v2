@@ -50,7 +50,7 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
         <GlobalInput
           label="Product / Service Name"
           required
-          maxLength={80}
+          maxLength={50}
           autoFocus
           placeholder="e.g. Premium Ergonomic Mouse"
           value={name}

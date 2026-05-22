@@ -64,7 +64,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
           label="Company / Contact Name"
           icon={<Building2 size={11} strokeWidth={1.75} />}
           required
-          maxLength={80}
+          maxLength={40}
           autoFocus
           placeholder="e.g. Acme Corp"
           value={name}
@@ -104,7 +104,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
 
         <GlobalInput
           label="Industry"
-          maxLength={50}
+          maxLength={30}
           placeholder="e.g. Software, Logistics"
           value={industry}
           onChange={e => setIndustry(e.target.value)}
@@ -123,7 +123,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
               />
               <GlobalInput
                 label="Sales Stage"
-                maxLength={40}
+                maxLength={30}
                 placeholder="e.g. Qualified, Proposal"
                 value={salesStage}
                 onChange={e => setSalesStage(e.target.value)}
@@ -143,7 +143,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
           <GlobalInput
             label="Contact Person Name"
             icon={<User size={11} strokeWidth={1.75} />}
-            maxLength={60}
+            maxLength={40}
             placeholder="Person Name"
             value={personName}
             onChange={e => setPersonName(e.target.value)}
@@ -152,7 +152,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
             label="Email Address"
             icon={<Mail size={11} strokeWidth={1.75} />}
             type="email"
-            maxLength={80}
+            maxLength={60}
             placeholder="email@example.com"
             value={personEmail}
             onChange={e => setPersonEmail(e.target.value)}

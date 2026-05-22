@@ -146,7 +146,7 @@ export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStat
           <GlobalInput
             autoFocus
             required
-            maxLength={100}
+            maxLength={60}
             placeholder="Task title…"
             value={title}
             onChange={e => setTitle(e.target.value)}

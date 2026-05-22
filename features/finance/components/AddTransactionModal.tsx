@@ -97,14 +97,14 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
             <GlobalInput
               label="Reference #"
               required
-              maxLength={40}
+              maxLength={30}
               placeholder="INV-001"
               value={reference}
               onChange={e => setReference(e.target.value)}
             />
             <GlobalInput
               label="Category"
-              maxLength={40}
+              maxLength={30}
               placeholder="Infrastructure"
               value={category}
               onChange={e => setCategory(e.target.value)}
@@ -117,7 +117,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
             <GlobalInput
               label="Entity/Contact"
               icon={<User size={11} strokeWidth={1.75} />}
-              maxLength={60}
+              maxLength={40}
               placeholder="Vendor name"
               value={contactName}
               onChange={e => setContactName(e.target.value)}

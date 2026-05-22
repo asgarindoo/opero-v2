@@ -113,7 +113,12 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                 {sale.paymentStatus.toUpperCase()}
               </span>
             </div>
-            <h3 className="font-display font-bold text-[19px] text-on-surface leading-tight mb-2">{sale.title}</h3>
+            <h3 
+              className="font-display font-bold text-[19px] text-on-surface leading-tight mb-2 break-words break-all line-clamp-3" 
+              title={sale.title}
+            >
+              {sale.title}
+            </h3>
             <div className="flex items-center gap-4 text-on-surface-variant opacity-70">
               {sale.contactName && (
                 <div className="flex items-center gap-1.5 font-body-sm text-[11.5px]">

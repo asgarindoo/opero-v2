@@ -131,7 +131,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-2 gap-4">
           <GlobalInput
             label="Sale Title"
-            maxLength={100}
+            maxLength={40}
             autoFocus
             placeholder="e.g. Website Redesign"
             value={title}
@@ -139,7 +139,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
           />
           <GlobalInput
             label="Customer"
-            maxLength={80}
+            maxLength={40}
             placeholder="Customer name or walk-in"
             value={contactName}
             onChange={e => setContactName(e.target.value)}
@@ -172,6 +172,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                       list={`products-${item.id}`}
                       placeholder="Item name or description"
                       value={item.name}
+                      maxLength={40}
                       onChange={e => {
                         const val = e.target.value;
                         const matchedProduct = allProducts.find(p => p.name === val);
@@ -276,7 +277,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
 
         <GlobalTextarea
           label="Notes (optional)"
-          maxLength={500}
+          maxLength={300}
           rows={2}
           placeholder="Internal notes or customer instructions..."
           value={notes}

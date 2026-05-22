@@ -71,7 +71,7 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
             <GlobalInput
               label="Customer Name"
               icon={<User size={11} strokeWidth={1.75} />}
-              maxLength={80}
+              maxLength={40}
               autoFocus
               placeholder="Client name (optional)"
               value={contactName}
@@ -81,7 +81,7 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
               label="Invoice Number"
               icon={<Hash size={11} strokeWidth={1.75} />}
               required
-              maxLength={30}
+              maxLength={20}
               value={invoiceNumber}
               onChange={e => setInvoiceNumber(e.target.value)}
             />
@@ -120,6 +120,7 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
                   <input
                     placeholder="Item description..."
                     value={item.description}
+                    maxLength={40}
                     onChange={e => updateItem(item.id!, "description", e.target.value)}
                     className="w-full font-body-md text-[12px] rounded-[6px] px-3 py-2 outline-none transition-all"
                     style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", color: "var(--color-on-surface)" }}
@@ -173,7 +174,7 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
 
         <GlobalTextarea
           label="Invoice Notes"
-          maxLength={500}
+          maxLength={300}
           rows={2}
           placeholder="Terms and conditions..."
           value={notes}

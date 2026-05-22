@@ -123,7 +123,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
           <GlobalInput
             label="Document Name"
             required
-            maxLength={100}
+            maxLength={50}
             autoFocus
             placeholder="e.g. Sales Report Q1.pdf"
             value={name}
@@ -148,7 +148,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
             <GlobalInput
               label="Tags"
               icon={<Tag size={11} strokeWidth={1.75} />}
-              maxLength={60}
+              maxLength={40}
               placeholder="finance, invoice..."
               value={tags}
               onChange={e => setTags(e.target.value)}
