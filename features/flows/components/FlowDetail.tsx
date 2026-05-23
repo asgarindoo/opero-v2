@@ -124,15 +124,15 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-black/5 transition-all text-zinc-500 hover:text-zinc-900">
             <X size={18} />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 shrink-0">
               <span className={`px-2 py-0.5 rounded-sm font-display text-[10px] font-medium tracking-wide ${CATEGORY_COLORS[flow.category] || "text-zinc-600 bg-zinc-100"}`}>
                 {flow.category}
               </span>
               <span className="font-display text-[11px] font-medium text-zinc-300">/</span>
-              <span className="font-display text-[11px] font-medium text-zinc-500">Workspace Flow</span>
+              <span className="font-display text-[11px] font-medium text-zinc-500 shrink-0">Workspace Flow</span>
             </div>
-            <h1 className="font-display text-[14px] font-semibold text-zinc-900 tracking-tight truncate max-w-[400px]">{flow.name}</h1>
+            <h1 className="font-display text-[14px] font-semibold text-zinc-900 tracking-tight break-words line-clamp-2 max-w-[600px] leading-snug">{flow.name}</h1>
           </div>
         </div>
 
