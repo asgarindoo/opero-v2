@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Target, CheckCircle2, Circle, Clock, MoreHorizontal, Trash2, Edit3, Save, Plus, FileText, MessageSquare, TrendingUp, AlertCircle, Archive } from "lucide-react";
 import type { Goal, Milestone, GoalStatus, Priority } from "@/features/goals";
 import Dropdown from "@/components/ui/Dropdown";
+import DatePicker from "@/components/ui/DatePicker";
 
 interface GoalDetailProps {
   goal: Goal;
@@ -13,6 +14,7 @@ interface GoalDetailProps {
 }
 
 export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDelete }: GoalDetailProps) {
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [goal, setFlow] = useState<Goal>(initialGoal);
 
   useEffect(() => {
@@ -37,7 +39,33 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
     handleUpdate({ milestones: nextMilestones, progress });
   }
 
-  // Edit removed
+  function updateMilestone(milestoneId: string, updates: Partial<Milestone>) {
+    const nextMilestones = goal.milestones.map(m =>
+      m.id === milestoneId ? { ...m, ...updates } : m
+    );
+    handleUpdate({ milestones: nextMilestones });
+  }
+
+  function removeMilestone(milestoneId: string) {
+    const nextMilestones = goal.milestones.filter(m => m.id !== milestoneId);
+    
+    const completedCount = nextMilestones.filter(m => m.completed).length;
+    const progress = nextMilestones.length === 0 ? 0 : Math.round((completedCount / nextMilestones.length) * 100);
+    
+    handleUpdate({ milestones: nextMilestones, progress });
+  }
+
+  function addMilestone() {
+    const newId = `ms-${Date.now()}`;
+    const newMilestone: Milestone = {
+      id: newId,
+      title: "",
+      date: goal.targetDate || "",
+      completed: false
+    };
+    handleUpdate({ milestones: [...goal.milestones, newMilestone] });
+    setEditingMilestoneId(newId);
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white animate-fade-in overflow-hidden selection:bg-black/10">
@@ -115,7 +143,7 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
             <div className="space-y-4 pt-4">
               <div className="flex items-center justify-between border-b border-black/[0.06] pb-3 mb-2">
                 <h2 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Execution Milestones</h2>
-                <button className="text-zinc-400 hover:text-zinc-900 font-display text-[12px] font-medium transition-colors flex items-center gap-1">
+                <button onClick={addMilestone} className="text-zinc-400 hover:text-zinc-900 font-display text-[12px] font-medium transition-colors flex items-center gap-1">
                   <Plus size={14} /> Add Milestone
                 </button>
               </div>
@@ -138,13 +166,54 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
                     </button>
 
                     <div className="flex-1 flex flex-col pt-0.5">
-                      <span className="font-display text-[10px] font-bold text-zinc-400 tracking-[0.1em] uppercase mb-1.5">
-                        Target: {m.date}
-                      </span>
-                      <span className={`font-display text-[16px] leading-snug transition-all ${m.completed ? "text-zinc-400 line-through decoration-zinc-300" : "text-zinc-900 font-medium"
-                        }`}>
-                        {m.title}
-                      </span>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="font-display text-[10px] font-bold text-zinc-400 tracking-[0.1em] uppercase">
+                          Target:
+                        </span>
+                        <DatePicker
+                          variant="minimal"
+                          value={m.date}
+                          onChange={val => updateMilestone(m.id, { date: val || "" })}
+                          placeholder="Set date..."
+                        />
+                      </div>
+                      {editingMilestoneId === m.id ? (
+                        <textarea 
+                          maxLength={100}
+                          rows={1}
+                          value={m.title}
+                          onChange={e => {
+                            updateMilestone(m.id, { title: e.target.value });
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
+                          onBlur={() => setEditingMilestoneId(null)}
+                          autoFocus
+                          ref={el => {
+                            if (el) {
+                              el.style.height = 'auto';
+                              el.style.height = `${el.scrollHeight}px`;
+                            }
+                          }}
+                          placeholder="Milestone title..."
+                          className={`font-display text-[16px] leading-snug bg-transparent border border-primary/30 rounded p-1 outline-none w-full resize-none overflow-hidden ${m.completed ? "text-zinc-400" : "text-zinc-900 font-medium"
+                            }`}
+                        />
+                      ) : (
+                        <span 
+                          onClick={() => toggleMilestone(m.id)}
+                          className={`font-display text-[16px] leading-snug w-full cursor-pointer hover:opacity-70 ${m.completed ? "text-zinc-400 line-through decoration-zinc-300" : "text-zinc-900 font-medium"
+                            }`}
+                        >
+                          {m.title || <span className="text-zinc-400 italic">Untitled Milestone</span>}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity mt-1">
+                      <button onClick={() => removeMilestone(m.id)} className="p-1.5 rounded hover:bg-black/5 text-red-500">
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -210,16 +279,15 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-display text-[12px] text-zinc-500 w-20 shrink-0">Deadline</span>
-                  <input
-                    type="date"
-                    value={goal.targetDate || ""}
-                    onChange={e => handleUpdate({ targetDate: e.target.value })}
-                    className="
-                      w-[140px] flex items-center justify-end px-2 py-1 rounded
-                      bg-transparent hover:bg-black/[0.04] transition-all font-display text-[12px] text-zinc-900 font-medium
-                      cursor-pointer outline-none text-right border-0 shadow-none
-                    "
-                  />
+                  <div className="w-[140px]">
+                    <DatePicker
+                      align="right"
+                      position="top"
+                      variant="ghost"
+                      value={goal.targetDate || null}
+                      onChange={val => handleUpdate({ targetDate: val || "" })}
+                    />
+                  </div>
                 </div>
               </div>
             </section>

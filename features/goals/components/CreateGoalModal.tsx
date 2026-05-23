@@ -1,9 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { X, Plus, Trash2, Calendar, Target } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, Trash2, Calendar, Target } from "lucide-react";
 import type { Goal, GoalStatus, Priority } from "@/features/goals";
 import Dropdown from "@/components/ui/Dropdown";
+import DatePicker from "@/components/ui/DatePicker";
+
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
+import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
+
+/* ── Section label ───────────────────────────────────────────────────────── */
+function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+        {children}
+      </span>
+    </div>
+  );
+}
 
 interface CreateGoalModalProps {
   onClose: () => void;
@@ -27,41 +47,28 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function addMilestone() {
+  const addMilestone = () => {
     setTempMilestones(prev => [...prev, { id: genId("ms"), title: "", date: "" }]);
-  }
+  };
 
-  function updateMilestone(id: string, updates: Partial<{ title: string; date: string }>) {
+  const updateMilestone = (id: string, updates: Partial<{ title: string; date: string }>) => {
     setTempMilestones(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-  }
+  };
 
-  function removeMilestone(id: string) {
+  const removeMilestone = (id: string) => {
     if (tempMilestones.length <= 1) return;
     setTempMilestones(prev => prev.filter(m => m.id !== id));
-  }
+  };
 
   const isFormValid = title.trim() !== "" && targetOutcome.trim() !== "" && targetDate !== "" && (status as string) !== "";
 
   async function handleSubmit() {
     setError(null);
     const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
-      setError("Goal title is required.");
-      return;
-    }
+    if (!trimmedTitle) { setError("Goal title is required."); return; }
     const trimmedOutcome = targetOutcome.trim();
-    if (!trimmedOutcome) {
-      setError("Target outcome is required.");
-      return;
-    }
-    if (!targetDate) {
-      setError("Deadline is required.");
-      return;
-    }
-    if (!status) {
-      setError("Planning status is required.");
-      return;
-    }
+    if (!trimmedOutcome) { setError("Target outcome is required."); return; }
+    if (!targetDate) { setError("Deadline is required."); return; }
 
     setLoading(true);
     try {
@@ -97,251 +104,149 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-300"
-      onClick={loading ? undefined : onClose}
-    >
-      <div
-        className="bg-white w-full max-w-3xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-black/[0.08] animate-in slide-in-from-bottom-4 duration-500"
-        onClick={e => e.stopPropagation()}
-      >
+  const footerSummary = undefined;
 
-        {/* Modal Header */}
-        <header className="px-10 py-8 border-b border-black/[0.04] bg-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-              <Target size={24} />
-            </div>
-            <div>
-              <h2 className="font-display text-[18px] font-semibold text-zinc-900 tracking-tight">Define Strategic Goal</h2>
-              <p className="font-display text-[13px] text-zinc-500">Establish direction, outcome metrics, and key milestones</p>
+  return (
+    <ModalShell onClose={onClose} maxWidth={600}>
+      <ModalHeader title="New Goal" onClose={onClose} />
+
+      <ModalContent className="db-sidebar space-y-6">
+        <div className="space-y-4">
+          <GlobalInput
+            autoFocus
+            required
+            maxLength={60}
+            placeholder="Goal title…"
+            value={title}
+            onChange={e => { setTitle(e.target.value); setError(null); }}
+            onKeyDown={e => e.key === "Enter" && isFormValid && handleSubmit()}
+            className="font-display font-semibold"
+            style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
+          />
+
+          <GlobalTextarea
+            rows={2}
+            maxLength={300}
+            placeholder="Context & Purpose (Rationale behind this objective)…"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+
+          <div className="pt-2">
+            <SL>Due Date</SL>
+            <div className="w-48">
+              <DatePicker
+                value={targetDate}
+                onChange={val => { setTargetDate(val || ""); setError(null); }}
+                placeholder="Select deadline"
+              />
             </div>
           </div>
-          <button
-            disabled={loading}
-            onClick={onClose}
-            className="p-3 rounded-md hover:bg-black/5 transition-all text-zinc-400 hover:text-zinc-600 disabled:opacity-50"
-          >
-            <X size={20} />
-          </button>
-        </header>
-
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto px-10 py-10 space-y-10 bg-[#fafafa] custom-scrollbar">
-
-          {/* Section 1: Vision & Objective */}
-          <section className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between ml-1">
-                <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Goal Title</label>
-                <span className="font-display text-[10px] font-medium text-zinc-400">{title.length}/50</span>
-              </div>
-              <input
-                maxLength={50}
-                autoFocus
-                disabled={loading}
-                value={title}
-                onChange={e => { setTitle(e.target.value); setError(null); }}
-                placeholder="e.g. Q3 Sales Expansion"
-                className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3.5 font-display text-[15px] font-semibold text-zinc-900 outline-none placeholder:text-zinc-300 placeholder:font-normal focus:border-zinc-900/40 transition-all shadow-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Target Outcome */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between ml-1">
-                  <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Target Outcome</label>
-                  <span className="font-display text-[10px] font-medium text-zinc-400">{targetOutcome.length}/100</span>
-                </div>
-                <input
-                  maxLength={100}
-                  disabled={loading}
-                  value={targetOutcome}
-                  onChange={e => { setTargetOutcome(e.target.value); setError(null); }}
-                  placeholder="Measurable success metric..."
-                  className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3 font-display text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-900/40 transition-all shadow-sm"
-                />
-              </div>
-
-              {/* Deadline */}
-              <div className="space-y-2">
-                <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider ml-1">Deadline</label>
-                <div className="relative">
-                  <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
-                  <input
-                    disabled={loading}
-                    type="date"
-                    value={targetDate}
-                    onChange={e => { setTargetDate(e.target.value); setError(null); }}
-                    className="w-full bg-white border border-black/[0.08] rounded-xl pl-10 pr-4 py-3 font-display text-[14px] text-zinc-900 outline-none focus:border-zinc-900/40 transition-all shadow-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Context / Purpose */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between ml-1">
-                <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Context & Purpose</label>
-                <span className="font-display text-[10px] font-medium text-zinc-400">{description.length}/300</span>
-              </div>
-              <textarea
-                maxLength={300}
-                disabled={loading}
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Rationale behind this objective and strategic alignment..."
-                className="w-full bg-white border border-black/[0.08] rounded-xl px-4 py-3.5 font-display text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none h-24 resize-none focus:border-zinc-900/40 transition-all shadow-sm leading-relaxed"
-              />
-            </div>
-          </section>
-
-          {/* Section 2: Strategic Metadata */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 border-t border-black/[0.04]">
-            {/* Priority */}
-            <div className="space-y-2">
-              <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider ml-1">Priority / Impact</label>
-              <Dropdown
-                disabled={loading}
-                value={priority}
-                onChange={(val) => setPriority(val as Priority)}
-                options={[
-                  { value: "low", label: "Low Impact" },
-                  { value: "medium", label: "Medium Impact" },
-                  { value: "high", label: "High Impact" },
-                  { value: "critical", label: "Critical Priority" },
-                ]}
-              />
-            </div>
-
-            {/* Status */}
-            <div className="space-y-2">
-              <label className="font-display text-[11px] font-medium text-zinc-500 uppercase tracking-wider ml-1">Planning Status</label>
-              <Dropdown
-                disabled={loading}
-                value={status}
-                onChange={(val) => { setStatus(val as GoalStatus); setError(null); }}
-                options={[
-                  { value: "on-track", label: "On Track" },
-                  { value: "at-risk", label: "At Risk" },
-                  { value: "behind", label: "Behind" },
-                  { value: "completed", label: "Completed" },
-                ]}
-              />
-            </div>
-          </section>
-
-          {/* Section 3: Roadmap Checkpoints */}
-          <section className="space-y-6 pt-8 border-t border-black/[0.04]">
-            <div className="flex items-center justify-between border-b border-black/[0.04] pb-4">
-              <div className="flex items-center gap-2 text-zinc-900">
-                <Target size={14} className="text-zinc-400" />
-                <span className="font-display text-[12px] font-semibold uppercase tracking-wider">Roadmap Checkpoints</span>
-              </div>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={addMilestone}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900/5 text-zinc-900 hover:bg-zinc-900/10 transition-all shadow-sm"
-              >
-                <Plus size={14} />
-                <span className="font-display text-[11px] font-medium">Add Checkpoint</span>
-              </button>
-            </div>
-
-            <div className="py-2 flex flex-col pl-4">
-              {tempMilestones.map((m, idx) => {
-                const isLast = idx === tempMilestones.length - 1;
-                return (
-                  <div key={m.id} className="relative w-full flex items-stretch text-left group transition-all">
-
-                    {/* Anchor/Connector Column */}
-                    <div className="relative w-10 shrink-0 flex flex-col items-center">
-                      {/* Vertical connector line */}
-                      {tempMilestones.length > 1 && (
-                        <div className={`absolute w-px left-1/2 -translate-x-1/2 bg-gradient-to-b from-black/[0.08] via-black/[0.08] to-transparent ${idx === 0 ? "top-6 bottom-0" :
-                          isLast ? "top-0 h-6" :
-                            "top-0 bottom-0"
-                          }`} />
-                      )}
-
-                      {/* Circle Checkpoint Node */}
-                      <div className="h-12 w-full flex items-center justify-center relative z-10">
-                        <div className="w-[14px] h-[14px] rounded-full border-[2px] bg-white border-zinc-300 group-hover:border-zinc-400 transition-all shadow-sm" />
-                      </div>
-                    </div>
-
-                    {/* Content Column */}
-                    <div className="flex-1 pb-6 pt-[10px] flex flex-col justify-start">
-                      <div className="flex items-center gap-4 transition-all">
-                        <input
-                          disabled={loading}
-                          value={m.title}
-                          onChange={e => updateMilestone(m.id, { title: e.target.value })}
-                          placeholder={`Checkpoint ${idx + 1}`}
-                          className="flex-1 bg-transparent font-display text-[14px] font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 placeholder:font-normal"
-                        />
-                        <div className="flex items-center gap-2 border-l border-black/[0.06] pl-4">
-                          <Calendar size={14} className="text-zinc-400 shrink-0" />
-                          <input
-                            disabled={loading}
-                            type="date"
-                            value={m.date}
-                            onChange={e => updateMilestone(m.id, { date: e.target.value })}
-                            className="bg-transparent font-display text-[13px] text-zinc-600 outline-none"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          disabled={loading || tempMilestones.length <= 1}
-                          onClick={() => removeMilestone(m.id)}
-                          className="ml-2 p-1.5 rounded-md text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/5 hover:text-red-500 disabled:opacity-30 disabled:pointer-events-none shrink-0"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
         </div>
 
-        {/* Error Alert bar inside modal */}
-        {error && (
-          <div className="px-10 py-3 bg-red-50 border-t border-red-100 text-red-600 font-display text-[12px] flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
-            <span>{error}</span>
+        <div>
+          <SL>Target Outcome</SL>
+          <GlobalInput
+            maxLength={100}
+            placeholder="Measurable success metric…"
+            value={targetOutcome}
+            onChange={e => { setTargetOutcome(e.target.value); setError(null); }}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <SL>Priority / Impact</SL>
+            <Dropdown
+              disabled={loading}
+              value={priority}
+              onChange={(val) => setPriority(val as Priority)}
+              options={[
+                { value: "low", label: "Low Impact" },
+                { value: "medium", label: "Medium Impact" },
+                { value: "high", label: "High Impact" },
+                { value: "critical", label: "Critical Priority" },
+              ]}
+            />
           </div>
-        )}
+          <div>
+            <SL>Planning Status</SL>
+            <Dropdown
+              disabled={loading}
+              value={status}
+              onChange={(val) => { setStatus(val as GoalStatus); setError(null); }}
+              options={[
+                { value: "on-track", label: "On Track" },
+                { value: "at-risk", label: "At Risk" },
+                { value: "behind", label: "Behind" },
+                { value: "completed", label: "Completed" },
+              ]}
+            />
+          </div>
+        </div>
 
-        {/* Modal Footer */}
-        <footer className="px-10 py-6 border-t border-black/[0.04] bg-white flex items-center justify-end gap-4 shrink-0">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={onClose}
-            className="font-display text-[13px] font-medium text-zinc-500 hover:text-zinc-800 transition-all px-4 py-2 disabled:opacity-40"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!isFormValid || loading}
-            onClick={handleSubmit}
-            className={`px-6 py-2.5 rounded-md font-display text-[13px] font-medium transition-all flex items-center gap-1.5 ${isFormValid && !loading
-              ? "bg-zinc-900 text-white shadow-sm hover:shadow hover:-translate-y-px"
-              : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
-              }`}
-          >
-            {loading ? "Establishing..." : "Establish Goal"}
-          </button>
-        </footer>
+        <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
-      </div>
-    </div>
+        {/* Roadmap Checkpoints */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <SL icon={<Target size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Roadmap Checkpoints
+            </SL>
+          </div>
+
+          <div className="space-y-0 mt-2 pl-1">
+            {tempMilestones.map((m, idx) => {
+              const isLast = idx === tempMilestones.length - 1;
+              return (
+                <div key={m.id} className="relative flex items-center gap-3 px-2 py-2 group/ms transition-colors hover:bg-black/[0.02] rounded-[6px]">
+                  <div className="relative flex items-center justify-center w-4 h-full shrink-0">
+                    {!isLast && <div className="absolute top-[20px] bottom-[-16px] w-px bg-black/[0.08]" />}
+                    <div className="w-2.5 h-2.5 rounded-full border-[2px] border-black/[0.15] bg-white relative z-10" />
+                  </div>
+                  <input
+                    maxLength={100}
+                    placeholder={`Checkpoint ${idx + 1}…`}
+                    value={m.title}
+                    onChange={e => updateMilestone(m.id, { title: e.target.value })}
+                    className="flex-1 bg-transparent outline-none font-body-md text-[12.5px]"
+                    style={{ color: "var(--color-on-surface)" }}
+                  />
+                  <div className="w-36 shrink-0">
+                    <DatePicker
+                      align="right"
+                      value={m.date}
+                      onChange={val => updateMilestone(m.id, { date: val || "" })}
+                      placeholder="Date..."
+                    />
+                  </div>
+                  <button onClick={() => removeMilestone(m.id)} disabled={tempMilestones.length <= 1} className="shrink-0 opacity-60 group-hover/ms:opacity-100 disabled:opacity-60 transition-opacity p-0.5 rounded hover:bg-black/[0.06]">
+                    <Trash2 size={11} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.55)" }} />
+                  </button>
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={addMilestone}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] hover:bg-black/[0.04] transition-colors mt-1"
+            >
+              <Plus size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }} />
+              <span className="font-label-caps text-[10px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.8 }}>Add Checkpoint</span>
+            </button>
+          </div>
+        </div>
+      </ModalContent>
+
+      <ModalFooter summary={error || footerSummary}>
+        <button onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button onClick={handleSubmit} disabled={!isFormValid || loading} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          {loading ? "Establishing..." : "Establish Goal"}
+        </button>
+      </ModalFooter>
+    </ModalShell>
   );
 }
