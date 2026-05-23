@@ -1,13 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { 
-  AlertCircle, 
-  CalendarDays, 
-  CheckSquare, 
-  Paperclip, 
-  Link, 
-  MessageSquare, 
-  Trash2, 
+import {
+  AlertCircle,
+  CalendarDays,
+  CheckSquare,
+  Paperclip,
+  Link,
+  MessageSquare,
+  Trash2,
   Square,
   Clock
 } from "lucide-react";
@@ -28,12 +28,12 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import DatePicker from "@/components/ui/DatePicker";
 
-interface Props { 
-  task: Task; 
-  allTasks: Task[]; 
-  onClose: () => void; 
-  onUpdate: (id: string, patch: Partial<Task>) => void; 
-  onDelete: (id: string) => void; 
+interface Props {
+  task: Task;
+  allTasks: Task[];
+  onClose: () => void;
+  onUpdate: (id: string, patch: Partial<Task>) => void;
+  onDelete: (id: string) => void;
 }
 
 function Section({ label, icon, count, children, defaultOpen = true }: { label: string; icon?: React.ReactNode; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -52,13 +52,13 @@ function Section({ label, icon, count, children, defaultOpen = true }: { label: 
 }
 
 export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete }: Props) {
-  const [tab, setTab]       = useState<"details"|"activity">("details");
+  const [tab, setTab] = useState<"details" | "activity">("details");
   const [comment, setComment] = useState("");
   const [editTitle, setEditTitle] = useState(false);
-  const [titleVal, setTitleVal]   = useState(task.title);
+  const [titleVal, setTitleVal] = useState(task.title);
 
-  const done     = task.checklist.filter(c => c.done).length;
-  const total    = task.checklist.length;
+  const done = task.checklist.filter(c => c.done).length;
+  const total = task.checklist.length;
   const checkPct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   useEffect(() => {
@@ -105,10 +105,10 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
       size="md"
       footer={(
         <div className="flex items-center justify-between w-full">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            icon={Trash2} 
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={Trash2}
             className="text-red-500 hover:bg-red-50"
             onClick={() => { if (confirm("Delete this task?")) { onDelete(task.id); onClose(); } }}
           >
@@ -125,20 +125,20 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
         {/* Title */}
         <div className="space-y-2">
           {editTitle ? (
-            <Input 
-              autoFocus 
-              value={titleVal} 
+            <Input
+              autoFocus
+              value={titleVal}
               onChange={e => setTitleVal(e.target.value)}
               onBlur={() => { onUpdate(task.id, { title: titleVal.trim() || task.title }); setEditTitle(false); }}
-              onKeyDown={e => { 
-                if (e.key === "Enter") { onUpdate(task.id, { title: titleVal.trim() || task.title }); setEditTitle(false); } 
-                if (e.key === "Escape") { setTitleVal(task.title); setEditTitle(false); } 
+              onKeyDown={e => {
+                if (e.key === "Enter") { onUpdate(task.id, { title: titleVal.trim() || task.title }); setEditTitle(false); }
+                if (e.key === "Escape") { setTitleVal(task.title); setEditTitle(false); }
               }}
               className="font-display text-[22px] font-bold p-0 bg-transparent border-none focus:shadow-none focus:bg-transparent h-auto"
             />
           ) : (
-            <h1 
-              onClick={() => setEditTitle(true)} 
+            <h1
+              onClick={() => setEditTitle(true)}
               className="font-display text-[22px] font-bold text-on-surface tracking-tight cursor-text hover:opacity-70 transition-opacity break-words break-all line-clamp-3"
               title={task.title}
             >
@@ -155,29 +155,29 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
         {/* Quick Meta */}
         <div className="grid grid-cols-2 gap-4 py-4 border-y border-black/[0.04]">
           <div className="space-y-1">
-             <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Assignees</span>
-             <MemberPicker selected={task.assignees} onChange={a => onUpdate(task.id, { assignees: a })} />
+            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Assignees</span>
+            <MemberPicker selected={task.assignees} onChange={a => onUpdate(task.id, { assignees: a })} />
           </div>
           <div className="space-y-1">
-             <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Due Date</span>
-             <DatePicker 
-               value={task.due} 
-               onChange={date => onUpdate(task.id, { due: date })} 
-             />
+            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Due Date</span>
+            <DatePicker
+              value={task.due}
+              onChange={date => onUpdate(task.id, { due: date })}
+            />
           </div>
         </div>
 
         {/* Labels */}
         <Section label="Labels">
-           <LabelManager selected={task.labels} onChange={l => onUpdate(task.id, { labels: l })} />
+          <LabelManager selected={task.labels} onChange={l => onUpdate(task.id, { labels: l })} />
         </Section>
 
         {/* Tabs for Details/Activity */}
         <div className="flex gap-6 border-b border-black/[0.04]">
-          {(["details","activity"] as const).map(t => (
-            <button 
-              key={t} 
-              onClick={() => setTab(t)} 
+          {(["details", "activity"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
               className={`pb-3 font-label-caps text-[10px] font-bold uppercase tracking-wider transition-all relative ${tab === t ? 'text-primary' : 'text-on-surface-variant opacity-30 hover:opacity-100'}`}
             >
               {t}
@@ -200,21 +200,28 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 {total > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 mb-2">
-                       <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
-                          <div className="h-full bg-primary transition-all duration-500" style={{ width: `${checkPct}%` }} />
-                       </div>
-                       <span className="font-display text-[11px] font-bold opacity-30">{checkPct}%</span>
+                      <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
+                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${checkPct}%` }} />
+                      </div>
+                      <span className="font-display text-[11px] font-bold opacity-30">{checkPct}%</span>
                     </div>
                     {task.checklist.map(item => (
-                      <div 
-                        key={item.id} 
-                        onClick={() => toggleCheck(item.id)} 
+                      <div
+                        key={item.id}
+                        onClick={() => toggleCheck(item.id)}
                         className="flex items-start gap-3 p-2 rounded-[8px] hover:bg-black/[0.02] cursor-pointer transition-all group"
                       >
                         {item.done ? <CheckSquare size={16} className="text-emerald-500 mt-0.5 shrink-0" /> : <Square size={16} className="text-on-surface-variant opacity-20 group-hover:opacity-40 mt-0.5 shrink-0" />}
                         <span className={`font-display text-[13.5px] break-words break-all ${item.done ? 'text-on-surface-variant opacity-40 line-through' : 'text-on-surface'}`}>
                           {item.text}
                         </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if(confirm("Delete item?")) onUpdate(task.id, { checklist: task.checklist.filter(c => c.id !== item.id) }); }}
+                          className="text-red-500 opacity-20 hover:opacity-100 p-1 rounded transition-all ml-auto"
+                          title="Delete item"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -229,48 +236,59 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 <AttachmentZone attachments={task.attachments} onChange={a => onUpdate(task.id, { attachments: a })} />
               </Section>
 
-              <Section label="Discussion" count={task.comments.length}>
+              <Section label="Notes" count={task.comments.length}>
                 <div className="space-y-6">
                   {task.comments.map(c => (
-                    <div key={c.id} className="flex gap-4">
+                    <div key={c.id} className="flex gap-4 group">
                       <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
                         {c.initials}
                       </div>
                       <div className="flex-1 space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-display text-[13px] font-bold">{c.author}</span>
-                          <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-display text-[13px] font-bold">{c.author}</span>
+                            <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
+                          </div>
+                          <button
+                            onClick={() => { if (confirm("Delete this note?")) onUpdate(task.id, { comments: task.comments.filter(comment => comment.id !== c.id) }) }}
+                            className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
+                            title="Delete note"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
                         <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.body}</p>
                         <ReactionsBar reactions={c.reactions ?? {}} onToggle={e => handleCommentReaction(c.id, e)} />
                       </div>
                     </div>
                   ))}
-                  <div className="flex gap-4 pt-4 border-t border-black/[0.04]">
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">ME</div>
-                    <div className="flex-1 space-y-2">
-                      <textarea 
-                        rows={2} 
-                        placeholder="Add a comment..." 
-                        value={comment} 
-                        onChange={e => setComment(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            submitComment();
-                          }
-                        }}
-                        className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all"
-                      />
-                      <div className="flex items-center justify-end">
-                        <Button 
-                          variant="primary" 
-                          size="sm" 
-                          disabled={!comment.trim()} 
-                          onClick={submitComment}
-                        >
-                          POST COMMENT
-                        </Button>
+                  <div className="pt-4 border-t border-black/[0.04]">
+                    <div className="flex gap-4">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">ME</div>
+                      <div className="flex-1 space-y-2">
+                        <textarea
+                          rows={2}
+                          placeholder="Add a note, update, or log activity..."
+                          value={comment}
+                          onChange={e => setComment(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              submitComment();
+                            }
+                          }}
+                          className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all"
+                        />
+                        <div className="flex items-center justify-end">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            disabled={!comment.trim()}
+                            onClick={submitComment}
+                          >
+                            POST NOTE
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>

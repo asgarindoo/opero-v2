@@ -239,20 +239,6 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
               </div>
 
               <div className="space-y-1">
-                {isAddingItem && (
-                  <form onSubmit={handleAddItem} className="flex items-center gap-2 mb-2 p-1">
-                    <input
-                      autoFocus
-                      value={newItemText}
-                      onChange={e => setNewItemText(e.target.value)}
-                      placeholder="New item description..."
-                      className="flex-1 font-display text-[13px] text-zinc-900 bg-[#F9F9F9] rounded px-3 py-2 outline-none border border-transparent focus:bg-white focus:border-black/[0.1] focus:ring-4 focus:ring-black/[0.02] transition-all"
-                    />
-                    <button type="submit" disabled={!newItemText.trim()} className="px-3 py-1.5 bg-zinc-900 text-white font-display text-[11px] font-medium rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50">
-                      Add
-                    </button>
-                  </form>
-                )}
                 {activeStage.checklist.map(item => (
                   <div
                     key={item.id}
@@ -267,8 +253,29 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                       }`}>
                       {item.text}
                     </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if(confirm("Delete item?")) handleUpdateStage(activeStage.id, { checklist: activeStage.checklist.filter(c => c.id !== item.id) }); }}
+                      className="text-red-500 opacity-20 hover:opacity-100 p-1 rounded transition-all ml-auto"
+                      title="Delete item"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
                 ))}
+                {isAddingItem && (
+                  <form onSubmit={handleAddItem} className="flex items-center gap-2 mt-2 p-1">
+                    <input
+                      autoFocus
+                      value={newItemText}
+                      onChange={e => setNewItemText(e.target.value)}
+                      placeholder="New item description..."
+                      className="flex-1 font-display text-[13px] text-zinc-900 bg-[#F9F9F9] rounded px-3 py-2 outline-none border border-transparent focus:bg-white focus:border-black/[0.1] focus:ring-4 focus:ring-black/[0.02] transition-all"
+                    />
+                    <button type="submit" disabled={!newItemText.trim()} className="px-3 py-1.5 bg-zinc-900 text-white font-display text-[11px] font-medium rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50">
+                      Add
+                    </button>
+                  </form>
+                )}
                 {activeStage.checklist.length === 0 && (
                   <div className="py-4 px-5 flex items-center justify-between border border-dashed border-black/[0.06] rounded-md">
                     <span className="font-display text-[13px] text-zinc-400">No items in this stage.</span>
@@ -289,7 +296,9 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
             {/* Notes Section */}
             <section className="pt-8 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Notes</h3>
+                <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">
+                  Notes {flow.notes && flow.notes.length > 0 ? `(${flow.notes.length})` : ""}
+                </h3>
                 <MessageSquare size={14} className="text-zinc-400" />
               </div>
               <div className="space-y-6">
@@ -301,16 +310,25 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                         ? note.user.name.split(" ").map(n => n.charAt(0)).join("").substring(0, 2).toUpperCase()
                         : "U";
                       return (
-                        <div key={note.id} className="flex gap-4">
+                        <div key={note.id} className="flex gap-4 group">
                           <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
                             {initials}
                           </div>
                           <div className="flex-1 space-y-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-display text-[13px] font-bold">{note.user.name}</span>
-                              <span className="text-[10px] text-on-surface-variant opacity-30">
-                                {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-display text-[13px] font-bold">{note.user.name}</span>
+                                <span className="text-[10px] text-on-surface-variant opacity-30">
+                                  {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => { if (confirm("Delete this note?")) onUpdate({ ...flow, notes: (flow.notes || []).filter(n => n.id !== note.id) }) }}
+                                className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
+                                title="Delete note"
+                              >
+                                <Trash2 size={12} />
+                              </button>
                             </div>
                             <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed whitespace-pre-wrap break-all">
                               {note.text}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { X, Plus, Check } from "lucide-react";
-import { addCustomLabel, deleteCustomLabel, getLabels } from "@/features/tasks";
+import { addCustomLabel, deleteCustomLabel, getLabels, DEFAULT_LABELS } from "@/features/tasks";
 
 interface Props {
   selected: string[];
@@ -53,28 +53,32 @@ export default function LabelManager({ selected, onChange }: Props) {
       {allLabels.map(l => {
         const active = selected.includes(l);
         return (
-          <div key={l} className="relative group/label flex items-center">
+          <div key={l} className="relative group flex items-center">
             <button
               onClick={() => toggle(l)}
-              className="flex items-center gap-1 font-label-caps text-[9px] font-semibold px-2.5 py-1 rounded-full transition-all"
-              style={{
-                background: active ? "var(--color-primary)" : "rgba(0,0,0,0.055)",
-                color: active ? "var(--color-on-primary)" : "var(--color-on-surface-variant)",
-                border: active ? "1.5px solid var(--color-primary)" : "1.5px solid transparent",
-              }}
+              className={`flex items-center gap-1 font-label-caps text-[9px] font-bold px-2.5 py-1 rounded-full transition-all max-w-full border ${
+                active
+                  ? "bg-zinc-900 text-white border-transparent shadow-sm"
+                  : "bg-[#f8f3f2] text-zinc-600 border-transparent hover:bg-[#f0e8e7]"
+              }`}
             >
-              {active && <Check size={8} strokeWidth={3} />}
-              {l}
+              {active && <Check size={8} strokeWidth={3} className="shrink-0" />}
+              <span className="truncate max-w-[200px] tracking-wide">{l}</span>
             </button>
-            {/* Delete label (only visible on hover, only on custom ones beyond the core 8) */}
-            <button
-              onClick={() => removeLabel(l)}
-              className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full hidden group-hover/label:flex items-center justify-center transition-all z-10"
-              style={{ background: "rgba(186,26,26,0.7)", color: "#fff" }}
-              title={`Delete label "${l}"`}
-            >
-              <X size={7} strokeWidth={3} />
-            </button>
+            {/* Delete label */}
+            {!DEFAULT_LABELS.includes(l) && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeLabel(l); }}
+                className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center transition-all z-10 shadow-sm opacity-100 hover:scale-110 ${
+                  active 
+                    ? "bg-zinc-700 text-zinc-300 hover:bg-red-500 hover:text-white" 
+                    : "bg-white text-zinc-400 hover:bg-red-500 hover:text-white"
+                }`}
+                title={`Delete label "${l}"`}
+              >
+                <X size={7} strokeWidth={3} />
+              </button>
+            )}
           </div>
         );
       })}
@@ -87,6 +91,7 @@ export default function LabelManager({ selected, onChange }: Props) {
         >
           <input
             ref={inputRef}
+            maxLength={15}
             value={newLabel}
             onChange={e => setNewLabel(e.target.value)}
             onKeyDown={handleKeyDown}

@@ -143,7 +143,7 @@ export const STATUS_META: Record<Status, { color: string; bg: string; dot: strin
 
 const LABEL_STORAGE_KEY = "opero_task_labels";
 
-const DEFAULT_LABELS = [
+export const DEFAULT_LABELS = [
   "Design", "Client", "Bot", "Automation",
   "Finance", "Operations", "Marketing", "Team",
 ];
