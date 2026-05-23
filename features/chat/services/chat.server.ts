@@ -83,6 +83,24 @@ async function getTenantChannel(ctx: TenantContext, channelId: string) {
       AND "organizationId" = ${ctx.tenantId}
     LIMIT 1
   `;
+
+  if (!rows[0]) {
+    // Debug: check if channel exists at all (without org filter)
+    const anyRows = await prisma.$queryRaw<{ id: string; organizationId: string }[]>`
+      SELECT id, "organizationId" FROM chat_channel WHERE id = ${channelId} LIMIT 1
+    `;
+    if (anyRows[0]) {
+      console.error(
+        `[chat] getTenantChannel: channel ${channelId} exists but org mismatch — ` +
+        `channel.organizationId="${anyRows[0].organizationId}" vs ctx.tenantId="${ctx.tenantId}"`
+      );
+    } else {
+      console.error(
+        `[chat] getTenantChannel: channel ${channelId} does NOT exist in DB. ctx.tenantId="${ctx.tenantId}"`
+      );
+    }
+  }
+
   return rows[0] ? mapChannel(rows[0]) : null;
 }
 
@@ -142,6 +160,7 @@ export async function createTenantChannel(input: { name: string; description?: s
 
 export async function listTenantMessages(channelId: string) {
   const ctx = await requireTenant();
+  console.log(`[chat] listTenantMessages tenantId="${ctx.tenantId}" channelId="${channelId}"`);
   const channel = await getTenantChannel(ctx, channelId);
   if (!channel) return null;
 

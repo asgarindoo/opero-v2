@@ -7,7 +7,9 @@ type Ctx = { params: Promise<{ channelId: string }> };
 export async function GET(_req: NextRequest, ctx: Ctx) {
   try {
     const { channelId } = await ctx.params;
+    console.log("[chat-route] GET messages channelId:", channelId);
     const messages = await listTenantMessages(channelId);
+    console.log("[chat-route] listTenantMessages result:", messages === null ? "null (404)" : `${messages.length} messages`);
     if (!messages) return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     return NextResponse.json({ messages });
   } catch (err) {
