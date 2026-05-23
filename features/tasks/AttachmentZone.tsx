@@ -160,7 +160,7 @@ export default function AttachmentZone({ attachments, onChange, compact }: Attac
               </div>
 
               {/* Actions (reveal on hover) */}
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <div className="flex items-center gap-0.5 opacity-50 group-hover:opacity-100 transition-opacity shrink-0">
                 {renaming === att.id ? (
                   <button
                     onClick={() => commitRename(att.id)}

@@ -56,7 +56,7 @@ export default function DependencyPanel({ relationships, allTasks, onChange }: P
             <span style={{ color: meta.color, flexShrink: 0 }}>{meta.icon}</span>
             <span className="font-label-caps text-[9px] font-semibold shrink-0" style={{ color: meta.color }}>{meta.label}</span>
             <span className="font-body-md text-[11.5px] flex-1 truncate" style={{ color: "var(--color-on-surface)", opacity: 0.85 }}>{r.targetId} · {r.targetTitle}</span>
-            <button onClick={() => removeRel(r.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-black/[0.06]">
+            <button onClick={() => removeRel(r.id)} className="opacity-50 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-black/[0.06]">
               <X size={10} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 } as React.CSSProperties} />
             </button>
           </div>

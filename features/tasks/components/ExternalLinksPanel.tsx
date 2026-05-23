@@ -43,7 +43,7 @@ export default function ExternalLinksPanel({ links, onChange }: Props) {
             <p className="font-body-md text-[12px] font-medium truncate" style={{ color: "var(--color-on-surface)" }}>{l.title}</p>
             <p className="font-body-sm text-[10px] truncate" style={{ color: "var(--color-on-surface-variant)", opacity: 0.45 }}>{l.url}</p>
           </div>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5 opacity-50 group-hover:opacity-100 transition-opacity">
             <a href={l.url} target="_blank" rel="noopener noreferrer" className="p-1 rounded-[4px] hover:bg-black/[0.06]">
               <ExternalLinkIcon size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 } as React.CSSProperties} />
             </a>
