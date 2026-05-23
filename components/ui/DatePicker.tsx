@@ -11,7 +11,7 @@ interface Props {
   className?: string;
   align?: "left" | "right";
   position?: "top" | "bottom";
-  variant?: "default" | "minimal" | "ghost";
+  variant?: "default" | "minimal" | "ghost" | "compact";
 }
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -114,9 +114,16 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
       <div 
         onClick={handleOpen}
         className={`flex items-center cursor-pointer transition-colors ${
-          variant === "minimal" ? "gap-1.5 group" : variant === "ghost" ? "w-full justify-between px-2 py-1 rounded hover:bg-black/[0.04] group" : "gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04]"
+          variant === "minimal" ? "gap-1.5 group" : 
+          variant === "ghost" ? "w-full justify-between px-2 py-1 rounded hover:bg-black/[0.04] group" : 
+          variant === "compact" ? "gap-1.5 px-2.5 py-1.5 rounded-[6px]" :
+          "gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04]"
         }`}
-        style={variant === "minimal" || variant === "ghost" ? {} : { border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.02)" }}
+        style={
+          variant === "minimal" || variant === "ghost" ? {} : 
+          variant === "compact" ? { border: "1px solid rgba(0,0,0,0.09)" } : 
+          { border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.02)" }
+        }
       >
         {variant === "minimal" ? (
           <>
@@ -131,6 +138,13 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
               {displayFormat}
             </span>
             <CalendarDays size={13} className="text-zinc-400 group-hover:text-zinc-600 transition-colors shrink-0" />
+          </>
+        ) : variant === "compact" ? (
+          <>
+            <CalendarDays size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+            <span className="font-label-caps text-[10px] font-semibold truncate" style={{ color: "var(--color-on-surface-variant)", opacity: 0.75 }}>
+              {value ? displayFormat : placeholder}
+            </span>
           </>
         ) : (
           <>

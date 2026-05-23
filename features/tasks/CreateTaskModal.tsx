@@ -19,6 +19,7 @@ import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
+import DatePicker from "@/components/ui/DatePicker";
 
 /* ── Reusable click dropdown ─────────────────────────────────────────────── */
 function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
@@ -174,10 +175,12 @@ export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStat
               renderT={p => <><AlertCircle size={11} strokeWidth={2} style={{ color: PRIORITY_META[p].color }} /><span className="font-label-caps text-[10px] font-semibold" style={{ color: PRIORITY_META[p].color }}>{PRIORITY_META[p].label}</span></>}
               renderO={p => <><AlertCircle size={11} strokeWidth={2} style={{ color: PRIORITY_META[p].color }} /><span className="font-body-md text-[12px]" style={{ color: PRIORITY_META[p].color }}>{PRIORITY_META[p].label}</span></>}
             />
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px]" style={{ border: "1px solid rgba(0,0,0,0.09)" }}>
-              <CalendarDays size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-              <input type="date" value={due} onChange={e => setDue(e.target.value)} className="font-label-caps text-[10px] font-semibold bg-transparent outline-none" style={{ color: "var(--color-on-surface-variant)", opacity: 0.75 }} />
-            </div>
+            <DatePicker
+              variant="compact"
+              value={due || null}
+              onChange={val => setDue(val || "")}
+              placeholder="Set due date"
+            />
           </div>
         </div>
 
