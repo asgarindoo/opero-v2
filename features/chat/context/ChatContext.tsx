@@ -116,33 +116,47 @@ function textValue(value: unknown) {
   return typeof value === "string" ? value : null;
 }
 
+// Supabase Realtime WAL events may deliver column names in the original
+// Postgres casing (camelCase when created with quoted identifiers, e.g.
+// "organizationId") OR as lowercase depending on the Postgres version and
+// publication settings. We try both to be safe.
+function coalesce(record: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    if (record[key] !== undefined && record[key] !== null) return record[key];
+  }
+  return undefined;
+}
+
 function realtimePayloadValue(record: Record<string, unknown>, key: string) {
-  const payload = record.payload;
+  const payload = coalesce(record, "payload");
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
   return textValue((payload as Record<string, unknown>)[key]);
 }
 
 function mapRealtimeMessage(record: Record<string, unknown>): ChatMessage | null {
-  const id = textValue(record.id);
-  const organizationId = textValue(record.organizationId);
-  const channelId = textValue(record.channelId);
+  const id = textValue(coalesce(record, "id"));
+  // Try camelCase first (Prisma convention), then snake_case fallback
+  const organizationId = textValue(coalesce(record, "organizationId", "organization_id"));
+  const channelId = textValue(coalesce(record, "channelId", "channel_id"));
   if (!id || !organizationId || !channelId) return null;
 
-  const senderId = textValue(record.senderId);
-  const type: ChatMessageType = record.type === "system" ? "system" : "text";
+  const senderId = textValue(coalesce(record, "senderId", "sender_id"));
+  const type: ChatMessageType = coalesce(record, "type") === "system" ? "system" : "text";
   const senderName = realtimePayloadValue(record, "senderName") ?? "Team member";
   const senderEmail = realtimePayloadValue(record, "senderEmail") ?? undefined;
   const senderImage = realtimePayloadValue(record, "senderImage");
+  const createdAt = String(coalesce(record, "createdAt", "created_at") ?? "");
+  const updatedAt = String(coalesce(record, "updatedAt", "updated_at") ?? "");
 
   return {
     id,
     organizationId,
     channelId,
     senderId,
-    content: String(record.content ?? ""),
+    content: String(coalesce(record, "content") ?? ""),
     type,
-    createdAt: String(record.createdAt),
-    updatedAt: String(record.updatedAt),
+    createdAt,
+    updatedAt,
     sender: senderId ? { id: senderId, name: senderName, email: senderEmail, image: senderImage } : null,
   };
 }
@@ -439,38 +453,114 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           filter: `organizationId=eq.${organizationId}`,
         },
         (payload) => {
-          const message = mapRealtimeMessage(payload.new as Record<string, unknown>);
-          if (!message || message.organizationId !== organizationIdRef.current) return;
+          console.log("[chat-realtime] INSERT chat_message raw", payload.new);
+          const record = payload.new as Record<string, unknown>;
+          const message = mapRealtimeMessage(record);
 
-          const channelId = message.channelId;
-          const senderId = message.senderId;
-          const activeChannel = activeChannelIdRef.current;
-          const currentUser = currentUserIdRef.current;
-
-          setMessages((current) => {
-            const currentMessages = current[channelId];
-            if (!currentMessages && channelId !== activeChannel) return current;
-
-            const reconciled = reconcileMessage(currentMessages ?? [], message);
-            if (!reconciled.changed) return current;
-            return { ...current, [channelId]: reconciled.list };
-          });
-
-          if (channelId === activeChannel || messagesRef.current[channelId] !== undefined) {
-            scheduleMessageSync(channelId);
+          if (!message) {
+            console.warn("[chat-realtime] mapRealtimeMessage returned null — keys:", Object.keys(record));
+            return;
           }
-
-          if (senderId === currentUser) return;
-
-          if (channelId === activeChannel) {
-            void markChannelAsRead(channelId);
+          if (message.organizationId !== organizationIdRef.current) {
+            console.warn("[chat-realtime] organizationId mismatch — event:", message.organizationId, "local:", organizationIdRef.current);
             return;
           }
 
-          setUnreadCounts((current) => ({
-            ...current,
-            [channelId]: (current[channelId] ?? 0) + 1,
-          }));
+          console.log("[chat-realtime] mapped message", { id: message.id, channelId: message.channelId, content: message.content });
+
+          // Schedule state update in the next macrotask.
+          // Calling setState directly from the Supabase WebSocket callback
+          // runs inside a synchronous stack that React 18 auto-batching
+          // cannot reliably flush to the DOM — the update is queued but the
+          // render never commits until the next external React trigger.
+          // setTimeout(0) escapes that synchronous context so React
+          // processes the update cleanly in a fresh macrotask.
+          window.setTimeout(() => {
+            // Re-read refs inside the timeout for accuracy — the active
+            // channel or user could have changed in the milliseconds
+            // between the WebSocket callback and the timeout firing.
+            const channelId = message.channelId;
+            const senderId = message.senderId;
+            const activeChannel = activeChannelIdRef.current;
+            const currentUser = currentUserIdRef.current;
+
+            setMessages((current) => {
+              const currentMessages = current[channelId];
+              if (!currentMessages && channelId !== activeChannel) {
+                console.log("[chat-realtime] skip — no cache for non-active channel", channelId);
+                return current;
+              }
+              const reconciled = reconcileMessage(currentMessages ?? [], message);
+              if (!reconciled.changed) {
+                console.log("[chat-realtime] skip — message already in state", message.id);
+                return current;
+              }
+              console.log("[chat-realtime] ✅ appended", message.id, "to", channelId);
+              return { ...current, [channelId]: reconciled.list };
+            });
+
+            if (senderId === currentUser) return;
+
+            if (channelId === activeChannel) {
+              void markChannelAsRead(channelId);
+              return;
+            }
+
+            setUnreadCounts((current) => ({
+              ...current,
+              [channelId]: (current[channelId] ?? 0) + 1,
+            }));
+          }, 0);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_message",
+          filter: `organizationId=eq.${organizationId}`,
+        },
+        (payload) => {
+          console.log("[chat-realtime] UPDATE chat_message", payload.new);
+          const message = mapRealtimeMessage(payload.new as Record<string, unknown>);
+          if (!message || message.organizationId !== organizationIdRef.current) return;
+
+          window.setTimeout(() => {
+            setMessages((current) => {
+              const currentMessages = current[message.channelId];
+              if (!currentMessages) return current;
+              const idx = currentMessages.findIndex((m) => m.id === message.id);
+              if (idx < 0) return current;
+              const next = [...currentMessages];
+              next[idx] = { ...next[idx], ...message };
+              return { ...current, [message.channelId]: next };
+            });
+          }, 0);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "chat_message",
+          filter: `organizationId=eq.${organizationId}`,
+        },
+        (payload) => {
+          console.log("[chat-realtime] DELETE chat_message", payload.old);
+          const record = payload.old as Record<string, unknown>;
+          const deletedId = textValue(coalesce(record, "id"));
+          const channelId = textValue(coalesce(record, "channelId", "channel_id"));
+          if (!deletedId || !channelId) return;
+
+          window.setTimeout(() => {
+            setMessages((current) => {
+              const currentMessages = current[channelId];
+              if (!currentMessages) return current;
+              return { ...current, [channelId]: currentMessages.filter((m) => m.id !== deletedId) };
+            });
+          }, 0);
         }
       )
       .on(
@@ -482,15 +572,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           filter: `organizationId=eq.${organizationId}`,
         },
         (payload) => {
+          console.log("[chat-realtime] INSERT chat_channel", payload.new);
           const channel = mapRealtimeChannel(payload.new as Record<string, unknown>);
           if (!channel || channel.organizationId !== organizationIdRef.current) return;
 
-          setChannels((current) => (
-            current.some((item) => item.id === channel.id)
-              ? current
-              : [...current, channel].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-          ));
-          setUnreadCounts((current) => ({ ...current, [channel.id]: current[channel.id] ?? 0 }));
+          window.setTimeout(() => {
+            setChannels((current) =>
+              current.some((item) => item.id === channel.id)
+                ? current
+                : [...current, channel].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+            );
+            setUnreadCounts((current) => ({ ...current, [channel.id]: current[channel.id] ?? 0 }));
+          }, 0);
         }
       )
       .on(
@@ -503,30 +596,39 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         },
         (payload) => {
           const record = payload.old as Record<string, unknown>;
-          const deletedChannelId = textValue(record.id);
+          const deletedChannelId = textValue(coalesce(record, "id"));
           if (!deletedChannelId) return;
 
-          setChannels((current) => current.filter((channel) => channel.id !== deletedChannelId));
-          setMessages((current) => {
-            if (!(deletedChannelId in current)) return current;
-            const next = { ...current };
-            delete next[deletedChannelId];
-            return next;
-          });
-          setUnreadCounts((current) => {
-            if (!(deletedChannelId in current)) return current;
-            const next = { ...current };
-            delete next[deletedChannelId];
-            return next;
-          });
+          window.setTimeout(() => {
+            setChannels((current) => current.filter((channel) => channel.id !== deletedChannelId));
+            setMessages((current) => {
+              if (!(deletedChannelId in current)) return current;
+              const next = { ...current };
+              delete next[deletedChannelId];
+              return next;
+            });
+            setUnreadCounts((current) => {
+              if (!(deletedChannelId in current)) return current;
+              const next = { ...current };
+              delete next[deletedChannelId];
+              return next;
+            });
+          }, 0);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.error("[chat-realtime] subscription error", err);
+        } else {
+          console.log(`[chat-realtime] status: ${status} (org: ${organizationId})`);
+        }
+      });
 
     return () => {
+      console.log(`[chat-realtime] unsubscribing (org: ${organizationId})`);
       void supabase.removeChannel(subscription);
     };
-  }, [markChannelAsRead, organizationId, scheduleMessageSync]);
+  }, [markChannelAsRead, organizationId]);
 
   const sendMessage = useCallback(async (channelId: string, content: string) => {
     const trimmed = content.trim();

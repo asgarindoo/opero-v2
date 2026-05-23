@@ -1,14 +1,12 @@
 "use client";
 
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Hash, Search, X } from "lucide-react";
 import { useChat } from "@/features/chat";
 import MessageList from "@/features/chat/components/MessageList";
 import MessageComposer from "@/features/chat/components/MessageComposer";
 
-export default function ChannelPage({ params }: { params: Promise<{ channelId: string }> }) {
-  const resolvedParams = use(params);
-  const { channelId } = resolvedParams;
+export default function ChannelPage({ channelId }: { channelId: string }) {
   const { channels, loadingChannels, setActiveChannel } = useChat();
   const [searchQuery, setSearchQuery] = useState("");
 

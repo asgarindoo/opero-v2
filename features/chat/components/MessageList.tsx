@@ -16,6 +16,15 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
 
   const channelMessages = useMemo(() => messages[channelId] ?? [], [messages, channelId]);
   const hasCachedMessages = messages[channelId] !== undefined;
+
+  // ── Diagnostic: log every render so we can confirm context updates reach here ──
+  console.log("[chat-ui] MessageList render", {
+    channelId,
+    messagesKeys: Object.keys(messages),
+    channelMessageCount: channelMessages.length,
+    hasCachedMessages,
+    hasLoaded: hasLoadedChannels[channelId] ?? false,
+  });
   
   const isInitialLoading = initialLoadingChannels[channelId] ?? !hasCachedMessages;
   const hasLoaded = hasLoadedChannels[channelId] ?? false;
