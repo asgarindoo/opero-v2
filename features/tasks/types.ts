@@ -58,6 +58,7 @@ export interface Comment {
   id: string;
   author: string;
   initials: string;
+  avatar?: string | null;
   body: string;
   timestamp: string;
   reactions?: Record<string, Reaction>; // emoji → Reaction

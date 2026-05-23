@@ -16,6 +16,7 @@ import {
 import type { Flow, FlowStage } from "@/features/flows";
 import { CATEGORY_COLORS } from "@/features/flows";
 import Button from "@/components/ui/Button";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface FlowDetailProps {
   flow: Flow;
@@ -25,6 +26,7 @@ interface FlowDetailProps {
 }
 
 export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDelete }: FlowDetailProps) {
+  const { user } = useTenant();
   const [flow, setFlow] = useState<Flow>(initialFlow);
   const [activeStageId, setActiveStageId] = useState<string | null>(flow.stages[0]?.id || null);
 
@@ -98,7 +100,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
 
     const newNote = {
       id: `note-${Date.now()}`,
-      user: { name: "Current User", avatar: "" },
+      user: { id: user?.id || "u1", name: user?.name || "Current User", avatar: user?.image || "" },
       text: newNoteText.trim(),
       timestamp: new Date().toISOString()
     };
@@ -311,9 +313,13 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                         : "U";
                       return (
                         <div key={note.id} className="flex gap-4 group">
-                          <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                            {initials}
-                          </div>
+                          {note.user.avatar ? (
+                            <img src={note.user.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
+                              {initials}
+                            </div>
+                          )}
                           <div className="flex-1 space-y-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">

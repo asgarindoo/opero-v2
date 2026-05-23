@@ -27,6 +27,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import DatePicker from "@/components/ui/DatePicker";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface Props {
   task: Task;
@@ -52,6 +53,7 @@ function Section({ label, icon, count, children, defaultOpen = true }: { label: 
 }
 
 export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete }: Props) {
+  const { user } = useTenant();
   const [tab, setTab] = useState<"details" | "activity">("details");
   const [comment, setComment] = useState("");
   const [editTitle, setEditTitle] = useState(false);
@@ -77,8 +79,10 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
 
   function submitComment() {
     if (!comment.trim()) return;
-    const c: Comment = { id: `c${Date.now()}`, author: "You", initials: "ME", body: comment.trim(), timestamp: "Just now" };
-    onUpdate(task.id, { comments: [...task.comments, c], activity: [...task.activity, { id: `a${Date.now()}`, actor: "ME", action: "commented", timestamp: "Just now" }] });
+    const author = user?.name || "Current User";
+    const initials = author.substring(0, 2).toUpperCase();
+    const c: Comment = { id: `c${Date.now()}`, author, initials, avatar: user?.image, body: comment.trim(), timestamp: "Just now" };
+    onUpdate(task.id, { comments: [...task.comments, c], activity: [...task.activity, { id: `a${Date.now()}`, actor: author, action: "commented", timestamp: "Just now" }] });
     setComment("");
   }
 
@@ -240,9 +244,13 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 <div className="space-y-6">
                   {task.comments.map(c => (
                     <div key={c.id} className="flex gap-4 group">
-                      <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                        {c.initials}
-                      </div>
+                      {c.avatar ? (
+                        <img src={c.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
+                          {c.initials}
+                        </div>
+                      )}
                       <div className="flex-1 space-y-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
@@ -264,7 +272,13 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                   ))}
                   <div className="pt-4 border-t border-black/[0.04]">
                     <div className="flex gap-4">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">ME</div>
+                      {user?.image ? (
+                        <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
+                          {(user?.name || "U").substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1 space-y-2">
                         <textarea
                           rows={2}
