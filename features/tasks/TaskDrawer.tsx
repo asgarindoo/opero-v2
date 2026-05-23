@@ -26,6 +26,7 @@ import Button from "@/components/ui/Button";
 import Dropdown from "@/components/ui/Dropdown";
 import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
+import DatePicker from "@/components/ui/DatePicker";
 
 interface Props { 
   task: Task; 
@@ -159,15 +160,10 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
           </div>
           <div className="space-y-1">
              <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Due Date</span>
-             <div className="flex items-center gap-2 px-2 py-1.5 rounded-[6px] bg-black/[0.02] border border-black/[0.04]">
-               <CalendarDays size={12} className="opacity-30" />
-               <input 
-                 type="date" 
-                 value={task.due ?? ""} 
-                 onChange={e => onUpdate(task.id, { due: e.target.value || null })} 
-                 className="bg-transparent outline-none font-display text-[12px] text-on-surface-variant" 
-               />
-             </div>
+             <DatePicker 
+               value={task.due} 
+               onChange={date => onUpdate(task.id, { due: date })} 
+             />
           </div>
         </div>
 
