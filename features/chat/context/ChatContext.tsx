@@ -116,6 +116,19 @@ function textValue(value: unknown) {
   return typeof value === "string" ? value : null;
 }
 
+function normalizedTimestamp(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value !== "string" || !value.trim()) return new Date().toISOString();
+
+  const raw = value.trim();
+  const withTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw);
+  const isoLike = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const normalized = withTimezone ? isoLike : `${isoLike}Z`;
+  const date = new Date(normalized);
+
+  return Number.isFinite(date.getTime()) ? date.toISOString() : new Date().toISOString();
+}
+
 // Supabase Realtime WAL events may deliver column names in the original
 // Postgres casing (camelCase when created with quoted identifiers, e.g.
 // "organizationId") OR as lowercase depending on the Postgres version and
@@ -145,8 +158,8 @@ function mapRealtimeMessage(record: Record<string, unknown>): ChatMessage | null
   const senderName = realtimePayloadValue(record, "senderName") ?? "Team member";
   const senderEmail = realtimePayloadValue(record, "senderEmail") ?? undefined;
   const senderImage = realtimePayloadValue(record, "senderImage");
-  const createdAt = String(coalesce(record, "createdAt", "created_at") ?? "");
-  const updatedAt = String(coalesce(record, "updatedAt", "updated_at") ?? "");
+  const createdAt = normalizedTimestamp(coalesce(record, "createdAt", "created_at"));
+  const updatedAt = normalizedTimestamp(coalesce(record, "updatedAt", "updated_at"));
 
   return {
     id,
@@ -466,7 +479,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          console.log("[chat-realtime] mapped message", { id: message.id, channelId: message.channelId, content: message.content });
+          console.log("[chat-realtime] mapped message", {
+            id: message.id,
+            channelId: message.channelId,
+            content: message.content,
+            createdAt: message.createdAt,
+          });
 
           // Schedule state update in the next macrotask.
           // Calling setState directly from the Supabase WebSocket callback

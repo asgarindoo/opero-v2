@@ -3,6 +3,26 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, MessageSquarePlus } from "lucide-react";
 import { useChat } from "../context/ChatContext";
+import type { ChatMessage } from "@/features/chat";
+
+function messageDebugShape(message: ChatMessage) {
+  const diagnosticFields = message as ChatMessage & {
+    chatChannelId?: unknown;
+    status?: unknown;
+  };
+
+  return {
+    id: message.id,
+    content: message.content,
+    channelId: message.channelId,
+    chatChannelId: diagnosticFields.chatChannelId,
+    status: diagnosticFields.status,
+    type: message.type,
+    createdAt: message.createdAt,
+    senderId: message.senderId,
+    sender: message.sender,
+  };
+}
 
 export default function MessageList({ channelId, searchQuery = "" }: { channelId: string; searchQuery?: string }) {
   const {
@@ -14,17 +34,30 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
     loadMessages,
   } = useChat();
 
-  const channelMessages = useMemo(() => messages[channelId] ?? [], [messages, channelId]);
+  const rawMessages = useMemo(() => messages[channelId] ?? [], [messages, channelId]);
   const hasCachedMessages = messages[channelId] !== undefined;
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
-  // ── Diagnostic: log every render so we can confirm context updates reach here ──
+  const visibleMessages = useMemo(() => {
+    if (!normalizedSearchQuery) return rawMessages;
+    return rawMessages.filter((msg) =>
+      (msg.content ?? "").toLowerCase().includes(normalizedSearchQuery)
+    );
+  }, [rawMessages, normalizedSearchQuery]);
+
+  // Diagnostic: log every render so we can confirm context updates reach here.
   console.log("[chat-ui] MessageList render", {
     channelId,
     messagesKeys: Object.keys(messages),
-    channelMessageCount: channelMessages.length,
+    channelMessageCount: rawMessages.length,
     hasCachedMessages,
     hasLoaded: hasLoadedChannels[channelId] ?? false,
   });
+  console.log("[chat-ui] raw messages", rawMessages.length, rawMessages.map(messageDebugShape));
+  console.log("[chat-ui] visible messages", visibleMessages.length, visibleMessages.map((m) => ({
+    id: m.id,
+    content: m.content,
+  })));
   
   const isInitialLoading = initialLoadingChannels[channelId] ?? !hasCachedMessages;
   const hasLoaded = hasLoadedChannels[channelId] ?? false;
@@ -41,29 +74,23 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
   }, [channelId, hasCachedMessages, hasLoaded, loadMessages]);
 
   useEffect(() => {
-    const nextCount = channelMessages.length;
+    const nextCount = visibleMessages.length;
 
     const frameId = window.requestAnimationFrame(() => {
       bottomRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
       setPreviousMessageCount(nextCount);
     });
     return () => window.cancelAnimationFrame(frameId);
-  }, [channelMessages]);
-
-  const filteredMessages = useMemo(() => {
-    if (!searchQuery.trim()) return channelMessages;
-    return channelMessages.filter((msg) =>
-      msg.content.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [channelMessages, searchQuery]);
+  }, [visibleMessages]);
 
   const formatTime = (isoString: string) => {
     const d = new Date(isoString);
+    if (!Number.isFinite(d.getTime())) return "";
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string | null | undefined) => {
+    return (name || "Team member")
       .split(" ")
       .map((n) => n.charAt(0))
       .join("")
@@ -79,7 +106,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
         </div>
       )}
       
-      {isInitialLoading && !hasLoaded && channelMessages.length === 0 ? (
+      {isInitialLoading && !hasLoaded && rawMessages.length === 0 ? (
         <div className="space-y-6 animate-pulse">
           <div className="flex items-end gap-2.5 max-w-[60%]">
             <div className="w-6 h-6 rounded-full bg-black/5 shrink-0" />
@@ -103,7 +130,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
             </div>
           </div>
         </div>
-      ) : hasLoaded && filteredMessages.length === 0 ? (
+      ) : hasLoaded && visibleMessages.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-center px-6 animate-fade-in-up">
           {searchQuery ? (
             <>
@@ -129,14 +156,15 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
         </div>
       ) : (
         <div className="space-y-3.5">
-          {filteredMessages.map((msg) => {
+          {visibleMessages.map((msg) => {
             const isMe = msg.senderId === currentUserId;
-            const senderName = msg.sender?.name ?? "Team member";
+            const senderName = msg.sender?.name ?? (isMe ? "You" : "Unknown User");
             const initials = getInitials(senderName);
             const messageKey = msg.clientId ?? msg.id;
-            const messageIndex = channelMessages.findIndex((item) => (item.clientId ?? item.id) === messageKey);
+            const messageIndex = visibleMessages.findIndex((item) => (item.clientId ?? item.id) === messageKey);
             
             const isNew = msg.isPending || messageIndex >= previousMessageCount;
+            const timestamp = formatTime(msg.createdAt);
 
             return (
               <div
@@ -159,7 +187,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
                   
                   <div className={`flex flex-col gap-0.5 ${isMe ? "items-end" : "items-start"}`}>
                     <span className="font-aspekta text-[9px] text-black/35 px-1 select-none">
-                      {isMe ? formatTime(msg.createdAt) : `${senderName} • ${formatTime(msg.createdAt)}`}
+                      {isMe ? timestamp : [senderName, timestamp].filter(Boolean).join(" - ")}
                     </span>
                     
                     <div
@@ -171,7 +199,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
                           : "bg-[#f8f3f2] text-[#1c1b1b] rounded-full rounded-bl-xs border border-black/3 hover:bg-[#f2eceb]"
                       }`}
                     >
-                      {msg.content}
+                      {msg.content ?? ""}
                       
                       {msg.isPending && (
                         <div className="mt-1 flex items-center gap-1 opacity-75">
