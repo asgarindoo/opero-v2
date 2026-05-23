@@ -87,14 +87,14 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                     onClick={() => onGoalClick(goal)}
                     className={`group hover:bg-black/[0.015] cursor-pointer transition-colors ${isSelected ? "bg-primary/[0.02]" : ""}`}
                   >
-                    <td className="px-6 py-5 whitespace-nowrap">
+                    <td className="px-6 py-5 w-[40%] max-w-0">
                       <div className="flex items-center gap-4">
-                         <div className="w-9 h-9 rounded-lg bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-30 group-hover:bg-primary/5 group-hover:text-primary group-hover:opacity-100 transition-all">
+                         <div className="w-9 h-9 shrink-0 rounded-lg bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-30 group-hover:bg-primary/5 group-hover:text-primary group-hover:opacity-100 transition-all">
                             <Target size={15} />
                          </div>
-                         <div>
-                            <span className="font-display text-[13px] font-semibold text-on-surface tracking-tight group-hover:text-primary transition-colors block mb-0.5 opacity-90">{goal.title}</span>
-                            <span className="font-body-sm text-[11px] text-on-surface-variant opacity-40 block truncate max-w-[200px] leading-tight">{goal.description}</span>
+                         <div className="min-w-0 flex-1">
+                            <span className="font-display text-[13px] font-semibold text-on-surface tracking-tight group-hover:text-primary transition-colors block mb-0.5 opacity-90 truncate">{goal.title}</span>
+                            <span className="font-body-sm text-[11px] text-on-surface-variant opacity-40 block truncate leading-tight">{goal.description}</span>
                          </div>
                       </div>
                     </td>
@@ -128,7 +128,7 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                        <span className="font-body-sm text-[11.5px] font-display">{goal.targetDate}</span>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-right">
-                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                       <div className="flex items-center justify-end gap-1 transition-all">
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -137,7 +137,7 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                           >
                             <Trash2 size={13} />
                           </Button>
-                          <ChevronRight size={14} className="text-on-surface-variant opacity-10 ml-1" />
+                          <ChevronRight size={14} className="text-on-surface-variant opacity-20 ml-1" />
                        </div>
                     </td>
                   </tr>
