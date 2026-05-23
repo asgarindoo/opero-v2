@@ -130,7 +130,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
               <span className="font-display text-[11px] font-medium text-zinc-300">/</span>
               <span className="font-display text-[11px] font-medium text-zinc-500">Workspace Flow</span>
             </div>
-            <h1 className="font-display text-[14px] font-semibold text-zinc-900 tracking-tight">{flow.name}</h1>
+            <h1 className="font-display text-[14px] font-semibold text-zinc-900 tracking-tight truncate max-w-[400px]">{flow.name}</h1>
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
 
                     {/* Fixed Content Column */}
                     <div className="flex-1 pb-6 pt-[14px] pr-4 flex flex-col justify-start">
-                      <h4 className={`font-display text-[13px] leading-tight transition-all ${isActive ? "text-zinc-900 font-semibold" : "text-zinc-700 font-medium"}`}>
+                      <h4 className={`font-display text-[13px] leading-tight break-all transition-all ${isActive ? "text-zinc-900 font-semibold" : "text-zinc-700 font-medium"}`}>
                         {stage.name}
                       </h4>
 
@@ -221,7 +221,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
           <div className="max-w-3xl mx-auto space-y-12 animate-fade-in">
             <section className="space-y-4">
               <div>
-                <h1 className="font-display text-[32px] font-semibold text-zinc-900 tracking-tight leading-tight mb-3">
+                <h1 className="font-display text-[32px] font-semibold text-zinc-900 tracking-tight leading-tight mb-3 break-all">
                   {activeStage.name}
                 </h1>
               </div>
@@ -263,7 +263,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                       }`}>
                       {item.isCompleted && <CheckCircle2 size={10} strokeWidth={3} />}
                     </div>
-                    <span className={`font-display text-[14px] leading-relaxed transition-all ${item.isCompleted ? "text-zinc-400 line-through decoration-zinc-300" : "text-zinc-700"
+                    <span className={`font-display text-[14px] leading-relaxed break-all transition-all ${item.isCompleted ? "text-zinc-400 line-through decoration-zinc-300" : "text-zinc-700"
                       }`}>
                       {item.text}
                     </span>
@@ -289,7 +289,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
             {/* Notes Section */}
             <section className="pt-8 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Operational Notes</h3>
+                <h3 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase">Notes</h3>
                 <MessageSquare size={14} className="text-zinc-400" />
               </div>
               <div className="space-y-6">
@@ -305,14 +305,14 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                           <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
                             {initials}
                           </div>
-                          <div className="flex-1 space-y-1">
+                          <div className="flex-1 space-y-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="font-display text-[13px] font-bold">{note.user.name}</span>
                               <span className="text-[10px] text-on-surface-variant opacity-30">
                                 {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed">
+                            <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed whitespace-pre-wrap break-all">
                               {note.text}
                             </p>
                           </div>
@@ -332,6 +332,12 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                       rows={2}
                       value={newNoteText}
                       onChange={e => setNewNoteText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddNote();
+                        }
+                      }}
                       placeholder="Add a note, update, or log activity..."
                       className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all resize-none h-20 placeholder:text-zinc-400"
                     />
@@ -374,7 +380,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                   <span className="font-display text-[12px] text-zinc-500 flex items-center gap-1.5">
                     Objective
                   </span>
-                  <span className="font-display text-[13px] text-zinc-700 leading-relaxed break-words">{flow.description || "No objective set."}</span>
+                  <span className="font-display text-[13px] text-zinc-700 leading-relaxed break-all">{flow.description || "No objective set."}</span>
                 </div>
                 <div className="flex items-center pt-2">
                   <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0 flex items-center gap-1.5">

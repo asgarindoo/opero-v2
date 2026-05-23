@@ -29,11 +29,11 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
       </div>
 
       {/* Main Info */}
-      <div className="flex-1 mb-6">
-        <h3 className="font-display text-[15px] font-semibold text-on-surface leading-tight mb-1.5 group-hover:text-primary transition-colors">
+      <div className="flex-1 mb-6 min-w-0">
+        <h3 className="font-display text-[15px] font-semibold text-on-surface leading-tight mb-1.5 group-hover:text-primary transition-colors truncate">
           {flow.name}
         </h3>
-        <p className="font-display text-[12px] text-on-surface-variant opacity-60 line-clamp-2 leading-relaxed">
+        <p className="font-display text-[12px] text-on-surface-variant opacity-60 line-clamp-2 break-words leading-relaxed">
           {flow.description}
         </p>
       </div>
