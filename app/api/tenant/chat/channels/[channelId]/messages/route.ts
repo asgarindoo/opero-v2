@@ -23,7 +23,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   try {
     const { channelId } = await ctx.params;
     const parsed = CreateMessageSchema.safeParse(await req.json().catch(() => ({})));
-    if (!parsed.success) return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const msg = issue?.code === "too_big"
+        ? `Message is too long (max 4000 characters)`
+        : "Message cannot be empty";
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
     const message = await createTenantMessage(channelId, parsed.data.content);
     if (!message) return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     return NextResponse.json({ message }, { status: 201 });
