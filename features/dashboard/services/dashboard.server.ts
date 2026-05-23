@@ -145,6 +145,7 @@ export async function getDashboardSummary() {
       const completed = stages.filter((s: any) => s.isCompleted).length;
       const total = stages.length || 1;
       return {
+        id: flow.id ?? flow.recordId,
         name: flow.name ?? "Flow",
         columns: [
           { name: "Completed", count: completed },

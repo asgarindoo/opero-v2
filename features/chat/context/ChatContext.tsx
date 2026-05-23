@@ -3,20 +3,22 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import type { ChatChannel, ChatMessage } from "@/features/chat";
+import type { ChatChannel, ChatMessage, ChatMessageType } from "@/features/chat";
 import {
   createChannel as createChannelRequest,
+  deleteChannel as deleteChannelRequest,
   getSupabaseBrowserClient,
   listChannels,
   listMessages,
+  markChannelRead,
   sendChannelMessage,
-  deleteChannel as deleteChannelRequest,
 } from "@/features/chat/services/chat.client";
 
 interface ChatContextType {
   channels: ChatChannel[];
   messages: Record<string, ChatMessage[]>;
   unreadCounts: Record<string, number>;
+  totalUnreadCount: number;
   initialLoadingChannels: Record<string, boolean>;
   refetchingChannels: Record<string, boolean>;
   hasLoadedChannels: Record<string, boolean>;
@@ -24,7 +26,11 @@ interface ChatContextType {
   loadingMessages: boolean;
   error: string | null;
   currentUserId: string | null;
-  loadMessages: (channelId: string, options?: { silent?: boolean; countUnread?: boolean }) => Promise<void>;
+  organizationId: string | null;
+  activeChannelId: string | null;
+  setActiveChannel: (channelId: string | null) => void;
+  loadMessages: (channelId: string, options?: { silent?: boolean }) => Promise<void>;
+  markChannelAsRead: (channelId: string) => Promise<void>;
   sendMessage: (channelId: string, content: string) => Promise<void>;
   createChannel: (name: string, description: string) => Promise<string>;
   deleteChannel: (channelId: string) => Promise<void>;
@@ -38,28 +44,8 @@ function activeChannelIdFromPath(pathname: string | null) {
   return pathname.slice(prefix.length).split("/")[0] || null;
 }
 
-function mergeMessage(list: ChatMessage[], message: ChatMessage) {
-  return reconcileMessage(list, message).list;
-}
-
-function mergeMessages(list: ChatMessage[], incoming: ChatMessage[]) {
-  const existingIds = new Set(list.map((message) => message.id));
-  const added = incoming.filter((message) => !existingIds.has(message.id));
-  if (added.length === 0) return { list, added };
-
-  return {
-    list: [...list, ...added].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
-    added,
-  };
-}
-
-function sameMessageList(a: ChatMessage[], b: ChatMessage[]) {
-  if (a.length !== b.length) return false;
-  return a.every((message, index) => (
-    message.id === b[index]?.id &&
-    message.content === b[index]?.content &&
-    message.updatedAt === b[index]?.updatedAt
-  ));
+function isChatIndexPath(pathname: string | null) {
+  return pathname === "/dashboard/chat";
 }
 
 function messageTime(message: ChatMessage) {
@@ -86,10 +72,7 @@ function isMatchingOptimistic(pending: ChatMessage, saved: ChatMessage) {
 
 function reconcileMessage(list: ChatMessage[], incoming: ChatMessage) {
   const existingIndex = list.findIndex((message) => message.id === incoming.id);
-  if (existingIndex >= 0) {
-    console.log("[chat] duplicate ignored", { id: incoming.id });
-    return { list, added: false, replacedOptimistic: false };
-  }
+  if (existingIndex >= 0) return { list, changed: false };
 
   const pendingIndex = list.findIndex((message) => isMatchingOptimistic(message, incoming));
   if (pendingIndex >= 0) {
@@ -100,19 +83,10 @@ function reconcileMessage(list: ChatMessage[], incoming: ChatMessage) {
       clientId: pending.clientId,
       isPending: false,
     };
-    console.log("[chat] optimistic replaced", {
-      clientId: pending.clientId,
-      serverId: incoming.id,
-    });
-    return { list: sortMessages(next), added: true, replacedOptimistic: true };
+    return { list: sortMessages(next), changed: true };
   }
 
-  console.log("[chat] message appended", {
-    id: incoming.id,
-    before: list.length,
-    after: list.length + 1,
-  });
-  return { list: sortMessages([...list, incoming]), added: true, replacedOptimistic: false };
+  return { list: sortMessages([...list, incoming]), changed: true };
 }
 
 function reconcileFetchedMessages(current: ChatMessage[], fetched: ChatMessage[]) {
@@ -121,7 +95,7 @@ function reconcileFetchedMessages(current: ChatMessage[], fetched: ChatMessage[]
 
   fetched.forEach((message) => {
     const reconciled = reconcileMessage(next, message);
-    if (reconciled.list !== next) {
+    if (reconciled.changed) {
       changed = true;
       next = reconciled.list;
     }
@@ -129,40 +103,65 @@ function reconcileFetchedMessages(current: ChatMessage[], fetched: ChatMessage[]
 
   const pending = next.filter((message) => message.isPending);
   const fetchedIds = new Set(fetched.map((message) => message.id));
-  const missingConfirmed = next.filter((message) => !message.isPending && !fetchedIds.has(message.id));
+  const confirmed = next.filter((message) => !message.isPending && fetchedIds.has(message.id));
 
-  if (changed) {
-    return { list: next, changed: true };
-  }
-
-  if (missingConfirmed.length === 0 && pending.length === 0 && sameMessageList(next, fetched)) {
+  if (!changed && pending.length === 0 && confirmed.length === fetched.length && next.length === fetched.length) {
     return { list: current, changed: false };
   }
 
-  return { list: next, changed };
+  return { list: sortMessages(next), changed: changed || next !== current };
 }
 
-function readKey(userId: string | null, organizationId: string, channelId: string) {
-  return `opero:chat:last-read:${userId ?? "anonymous"}:${organizationId}:${channelId}`;
+function textValue(value: unknown) {
+  return typeof value === "string" ? value : null;
 }
 
-function getLastReadAt(userId: string | null, organizationId: string, channelId: string) {
-  if (typeof window === "undefined") return 0;
-  const value = window.localStorage.getItem(readKey(userId, organizationId, channelId));
-  return value ? Number(value) || 0 : 0;
+function realtimePayloadValue(record: Record<string, unknown>, key: string) {
+  const payload = record.payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  return textValue((payload as Record<string, unknown>)[key]);
 }
 
-function setLastReadAt(userId: string | null, organizationId: string, channelId: string, timestamp = Date.now()) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(readKey(userId, organizationId, channelId), String(timestamp));
+function mapRealtimeMessage(record: Record<string, unknown>): ChatMessage | null {
+  const id = textValue(record.id);
+  const organizationId = textValue(record.organizationId);
+  const channelId = textValue(record.channelId);
+  if (!id || !organizationId || !channelId) return null;
+
+  const senderId = textValue(record.senderId);
+  const type: ChatMessageType = record.type === "system" ? "system" : "text";
+  const senderName = realtimePayloadValue(record, "senderName") ?? "Team member";
+  const senderEmail = realtimePayloadValue(record, "senderEmail") ?? undefined;
+  const senderImage = realtimePayloadValue(record, "senderImage");
+
+  return {
+    id,
+    organizationId,
+    channelId,
+    senderId,
+    content: String(record.content ?? ""),
+    type,
+    createdAt: String(record.createdAt),
+    updatedAt: String(record.updatedAt),
+    sender: senderId ? { id: senderId, name: senderName, email: senderEmail, image: senderImage } : null,
+  };
 }
 
-function countUnreadMessages(messages: ChatMessage[], userId: string | null, organizationId: string, channelId: string) {
-  const lastReadAt = getLastReadAt(userId, organizationId, channelId);
-  return messages.filter((message) => (
-    message.senderId !== userId &&
-    new Date(message.createdAt).getTime() > lastReadAt
-  )).length;
+function mapRealtimeChannel(record: Record<string, unknown>): ChatChannel | null {
+  const id = textValue(record.id);
+  const organizationId = textValue(record.organizationId);
+  if (!id || !organizationId) return null;
+
+  return {
+    id,
+    organizationId,
+    name: textValue(record.name) ?? "general",
+    description: textValue(record.description),
+    type: "public",
+    createdById: textValue(record.createdById),
+    createdAt: String(record.createdAt),
+    updatedAt: String(record.updatedAt),
+  };
 }
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
@@ -171,10 +170,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const sessionUserId = session?.user?.id ?? null;
   const sessionUserName = session?.user?.name ?? "You";
-  const activeChannelId = activeChannelIdFromPath(pathname);
+  const routeChannelId = activeChannelIdFromPath(pathname);
+
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [registeredActiveChannelId, setRegisteredActiveChannelId] = useState<string | null>(null);
+  const activeChannelId = registeredActiveChannelId ?? routeChannelId;
+  const activeUnreadCount = activeChannelId ? unreadCounts[activeChannelId] ?? 0 : 0;
   const [initialLoadingChannels, setInitialLoadingChannels] = useState<Record<string, boolean>>({});
   const [refetchingChannels, setRefetchingChannels] = useState<Record<string, boolean>>({});
   const [hasLoadedChannels, setHasLoadedChannels] = useState<Record<string, boolean>>({});
@@ -182,54 +185,113 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(sessionUserId);
-  const lastSessionUserIdRef = useRef<string | null>(null);
-  const sessionUserIdRef = useRef<string | null>(sessionUserId);
-  const refreshingChannelsRef = useRef(false);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+
+  const activeChannelIdRef = useRef<string | null>(activeChannelId);
+  const currentUserIdRef = useRef<string | null>(sessionUserId);
+  const organizationIdRef = useRef<string | null>(null);
+  const channelsRef = useRef(channels);
+  const messagesRef = useRef(messages);
+  const unreadCountsRef = useRef(unreadCounts);
+  const hasLoadedChannelsRef = useRef(hasLoadedChannels);
   const loadingMessagesRef = useRef<Set<string>>(new Set());
+  const markingReadRef = useRef<Set<string>>(new Set());
+  const refreshingChannelsRef = useRef(false);
+  const lastSessionUserIdRef = useRef<string | null>(null);
   const lastVisibleRefreshAtRef = useRef(0);
-  const activeSyncInFlightRef = useRef<string | null>(null);
-  const organizationId = channels[0]?.organizationId ?? null;
+  const syncTimeoutsRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    sessionUserIdRef.current = sessionUserId;
-  }, [sessionUserId]);
+    activeChannelIdRef.current = activeChannelId;
+  }, [activeChannelId]);
 
   useEffect(() => {
-    if (!sessionUserId) return;
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
+  useEffect(() => {
+    organizationIdRef.current = organizationId;
+  }, [organizationId]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    channelsRef.current = channels;
+  }, [channels]);
+
+  useEffect(() => {
+    unreadCountsRef.current = unreadCounts;
+  }, [unreadCounts]);
+
+  useEffect(() => {
+    hasLoadedChannelsRef.current = hasLoadedChannels;
+  }, [hasLoadedChannels]);
+
+  const resetChatState = useCallback((nextUserId: string | null) => {
+    setChannels([]);
+    setMessages({});
+    setUnreadCounts({});
+    setInitialLoadingChannels({});
+    setRefetchingChannels({});
+    setHasLoadedChannels({});
+    setLoadingChannels(false);
+    setLoadingMessages(false);
+    setOrganizationId(null);
+    setRegisteredActiveChannelId(null);
+    setError(null);
+    setCurrentUserId(nextUserId);
+  }, []);
+
+  const setActiveChannel = useCallback((channelId: string | null) => {
+    setRegisteredActiveChannelId(channelId);
+  }, []);
+
+  useEffect(() => {
     if (lastSessionUserIdRef.current === sessionUserId) return;
-
-    const previousUserId = lastSessionUserIdRef.current;
     lastSessionUserIdRef.current = sessionUserId;
-    if (!previousUserId) {
-      setCurrentUserId(sessionUserId);
-      return;
-    }
+    resetChatState(sessionUserId);
+  }, [resetChatState, sessionUserId]);
 
-    const timeoutId = window.setTimeout(() => {
-      setChannels([]);
-      setMessages({});
-      setUnreadCounts({});
-      setInitialLoadingChannels({});
-      setRefetchingChannels({});
-      setHasLoadedChannels({});
-      setError(null);
-      setCurrentUserId(sessionUserId);
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [sessionUserId]);
+  const markChannelAsRead = useCallback(async (channelId: string) => {
+    if (markingReadRef.current.has(channelId)) return;
+    markingReadRef.current.add(channelId);
+    setUnreadCounts((current) => {
+      if ((current[channelId] ?? 0) === 0) return current;
+      return { ...current, [channelId]: 0 };
+    });
+    try {
+      await markChannelRead(channelId);
+    } catch (err) {
+      console.error("[chat] failed to mark channel read", err);
+    } finally {
+      markingReadRef.current.delete(channelId);
+    }
+  }, []);
 
   const refreshChannels = useCallback(async (options?: { redirect?: boolean; silent?: boolean }) => {
     if (!sessionUserId || refreshingChannelsRef.current) return;
 
     refreshingChannelsRef.current = true;
-    const showLoading = !options?.silent && channels.length === 0;
+    const showLoading = !options?.silent && channelsRef.current.length === 0;
     if (showLoading) setLoadingChannels(true);
     setError(null);
+
     try {
       const payload = await listChannels();
+      if (organizationIdRef.current && organizationIdRef.current !== payload.organizationId) {
+        setMessages({});
+        setInitialLoadingChannels({});
+        setRefetchingChannels({});
+        setHasLoadedChannels({});
+      }
       setChannels(payload.channels);
+      setUnreadCounts(payload.unreadCounts);
+      setOrganizationId(payload.organizationId);
+      setCurrentUserId(payload.currentUserId);
 
-      if (options?.redirect && !activeChannelId && payload.channels[0]) {
+      if (options?.redirect && isChatIndexPath(pathname) && payload.channels[0]) {
         router.replace(`/dashboard/chat/${payload.channels[0].id}`);
       }
     } catch (err) {
@@ -238,36 +300,27 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       refreshingChannelsRef.current = false;
       if (showLoading) setLoadingChannels(false);
     }
-  }, [activeChannelId, channels.length, router, sessionUserId]);
+  }, [pathname, router, sessionUserId]);
 
   useEffect(() => {
     if (!sessionUserId) return;
+
     let cancelled = false;
     const timeoutId = window.setTimeout(() => {
       if (!cancelled) void refreshChannels({ redirect: true });
     }, 0);
+
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
   }, [refreshChannels, sessionUserId]);
 
-  useEffect(() => {
-    if (!activeChannelId || loadingChannels) return;
-    if (channels.length === 0) {
-      router.replace("/dashboard/chat");
-      return;
-    }
-    if (!channels.some((channel) => channel.id === activeChannelId)) {
-      router.replace(`/dashboard/chat/${channels[0].id}`);
-    }
-  }, [activeChannelId, channels, loadingChannels, router]);
-
-  const loadMessages = useCallback(async (channelId: string, options?: { silent?: boolean; countUnread?: boolean }) => {
+  const loadMessages = useCallback(async (channelId: string, options?: { silent?: boolean }) => {
     if (loadingMessagesRef.current.has(channelId)) return;
 
     loadingMessagesRef.current.add(channelId);
-    const hasCached = messages[channelId] !== undefined;
+    const hasCached = messagesRef.current[channelId] !== undefined;
     const isSilent = Boolean(options?.silent || hasCached);
 
     if (isSilent) {
@@ -277,41 +330,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
     if (!options?.silent) setLoadingMessages(true);
     setError(null);
+
     try {
       const payload = await listMessages(channelId);
       setMessages((current) => {
         const currentMessages = current[channelId] ?? [];
-        if (!options?.countUnread) {
-          const reconciled = reconcileFetchedMessages(currentMessages, payload.messages);
-          if (!reconciled.changed && reconciled.list === currentMessages) return current;
-          return { ...current, [channelId]: reconciled.list };
-        }
-
-        const merged = mergeMessages(currentMessages, payload.messages);
-        if (merged.list === currentMessages) return current;
-        if (channelId !== activeChannelId && payload.messages[0]) {
-          setUnreadCounts((counts) => {
-            const organizationId = payload.messages[0]?.organizationId;
-            if (!organizationId) return counts;
-            return {
-              ...counts,
-              [channelId]: countUnreadMessages(payload.messages, sessionUserIdRef.current, organizationId, channelId),
-            };
-          });
-        }
-
-        return { ...current, [channelId]: merged.list };
+        const reconciled = reconcileFetchedMessages(currentMessages, payload.messages);
+        if (!reconciled.changed && reconciled.list === currentMessages) return current;
+        return { ...current, [channelId]: reconciled.list };
       });
-      
       setHasLoadedChannels((current) => ({ ...current, [channelId]: true }));
-
-      if (!options?.silent) {
-        const organizationId = payload.messages[0]?.organizationId ?? channels.find((channel) => channel.id === channelId)?.organizationId;
-        if (organizationId) {
-          setLastReadAt(sessionUserIdRef.current, organizationId, channelId);
-        }
-        setUnreadCounts((current) => ({ ...current, [channelId]: 0 }));
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load messages.");
     } finally {
@@ -323,18 +351,69 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
       if (!options?.silent) setLoadingMessages(false);
     }
-  }, [activeChannelId, channels, messages]);
+  }, []);
+
+  const scheduleMessageSync = useCallback((channelId: string, delay = 250) => {
+    const existingTimeout = syncTimeoutsRef.current[channelId];
+    if (existingTimeout) window.clearTimeout(existingTimeout);
+
+    syncTimeoutsRef.current[channelId] = window.setTimeout(() => {
+      delete syncTimeoutsRef.current[channelId];
+      void loadMessages(channelId, { silent: true });
+    }, delay);
+  }, [loadMessages]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(syncTimeoutsRef.current).forEach((timeoutId) => window.clearTimeout(timeoutId));
+      syncTimeoutsRef.current = {};
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeChannelId || loadingChannels) return;
+    if (channels.length === 0) {
+      if (isChatIndexPath(pathname)) router.replace("/dashboard/chat");
+      return;
+    }
+
+    if (!channels.some((channel) => channel.id === activeChannelId)) {
+      router.replace(`/dashboard/chat/${channels[0].id}`);
+      return;
+    }
+
+    const cachedMessages = messagesRef.current[activeChannelId];
+    const hasCachedMessages = cachedMessages !== undefined;
+    const hasLoadedFromServer = hasLoadedChannelsRef.current[activeChannelId] ?? false;
+    const hasUnreadMessages = activeUnreadCount > 0;
+
+    if (!hasCachedMessages || !hasLoadedFromServer || hasUnreadMessages) {
+      void loadMessages(activeChannelId, { silent: hasCachedMessages });
+      if (hasUnreadMessages) scheduleMessageSync(activeChannelId, 500);
+    }
+
+    const timeoutId = hasUnreadMessages
+      ? window.setTimeout(() => {
+          void markChannelAsRead(activeChannelId);
+        }, 0)
+      : null;
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [activeChannelId, activeUnreadCount, channels, loadMessages, loadingChannels, markChannelAsRead, pathname, router, scheduleMessageSync]);
 
   useEffect(() => {
     function handleVisible() {
       if (document.visibilityState !== "visible") return;
 
       const now = Date.now();
-      if (now - lastVisibleRefreshAtRef.current < 3_000) return;
+      if (now - lastVisibleRefreshAtRef.current < 10_000) return;
       lastVisibleRefreshAtRef.current = now;
 
       void refreshChannels({ redirect: false, silent: true });
-      if (activeChannelId) void loadMessages(activeChannelId, { silent: true });
+      const channelId = activeChannelIdRef.current;
+      if (channelId) void loadMessages(channelId, { silent: true });
     }
 
     window.addEventListener("focus", handleVisible);
@@ -343,80 +422,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", handleVisible);
       document.removeEventListener("visibilitychange", handleVisible);
     };
-  }, [activeChannelId, loadMessages, refreshChannels]);
-
-  useEffect(() => {
-    if (!activeChannelId) return;
-    if (messages[activeChannelId]) return;
-    const timeoutId = window.setTimeout(() => {
-      void loadMessages(activeChannelId, { silent: true });
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [activeChannelId, loadMessages, messages]);
-
-  useEffect(() => {
-    if (!activeChannelId) return;
-    const channel = channels.find((item) => item.id === activeChannelId);
-    if (!channel) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setLastReadAt(sessionUserIdRef.current, channel.organizationId, activeChannelId);
-      setUnreadCounts((current) => ({ ...current, [activeChannelId]: 0 }));
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [activeChannelId, channels]);
-
-  useEffect(() => {
-    if (channels.length === 0) return;
-
-    const intervalId = window.setInterval(() => {
-      channels.forEach((channel) => {
-        if (channel.id === activeChannelId) return;
-        void loadMessages(channel.id, { silent: true, countUnread: true });
-      });
-    }, 5_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [activeChannelId, channels, loadMessages]);
-
-  useEffect(() => {
-    if (!activeChannelId) return;
-    const channelId = activeChannelId;
-
-    function syncActiveChannel() {
-      if (activeSyncInFlightRef.current === channelId) return;
-      activeSyncInFlightRef.current = channelId;
-
-      listMessages(channelId)
-        .then((payload) => {
-          console.log("[chat] active sync", {
-            channelId,
-            received: payload.messages.length,
-          });
-          setMessages((current) => {
-            const currentMessages = current[channelId] ?? [];
-            const reconciled = reconcileFetchedMessages(currentMessages, payload.messages);
-            if (!reconciled.changed && reconciled.list === currentMessages) return current;
-            return {
-              ...current,
-              [channelId]: reconciled.list,
-            };
-          });
-        })
-        .catch((err) => {
-          console.error("[chat] active sync failed", err);
-        })
-        .finally(() => {
-          activeSyncInFlightRef.current = null;
-        });
-    }
-
-    syncActiveChannel();
-    const intervalId = window.setInterval(syncActiveChannel, 1_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [activeChannelId]);
+  }, [loadMessages, refreshChannels]);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -433,59 +439,58 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           filter: `organizationId=eq.${organizationId}`,
         },
         (payload) => {
-          const record = payload.new as Record<string, unknown>;
-          if (record.organizationId !== organizationId) return;
-          const channelId = typeof record.channelId === "string" ? record.channelId : null;
-          if (!channelId) return;
+          const message = mapRealtimeMessage(payload.new as Record<string, unknown>);
+          if (!message || message.organizationId !== organizationIdRef.current) return;
 
-          const senderId = typeof record.senderId === "string" ? record.senderId : null;
-          const message: ChatMessage = {
-            id: String(record.id),
-            organizationId: String(record.organizationId),
-            channelId,
-            senderId,
-            content: String(record.content ?? ""),
-            type: record.type === "system" ? "system" : "text",
-            createdAt: String(record.createdAt),
-            updatedAt: String(record.updatedAt),
-            sender: senderId
-              ? {
-                  id: senderId,
-                  name: "Team member",
-                  image: null,
-                }
-              : null,
-          };
-          console.log("[chat] realtime payload", { id: message.id, channelId });
+          const channelId = message.channelId;
+          const senderId = message.senderId;
+          const activeChannel = activeChannelIdRef.current;
+          const currentUser = currentUserIdRef.current;
 
           setMessages((current) => {
-            const before = current[channelId]?.length ?? 0;
-            const reconciled = reconcileMessage(current[channelId] ?? [], message);
-            console.log("[chat] realtime reconcile", {
-              id: message.id,
-              before,
-              after: reconciled.list.length,
-            });
-            if (reconciled.list === (current[channelId] ?? [])) return current;
-            return {
-              ...current,
-              [channelId]: reconciled.list,
-            };
-          });
-          setUnreadCounts((current) => {
-            if (channelId === activeChannelId || senderId === sessionUserIdRef.current) {
-              setLastReadAt(sessionUserIdRef.current, organizationId, channelId, new Date(message.createdAt).getTime());
-              return { ...current, [channelId]: 0 };
-            }
+            const currentMessages = current[channelId];
+            if (!currentMessages && channelId !== activeChannel) return current;
 
-            const lastReadAt = getLastReadAt(sessionUserIdRef.current, organizationId, channelId);
-            if (new Date(message.createdAt).getTime() <= lastReadAt) return current;
-
-            return {
-              ...current,
-              [channelId]: (current[channelId] ?? 0) + 1,
-            };
+            const reconciled = reconcileMessage(currentMessages ?? [], message);
+            if (!reconciled.changed) return current;
+            return { ...current, [channelId]: reconciled.list };
           });
+
+          if (channelId === activeChannel || messagesRef.current[channelId] !== undefined) {
+            scheduleMessageSync(channelId);
+          }
+
+          if (senderId === currentUser) return;
+
+          if (channelId === activeChannel) {
+            void markChannelAsRead(channelId);
+            return;
+          }
+
+          setUnreadCounts((current) => ({
+            ...current,
+            [channelId]: (current[channelId] ?? 0) + 1,
+          }));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_channel",
+          filter: `organizationId=eq.${organizationId}`,
+        },
+        (payload) => {
+          const channel = mapRealtimeChannel(payload.new as Record<string, unknown>);
+          if (!channel || channel.organizationId !== organizationIdRef.current) return;
+
+          setChannels((current) => (
+            current.some((item) => item.id === channel.id)
+              ? current
+              : [...current, channel].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          ));
+          setUnreadCounts((current) => ({ ...current, [channel.id]: current[channel.id] ?? 0 }));
         }
       )
       .on(
@@ -498,16 +503,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         },
         (payload) => {
           const record = payload.old as Record<string, unknown>;
-          const deletedChannelId = typeof record.id === "string" ? record.id : null;
+          const deletedChannelId = textValue(record.id);
           if (!deletedChannelId) return;
 
           setChannels((current) => current.filter((channel) => channel.id !== deletedChannelId));
           setMessages((current) => {
+            if (!(deletedChannelId in current)) return current;
             const next = { ...current };
             delete next[deletedChannelId];
             return next;
           });
           setUnreadCounts((current) => {
+            if (!(deletedChannelId in current)) return current;
             const next = { ...current };
             delete next[deletedChannelId];
             return next;
@@ -519,67 +526,61 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     return () => {
       void supabase.removeChannel(subscription);
     };
-  }, [activeChannelId, organizationId]);
+  }, [markChannelAsRead, organizationId, scheduleMessageSync]);
 
   const sendMessage = useCallback(async (channelId: string, content: string) => {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    const optimisticId = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const clientId = optimisticId;
+    const clientId = `pending-${crypto.randomUUID()}`;
+    const timestamp = new Date().toISOString();
     const optimisticMessage: ChatMessage = {
-      id: optimisticId,
+      id: clientId,
       clientId,
-      organizationId: channels.find((channel) => channel.id === channelId)?.organizationId ?? "",
+      organizationId: channels.find((channel) => channel.id === channelId)?.organizationId ?? organizationId ?? "",
       channelId,
-      senderId: sessionUserId,
+      senderId: currentUserIdRef.current,
       content: trimmed,
       type: "text",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      sender: sessionUserId ? { id: sessionUserId, name: sessionUserName, image: session?.user?.image ?? null } : null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      sender: currentUserIdRef.current
+        ? { id: currentUserIdRef.current, name: sessionUserName, image: session?.user?.image ?? null }
+        : null,
       isPending: true,
     };
-    console.log("[chat] send start", { channelId, clientId, contentLength: trimmed.length });
 
-    setMessages((current) => ({
-      ...current,
-      [channelId]: mergeMessage(current[channelId] ?? [], optimisticMessage),
-    }));
+    setMessages((current) => {
+      const reconciled = reconcileMessage(current[channelId] ?? [], optimisticMessage);
+      return { ...current, [channelId]: reconciled.list };
+    });
     setUnreadCounts((current) => ({ ...current, [channelId]: 0 }));
 
     try {
       const payload = await sendChannelMessage(channelId, trimmed);
-      console.log("[chat] server message", { clientId, serverId: payload.message.id });
       setCurrentUserId(payload.message.senderId);
       setMessages((current) => {
-        const before = current[channelId]?.length ?? 0;
-        const reconciled = reconcileMessage(current[channelId] ?? [], payload.message);
-        console.log("[chat] server reconcile", {
-          clientId,
-          serverId: payload.message.id,
-          before,
-          after: reconciled.list.length,
-        });
-        if (reconciled.list === (current[channelId] ?? [])) return current;
-        return {
-          ...current,
-          [channelId]: reconciled.list,
-        };
+        const currentMessages = current[channelId] ?? [];
+        const reconciled = reconcileMessage(currentMessages, payload.message);
+        if (!reconciled.changed) return current;
+        return { ...current, [channelId]: reconciled.list };
       });
+      void markChannelAsRead(channelId);
     } catch (err) {
       setMessages((current) => ({
         ...current,
-        [channelId]: (current[channelId] ?? []).filter((message) => message.id !== optimisticId),
+        [channelId]: (current[channelId] ?? []).filter((message) => message.id !== clientId),
       }));
       setError(err instanceof Error ? err.message : "Failed to send message.");
+      throw err;
     }
-  }, [channels, session?.user?.image, sessionUserId, sessionUserName]);
+  }, [channels, markChannelAsRead, organizationId, session?.user?.image, sessionUserName]);
 
   const createChannel = useCallback(async (name: string, description: string) => {
     const payload = await createChannelRequest({ name, description });
     setChannels((current) => current.some((item) => item.id === payload.channel.id) ? current : [...current, payload.channel]);
     setMessages((current) => ({ ...current, [payload.channel.id]: [] }));
+    setUnreadCounts((current) => ({ ...current, [payload.channel.id]: 0 }));
     return payload.channel.id;
   }, []);
 
@@ -588,7 +589,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       await deleteChannelRequest(channelId);
       setChannels((current) => {
         const next = current.filter((channel) => channel.id !== channelId);
-        if (activeChannelId === channelId) {
+        if (activeChannelIdRef.current === channelId) {
           const target = next[0]?.id;
           router.replace(target ? `/dashboard/chat/${target}` : "/dashboard/chat");
         }
@@ -608,12 +609,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : "Failed to delete channel.");
       void refreshChannels({ redirect: false, silent: true });
     }
-  }, [activeChannelId, refreshChannels, router]);
+  }, [refreshChannels, router]);
+
+  const totalUnreadCount = useMemo(
+    () => Object.values(unreadCounts).reduce((total, count) => total + count, 0),
+    [unreadCounts]
+  );
 
   const value = useMemo(() => ({
     channels,
     messages,
     unreadCounts,
+    totalUnreadCount,
     initialLoadingChannels,
     refetchingChannels,
     hasLoadedChannels,
@@ -621,7 +628,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     loadingMessages,
     error,
     currentUserId,
+    organizationId,
+    activeChannelId,
+    setActiveChannel,
     loadMessages,
+    markChannelAsRead,
     sendMessage,
     createChannel,
     deleteChannel,
@@ -629,6 +640,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     channels,
     messages,
     unreadCounts,
+    totalUnreadCount,
     initialLoadingChannels,
     refetchingChannels,
     hasLoadedChannels,
@@ -636,7 +648,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     loadingMessages,
     error,
     currentUserId,
+    organizationId,
+    activeChannelId,
+    setActiveChannel,
     loadMessages,
+    markChannelAsRead,
     sendMessage,
     createChannel,
     deleteChannel,

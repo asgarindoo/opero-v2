@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { ChatChannel, ChatMessage } from "../types";
+import type { ChatBootstrap, ChatChannel, ChatMessage } from "../types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -36,7 +36,7 @@ export async function listChannels() {
     cache: "no-store",
     credentials: "include",
   });
-  return parseResponse<{ channels: ChatChannel[] }>(response);
+  return parseResponse<ChatBootstrap>(response);
 }
 
 export async function createChannel(input: { name: string; description?: string }) {
@@ -67,6 +67,20 @@ export async function sendChannelMessage(channelId: string, content: string) {
     credentials: "include",
   });
   return parseResponse<{ message: ChatMessage }>(response);
+}
+
+export async function markChannelRead(channelId: string) {
+  const response = await fetch(`/api/tenant/chat/channels/${channelId}/read`, {
+    method: "POST",
+    cache: "no-store",
+    credentials: "include",
+  });
+  return parseResponse<{
+    channelId: string;
+    lastReadMessageId: string | null;
+    lastReadAt: string;
+    unreadCount: 0;
+  }>(response);
 }
 
 export async function deleteChannel(channelId: string) {

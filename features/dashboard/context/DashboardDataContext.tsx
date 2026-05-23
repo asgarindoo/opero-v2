@@ -49,6 +49,7 @@ export interface TeamMember {
 }
 
 export interface WorkflowBoard {
+  id?: string;
   name: string;
   columns: { name: string; count: number }[];
   total: number;

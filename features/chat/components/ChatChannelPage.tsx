@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { Hash, Search, X } from "lucide-react";
 import { useChat } from "@/features/chat";
 import MessageList from "@/features/chat/components/MessageList";
@@ -9,10 +9,15 @@ import MessageComposer from "@/features/chat/components/MessageComposer";
 export default function ChannelPage({ params }: { params: Promise<{ channelId: string }> }) {
   const resolvedParams = use(params);
   const { channelId } = resolvedParams;
-  const { channels, loadingChannels } = useChat();
+  const { channels, loadingChannels, setActiveChannel } = useChat();
   const [searchQuery, setSearchQuery] = useState("");
 
   const channel = channels.find(c => c.id === channelId);
+
+  useEffect(() => {
+    setActiveChannel(channelId);
+    return () => setActiveChannel(null);
+  }, [channelId, setActiveChannel]);
 
   if (!channel && loadingChannels) {
     return (
@@ -38,7 +43,7 @@ export default function ChannelPage({ params }: { params: Promise<{ channelId: s
         </div>
         <h2 className="font-display font-semibold text-[16px] text-black mb-1">Channel unavailable</h2>
         <p className="font-body-sm text-[13px] text-black/60 max-w-[260px]">
-          This channel might have been deleted, or you don't have access to view it.
+          This channel might have been deleted, or you don&apos;t have access to view it.
         </p>
       </div>
     );

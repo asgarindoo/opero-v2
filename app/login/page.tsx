@@ -37,7 +37,7 @@ export default function LoginPage() {
   // Detect it here and hard-redirect to the absolute root login URL.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const { hostname, port } = window.location;
+    const { hostname } = window.location;
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_URL || "http://localhost:3000";
     const rootHostname = new URL(rootUrl).hostname; // e.g. "localhost"
 

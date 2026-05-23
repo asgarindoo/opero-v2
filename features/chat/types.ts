@@ -37,3 +37,10 @@ export interface ChatState {
   channels: ChatChannel[];
   messages: Record<string, ChatMessage[]>;
 }
+
+export interface ChatBootstrap {
+  channels: ChatChannel[];
+  unreadCounts: Record<string, number>;
+  organizationId: string;
+  currentUserId: string;
+}

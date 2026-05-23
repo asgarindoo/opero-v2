@@ -1,10 +1,11 @@
+"use client";
+
 import React, { useState } from "react";
 import { useSales } from "../context/SalesContext";
-import { X, Clock, User, DollarSign, TrendingUp, FileText, Truck, Package, CheckCircle2, Star } from "lucide-react";
-import { SaleStatus, PaymentStatus, SaleType } from "@/features/sales";
+import { X, Clock, User, DollarSign, TrendingUp, FileText, Truck, Package, CheckCircle2 } from "lucide-react";
+import { SaleStatus, SaleType } from "@/features/sales";
 import { createInvoice } from "@/features/invoices/services/invoices.client";
 import type { Invoice, InvoiceItem } from "@/features/invoices/types";
-import Dropdown from "@/components/ui/Dropdown";
 
 function formatCurrency(val: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(val);
@@ -38,9 +39,12 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
   };
 
   const handleGenerateInvoice = async () => {
+    const issuedAt = new Date();
+    const dueAt = new Date(issuedAt);
+    dueAt.setDate(dueAt.getDate() + 14);
     const totalAmount = sale.items.reduce((acc, curr) => acc + curr.subtotal, 0);
     const invoiceItems: InvoiceItem[] = sale.items.map(it => ({
-      id: Math.random().toString(36).substring(7),
+      id: crypto.randomUUID(),
       description: it.name,
       quantity: it.quantity,
       unitPrice: it.price,
@@ -49,14 +53,14 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
     }));
 
     const newInvoice: Invoice = {
-      id: "inv" + Date.now(),
-      invoiceNumber: "INV-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 1000),
+      id: `inv-${crypto.randomUUID()}`,
+      invoiceNumber: `INV-${issuedAt.getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       contactName: sale.contactName,
       contactId: sale.contactId,
       saleId: sale.id,
       saleOrderNumber: sale.orderNumber,
-      issueDate: new Date().toISOString().split("T")[0],
-      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 14 days
+      issueDate: issuedAt.toISOString().split("T")[0],
+      dueDate: dueAt.toISOString().split("T")[0],
       status: "Unpaid",
       items: invoiceItems,
       subtotal: totalAmount,
@@ -67,8 +71,8 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
       notes: "Auto-generated from sale " + sale.orderNumber,
       activities: [],
       attachments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: issuedAt.toISOString(),
+      updatedAt: issuedAt.toISOString(),
     };
 
     try {

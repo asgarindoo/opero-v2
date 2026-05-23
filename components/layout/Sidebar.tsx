@@ -9,6 +9,7 @@ import { getTenantLogoSrc } from "@/lib/tenant-logo";
 import { Settings, ChevronsUpDown } from "lucide-react";
 import { NAV_GROUPS } from "./navConfig";
 import { usePresence } from "@/features/presence";
+import { useChat } from "@/features/chat";
 
 interface Props {
   collapsed: boolean;
@@ -27,6 +28,7 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
   const tenantName = mounted ? activeOrg?.name ?? "OPERO" : "OPERO";
   const tenantLogo = mounted ? getTenantLogoSrc(activeOrg?.id ?? "", activeOrg?.logo ?? null) : null;
   const { onlineCount, isLoading: isPresenceLoading } = usePresence();
+  const { totalUnreadCount } = useChat();
   const showTenantLoading = !mounted || isOrgLoading;
   const onlineLabel = isPresenceLoading ? "..." : onlineCount.toString();
 
@@ -143,6 +145,7 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
             {group.items.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
+              const badge = item.id === "chat" && totalUnreadCount > 0 ? totalUnreadCount : item.badge;
               return (
                 <Link
                   key={item.id}
@@ -184,7 +187,7 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
                   )}
 
                   {/* Badge — expanded */}
-                  {"badge" in item && item.badge !== undefined && !collapsed && (
+                  {badge !== undefined && !collapsed && (
                     <span
                       className="font-label-caps text-[8px] font-bold px-[5px] py-[2px] rounded-full"
                       style={{
@@ -193,12 +196,12 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
                         lineHeight: 1,
                       }}
                     >
-                      {item.badge}
+                      {badge > 99 ? "99+" : badge}
                     </span>
                   )}
 
                   {/* Badge dot — collapsed */}
-                  {"badge" in item && item.badge !== undefined && collapsed && (
+                  {badge !== undefined && collapsed && (
                     <span
                       className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
                       style={{ background: "var(--color-primary)" }}

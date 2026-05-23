@@ -4,7 +4,7 @@ import { CreateChannelSchema } from "@/features/chat/validators/chat";
 
 export async function GET() {
   try {
-    return NextResponse.json({ channels: await listTenantChannels() });
+    return NextResponse.json(await listTenantChannels());
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("[GET /api/tenant/chat/channels]", err);

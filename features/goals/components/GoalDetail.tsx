@@ -18,7 +18,11 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
   const [goal, setFlow] = useState<Goal>(initialGoal);
 
   useEffect(() => {
-    setFlow(initialGoal);
+    const timeoutId = window.setTimeout(() => {
+      setFlow(initialGoal);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [initialGoal]);
 
   function handleUpdate(updates: Partial<Goal>) {

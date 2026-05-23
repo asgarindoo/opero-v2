@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant, type TenantContext } from "@/lib/server/auth-utils";
-import type { ChatChannel, ChatMessage } from "../types";
+import type { ChatBootstrap, ChatChannel, ChatMessage } from "../types";
 
 type ChannelRow = {
   id: string;
@@ -11,6 +11,10 @@ type ChannelRow = {
   createdById: string | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+type ChannelWithUnreadRow = ChannelRow & {
+  unreadCount: number;
 };
 
 type MessageRow = {
@@ -25,6 +29,12 @@ type MessageRow = {
   senderName: string | null;
   senderEmail: string | null;
   senderImage: string | null;
+};
+
+type ChatReadRow = {
+  channelId: string;
+  lastReadMessageId: string | null;
+  lastReadAt: Date;
 };
 
 function mapChannel(row: ChannelRow): ChatChannel {
@@ -52,11 +62,11 @@ function mapMessage(row: MessageRow): ChatMessage {
     updatedAt: row.updatedAt.toISOString(),
     sender: row.senderId
       ? {
-          id: row.senderId,
-          name: row.senderName ?? "Unknown user",
-          email: row.senderEmail ?? undefined,
-          image: row.senderImage,
-        }
+        id: row.senderId,
+        name: row.senderName ?? "Unknown user",
+        email: row.senderEmail ?? undefined,
+        image: row.senderImage,
+      }
       : null,
   };
 }
@@ -76,18 +86,38 @@ async function getTenantChannel(ctx: TenantContext, channelId: string) {
   return rows[0] ? mapChannel(rows[0]) : null;
 }
 
-export async function listTenantChannels() {
+export async function listTenantChannels(): Promise<ChatBootstrap> {
   const ctx = await requireTenant();
 
-  const rows = await prisma.$queryRaw<ChannelRow[]>`
-    SELECT id, "organizationId", name, description, type, "createdById", "createdAt", "updatedAt"
+  const rows = await prisma.$queryRaw<ChannelWithUnreadRow[]>`
+    SELECT
+      cc.id, cc."organizationId", cc.name, cc.description, cc.type, cc."createdById", cc."createdAt", cc."updatedAt",
+      COALESCE(unread.count, 0)::int AS "unreadCount"
     FROM chat_channel
-    WHERE "organizationId" = ${ctx.tenantId}
-      AND name IS NOT NULL
-    ORDER BY "createdAt" ASC
+      cc
+    LEFT JOIN "chat_reads" cr
+      ON cr."organizationId" = cc."organizationId"
+      AND cr."channelId" = cc.id
+      AND cr."userId" = ${ctx.userId}
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*)::int AS count
+      FROM chat_message cm
+      WHERE cm."organizationId" = cc."organizationId"
+        AND cm."channelId" = cc.id
+        AND (cm."senderId" IS NULL OR cm."senderId" <> ${ctx.userId})
+        AND cm."createdAt" > COALESCE(cr."lastReadAt", 'epoch'::timestamp)
+    ) unread ON true
+    WHERE cc."organizationId" = ${ctx.tenantId}
+      AND cc.name IS NOT NULL
+    ORDER BY cc."createdAt" ASC
   `;
 
-  return rows.map(mapChannel);
+  return {
+    channels: rows.map(mapChannel),
+    unreadCounts: Object.fromEntries(rows.map((row) => [row.id, row.unreadCount])),
+    organizationId: ctx.tenantId,
+    currentUserId: ctx.userId,
+  };
 }
 
 export async function createTenantChannel(input: { name: string; description?: string }) {
@@ -143,7 +173,13 @@ export async function createTenantMessage(channelId: string, content: string) {
     )
     VALUES (
       gen_random_uuid()::text, ${ctx.tenantId}, ${channelId}, ${ctx.userId}, ${content}, 'text',
-      left(${content}, 80), 'Active', '{}'::jsonb, ${ctx.userId}, ${ctx.userId}, now(), now()
+      left(${content}, 80), 'Active',
+      jsonb_build_object(
+        'senderName', ${ctx.user.name}::text,
+        'senderEmail', ${ctx.user.email}::text,
+        'senderImage', ${ctx.user.image}::text
+      ),
+      ${ctx.userId}, ${ctx.userId}, now(), now()
     )
     RETURNING
       id, "organizationId", "channelId", "senderId", content, type, "createdAt", "updatedAt",
@@ -153,6 +189,44 @@ export async function createTenantMessage(channelId: string, content: string) {
   `;
 
   return mapMessage(rows[0]);
+}
+
+export async function markTenantChannelRead(channelId: string) {
+  const ctx = await requireTenant();
+  const channel = await getTenantChannel(ctx, channelId);
+  if (!channel) return null;
+
+  const rows = await prisma.$queryRaw<ChatReadRow[]>`
+    WITH latest AS (
+      SELECT id, "createdAt"
+      FROM chat_message
+      WHERE "organizationId" = ${ctx.tenantId}
+        AND "channelId" = ${channelId}
+      ORDER BY "createdAt" DESC, id DESC
+      LIMIT 1
+    )
+    INSERT INTO "chat_reads" (
+      id, "organizationId", "userId", "channelId", "lastReadMessageId", "lastReadAt", "createdAt", "updatedAt"
+    )
+    VALUES (
+      gen_random_uuid()::text,
+      ${ctx.tenantId},
+      ${ctx.userId},
+      ${channelId},
+      (SELECT id FROM latest),
+      COALESCE((SELECT "createdAt" FROM latest), now()),
+      now(),
+      now()
+    )
+    ON CONFLICT ("organizationId", "userId", "channelId")
+    DO UPDATE SET
+      "lastReadMessageId" = EXCLUDED."lastReadMessageId",
+      "lastReadAt" = EXCLUDED."lastReadAt",
+      "updatedAt" = now()
+    RETURNING "channelId", "lastReadMessageId", "lastReadAt"
+  `;
+
+  return rows[0] ?? null;
 }
 
 export async function updateTenantMessage(messageId: string, content: string) {

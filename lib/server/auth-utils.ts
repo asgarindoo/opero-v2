@@ -223,9 +223,9 @@ export const getTenantContext = cache(async function getTenantContext(): Promise
 
   const tenant = headerTenantSlug
     ? await prisma.organization.findUnique({
-        where: { slug: headerTenantSlug },
-        select: { id: true, name: true, slug: true, logo: true, status: true },
-      })
+      where: { slug: headerTenantSlug },
+      select: { id: true, name: true, slug: true, logo: true, status: true },
+    })
     : sessionTenant;
 
   if (!tenant || tenant.status !== "active") return null;

@@ -53,6 +53,7 @@ model User {
   contentAssetsCreated    ContentAsset[]   @relation("ContentAssetCreatedBy")
   chatChannelsCreated     ChatChannel[]    @relation("ChatChannelCreatedBy")
   chatMessagesCreated     ChatMessage[]    @relation("ChatMessageCreatedBy")
+  chatReads               ChatRead[]
 
   tasksUpdated            Task[]           @relation("TaskUpdatedBy")
   flowsUpdated            Flow[]           @relation("FlowUpdatedBy")
@@ -171,6 +172,7 @@ model Organization {
   contentAssets    ContentAsset[]
   chatChannels     ChatChannel[]
   chatMessages     ChatMessage[]
+  chatReads        ChatRead[]
   tenantActivities TenantActivity[]
   userPresence     UserPresence[]
 
@@ -733,6 +735,7 @@ model ChatChannel {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User?        @relation("ChatChannelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy    User?        @relation("ChatChannelUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  reads        ChatRead[]
 
   @@index([organizationId])
   @@map("chat_channel")
@@ -756,9 +759,31 @@ model ChatMessage {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User?        @relation("ChatMessageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy    User?        @relation("ChatMessageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  readMarkers  ChatRead[]
 
   @@index([organizationId])
   @@index([organizationId, channelId])
   @@index([channelId, createdAt])
   @@map("chat_message")
+}
+
+model ChatRead {
+  id                String   @id @default(cuid())
+  organizationId    String
+  userId            String
+  channelId         String
+  lastReadMessageId String?
+  lastReadAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel         ChatChannel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  lastReadMessage ChatMessage? @relation(fields: [lastReadMessageId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, userId, channelId])
+  @@index([organizationId, userId])
+  @@index([channelId])
+  @@map("chat_reads")
 }

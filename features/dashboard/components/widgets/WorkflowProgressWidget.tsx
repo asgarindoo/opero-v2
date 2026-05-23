@@ -64,11 +64,11 @@ export default function WorkflowProgressWidget() {
             </button>
           </div>
         ) : (
-          boards.map((board) => {
+          boards.map((board, boardIndex) => {
             const lastCol = board.columns[board.columns.length - 1];
             const donePercent = lastCol ? Math.round((lastCol.count / Math.max(board.total, 1)) * 100) : 0;
             return (
-              <div key={board.name} className="cursor-pointer group">
+              <div key={board.id ?? `${board.name}-${boardIndex}`} className="cursor-pointer group">
                 {/* Board name */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-body-md text-[12.5px] font-semibold text-on-surface group-hover:text-primary transition-colors">
@@ -83,7 +83,7 @@ export default function WorkflowProgressWidget() {
                 <div className="flex gap-px h-1.5 rounded-full overflow-hidden mb-2">
                   {board.columns.map((col, i) => (
                     <div
-                      key={col.name}
+                      key={`${col.name}-${i}`}
                       className="transition-all duration-300"
                       style={{
                         flex: col.count || 0.5,
@@ -95,8 +95,8 @@ export default function WorkflowProgressWidget() {
 
                 {/* Column counts */}
                 <div className="flex items-center gap-3 flex-wrap">
-                  {board.columns.map((col) => (
-                    <div key={col.name} className="flex items-center gap-1">
+                  {board.columns.map((col, i) => (
+                    <div key={`${col.name}-${i}`} className="flex items-center gap-1">
                       <span className="font-label-caps text-[9px] uppercase tracking-[0.05em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
                         {col.name}
                       </span>

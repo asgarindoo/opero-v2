@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
@@ -215,7 +216,7 @@ function StepInfo({
           <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           {form.logo ? (
             <>
-              <img src={form.logo} alt="Logo preview" className="w-14 h-14 rounded-xl object-cover border border-outline/15 shadow-sm" />
+              <Image src={form.logo} alt="Logo preview" width={56} height={56} className="w-14 h-14 rounded-xl object-cover border border-outline/15 shadow-sm" />
               <span className="font-body-sm text-[12px] text-on-surface-variant/55">Click to change</span>
             </>
           ) : (

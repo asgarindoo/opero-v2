@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, MessageSquarePlus } from "lucide-react";
 import { useChat } from "../context/ChatContext";
 
@@ -8,7 +8,6 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
   const {
     messages,
     initialLoadingChannels,
-    refetchingChannels,
     hasLoadedChannels,
     error,
     currentUserId,
@@ -16,27 +15,28 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
   } = useChat();
 
   const channelMessages = useMemo(() => messages[channelId] ?? [], [messages, channelId]);
+  const hasCachedMessages = messages[channelId] !== undefined;
   
-  const isInitialLoading = initialLoadingChannels[channelId] ?? (messages[channelId] === undefined);
+  const isInitialLoading = initialLoadingChannels[channelId] ?? !hasCachedMessages;
   const hasLoaded = hasLoadedChannels[channelId] ?? false;
 
   const bottomRef = useRef<HTMLDivElement>(null);
-  const previousMessageCountRef = useRef(0);
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
 
   useEffect(() => {
-    if (messages[channelId] !== undefined) return;
+    if (hasCachedMessages && hasLoaded) return;
     const timeoutId = window.setTimeout(() => {
-      void loadMessages(channelId);
+      void loadMessages(channelId, { silent: hasCachedMessages });
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [channelId, loadMessages, messages]);
+  }, [channelId, hasCachedMessages, hasLoaded, loadMessages]);
 
   useEffect(() => {
     const nextCount = channelMessages.length;
-    previousMessageCountRef.current = nextCount;
 
     const frameId = window.requestAnimationFrame(() => {
       bottomRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+      setPreviousMessageCount(nextCount);
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [channelMessages]);
@@ -76,21 +76,21 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
             <div className="w-6 h-6 rounded-full bg-black/5 shrink-0" />
             <div className="flex flex-col gap-1.5 w-full">
               <div className="h-2.5 w-16 bg-black/5 rounded" />
-              <div className="h-8 bg-black/5 rounded-[12px] rounded-bl-[2px] w-48" />
+              <div className="h-8 bg-black/5 rounded-full rounded-bl-xs w-48" />
             </div>
           </div>
           <div className="flex items-end gap-2.5 max-w-[60%] ml-auto flex-row-reverse">
             <div className="w-6 h-6 rounded-full bg-black/5 shrink-0" />
             <div className="flex flex-col gap-1.5 w-full items-end">
               <div className="h-2.5 w-16 bg-black/5 rounded" />
-              <div className="h-8 bg-black/5 rounded-[12px] rounded-br-[2px] w-36" />
+              <div className="h-8 bg-black/5 rounded-full rounded-br-xs w-36" />
             </div>
           </div>
           <div className="flex items-end gap-2.5 max-w-[60%]">
             <div className="w-6 h-6 rounded-full bg-black/5 shrink-0" />
             <div className="flex flex-col gap-1.5 w-full">
               <div className="h-2.5 w-16 bg-black/5 rounded" />
-              <div className="h-14 bg-black/5 rounded-[12px] rounded-bl-[2px] w-64" />
+              <div className="h-14 bg-black/5 rounded-full rounded-bl-xs w-64" />
             </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
                 <MessageSquarePlus size={16} className="text-black opacity-40" />
               </div>
               <h3 className="font-aspekta font-semibold text-[13.5px] text-black mb-1">Start a conversation</h3>
-              <p className="font-aspekta text-[12px] text-black/60 max-w-[240px]">
+              <p className="font-aspekta text-[12px] text-black/60 max-w-60">
                 Messages shared here will be visible to all members.
               </p>
             </>
@@ -124,9 +124,10 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
             const isMe = msg.senderId === currentUserId;
             const senderName = msg.sender?.name ?? "Team member";
             const initials = getInitials(senderName);
+            const messageKey = msg.clientId ?? msg.id;
+            const messageIndex = channelMessages.findIndex((item) => (item.clientId ?? item.id) === messageKey);
             
-            // Only animate messages that were created within the last 15 seconds or are pending
-            const isNew = msg.isPending || (Date.now() - new Date(msg.createdAt).getTime() < 15000);
+            const isNew = msg.isPending || messageIndex >= previousMessageCount;
 
             return (
               <div
@@ -155,10 +156,10 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
                     <div
                       className={`relative px-3.5 py-2 transition-all duration-300 font-aspekta text-[12.5px] leading-relaxed whitespace-pre-wrap ${
                         isMe
-                          ? `bg-[#18181b] text-white rounded-[12px] rounded-br-[2px] hover:bg-black/90 ${
+                          ? `bg-[#18181b] text-white rounded-full rounded-br-xs hover:bg-black/90 ${
                               msg.isPending ? "opacity-75 bg-[#27272a] animate-pulse" : "shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
                             }`
-                          : "bg-[#f8f3f2] text-[#1c1b1b] rounded-[12px] rounded-bl-[2px] border border-black/[0.03] hover:bg-[#f2eceb]"
+                          : "bg-[#f8f3f2] text-[#1c1b1b] rounded-full rounded-bl-xs border border-black/3 hover:bg-[#f2eceb]"
                       }`}
                     >
                       {msg.content}
