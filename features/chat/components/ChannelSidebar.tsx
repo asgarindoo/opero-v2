@@ -70,7 +70,7 @@ export default function ChannelSidebar() {
                   )}
                   <button
                     type="button"
-                    className="opacity-0 group-hover:opacity-60 hover:opacity-100 p-1 rounded text-on-surface-variant hover:text-red-600 hover:bg-red-500/10 transition-all"
+                    className="p-1 rounded opacity-30 hover:opacity-100 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all ml-1 shrink-0"
                     title="Delete channel"
                     onClick={(event) => {
                       event.preventDefault();

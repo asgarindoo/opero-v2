@@ -50,20 +50,23 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header */}
-        <div className="h-14 shrink-0 px-6 flex items-center justify-between bg-white border-b border-black/5">
-          <div className="flex items-center gap-2">
-            <Hash size={15} className="text-black/40" />
-            <h1 className="font-h3 text-black font-semibold text-[14px] tracking-tight">
-              {channel.name}
-            </h1>
+        <div className="min-h-[72px] py-4 px-6 flex flex-col sm:flex-row sm:items-start md:items-center justify-between bg-white border-b border-black/5 gap-4 shrink-0 z-10 relative">
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Hash size={16} className="text-black/40 shrink-0" />
+              <h1 className="font-display text-black font-semibold text-[15.5px] tracking-tight truncate">
+                {channel.name}
+              </h1>
+            </div>
             {channel.description && (
-              <>
-                <span className="text-black/25 mx-2 text-[12px]">•</span>
-                <p className="font-body-md text-[12px] text-black/50 truncate max-w-[220px] hidden sm:block">
+              <div className="group relative ml-6 mt-0.5 hidden sm:block">
+                <p className="font-body-sm text-[13px] font-normal text-black/50 leading-[1.45] line-clamp-1 md:line-clamp-2 pr-4 cursor-default">
                   {channel.description}
                 </p>
-              </>
+                <div className="absolute top-full left-0 mt-2 w-max max-w-[320px] px-3 py-2 bg-[#27272a] text-[#f8f8f8] text-[12px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none font-body-sm leading-relaxed">
+                  {channel.description}
+                </div>
+              </div>
             )}
           </div>
 
