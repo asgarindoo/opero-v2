@@ -23,7 +23,6 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
           {flow.category}
         </div>
         <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-          <span className="font-display text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">{flow.status}</span>
           <ChevronRight size={10} className="text-on-surface-variant" />
         </div>
       </div>
@@ -69,15 +68,10 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
             </div>
           </div>
 
-          {/* Owner Avatar Placeholder */}
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-black/[0.04] border border-white flex items-center justify-center overflow-hidden">
-              {flow.owner.avatar ? (
-                <img src={flow.owner.avatar} alt={flow.owner.name} className="w-full h-full object-cover" />
-              ) : (
-                <User size={10} className="text-on-surface-variant opacity-60" />
-              )}
-            </div>
+          {/* Creator Profile */}
+          <div className="flex items-center gap-1.5 text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
+            <User size={12} strokeWidth={2.5} />
+            <span className="font-display text-[10px] font-bold truncate max-w-[80px]">{flow.owner.name}</span>
           </div>
         </div>
       </div>

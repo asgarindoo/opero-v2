@@ -409,7 +409,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                 </div>
                 <div className="flex items-center pt-2">
                   <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0 flex items-center gap-1.5">
-                    <User size={12} /> Owner
+                    <User size={12} /> Created by
                   </span>
                   <span className="font-display text-[12px] font-medium text-zinc-900 truncate">{flow.owner.name}</span>
                 </div>
