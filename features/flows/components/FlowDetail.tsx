@@ -256,7 +256,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                       {item.text}
                     </span>
                     <button
-                      onClick={(e) => { e.stopPropagation(); if(confirm("Delete item?")) handleUpdateStage(activeStage.id, { checklist: activeStage.checklist.filter(c => c.id !== item.id) }); }}
+                      onClick={(e) => { e.stopPropagation(); if (confirm("Delete item?")) handleUpdateStage(activeStage.id, { checklist: activeStage.checklist.filter(c => c.id !== item.id) }); }}
                       className="text-red-500 opacity-20 hover:opacity-100 p-1 rounded transition-all ml-auto"
                       title="Delete item"
                     >
@@ -268,6 +268,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                   <form onSubmit={handleAddItem} className="flex items-center gap-2 mt-2 p-1">
                     <input
                       autoFocus
+                      maxLength={80}
                       value={newItemText}
                       onChange={e => setNewItemText(e.target.value)}
                       placeholder="New item description..."
