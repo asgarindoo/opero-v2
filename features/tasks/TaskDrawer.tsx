@@ -258,6 +258,12 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                         placeholder="Add a comment..." 
                         value={comment} 
                         onChange={e => setComment(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            submitComment();
+                          }
+                        }}
                         className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all"
                       />
                       <div className="flex items-center justify-end">
