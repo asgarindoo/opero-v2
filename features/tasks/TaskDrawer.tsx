@@ -225,6 +225,10 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 )}
               </Section>
 
+              <Section label="Links" count={task.externalLinks?.length || 0}>
+                <ExternalLinksPanel links={task.externalLinks || []} onChange={l => onUpdate(task.id, { externalLinks: l })} />
+              </Section>
+
               <Section label="Attachments" count={task.attachments.length}>
                 <AttachmentZone attachments={task.attachments} onChange={a => onUpdate(task.id, { attachments: a })} />
               </Section>
