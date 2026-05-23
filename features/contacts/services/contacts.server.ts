@@ -17,11 +17,17 @@ export async function getContactById(id: string) {
   return contact ? mapDomainRecord(contact) : null;
 }
 
+import { contactSchema } from "../validators";
+
 export async function createContact(data: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const title = getTitle(data);
-  const contact = await prisma.contact.create({ data: { id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(), organizationId: ctx.tenantId, title, status: getStatus(data), payload: createPayload(data), createdById: ctx.userId, updatedById: ctx.userId } });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: contact.id, entityName: title, description: typeof data.description === "string" ? data.description : null });
+  
+  // Validate using Zod
+  const parsed = contactSchema.parse(data);
+  
+  const title = getTitle(parsed);
+  const contact = await prisma.contact.create({ data: { id: typeof parsed.id === "string" && parsed.id ? parsed.id : crypto.randomUUID(), organizationId: ctx.tenantId, title, status: getStatus(parsed), payload: createPayload(parsed), createdById: ctx.userId, updatedById: ctx.userId } });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: contact.id, entityName: title, description: typeof parsed.description === "string" ? parsed.description : null });
   return mapDomainRecord(contact, ctx.user);
 }
 
@@ -29,11 +35,18 @@ export async function updateContact(id: string, patch: Record<string, unknown>) 
   const ctx = await requireTenant();
   const current = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
-  const result = await prisma.contact.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
+  
+  // Merge and validate using Zod
+  const merged = { ...parsePayload(current.payload), ...patch };
+  // Only parse the fields that are present or parse the whole thing if we're sure it's complete
+  // For safety on updates, we can use partial parsing or just parse the merged payload
+  const parsed = contactSchema.parse(merged);
+
+  const result = await prisma.contact.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(parsed, current.title ?? "Untitled"), status: getStatus(parsed) || current.status, payload: createPayload(parsed), updatedById: ctx.userId } });
   if (result.count === 0) return null;
   const updated = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
   if (!updated) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof parsed.description === "string" ? parsed.description : null });
   return mapDomainRecord(updated);
 }
 

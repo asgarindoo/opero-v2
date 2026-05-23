@@ -17,21 +17,23 @@ export default function KanbanView({ filterMode, searchQuery, onSelectContact, o
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           c.industry.toLowerCase().includes(searchQuery.toLowerCase());
     
-    if (filterMode === "all") return matchesSearch && !c.isArchived;
-    if (filterMode === "customers") return matchesSearch && c.relationshipType === "Customer" && !c.isArchived;
-    if (filterMode === "partners") return matchesSearch && (c.relationshipType === "Partner" || c.relationshipType === "Investor") && !c.isArchived;
-    if (filterMode === "suppliers") return matchesSearch && (c.relationshipType === "Supplier" || c.relationshipType === "Vendor") && !c.isArchived;
+    if (filterMode === "all") return matchesSearch;
+    if (filterMode === "customers") return matchesSearch && (c.relationshipType === "Customer" || c.relationshipType === "Client");
+    if (filterMode === "partners") return matchesSearch && (c.relationshipType === "Partner" || c.relationshipType === "Investor");
+    if (filterMode === "suppliers") return matchesSearch && (c.relationshipType === "Vendor" || c.relationshipType === "Freelancer");
     
-    return matchesSearch && !c.isArchived;
+    return matchesSearch;
   });
 
-  const getStatusColor = (status: ContactStatus) => {
+  const getStatusColor = (status: ContactStatus | string) => {
     switch(status) {
-      case "Active": return "bg-primary/10 text-primary";
-      case "Lead": return "bg-black/5 text-on-surface opacity-80";
-      case "Onboarding": return "bg-[#E1306C]/10 text-[#E1306C]";
-      case "Churned": return "bg-black/5 text-on-surface opacity-60";
-      default: return "bg-black/5 text-on-surface opacity-60";
+      case "Active": return "bg-emerald-500/10 text-emerald-700";
+      case "New": return "bg-blue-500/10 text-blue-700";
+      case "Lead": return "bg-blue-500/10 text-blue-700";
+      case "Pending": return "bg-amber-500/10 text-amber-700";
+      case "Inactive": return "bg-red-500/10 text-red-700";
+      case "Archived": return "bg-slate-500/10 text-slate-700";
+      default: return "bg-black/[0.04] text-on-surface opacity-70";
     }
   };
 

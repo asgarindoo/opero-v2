@@ -4,7 +4,7 @@ import React from "react";
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: "success" | "warning" | "error" | "info" | "neutral" | "primary";
+  variant?: "success" | "warning" | "error" | "info" | "neutral" | "primary" | "purple" | "slate";
   dot?: boolean;
   className?: string;
 }
@@ -22,6 +22,8 @@ export default function Badge({
     info: "bg-blue-500/10 text-blue-700",
     neutral: "bg-black/[0.04] text-on-surface opacity-70",
     primary: "bg-primary/10 text-primary",
+    purple: "bg-purple-500/10 text-purple-700",
+    slate: "bg-slate-500/10 text-slate-700",
   };
 
   const dotColors = {
@@ -31,6 +33,8 @@ export default function Badge({
     info: "bg-blue-500",
     neutral: "bg-on-surface-variant",
     primary: "bg-primary",
+    purple: "bg-purple-500",
+    slate: "bg-slate-500",
   };
 
   return (

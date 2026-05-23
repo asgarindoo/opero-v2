@@ -88,15 +88,23 @@ interface FormFieldProps {
 export function FormField({ label, icon, required, maxLength, currentLength = 0, error, hint, children, className = "" }: FormFieldProps) {
   return (
     <div className={className}>
-      {(label || maxLength !== undefined) && (
+      {label && (
         <div className="flex items-center justify-between mb-1.5">
-          {label ? <FormLabel icon={icon} required={required}>{label}</FormLabel> : <div />}
-          {maxLength !== undefined && <CharacterCounter current={currentLength} max={maxLength} />}
+          <FormLabel icon={icon} required={required}>{label}</FormLabel>
         </div>
       )}
       {children}
-      <ValidationMessage error={error} />
-      {hint && !error && <GlobalFieldHint>{hint}</GlobalFieldHint>}
+      <div className="flex items-start justify-between mt-1">
+        <div>
+          <ValidationMessage error={error} />
+          {hint && !error && <GlobalFieldHint>{hint}</GlobalFieldHint>}
+        </div>
+        {maxLength !== undefined && (
+          <div className="mt-1">
+            <CharacterCounter current={currentLength} max={maxLength} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

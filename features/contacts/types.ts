@@ -1,5 +1,5 @@
-export type ContactStatus = "Lead" | "Active" | "Onboarding" | "Churned" | "Inactive";
-export type RelationshipType = "Customer" | "Partner" | "Investor" | "Supplier" | "Vendor" | "Reseller" | "Distributor" | "Affiliate";
+export type ContactStatus = "New" | "Active" | "Pending" | "Inactive" | "Archived";
+export type RelationshipType = "Lead" | "Customer" | "Client" | "Vendor" | "Partner" | "Freelancer" | "Investor" | "Internal" | "Other";
 
 export interface ContactActivity {
   id: string;

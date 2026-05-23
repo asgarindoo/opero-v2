@@ -35,23 +35,25 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           c.industry.toLowerCase().includes(searchQuery.toLowerCase());
     
-    if (filterMode === "all") return matchesSearch && !c.isArchived;
-    if (filterMode === "customers") return matchesSearch && c.relationshipType === "Customer" && !c.isArchived;
-    if (filterMode === "partners") return matchesSearch && (c.relationshipType === "Partner" || c.relationshipType === "Investor") && !c.isArchived;
-    if (filterMode === "suppliers") return matchesSearch && (c.relationshipType === "Supplier" || c.relationshipType === "Vendor") && !c.isArchived;
+    if (filterMode === "all") return matchesSearch;
+    if (filterMode === "customers") return matchesSearch && (c.relationshipType === "Customer" || c.relationshipType === "Client");
+    if (filterMode === "partners") return matchesSearch && (c.relationshipType === "Partner" || c.relationshipType === "Investor");
+    if (filterMode === "suppliers") return matchesSearch && (c.relationshipType === "Vendor" || c.relationshipType === "Freelancer");
     
-    return matchesSearch && !c.isArchived;
+    return matchesSearch;
   });
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedContacts = filteredContacts.slice(startIndex, startIndex + itemsPerPage);
 
-  const getStatusVariant = (status: ContactStatus): any => {
+  const getStatusVariant = (status: ContactStatus | string): any => {
     switch (status) {
       case "Active": return "success";
-      case "Lead": return "neutral";
-      case "Onboarding": return "info";
-      case "Churned": return "error";
+      case "New": return "info";
+      case "Lead": return "info";
+      case "Pending": return "warning";
+      case "Inactive": return "error";
+      case "Archived": return "slate";
       default: return "neutral";
     }
   };
@@ -100,9 +102,9 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
   }
 
   return (
-    <div className="flex flex-col h-full bg-background relative">
-      <div className="flex-1 overflow-hidden">
-        <Table>
+    <div className="flex flex-col h-full bg-background relative min-w-0">
+      <div className="flex-1 overflow-auto">
+        <Table className="table-fixed min-w-[900px]">
           <TableHeader className="bg-[#fbf5f5]">
             <TableRow className="h-10">
               <TableHead className="w-10 px-4">
@@ -115,17 +117,16 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                   />
                 </div>
               </TableHead>
-              <TableHead className="px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Contact / Company</TableHead>
-              <TableHead className="px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Relationship</TableHead>
-              <TableHead className="px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Status</TableHead>
-              <TableHead className="px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Primary Contact</TableHead>
-              <TableHead className="px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Last Activity</TableHead>
-              <TableHead className="px-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
+              <TableHead className="w-[35%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Contact / Company</TableHead>
+              <TableHead className="w-[25%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Primary Contact</TableHead>
+              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Relationship</TableHead>
+              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Status</TableHead>
+              <TableHead className="w-[10%] px-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedContacts.map((contact) => {
-              const primaryPerson = contact.persons.find(p => p.isPrimary) || contact.persons[0];
+              const primaryPerson = (contact.persons || []).find(p => p.isPrimary) || (contact.persons || [])[0];
               const isSelected = selectedIds.has(contact.id);
               
               return (
@@ -145,22 +146,33 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                     </div>
                   </TableCell>
                   <TableCell className="px-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-6.5 h-6.5 rounded-md bg-black/5 flex items-center justify-center font-display font-semibold text-[9px] text-on-surface shrink-0 group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                        {contact.initials}
-                      </div>
-                      <div className="flex flex-col min-w-0 gap-0.5">
-                        <span 
-                          className="font-display font-semibold text-[12px] text-on-surface opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[100px] md:max-w-[150px] lg:max-w-[200px] xl:max-w-[280px]"
-                          title={contact.name}
-                        >
-                          {contact.name}
-                        </span>
-                        <p className="font-body-sm text-[7px] text-on-surface-variant opacity-60 truncate uppercase font-bold tracking-[0.2em] leading-none mt-1">
-                          {contact.industry}
-                        </p>
-                      </div>
+                    <div className="flex flex-col min-w-0 gap-0.5">
+                      <span 
+                        className="font-display font-semibold text-[12px] text-on-surface opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[100px] md:max-w-[150px] lg:max-w-[200px] xl:max-w-[280px]"
+                        title={contact.name}
+                      >
+                        {contact.name}
+                      </span>
+                      <p className="font-body-sm text-[7px] text-on-surface-variant opacity-60 truncate uppercase font-bold tracking-[0.2em] leading-none mt-1">
+                        {contact.industry}
+                      </p>
                     </div>
+                  </TableCell>
+                  <TableCell className="px-4 whitespace-nowrap">
+                    {primaryPerson ? (
+                      <div className="flex flex-col min-w-0 gap-0.5">
+                        <span className="font-display font-medium text-[11px] text-on-surface truncate block max-w-[150px]">
+                          {primaryPerson.name}
+                        </span>
+                        {primaryPerson.email && (
+                          <span className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate block max-w-[150px]">
+                            {primaryPerson.email}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="font-body-sm text-[10px] text-on-surface-variant opacity-40 italic">No contacts</span>
+                    )}
                   </TableCell>
                   <TableCell className="px-4 whitespace-nowrap">
                     <div className="flex items-center gap-1.5 text-on-surface-variant opacity-60 font-display">
@@ -173,32 +185,17 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                       {contact.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-4 whitespace-nowrap">
-                    {primaryPerson ? (
-                      <div className="min-w-0">
-                        <p className="font-display text-[11px] font-medium text-on-surface opacity-90 truncate">{primaryPerson.name}</p>
-                        <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate leading-none mt-0.5 font-display tracking-tight">{primaryPerson.email}</p>
-                      </div>
-                    ) : (
-                      <span className="font-body-sm text-[10px] text-on-surface-variant opacity-60 italic">— Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-4 whitespace-nowrap">
-                    <span className="font-display text-[11px] text-on-surface-variant opacity-60 font-display">
-                      {new Date(contact.lastContacted).toLocaleDateString()}
-                    </span>
-                  </TableCell>
                   <TableCell className="px-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="flex items-center justify-end gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6.5 w-6.5 text-on-surface-variant opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
+                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50"
                         onClick={(e) => handleDeleteOne(e, contact.id)}
                       >
                         <Trash2 size={12} />
                       </Button>
-                      <ChevronRight size={13} className="text-on-surface-variant opacity-60 ml-0.5" />
+                      <ChevronRight size={13} className="text-on-surface-variant ml-0.5" />
                     </div>
                   </TableCell>
                 </TableRow>

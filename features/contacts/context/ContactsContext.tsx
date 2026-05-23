@@ -9,6 +9,7 @@ interface ContactsContextType {
   addNote: (contactId: string, note: string) => void;
   updateStatus: (contactId: string, status: ContactStatus) => void;
   updateRelationshipType: (contactId: string, type: RelationshipType) => void;
+  updateContact: (contactId: string, updates: Partial<Contact>) => void;
   addContact: (contact: Partial<Contact>) => void;
   deleteContacts: (ids: string[]) => void;
 }
@@ -48,7 +49,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       };
       const updated = {
         ...c,
-        activities: [newActivity, ...c.activities],
+        activities: [newActivity, ...(c.activities || [])],
         lastContacted: newActivity.timestamp
       };
 
@@ -91,8 +92,8 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       name: partial.name || "New Contact",
       initials: partial.name ? partial.name.substring(0, 2).toUpperCase() : "NC",
       industry: partial.industry || "Unspecified",
-      status: partial.status || "Lead",
-      relationshipType: partial.relationshipType || "Customer",
+      status: partial.status || "New",
+      relationshipType: partial.relationshipType || "Lead",
       contextData: partial.contextData || {},
       isArchived: false,
       tags: [],
@@ -106,6 +107,18 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     createContact<Contact>(newContact)
       .then((created) => setContacts(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create contact:", err));
+  }, []);
+
+  const updateContact = useCallback((contactId: string, updates: Partial<Contact>) => {
+    setContacts(prev => prev.map(c => {
+      if (c.id !== contactId) return c;
+      const updated = { ...c, ...updates };
+      const recordId = (c as { recordId?: string }).recordId ?? c.id;
+      saveContact<Contact>(recordId, updated).catch((err) => {
+        console.error("Failed to update contact:", err);
+      });
+      return updated;
+    }));
   }, []);
 
   const deleteContacts = useCallback((ids: string[]) => {
@@ -126,9 +139,10 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     addNote,
     updateStatus,
     updateRelationshipType,
+    updateContact,
     addContact,
     deleteContacts
-  }), [contacts, addNote, updateStatus, updateRelationshipType, addContact, deleteContacts]);
+  }), [contacts, addNote, updateStatus, updateRelationshipType, updateContact, addContact, deleteContacts]);
 
   return (
     <ContactsContext.Provider value={value}>

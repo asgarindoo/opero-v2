@@ -10,22 +10,51 @@ import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
-import { GlobalSelect } from "@/components/ui/global/form/GlobalSelect";
-import { FormSection } from "@/components/ui/global/form/FormField";
+import Dropdown from "@/components/ui/Dropdown";
+
+import { GlobalFieldHint } from "@/components/ui/global/form/FormField";
+
+function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+        {children}
+      </span>
+    </div>
+  );
+}
 
 export default function AddContactModal({ onClose }: { onClose: () => void }) {
   const { addContact } = useContacts();
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
-  const [relationshipType, setRelationshipType] = useState<RelationshipType>("Customer");
-  const [status, setStatus] = useState<ContactStatus>("Lead");
+  const [relationshipType, setRelationshipType] = useState<RelationshipType>("Lead");
+  const [status, setStatus] = useState<ContactStatus>("New");
   const [personName, setPersonName] = useState("");
   const [personEmail, setPersonEmail] = useState("");
 
   const [dealValue, setDealValue] = useState("");
   const [salesStage, setSalesStage] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [emailError, setEmailError] = useState("");
 
-  const isValid = name.trim().length > 0;
+  const validateEmail = (email: string) => {
+    if (!email) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPersonEmail(val);
+    if (val && !validateEmail(val)) {
+      setEmailError("Invalid email address");
+    } else {
+      setEmailError("");
+    }
+  };
+
+  const isValid = name.trim().length > 0 && (!personEmail || validateEmail(personEmail));
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -33,6 +62,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
 
     const contextData: ContactContextData = {
       value: dealValue ? Number(dealValue) : undefined,
+      currency: dealValue ? currency : undefined,
       stage: salesStage || undefined
     };
 
@@ -42,9 +72,9 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
       relationshipType,
       status,
       contextData,
-      persons: personName.trim() ? [{
+      persons: personName.trim() || personEmail.trim() ? [{
         id: "p" + Date.now(),
-        name: personName.trim(),
+        name: personName.trim() || "Unknown",
         email: personEmail.trim() || "",
         role: "Contact Person",
         isPrimary: true
@@ -53,110 +83,135 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
-  const isFinancialType = ["Customer", "Reseller", "Distributor", "Affiliate", "Investor", "Supplier", "Vendor"].includes(relationshipType);
+  const isFinancialType = ["Lead", "Customer", "Client", "Vendor", "Partner", "Investor"].includes(relationshipType);
 
   return (
-    <ModalShell onClose={onClose} maxWidth={480}>
-      <ModalHeader title="New Contact" icon={<User size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+    <ModalShell onClose={onClose} maxWidth={540}>
+      <ModalHeader title="New Contact" onClose={onClose} />
       
-      <ModalContent className="space-y-5">
-        <GlobalInput
-          label="Company / Contact Name"
-          icon={<Building2 size={11} strokeWidth={1.75} />}
-          required
-          maxLength={40}
-          autoFocus
-          placeholder="e.g. Acme Corp"
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <GlobalSelect
-            label="Relationship"
-            icon={<Briefcase size={11} strokeWidth={1.75} />}
-            options={[
-              { value: "Customer", label: "Customer" },
-              { value: "Partner", label: "Partner" },
-              { value: "Supplier", label: "Supplier" },
-              { value: "Investor", label: "Investor" },
-              { value: "Vendor", label: "Vendor" },
-              { value: "Reseller", label: "Reseller" },
-              { value: "Distributor", label: "Distributor" },
-              { value: "Affiliate", label: "Affiliate" },
-            ]}
-            value={relationshipType}
-            onChange={e => setRelationshipType(e.target.value as RelationshipType)}
+      <ModalContent className="db-sidebar space-y-6">
+        <div className="space-y-4">
+          <GlobalInput
+            autoFocus
+            required
+            maxLength={64}
+            placeholder="Company or Contact Name…"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="font-display font-semibold"
+            style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
           />
 
-          <GlobalSelect
-            label="Status"
-            options={[
-              { value: "Lead", label: "Lead" },
-              { value: "Onboarding", label: "Onboarding" },
-              { value: "Active", label: "Active" },
-              { value: "Inactive", label: "Inactive" },
-            ]}
-            value={status}
-            onChange={e => setStatus(e.target.value as ContactStatus)}
-          />
+          <div className="grid grid-cols-2 gap-4 items-start">
+            <div>
+              <SL icon={<Briefcase size={11} strokeWidth={1.75} />}>Relationship</SL>
+              <Dropdown
+                className="[&>button]:h-[39px]"
+                value={relationshipType}
+                onChange={val => setRelationshipType(val as RelationshipType)}
+                options={[
+                  { value: "Lead", label: "Lead" },
+                  { value: "Customer", label: "Customer" },
+                  { value: "Client", label: "Client" },
+                  { value: "Vendor", label: "Vendor" },
+                  { value: "Partner", label: "Partner" },
+                  { value: "Freelancer", label: "Freelancer" },
+                  { value: "Investor", label: "Investor" },
+                  { value: "Internal", label: "Internal" },
+                  { value: "Other", label: "Other" },
+                ]}
+              />
+              <GlobalFieldHint>Type of contact</GlobalFieldHint>
+            </div>
+
+            <div>
+              <SL>Status</SL>
+              <Dropdown
+                className="[&>button]:h-[39px]"
+                value={status}
+                onChange={val => setStatus(val as ContactStatus)}
+                options={[
+                  { value: "New", label: "New" },
+                  { value: "Active", label: "Active" },
+                  { value: "Pending", label: "Pending" },
+                  { value: "Inactive", label: "Inactive" },
+                  { value: "Archived", label: "Archived" },
+                ]}
+              />
+              <GlobalFieldHint>Current activity state</GlobalFieldHint>
+            </div>
+          </div>
+
+          <div>
+            <SL>Industry</SL>
+            <GlobalInput
+              maxLength={64}
+              placeholder="e.g. Software, Logistics"
+              value={industry}
+              onChange={e => setIndustry(e.target.value)}
+            />
+          </div>
         </div>
 
-        <GlobalInput
-          label="Industry"
-          maxLength={30}
-          placeholder="e.g. Software, Logistics"
-          value={industry}
-          onChange={e => setIndustry(e.target.value)}
-        />
-
         {isFinancialType && (
-          <FormSection title="Relationship Overview">
-            <div className="grid grid-cols-2 gap-4">
+          <div>
+            <SL>Relationship Overview <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: "normal", fontWeight: "normal" }}>(Optional)</span></SL>
+            <div className="grid grid-cols-2 gap-4 items-start">
+              <div className="flex items-center gap-2">
+                <div className="w-[72px] shrink-0">
+                  <Dropdown
+                    className="[&>button]:h-[39px]"
+                    value={currency}
+                    onChange={val => setCurrency(val as string)}
+                    options={[
+                      { value: "USD", label: "USD" },
+                      { value: "IDR", label: "IDR" },
+                      { value: "EUR", label: "EUR" },
+                      { value: "GBP", label: "GBP" },
+                      { value: "SGD", label: "SGD" },
+                      { value: "AUD", label: "AUD" },
+                    ]}
+                  />
+                </div>
+                <div className="flex-1">
+                  <GlobalInput
+                    type="number"
+                    placeholder="Deal Value (0.00)"
+                    value={dealValue}
+                    onChange={e => setDealValue(e.target.value)}
+                  />
+                </div>
+              </div>
               <GlobalInput
-                label="Deal Value"
-                type="number"
-                icon={<DollarSign size={11} strokeWidth={1.75} />}
-                placeholder="0.00"
-                value={dealValue}
-                onChange={e => setDealValue(e.target.value)}
-              />
-              <GlobalInput
-                label="Sales Stage"
                 maxLength={30}
-                placeholder="e.g. Qualified, Proposal"
+                placeholder="Sales Stage (e.g. Qualified)"
                 value={salesStage}
                 onChange={e => setSalesStage(e.target.value)}
               />
             </div>
-          </FormSection>
+          </div>
         )}
 
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
         <div className="space-y-4">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-              Primary Contact <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: "normal", fontWeight: "normal" }}>(Optional)</span>
-            </span>
+          <SL>Primary Contact</SL>
+          
+          <div className="grid grid-cols-2 gap-4 items-start w-full">
+            <GlobalInput
+              maxLength={40}
+              placeholder="Person Name"
+              value={personName}
+              onChange={e => setPersonName(e.target.value)}
+            />
+            <GlobalInput
+              type="email"
+              placeholder="email@example.com"
+              value={personEmail}
+              onChange={handleEmailChange}
+              error={emailError}
+            />
           </div>
-          <GlobalInput
-            label="Contact Person Name"
-            icon={<User size={11} strokeWidth={1.75} />}
-            maxLength={40}
-            placeholder="Person Name"
-            value={personName}
-            onChange={e => setPersonName(e.target.value)}
-          />
-          <GlobalInput
-            label="Email Address"
-            icon={<Mail size={11} strokeWidth={1.75} />}
-            type="email"
-            maxLength={60}
-            placeholder="email@example.com"
-            value={personEmail}
-            onChange={e => setPersonEmail(e.target.value)}
-          />
         </div>
       </ModalContent>
 
