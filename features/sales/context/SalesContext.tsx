@@ -50,16 +50,16 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /** Compute subtotal and total from items */
-  function computeTotals(items: SaleItem[], discountTotal = 0) {
+  function computeTotals(items: SaleItem[], discountTotal = 0, taxAmount = 0) {
     const subtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
-    const total = Math.max(0, subtotal - discountTotal);
+    const total = Math.max(0, subtotal - discountTotal + taxAmount);
     return { subtotal, total };
   }
 
   const addSale = useCallback((partial: Partial<SaleOpportunity>) => {
     const nextOrderNum = "SAL-" + new Date().getFullYear() + "-" + (sales.length + 1).toString().padStart(3, "0");
     const items = partial.items || [];
-    const { subtotal, total } = computeTotals(items, partial.discountTotal || 0);
+    const { subtotal, total } = computeTotals(items, partial.discountTotal || 0, partial.taxAmount || 0);
 
     const partialWithoutTotals = { ...partial };
     delete (partialWithoutTotals as any).subtotal;
@@ -102,18 +102,18 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     setSales(prev => prev.map(s => {
       if (s.id !== id) return s;
 
-      // Recompute totals if items changed
-      const items = updates.items ?? s.items;
-      const discountTotal = updates.discountTotal ?? s.discountTotal;
-      const { subtotal, total } = computeTotals(items, discountTotal);
-
       const updated = {
         ...s,
         ...updates,
-        subtotal,
-        total,
         updatedAt: new Date().toISOString()
       };
+
+      // Recompute totals if items or discount or tax changes
+      if (updates.items || updates.discountTotal !== undefined || updates.taxAmount !== undefined) {
+        const { subtotal, total } = computeTotals(updated.items, updated.discountTotal || 0, updated.taxAmount || 0);
+        updated.subtotal = subtotal;
+        updated.total = total;
+      }
 
       // Auto-trigger Finance income record when paymentStatus → Paid
       if (updates.paymentStatus === "Paid" && s.paymentStatus !== "Paid") {

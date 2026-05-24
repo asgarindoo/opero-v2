@@ -101,7 +101,9 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
       status: "Unpaid",
       items: invoiceItems,
       subtotal: totalAmount,
-      taxTotal: 0,
+      taxRate: sale.taxPercentage,
+      taxTotal: sale.taxAmount ?? 0,
+      discountRate: sale.orderDiscountType === "percentage" ? sale.orderDiscountValue : undefined,
       discountTotal: sale.discountTotal,
       totalAmount: sale.total,
       currency: "USD",
@@ -226,6 +228,15 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                         <span className="font-medium text-on-surface/90">−{formatCurrency(sale.discountTotal, sale.currency)}</span>
                       </div>
                     )}
+                    {sale.taxAmount && sale.taxAmount > 0 ? (
+                      <div className="flex justify-between items-center font-body-sm text-[13px] text-on-surface-variant/80">
+                        <span>
+                          Tax
+                          {sale.taxPercentage ? ` (${sale.taxPercentage}%)` : ""}
+                        </span>
+                        <span className="font-medium text-on-surface/90">+{formatCurrency(sale.taxAmount, sale.currency)}</span>
+                      </div>
+                    ) : null}
                     <div className="flex justify-between items-center pt-3 mt-1 border-t border-black/[0.06]">
                       <span className="font-label-caps text-[11px] font-bold text-on-surface-variant/60 uppercase tracking-widest">Total</span>
                       <span className="font-display text-[18px] font-bold text-on-surface">{formatCurrency(sale.total, sale.currency)}</span>

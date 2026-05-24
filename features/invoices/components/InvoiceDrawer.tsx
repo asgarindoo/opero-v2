@@ -104,23 +104,29 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
                    {formatCurrency(inv.subtotal, inv.currency)}
                  </span>
                </div>
-               <div className="flex justify-between items-center px-1 gap-2">
-                 <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60 shrink-0">Tax (10%)</span>
-                 <span 
-                   className="font-body-sm text-[12px] text-on-surface opacity-80 truncate text-right"
-                   title={formatCurrency(inv.taxTotal, inv.currency)}
-                 >
-                   {formatCurrency(inv.taxTotal, inv.currency)}
-                 </span>
-               </div>
                {inv.discountTotal > 0 && (
                  <div className="flex justify-between items-center px-1 text-red-500 gap-2">
-                   <span className="font-body-sm text-[12px] opacity-60 shrink-0">Discount</span>
+                   <span className="font-body-sm text-[12px] opacity-60 shrink-0">
+                     Discount {inv.discountRate ? `(${inv.discountRate}%)` : ""}
+                   </span>
                    <span 
                      className="font-body-sm text-[12px] opacity-80 truncate text-right"
                      title={`-${formatCurrency(inv.discountTotal, inv.currency)}`}
                    >
                      -{formatCurrency(inv.discountTotal, inv.currency)}
+                   </span>
+                 </div>
+               )}
+               {inv.taxTotal > 0 && (
+                 <div className="flex justify-between items-center px-1 gap-2">
+                   <span className="font-body-sm text-[12px] text-on-surface-variant opacity-60 shrink-0">
+                     Tax {inv.taxRate ? `(${inv.taxRate}%)` : ""}
+                   </span>
+                   <span 
+                     className="font-body-sm text-[12px] text-on-surface opacity-80 truncate text-right"
+                     title={formatCurrency(inv.taxTotal, inv.currency)}
+                   >
+                     +{formatCurrency(inv.taxTotal, inv.currency)}
                    </span>
                  </div>
                )}

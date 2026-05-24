@@ -22,6 +22,8 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const [items, setItems] = useState<Partial<InvoiceItem>[]>([
     { id: "1", description: "", quantity: 1, unitPrice: 0, amount: 0 }
   ]);
+  const [taxRate, setTaxRate] = useState<string>("");
+  const [discountRate, setDiscountRate] = useState<string>("");
 
   const addItem = () => {
     setItems([...items, { id: Math.random().toString(), description: "", quantity: 1, unitPrice: 0, amount: 0 }]);
@@ -43,7 +45,15 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
     }));
   };
 
-  const total = items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  const subtotal = items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  const parsedDiscount = parseFloat(discountRate) || 0;
+  const parsedTax = parseFloat(taxRate) || 0;
+  
+  const discountAmt = subtotal * (parsedDiscount / 100);
+  const clampedDiscount = Math.min(subtotal, Math.max(0, discountAmt));
+  const taxAmt = Math.max(0, (subtotal - clampedDiscount) * (parsedTax / 100));
+  const total = Math.max(0, subtotal - clampedDiscount + taxAmt);
+  
   const isValid = items.some(it => it.description?.trim()) && invoiceNumber.trim() && dueDate;
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -56,7 +66,13 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
       dueDate,
       notes,
       items: items.filter(it => it.description?.trim()) as InvoiceItem[],
-      status: "Unpaid"
+      status: "Unpaid",
+      subtotal,
+      discountRate: parsedDiscount,
+      discountTotal: clampedDiscount,
+      taxRate: parsedTax,
+      taxTotal: taxAmt,
+      totalAmount: total
     });
     onClose();
   };
@@ -160,14 +176,64 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex justify-end pt-2">
+          <div className="w-full flex justify-end items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold opacity-40 ml-auto">Discount</span>
+              <div className="w-[100px] relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
+                <input
+                  type="number"
+                  min="0"
+                  value={discountRate}
+                  onChange={e => setDiscountRate(e.target.value)}
+                  className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"
+                  placeholder="0.00"
+                />
+                <div className="px-2 py-1.5 text-[11px] font-bold text-on-surface-variant opacity-60 bg-black/[0.02] border-l border-black/[0.06]">
+                  %
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold opacity-40 ml-auto">Tax</span>
+              <div className="w-[100px] relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
+                <input
+                  type="number"
+                  min="0"
+                  value={taxRate}
+                  onChange={e => setTaxRate(e.target.value)}
+                  className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"
+                  placeholder="0.00"
+                />
+                <div className="px-2 py-1.5 text-[11px] font-bold text-on-surface-variant opacity-60 bg-black/[0.02] border-l border-black/[0.06]">
+                  %
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-4">
           <div className="w-[200px] space-y-2">
             <div className="flex justify-between items-center text-[11.5px]">
-              <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Tax (10%)</span>
-              <span className="font-display" style={{ opacity: 0.7 }}>${(total * 0.1).toFixed(2)}</span>
+              <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Subtotal</span>
+              <span className="font-display" style={{ opacity: 0.7 }}>${subtotal.toFixed(2)}</span>
             </div>
+            {clampedDiscount > 0 && (
+              <div className="flex justify-between items-center text-[11.5px] text-red-500">
+                <span className="font-body-sm opacity-60">Discount {parsedDiscount ? `(${parsedDiscount}%)` : ""}</span>
+                <span className="font-display opacity-80">-${clampedDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            {taxAmt > 0 && (
+              <div className="flex justify-between items-center text-[11.5px]">
+                <span className="font-body-sm" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Tax {parsedTax ? `(${parsedTax}%)` : ""}</span>
+                <span className="font-display" style={{ opacity: 0.7 }}>+${taxAmt.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-1.5" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
               <span className="font-label-caps text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>Total</span>
-              <span className="font-display font-bold text-[15px]" style={{ color: "var(--color-on-surface)", opacity: 0.9 }}>${(total * 1.1).toFixed(2)}</span>
+              <span className="font-display font-bold text-[15px]" style={{ color: "var(--color-on-surface)", opacity: 0.9 }}>${total.toFixed(2)}</span>
             </div>
           </div>
         </div>

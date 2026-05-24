@@ -30,7 +30,9 @@ export interface Invoice {
   status: InvoiceStatus;
   items: InvoiceItem[];
   subtotal: number;
+  taxRate?: number;
   taxTotal: number;
+  discountRate?: number;
   discountTotal: number;
   totalAmount: number;
   currency: string;

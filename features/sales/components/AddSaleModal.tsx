@@ -102,6 +102,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const [items, setItems] = useState<SaleItem[]>([newItem()]);
   const [orderDiscount, setOrderDiscount] = useState("");
   const [orderDiscountType, setOrderDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [taxPercentage, setTaxPercentage] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [notes, setNotes] = useState("");
 
@@ -123,7 +124,11 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const rawOrderDiscount = parseFloat(orderDiscount) || 0;
   const orderDiscountAmt = orderDiscountType === "fixed" ? rawOrderDiscount : subtotal * (rawOrderDiscount / 100);
   const clampedOrderDiscountAmt = Math.min(subtotal, Math.max(0, orderDiscountAmt));
-  const total = Math.max(0, subtotal - clampedOrderDiscountAmt);
+  
+  const rawTax = parseFloat(taxPercentage) || 0;
+  const taxAmt = Math.max(0, (subtotal - clampedOrderDiscountAmt) * (rawTax / 100));
+  
+  const total = Math.max(0, subtotal - clampedOrderDiscountAmt + taxAmt);
   const isValid = title.trim() || items.some(it => it.name.trim());
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -144,6 +149,8 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
       orderDiscountValue: rawOrderDiscount,
       orderDiscountType,
       discountTotal: clampedOrderDiscountAmt,
+      taxPercentage: rawTax,
+      taxAmount: taxAmt,
       subtotal,
       total,
       currency,
@@ -168,6 +175,14 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
               Discount {orderDiscountType === "percentage" && orderDiscount ? `(${orderDiscount}%)` : ""}
             </span>
             <span className="font-semibold text-on-surface-variant/80">−{formatCurrency(clampedOrderDiscountAmt, currency)}</span>
+          </div>
+        )}
+        {taxAmt > 0 && (
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">
+              Tax {taxPercentage ? `(${taxPercentage}%)` : ""}
+            </span>
+            <span className="font-semibold text-on-surface-variant/80">+{formatCurrency(taxAmt, currency)}</span>
           </div>
         )}
         <div className="flex flex-col items-end">
@@ -340,24 +355,43 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="flex justify-end pt-2">
-            <div className="w-1/2 flex items-center gap-2">
-              <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold opacity-40 ml-auto">Order Discount</span>
-              <div className="w-[120px] relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
-                <input
-                  type="number"
-                  min="0"
-                  value={orderDiscount}
-                  onChange={e => setOrderDiscount(e.target.value)}
-                  className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"
-                  placeholder="0.00"
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setOrderDiscountType(prev => prev === "fixed" ? "percentage" : "fixed")}
-                  className="px-2 py-1.5 text-[11px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 hover:bg-black/5 border-l border-black/[0.06] transition-all"
-                >
-                  {orderDiscountType === "fixed" ? "$" : "%"}
-                </button>
+            <div className="w-full flex justify-end items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold opacity-40 ml-auto">Order Discount</span>
+                <div className="w-[120px] relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
+                  <input
+                    type="number"
+                    min="0"
+                    value={orderDiscount}
+                    onChange={e => setOrderDiscount(e.target.value)}
+                    className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"
+                    placeholder="0.00"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setOrderDiscountType(prev => prev === "fixed" ? "percentage" : "fixed")}
+                    className="px-2 py-1.5 text-[11px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 hover:bg-black/5 border-l border-black/[0.06] transition-all"
+                  >
+                    {orderDiscountType === "fixed" ? "$" : "%"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold opacity-40 ml-auto">Tax</span>
+                <div className="w-[100px] relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
+                  <input
+                    type="number"
+                    min="0"
+                    value={taxPercentage}
+                    onChange={e => setTaxPercentage(e.target.value)}
+                    className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"
+                    placeholder="0.00"
+                  />
+                  <div className="px-2 py-1.5 text-[11px] font-bold text-on-surface-variant opacity-60 bg-black/[0.02] border-l border-black/[0.06]">
+                    %
+                  </div>
+                </div>
               </div>
             </div>
           </div>

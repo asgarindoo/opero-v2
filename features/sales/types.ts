@@ -38,6 +38,8 @@ export interface SaleOpportunity {
   orderDiscountValue?: number; // Raw input value for order discount
   orderDiscountType?: DiscountType; // Type of order discount
   discountTotal: number; // Additional order-level discount amount
+  taxPercentage?: number; // Optional tax rate (percentage)
+  taxAmount?: number; // Calculated tax amount
   total: number; // Final payable amount
   currency: string;
   assignedStaff: string[];
