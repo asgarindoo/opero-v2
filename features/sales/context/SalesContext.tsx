@@ -5,12 +5,13 @@ import { SaleOpportunity, SaleStatus, PaymentStatus, SaleType, SaleActivity, Sal
 import { createSale, deleteSale, listSales, updateSale as saveSale } from "@/features/sales";
 import { listProducts, updateProduct } from "@/features/products/services/products.client";
 import type { Product, StockActivity } from "@/features/products/types";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface SalesContextType {
   sales: SaleOpportunity[];
   addSale: (sale: Partial<SaleOpportunity>) => void;
   updateSale: (id: string, updates: Partial<SaleOpportunity>) => void;
-  addActivity: (saleId: string, activity: Omit<SaleActivity, "id" | "timestamp" | "author">) => void;
+  addActivity: (saleId: string, activity: Omit<SaleActivity, "id" | "timestamp" | "author"> & { author?: string }) => void;
   deleteSales: (ids: string[]) => void;
   /** Callback bridge: when a sale is marked Paid, this fires so Finance can record income */
   onSalePaid?: (sale: SaleOpportunity) => void;
@@ -20,6 +21,9 @@ interface SalesContextType {
 const SalesContext = createContext<SalesContextType | undefined>(undefined);
 
 export function SalesProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [sales, setSales] = useState<SaleOpportunity[]>([]);
   const [onSalePaid, setOnSalePaid] = useState<((sale: SaleOpportunity) => void) | undefined>(undefined);
 
@@ -71,12 +75,18 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       status: partial.status || "Pending",
       paymentStatus: partial.paymentStatus || "Unpaid",
       currency: "USD",
-      assignedStaff: ["You"],
+      assignedStaff: [userName],
       items,
       subtotal,
       discountTotal: partial.discountTotal || 0,
       total,
-      activities: [],
+      activities: [{
+        id: Math.random().toString(36).substring(7),
+        type: "status_change",
+        description: "Sale record created",
+        timestamp: new Date().toISOString(),
+        author: userName
+      }],
       attachments: [],
       notes: partial.notes || "",
       createdAt: new Date().toISOString(),
@@ -86,7 +96,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     createSale<SaleOpportunity>(newSale)
       .then((created) => setSales(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create sale:", err));
-  }, [sales.length]);
+  }, [sales.length, userName]);
 
   const updateSale = useCallback((id: string, updates: Partial<SaleOpportunity>) => {
     setSales(prev => prev.map(s => {
@@ -125,7 +135,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
                     quantity: -item.quantity,
                     description: `Sold via Sale ${updated.orderNumber}`,
                     timestamp: new Date().toISOString(),
-                    author: "System"
+                    author: userName
                   };
                   const recordId = (product as any).recordId ?? product.id;
                   await updateProduct<Product>(recordId, {
@@ -149,14 +159,15 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [onSalePaid]);
 
-  const addActivity = useCallback((saleId: string, activity: Omit<SaleActivity, "id" | "timestamp" | "author">) => {
+  const addActivity = useCallback((saleId: string, activity: Omit<SaleActivity, "id" | "timestamp" | "author"> & { author?: string }) => {
     setSales(prev => prev.map(s => {
       if (s.id !== saleId) return s;
+      const { author = userName, ...rest } = activity;
       const newActivity: SaleActivity = {
         id: Math.random().toString(36).substring(7),
         timestamp: new Date().toISOString(),
-        author: "You",
-        ...activity
+        author,
+        ...rest,
       };
       const updated = {
         ...s,
