@@ -60,11 +60,12 @@ export function TableHead({ children, className = "" }: TableProps) {
   );
 }
 
-export function TableCell({ children, className = "", onClick }: TableProps & { onClick?: (e: React.MouseEvent) => void }) {
+export function TableCell({ children, className = "", onClick, ...props }: TableProps & { onClick?: (e: React.MouseEvent) => void } & React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td 
       onClick={onClick}
       className={`px-6 py-2 font-display text-[12px] text-on-surface ${className}`}
+      {...props}
     >
       {children}
     </td>

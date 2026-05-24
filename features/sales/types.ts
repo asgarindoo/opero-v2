@@ -10,6 +10,8 @@ export interface SaleActivity {
   author: string;
 }
 
+export type DiscountType = "percentage" | "fixed";
+
 export interface SaleItem {
   id: string;
   name: string;
@@ -17,8 +19,9 @@ export interface SaleItem {
   sku?: string;
   quantity: number;
   price: number;
-  discount: number; // Percentage 0–100
-  subtotal: number; // (price * qty) * (1 - discount/100)
+  discount: number; // Value of discount
+  discountType?: DiscountType; // Type of discount
+  subtotal: number; // Final line total
 }
 
 export interface SaleOpportunity {
@@ -32,6 +35,8 @@ export interface SaleOpportunity {
   paymentStatus: PaymentStatus;
   items: SaleItem[];
   subtotal: number; // Sum of item subtotals
+  orderDiscountValue?: number; // Raw input value for order discount
+  orderDiscountType?: DiscountType; // Type of order discount
   discountTotal: number; // Additional order-level discount amount
   total: number; // Final payable amount
   currency: string;

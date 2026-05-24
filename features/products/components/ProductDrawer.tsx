@@ -75,7 +75,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
         {/* Title */}
         <div className="space-y-2">
           <h1
-            className="font-display text-[22px] font-bold text-on-surface tracking-tight break-words break-all line-clamp-3"
+            className="font-display text-[22px] font-bold text-on-surface tracking-tight break-words line-clamp-3"
             title={product.name}
           >
             {product.name}
@@ -179,13 +179,13 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                   <div className="space-y-1">
                     {product.variants.map((variant: ProductVariant) => (
                       <div key={variant.id} className="flex items-center justify-between py-2.5 px-1 border-b border-black/[0.02]">
-                        <div className="flex items-center gap-3">
-                          <div className="w-7 h-7 rounded bg-black/5 flex items-center justify-center text-on-surface-variant opacity-40 font-mono text-[9px] font-bold">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-7 h-7 shrink-0 rounded bg-black/5 flex items-center justify-center text-on-surface-variant opacity-40 font-mono text-[9px] font-bold">
                             {variant.sku.slice(-3)}
                           </div>
-                          <div>
-                            <p className="font-display font-medium text-[12.5px] text-on-surface opacity-90">{variant.name}</p>
-                            <p className="font-body-sm text-[10px] text-on-surface-variant opacity-40 font-mono">{variant.sku}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-display font-medium text-[12.5px] text-on-surface opacity-90 truncate" title={variant.name}>{variant.name}</p>
+                            <p className="font-body-sm text-[10px] text-on-surface-variant opacity-40 font-mono truncate">{variant.sku}</p>
                           </div>
                         </div>
                         <div className="text-right">

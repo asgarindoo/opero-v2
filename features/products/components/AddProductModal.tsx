@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Package, Tag, Layers, ShieldAlert, DollarSign, Wrench } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Package, Tag, Layers, ShieldAlert, DollarSign, Wrench, ChevronDown } from "lucide-react";
 import { useProducts } from "../context/ProductsContext";
 import { ProductType } from "@/features/products";
 
@@ -10,7 +10,50 @@ import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
-import { FormSection } from "@/components/ui/global/form/FormField";
+
+/* ── Reusable click dropdown ─────────────────────────────────────────────── */
+function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
+  value: T; opts: T[]; onChange: (v: T) => void;
+  renderT: (v: T) => React.ReactNode; renderO: (v: T) => React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(v => !v)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04] transition-colors" style={{ border: "1px solid rgba(0,0,0,0.09)" }}>
+        {renderT(value)}
+        <ChevronDown size={10} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 py-1 rounded-[8px] shadow-xl" style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", minWidth: 155 }}>
+          {opts.map(o => (
+            <button type="button" key={o} onClick={() => { onChange(o); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-black/[0.04] text-left transition-colors">
+              {renderO(o)}
+              {value === o && <span className="ml-auto font-label-caps text-[8px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.4 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Section label ───────────────────────────────────────────────────────── */
+function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+        {children}
+      </span>
+    </div>
+  );
+}
 
 export default function AddProductModal({ onClose }: { onClose: () => void }) {
   const { addProduct } = useProducts();
@@ -43,94 +86,78 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <ModalShell onClose={onClose} maxWidth={480}>
-      <ModalHeader title="New Product" icon={<Package size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+    <ModalShell onClose={onClose} maxWidth={540}>
+      <ModalHeader title="New Product" onClose={onClose} />
       
-      <ModalContent className="space-y-5">
-        <GlobalInput
-          label="Product / Service Name"
-          required
-          maxLength={50}
-          autoFocus
-          placeholder="e.g. Premium Ergonomic Mouse"
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
+      <ModalContent className="db-sidebar space-y-6">
+        <div className="space-y-4">
           <GlobalInput
-            label="SKU / Code"
-            icon={<Tag size={11} strokeWidth={1.75} />}
+            autoFocus
             required
-            maxLength={20}
-            placeholder="PRD-001"
-            value={sku}
-            onChange={e => setSku(e.target.value)}
+            maxLength={60}
+            placeholder="Product or Service Name…"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="font-display font-semibold"
+            style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
           />
-          <GlobalInput
-            label="Category"
-            icon={<Layers size={11} strokeWidth={1.75} />}
-            maxLength={30}
-            placeholder="Electronics"
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-          />
+
+          <div className="flex items-center gap-2 flex-wrap pt-2">
+            <Dd
+              value={type} opts={["Physical", "Service"] as ProductType[]} onChange={setType}
+              renderT={t => <>{t === "Physical" ? <Package size={11} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }} /> : <Wrench size={11} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }} />}<span className="font-label-caps text-[10px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.9 }}>{t.toUpperCase()}</span></>}
+              renderO={t => <>{t === "Physical" ? <Package size={11} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }} /> : <Wrench size={11} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }} />}<span className="font-body-md text-[12px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.9 }}>{t}</span></>}
+            />
+          </div>
         </div>
 
         <div>
-          <div className="flex items-center gap-1.5 mb-2">
-            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-              Type
-            </span>
-          </div>
-          <div className="flex p-1 rounded-[8px]" style={{ background: "rgba(0,0,0,0.03)" }}>
-            <button
-              type="button"
-              onClick={() => setType("Physical")}
-              className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-[6px] font-label-caps text-[9px] font-bold transition-all"
-              style={type === "Physical" ? { background: "#fff", color: "var(--color-on-surface)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" } : { color: "var(--color-on-surface-variant)", opacity: 0.6 }}
-            >
-              <Package size={12} strokeWidth={1.75} /> PHYSICAL
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("Service")}
-              className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-[6px] font-label-caps text-[9px] font-bold transition-all"
-              style={type === "Service" ? { background: "#fff", color: "var(--color-on-surface)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" } : { color: "var(--color-on-surface-variant)", opacity: 0.6 }}
-            >
-              <Wrench size={12} strokeWidth={1.75} /> SERVICE
-            </button>
+          <SL icon={<Tag size={11} strokeWidth={1.75} />}>Details</SL>
+          <div className="grid grid-cols-2 gap-4">
+            <GlobalInput
+              required
+              maxLength={20}
+              placeholder="SKU / Code (e.g. PRD-001)"
+              value={sku}
+              onChange={e => setSku(e.target.value)}
+            />
+            <GlobalInput
+              maxLength={30}
+              placeholder="Category (e.g. Electronics)"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            />
           </div>
         </div>
 
-        <GlobalInput
-          label="Price"
-          type="number"
-          icon={<DollarSign size={11} strokeWidth={1.75} />}
-          placeholder="0.00"
-          value={price}
-          onChange={e => setPrice(e.target.value)}
-        />
+        <div>
+          <SL icon={<DollarSign size={11} strokeWidth={1.75} />}>Pricing</SL>
+          <GlobalInput
+            type="number"
+            placeholder="Price (0.00)"
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+          />
+        </div>
 
         {!isService && (
-          <FormSection title="Stock & Alerts">
+          <div>
+            <SL icon={<ShieldAlert size={11} strokeWidth={1.75} />}>Stock & Alerts</SL>
             <div className="grid grid-cols-2 gap-4">
               <GlobalInput
-                label="Initial Stock"
                 type="number"
-                placeholder="0"
+                placeholder="Initial Stock"
                 value={totalQuantity}
                 onChange={e => setTotalQuantity(e.target.value)}
               />
               <GlobalInput
-                label="Low Stock Alert"
                 type="number"
-                icon={<ShieldAlert size={11} strokeWidth={1.75} />}
+                placeholder="Low Stock Alert"
                 value={minThreshold}
                 onChange={e => setMinThreshold(e.target.value)}
               />
             </div>
-          </FormSection>
+          </div>
         )}
 
         {isService && (

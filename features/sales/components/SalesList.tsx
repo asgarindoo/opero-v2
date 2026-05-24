@@ -49,10 +49,8 @@ const PAYMENT_STYLE: Record<PaymentStatus, string> = {
 export default function SalesList({ searchQuery, filterMode, onSelectSale }: Props) {
   const { sales, deleteSales } = useSales();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [saleToDelete, setSaleToDelete] = useState<string | null>(null);
-  const itemsPerPage = 15;
 
   const filteredSales = sales.filter(s => {
     const q = searchQuery.toLowerCase();
@@ -68,14 +66,11 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
     return matchesSearch;
   });
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedSales = filteredSales.slice(startIndex, startIndex + itemsPerPage);
-
   const toggleAll = () => {
-    if (selectedIds.size === paginatedSales.length) {
+    if (selectedIds.size === filteredSales.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(paginatedSales.map(s => s.id)));
+      setSelectedIds(new Set(filteredSales.map(s => s.id)));
     }
   };
 
@@ -116,31 +111,31 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
 
   return (
     <div className="flex flex-col h-full bg-background relative">
-      <div className="flex-1 overflow-hidden">
-        <Table>
+      <div className="flex-1 overflow-auto">
+        <Table className="table-fixed">
           <TableHeader className="bg-[#faf5f5]/50">
             <TableRow>
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
                   <input
                     type="checkbox"
-                    checked={selectedIds.size > 0 && selectedIds.size === paginatedSales.length}
+                    checked={selectedIds.size > 0 && selectedIds.size === filteredSales.length}
                     onChange={toggleAll}
                     className="w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
                   />
                 </div>
               </TableHead>
               <TableHead>Order #</TableHead>
-              <TableHead className="w-[32%]">Sale</TableHead>
+              <TableHead className="w-[20%]">Sale</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Payment</TableHead>
               <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right pr-6">Actions</TableHead>
+              <TableHead className="w-28 px-4"><div className="w-full text-center">Actions</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedSales.map((sale) => {
+            {filteredSales.map((sale) => {
               const isSelected = selectedIds.has(sale.id);
 
               return (
@@ -213,17 +208,17 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
                       {formatCurrency(sale.total, sale.currency)}
                     </span>
                   </TableCell>
-                  <TableCell className="px-6 py-5 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-on-surface-variant opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
+                  <TableCell className="px-4 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50"
                         onClick={(e) => handleDeleteOne(e, sale.id)}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={12} />
                       </Button>
-                      <ChevronRight size={14} className="opacity-60 ml-1" />
+                      <ChevronRight size={13} className="text-on-surface-variant ml-0.5" />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -233,13 +228,7 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
         </Table>
       </div>
 
-      <ListFooter
-        totalItems={filteredSales.length}
-        itemsPerPage={itemsPerPage}
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        label="sales"
-      />
+
 
       <SelectionBar
         count={selectedIds.size}

@@ -63,8 +63,8 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
   const handleAddNote = () => {
     if (!newNote.trim()) return;
-    addActivity(sale.id, { 
-      type: "note", 
+    addActivity(sale.id, {
+      type: "note",
       description: newNote
     });
     setNewNote("");
@@ -138,7 +138,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
         {/* Title & Top Meta */}
         <div className="space-y-2">
           <h1
-            className="font-display text-[22px] font-bold text-on-surface tracking-tight break-words break-all line-clamp-3"
+            className="font-display text-[22px] font-bold text-on-surface tracking-tight break-words line-clamp-3"
             title={sale.title}
           >
             {sale.title}
@@ -152,13 +152,13 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
         {/* Quick Info */}
         <div className="grid grid-cols-2 gap-4 py-4 border-y border-black/[0.04]">
-          <div className="space-y-1">
-             <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Customer</span>
-             <div className="font-body-sm text-[12px] text-on-surface flex items-center gap-1.5"><User size={13}/> {sale.contactName || "Walk-in Customer"}</div>
+          <div className="space-y-1 min-w-0">
+            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest truncate block">Customer</span>
+            <div className="font-body-sm text-[12px] text-on-surface flex items-center gap-1.5 truncate" title={sale.contactName || "Walk-in Customer"}><User size={13} className="shrink-0" /> <span className="truncate">{sale.contactName || "Walk-in Customer"}</span></div>
           </div>
-          <div className="space-y-1">
-             <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Date</span>
-             <div className="font-body-sm text-[12px] text-on-surface flex items-center gap-1.5"><Clock size={13}/> {new Date(sale.createdAt).toLocaleDateString()}</div>
+          <div className="space-y-1 min-w-0">
+            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest truncate block">Date</span>
+            <div className="font-body-sm text-[12px] text-on-surface flex items-center gap-1.5 truncate"><Clock size={13} className="shrink-0" /> <span className="truncate">{new Date(sale.createdAt).toLocaleDateString()}</span></div>
           </div>
         </div>
 
@@ -183,69 +183,72 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
               <Section label="Properties">
                 <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-1.5">
-                     <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Status</span>
-                     <Dropdown 
-                       value={sale.status}
-                       options={STATUSES.map(s => ({ value: s, label: s }))}
-                       onChange={val => {
-                         updateSale(sale.id, { status: val as SaleStatus });
-                         addActivity(sale.id, { type: "status_change", description: `changed status to ${val}` });
-                       }}
-                     />
-                   </div>
-                   <div className="space-y-1.5">
-                     <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Payment</span>
-                     <Dropdown 
-                       value={sale.paymentStatus}
-                       options={["Paid", "Unpaid", "Partial"].map(s => ({ value: s, label: s }))}
-                       onChange={val => {
-                         updateSale(sale.id, { paymentStatus: val as any });
-                         addActivity(sale.id, { type: "payment", description: `changed payment status to ${val}` });
-                       }}
-                     />
-                   </div>
+                  <div className="space-y-1.5">
+                    <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Status</span>
+                    <Dropdown
+                      value={sale.status}
+                      options={STATUSES.map(s => ({ value: s, label: s }))}
+                      onChange={val => {
+                        updateSale(sale.id, { status: val as SaleStatus });
+                        addActivity(sale.id, { type: "status_change", description: `changed status to ${val}` });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Payment</span>
+                    <Dropdown
+                      value={sale.paymentStatus}
+                      options={["Paid", "Unpaid", "Partial"].map(s => ({ value: s, label: s }))}
+                      onChange={val => {
+                        updateSale(sale.id, { paymentStatus: val as any });
+                        addActivity(sale.id, { type: "payment", description: `changed payment status to ${val}` });
+                      }}
+                    />
+                  </div>
                 </div>
               </Section>
 
               {/* Financial Actions */}
               <Section label="Financials">
-                 <div className="space-y-4">
-                    {/* Financial Summary - Cleaner List View */}
-                    <div className="space-y-2 py-2 px-1">
-                      <div className="flex justify-between items-center font-body-sm text-[12px] text-on-surface-variant">
-                        <span className="flex items-center gap-1.5"><CurrencyIcon currency={sale.currency} size={11} /> Subtotal</span>
-                        <span className="font-medium text-on-surface">{formatCurrency(sale.subtotal, sale.currency)}</span>
-                      </div>
-                      {sale.discountTotal > 0 && (
-                        <div className="flex justify-between items-center font-body-sm text-[12px] text-red-500/80">
-                          <span>Discount</span>
-                          <span className="font-medium">−{formatCurrency(sale.discountTotal, sale.currency)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center pt-2 mt-1 border-t border-black/[0.04]">
-                        <span className="font-label-caps text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Total</span>
-                        <span className="font-display text-[16px] font-bold text-on-surface">{formatCurrency(sale.total, sale.currency)}</span>
-                      </div>
+                <div className="space-y-4">
+                  {/* Financial Summary - Cleaner List View */}
+                  <div className="space-y-3 py-2 px-1">
+                    <div className="flex justify-between items-center font-body-sm text-[13px] text-on-surface-variant/80">
+                      <span className="flex items-center gap-1.5">Subtotal</span>
+                      <span className="font-medium text-on-surface/90">{formatCurrency(sale.subtotal, sale.currency)}</span>
                     </div>
+                    {sale.discountTotal > 0 && (
+                      <div className="flex justify-between items-center font-body-sm text-[13px] text-on-surface-variant/80">
+                        <span>
+                          Discount
+                          {sale.orderDiscountType === "percentage" && sale.orderDiscountValue ? ` (${sale.orderDiscountValue}%)` : ""}
+                        </span>
+                        <span className="font-medium text-on-surface/90">−{formatCurrency(sale.discountTotal, sale.currency)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-3 mt-1 border-t border-black/[0.06]">
+                      <span className="font-label-caps text-[11px] font-bold text-on-surface-variant/60 uppercase tracking-widest">Total</span>
+                      <span className="font-display text-[18px] font-bold text-on-surface">{formatCurrency(sale.total, sale.currency)}</span>
+                    </div>
+                  </div>
 
-                    <div className="flex gap-2">
-                       {sale.paymentStatus !== "Paid" && (
-                         <Button variant="primary" className="flex-1" icon={CheckCircle2} onClick={handleMarkPaid}>
-                           MARK PAID
-                         </Button>
-                       )}
-                       {sale.paymentStatus === "Paid" && (
-                         <div className="flex-1 px-4 py-2 flex items-center justify-center gap-2 rounded-[6px] font-semibold text-[12px] font-display bg-emerald-50 border border-emerald-200 text-emerald-700">
-                           <CheckCircle2 size={14} className="text-emerald-600" />
-                           <span className="font-label-caps text-[10px] tracking-widest mt-[1px]">PAID</span>
-                         </div>
-                       )}
-                       <Button variant="secondary" className="flex-1" icon={FileText} onClick={handleGenerateInvoice}>
-                         INVOICE
-                       </Button>
-                    </div>
-                 </div>
+                  <div className="flex gap-2">
+                    {sale.paymentStatus !== "Paid" && (
+                      <Button variant="primary" className="flex-1" icon={CheckCircle2} onClick={handleMarkPaid}>
+                        MARK PAID
+                      </Button>
+                    )}
+                    {sale.paymentStatus === "Paid" && (
+                      <div className="flex-1 px-4 py-2 flex items-center justify-center gap-2 rounded-[6px] font-semibold text-[12px] font-display bg-emerald-50 border border-emerald-200 text-emerald-700">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
+                        <span className="font-label-caps text-[10px] tracking-widest mt-[1px]">PAID</span>
+                      </div>
+                    )}
+                    <Button variant="secondary" className="flex-1" icon={FileText} onClick={handleGenerateInvoice}>
+                      INVOICE
+                    </Button>
+                  </div>
+                </div>
               </Section>
 
               <Section label="Line Items" count={sale.items.length}>
@@ -270,10 +273,9 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                           </div>
                         </div>
                         <div className="text-right shrink-0 min-w-[60px]">
-                          <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80 truncate" title={formatCurrency(item.subtotal, sale.currency)}>
-                            {formatCurrency(item.subtotal, sale.currency)}
+                          <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80 truncate">
+                            {formatCurrency(item.price, sale.currency)}
                           </p>
-                          <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate">{formatCurrency(item.price, sale.currency)} ea</p>
                         </div>
                       </div>
                     ))
@@ -284,57 +286,57 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
               <Section label="Notes" count={sale.activities.filter(a => a.type === 'note').length}>
                 <div className="space-y-6">
                   {sale.activities.filter(a => a.type === 'note').map(c => (
-                     <div key={c.id} className="flex gap-4 group">
-                        <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                           {c.author ? c.author.substring(0, 2).toUpperCase() : "U"}
-                        </div>
-                        <div className="flex-1 space-y-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                               <span className="font-display text-[13px] font-bold">{c.author || "User"}</span>
-                               <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
-                            </div>
+                    <div key={c.id} className="flex gap-4 group">
+                      <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
+                        {c.author ? c.author.substring(0, 2).toUpperCase() : "U"}
+                      </div>
+                      <div className="flex-1 space-y-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-display text-[13px] font-bold">{c.author || "User"}</span>
+                            <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
                           </div>
-                          <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.description}</p>
                         </div>
-                     </div>
+                        <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.description}</p>
+                      </div>
+                    </div>
                   ))}
 
                   <div className="pt-4 border-t border-black/[0.04]">
-                     <div className="flex gap-4">
-                       {user?.image ? (
-                         <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                       ) : (
-                         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
-                           {(user?.name || "U").substring(0, 2).toUpperCase()}
-                         </div>
-                       )}
-                       <div className="flex-1 space-y-2">
-                         <textarea
-                           rows={2}
-                           placeholder="Add a note, update, or log activity..."
-                           value={newNote}
-                           onChange={e => setNewNote(e.target.value)}
-                           onKeyDown={e => {
-                             if (e.key === "Enter" && !e.shiftKey) {
-                               e.preventDefault();
-                               handleAddNote();
-                             }
-                           }}
-                           className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all"
-                         />
-                         <div className="flex items-center justify-end">
-                           <Button
-                             variant="primary"
-                             size="sm"
-                             disabled={!newNote.trim()}
-                             onClick={handleAddNote}
-                           >
-                             POST NOTE
-                           </Button>
-                         </div>
-                       </div>
-                     </div>
+                    <div className="flex gap-4">
+                      {user?.image ? (
+                        <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
+                          {(user?.name || "U").substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <textarea
+                          rows={2}
+                          placeholder="Add a note, update, or log activity..."
+                          value={newNote}
+                          onChange={e => setNewNote(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddNote();
+                            }
+                          }}
+                          className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all"
+                        />
+                        <div className="flex items-center justify-end">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            disabled={!newNote.trim()}
+                            onClick={handleAddNote}
+                          >
+                            POST NOTE
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Section>

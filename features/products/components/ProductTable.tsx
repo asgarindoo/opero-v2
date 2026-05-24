@@ -5,8 +5,7 @@ import { useProducts } from "../context/ProductsContext";
 import {
   Package,
   Wrench,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
   AlertTriangle,
   CheckCircle2,
   XCircle,
@@ -19,6 +18,7 @@ import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import Button from "@/components/ui/Button";
 import { EmptyState } from "@/components/common/DataState";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 
 const STATUS_CONFIG: Record<StockStatus, { label: string; color: string; bg: string; icon: any }> = {
   "In Stock": { label: "In Stock", color: "#10B981", bg: "bg-[#10B981]/10", icon: CheckCircle2 },
@@ -87,101 +87,94 @@ export default function ProductTable({ onSelectProduct }: Props) {
 
   return (
     <div className="w-full relative">
-      {/* Table Header */}
-      <div className="flex items-center px-6 py-2.5 border-b border-black/[0.05] bg-[#faf5f5]/50">
-        <div className="w-10 shrink-0 flex justify-center">
-          <input
-            type="checkbox"
-            checked={selectedIds.size > 0 && selectedIds.size === products.length}
-            onChange={toggleAll}
-            className="w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
-          />
-        </div>
-        <div className="flex-1 min-w-0">
-          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 tracking-[0.2em] uppercase ml-3">Product / Service</span>
-        </div>
-        <div className="w-28 hidden lg:block">
-          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 tracking-[0.2em] uppercase">Category</span>
-        </div>
-        <div className="w-24 hidden lg:block text-right">
-          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 tracking-[0.2em] uppercase">Price</span>
-        </div>
-        <div className="w-32 hidden lg:block text-right">
-          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 tracking-[0.2em] uppercase">Stock</span>
-        </div>
-        <div className="w-28 flex justify-center ml-4">
-          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 tracking-[0.2em] uppercase">Status</span>
-        </div>
-        <div className="w-20 text-right pr-6">
-          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 tracking-[0.2em] uppercase">Actions</span>
-        </div>
-      </div>
+      <Table className="table-fixed">
+        <TableHeader className="bg-[#faf5f5]/50">
+          <TableRow className="h-10">
+            <TableHead className="w-[50px] !px-2">
+              <div className="w-full flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === products.length}
+                  onChange={toggleAll}
+                  className="w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
+                />
+              </div>
+            </TableHead>
+            <TableHead className="px-4">Product / Service</TableHead>
+            <TableHead className="w-32 hidden lg:table-cell px-4">Category</TableHead>
+            <TableHead className="w-24 hidden lg:table-cell px-4 text-right">Price</TableHead>
+            <TableHead className="w-32 hidden lg:table-cell px-4 text-right">Stock</TableHead>
+            <TableHead className="w-32 px-4"><div className="w-full text-center">Status</div></TableHead>
+            <TableHead className="w-28 px-4"><div className="w-full text-center">Actions</div></TableHead>
+          </TableRow>
+        </TableHeader>
 
-      <div className="space-y-px">
-        {products.map(product => {
-          const isExpanded = expandedId === product.id;
-          const isSelected = selectedIds.has(product.id);
-          const status = STATUS_CONFIG[product.status as StockStatus];
-          const isService = product.type === "Service";
+        <TableBody>
+          {products.map(product => {
+            const isExpanded = expandedId === product.id;
+            const isSelected = selectedIds.has(product.id);
+            const status = STATUS_CONFIG[product.status as StockStatus];
+            const isService = product.type === "Service";
 
-          return (
-            <div
-              key={product.id}
-              className={`group flex flex-col transition-all border-b border-black/[0.03] ${isSelected ? "bg-primary/[0.02]" : isExpanded ? "bg-black/[0.015]" : "hover:bg-black/[0.01] bg-transparent"}`}
-            >
-              <div
-                onClick={() => onSelectProduct ? onSelectProduct(product.id) : setExpandedId(isExpanded ? null : product.id)}
-                className="flex items-center px-6 py-3 cursor-pointer"
-              >
-                <div className="w-10 shrink-0 flex justify-center" onClick={e => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => toggleOne(product.id, e as any)}
-                    className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
-                  />
-                </div>
-                <div className="flex items-center gap-3 flex-1 min-w-0 ml-3">
-                  <div className={`w-8 h-8 rounded-lg overflow-hidden bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-all`}>
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                    ) : isService ? (
-                      <Wrench size={13} strokeWidth={1.5} />
-                    ) : (
-                      <Package size={13} strokeWidth={1.5} />
-                    )}
+            return (
+              <React.Fragment key={product.id}>
+                <TableRow
+                  onClick={() => onSelectProduct ? onSelectProduct(product.id) : setExpandedId(isExpanded ? null : product.id)}
+                  className={`group transition-all ${isSelected ? "bg-primary/[0.02]" : isExpanded ? "bg-black/[0.015]" : ""}`}
+                >
+                <TableCell onClick={e => e.stopPropagation()} className="w-[50px] !px-2">
+                  <div className="w-full flex justify-center">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => toggleOne(product.id, e as any)}
+                      className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                    />
                   </div>
-                  <div className="flex flex-col min-w-0 gap-0.5">
-                    <span 
-                      className="font-display font-semibold text-[13px] text-on-surface tracking-tight opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[100px] md:max-w-[150px] lg:max-w-[200px] xl:max-w-[280px]"
-                      title={product.name}
-                    >
-                      {product.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-50 truncate uppercase tracking-widest font-bold">
-                        {product.sku}
-                      </p>
-                      <span className="font-label-caps text-[8px] font-bold px-1 py-0.5 rounded bg-black/[0.04] text-on-surface-variant opacity-60 uppercase tracking-wide">
-                        {product.type}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg overflow-hidden bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-all`}>
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                      ) : isService ? (
+                        <Wrench size={13} strokeWidth={1.5} />
+                      ) : (
+                        <Package size={13} strokeWidth={1.5} />
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0 gap-0.5">
+                      <span 
+                        className="font-display font-semibold text-[13px] text-on-surface tracking-tight opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[100px] md:max-w-[150px] lg:max-w-[200px] xl:max-w-[280px]"
+                        title={product.name}
+                      >
+                        {product.name}
                       </span>
+                      <div className="flex items-center gap-2">
+                        <p className="font-body-sm text-[9px] text-on-surface-variant opacity-50 truncate uppercase tracking-widest font-bold">
+                          {product.sku}
+                        </p>
+                        <span className="font-label-caps text-[8px] font-bold px-1 py-0.5 rounded bg-black/[0.04] text-on-surface-variant opacity-60 uppercase tracking-wide">
+                          {product.type}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </TableCell>
 
-                <div className="hidden lg:block w-28 shrink-0">
+                <TableCell className="hidden lg:table-cell">
                   <span className="font-display text-[11.5px] text-on-surface-variant opacity-70">
                     {product.category || "—"}
                   </span>
-                </div>
+                </TableCell>
 
-                <div className="hidden lg:block w-24 shrink-0 text-right">
+                <TableCell className="hidden lg:table-cell text-right">
                   <span className="font-display text-[12.5px] font-bold text-on-surface opacity-80">
                     {product.price > 0 ? formatPrice(product.price) : <span className="opacity-30">—</span>}
                   </span>
-                </div>
+                </TableCell>
 
-                <div className="hidden lg:block w-32 shrink-0 text-right">
+                <TableCell className="hidden lg:table-cell text-right">
                   {isService ? (
                     <span className="font-display text-[11px] text-on-surface-variant opacity-40 italic">N/A</span>
                   ) : (
@@ -191,42 +184,46 @@ export default function ProductTable({ onSelectProduct }: Props) {
                       </span>
                     </div>
                   )}
-                </div>
+                </TableCell>
 
-                <div className="w-28 shrink-0 flex justify-center ml-4">
-                  {isService ? (
-                    <div className="px-2 py-0.5 rounded-[4px] bg-black/5 flex items-center gap-1.5">
-                      <span className="font-label-caps text-[8px] font-bold tracking-[0.1em] uppercase text-on-surface-variant opacity-60">SERVICE</span>
-                    </div>
-                  ) : (
-                    <div className={`px-2 py-0.5 rounded-[4px] ${status.bg} flex items-center gap-1.5`}>
-                      <span className="font-label-caps text-[8px] font-bold tracking-[0.1em] uppercase" style={{ color: status.color }}>
-                        {status.label}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <TableCell>
+                  <div className="w-full flex justify-center">
+                    {isService ? (
+                      <div className="px-2 py-0.5 rounded-[4px] bg-black/5 flex items-center gap-1.5">
+                        <span className="font-label-caps text-[8px] font-bold tracking-[0.1em] uppercase text-on-surface-variant opacity-60">SERVICE</span>
+                      </div>
+                    ) : (
+                      <div className={`px-2 py-0.5 rounded-[4px] ${status.bg} flex items-center gap-1.5`}>
+                        <span className="font-label-caps text-[8px] font-bold tracking-[0.1em] uppercase" style={{ color: status.color }}>
+                          {status.label}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
 
-                <div className="w-20 shrink-0 flex justify-end pr-6 items-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1">
+                <TableCell className="px-4 text-center">
+                  <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-on-surface-variant opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-red-50 transition-all"
+                      className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
                       onClick={(e) => handleDeleteOne(e, product.id)}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={12} />
                     </Button>
+                    <div className="ml-1 opacity-60">
+                      <ChevronRight size={13} />
+                    </div>
                   </div>
-                  <div className="ml-1 opacity-60 group-hover:hidden">
-                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </div>
-                </div>
-              </div>
+                </TableCell>
+              </TableRow>
 
               {/* Expanded: stock history for physical products */}
               {isExpanded && !onSelectProduct && (
-                <div className="px-6 pb-6 animate-fade-in bg-transparent ml-12 border-l border-black/[0.05]">
+                <TableRow className="border-b-0 hover:bg-transparent">
+                  <TableCell colSpan={7} className="p-0 border-0">
+                    <div className="px-6 pb-6 animate-fade-in bg-transparent ml-12 border-l border-black/[0.05]">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pt-4">
                     <div className="lg:col-span-2 space-y-4">
                       <p className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">STOCK HISTORY</p>
@@ -279,12 +276,15 @@ export default function ProductTable({ onSelectProduct }: Props) {
                       </div>
                     </div>
                   </div>
-                </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
               )}
-            </div>
+            </React.Fragment>
           );
         })}
-      </div>
+      </TableBody>
+    </Table>
 
       <SelectionBar
         count={selectedIds.size}

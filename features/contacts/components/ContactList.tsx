@@ -26,10 +26,8 @@ interface Props {
 export default function ContactList({ filterMode, searchQuery, onSelectContact }: Props) {
   const { contacts, deleteContacts } = useContacts();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<string | null>(null);
-  const itemsPerPage = 25;
 
   const filteredContacts = contacts.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -43,8 +41,7 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
     return matchesSearch;
   });
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedContacts = filteredContacts.slice(startIndex, startIndex + itemsPerPage);
+
 
   const getStatusVariant = (status: ContactStatus | string): any => {
     switch (status) {
@@ -59,10 +56,10 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
   };
 
   const toggleAll = () => {
-    if (selectedIds.size === paginatedContacts.length) {
+    if (selectedIds.size === filteredContacts.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(paginatedContacts.map(c => c.id)));
+      setSelectedIds(new Set(filteredContacts.map(c => c.id)));
     }
   };
 
@@ -104,14 +101,14 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
   return (
     <div className="flex flex-col h-full bg-background relative min-w-0">
       <div className="flex-1 overflow-auto">
-        <Table className="table-fixed min-w-[900px]">
+        <Table className="table-fixed">
           <TableHeader className="bg-[#fbf5f5]">
             <TableRow className="h-10">
               <TableHead className="w-10 px-4">
                 <div className="flex items-center justify-center">
                   <input 
                     type="checkbox" 
-                    checked={selectedIds.size > 0 && selectedIds.size === paginatedContacts.length}
+                    checked={selectedIds.size > 0 && selectedIds.size === filteredContacts.length}
                     onChange={toggleAll}
                     className="w-3 h-3 rounded-[3px] border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
                   />
@@ -121,11 +118,11 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
               <TableHead className="w-[25%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Primary Contact</TableHead>
               <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Relationship</TableHead>
               <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Status</TableHead>
-              <TableHead className="w-[10%] px-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
+              <TableHead className="w-[10%] px-4"><div className="w-full text-center font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedContacts.map((contact) => {
+            {filteredContacts.map((contact) => {
               const primaryPerson = (contact.persons || []).find(p => p.isPrimary) || (contact.persons || [])[0];
               const isSelected = selectedIds.has(contact.id);
               
@@ -185,8 +182,8 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                       {contact.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
+                  <TableCell className="px-4 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -205,13 +202,7 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
         </Table>
       </div>
 
-      <ListFooter 
-        totalItems={filteredContacts.length}
-        itemsPerPage={itemsPerPage}
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        label="contacts"
-      />
+
 
       <SelectionBar 
         count={selectedIds.size}
