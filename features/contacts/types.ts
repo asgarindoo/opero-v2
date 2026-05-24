@@ -7,9 +7,9 @@ export interface ContactActivity {
   description: string;
   timestamp: string;
   author: string;
-  avatar?: string;
+  avatar?: string | null;
   initials?: string;
-  reactions?: Record<string, string[]>;
+  reactions?: Record<string, import("@/features/tasks").Reaction>;
 }
 
 export interface ContactContextData {

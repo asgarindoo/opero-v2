@@ -12,8 +12,6 @@ import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
 
-import { GlobalFieldHint } from "@/components/ui/global/form/FormField";
-
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -29,7 +27,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
   const { addContact } = useContacts();
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
-  const [relationshipType, setRelationshipType] = useState<RelationshipType>("Lead");
+  const [relationshipType, setRelationshipType] = useState<RelationshipType>("Customer");
   const [status, setStatus] = useState<ContactStatus>("New");
   const [personName, setPersonName] = useState("");
   const [personEmail, setPersonEmail] = useState("");
@@ -83,18 +81,18 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
-  const isFinancialType = ["Lead", "Customer", "Client", "Vendor", "Partner", "Investor"].includes(relationshipType);
+  const isFinancialType = ["Customer", "Reseller", "Distributor", "Affiliate", "Investor", "Supplier", "Vendor"].includes(relationshipType);
 
   return (
     <ModalShell onClose={onClose} maxWidth={540}>
       <ModalHeader title="New Contact" onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput
             autoFocus
             required
-            maxLength={64}
+            maxLength={40}
             placeholder="Company or Contact Name…"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -110,18 +108,16 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
                 value={relationshipType}
                 onChange={val => setRelationshipType(val as RelationshipType)}
                 options={[
-                  { value: "Lead", label: "Lead" },
                   { value: "Customer", label: "Customer" },
-                  { value: "Client", label: "Client" },
-                  { value: "Vendor", label: "Vendor" },
                   { value: "Partner", label: "Partner" },
-                  { value: "Freelancer", label: "Freelancer" },
+                  { value: "Supplier", label: "Supplier" },
                   { value: "Investor", label: "Investor" },
-                  { value: "Internal", label: "Internal" },
-                  { value: "Other", label: "Other" },
+                  { value: "Vendor", label: "Vendor" },
+                  { value: "Reseller", label: "Reseller" },
+                  { value: "Distributor", label: "Distributor" },
+                  { value: "Affiliate", label: "Affiliate" },
                 ]}
               />
-              <GlobalFieldHint>Type of contact</GlobalFieldHint>
             </div>
 
             <div>
@@ -131,21 +127,19 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
                 value={status}
                 onChange={val => setStatus(val as ContactStatus)}
                 options={[
-                  { value: "New", label: "New" },
+                  { value: "Lead", label: "Lead" },
+                  { value: "Onboarding", label: "Onboarding" },
                   { value: "Active", label: "Active" },
-                  { value: "Pending", label: "Pending" },
                   { value: "Inactive", label: "Inactive" },
-                  { value: "Archived", label: "Archived" },
                 ]}
               />
-              <GlobalFieldHint>Current activity state</GlobalFieldHint>
             </div>
           </div>
 
           <div>
             <SL>Industry</SL>
             <GlobalInput
-              maxLength={64}
+              maxLength={30}
               placeholder="e.g. Software, Logistics"
               value={industry}
               onChange={e => setIndustry(e.target.value)}
@@ -196,8 +190,8 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-4">
           <SL>Primary Contact</SL>
-          
-          <div className="grid grid-cols-2 gap-4 items-start w-full">
+
+          <div className="grid grid-cols-2 gap-4 items-start">
             <GlobalInput
               maxLength={40}
               placeholder="Person Name"
