@@ -21,14 +21,14 @@ import { EmptyState } from "@/components/common/DataState";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 
 const STATUS_CONFIG: Record<StockStatus, { label: string; color: string; bg: string; icon: any }> = {
-  "In Stock": { label: "In Stock", color: "#10B981", bg: "bg-[#10B981]/10", icon: CheckCircle2 },
-  "Low Stock": { label: "Low Stock", color: "#F59E0B", bg: "bg-[#F59E0B]/10", icon: AlertTriangle },
-  "Out of Stock": { label: "Out of Stock", color: "#EF4444", bg: "bg-[#EF4444]/10", icon: XCircle },
-  "Archived": { label: "Archived", color: "rgba(0,0,0,0.4)", bg: "bg-black/5", icon: Archive }
+  "In Stock": { label: "In Stock", color: "var(--color-emerald-600, #059669)", bg: "bg-emerald-50", icon: CheckCircle2 },
+  "Low Stock": { label: "Low Stock", color: "var(--color-amber-600, #D97706)", bg: "bg-amber-50", icon: AlertTriangle },
+  "Out of Stock": { label: "Out of Stock", color: "var(--color-red-600, #DC2626)", bg: "bg-red-50", icon: XCircle },
+  "Archived": { label: "Archived", color: "var(--color-on-surface-variant, #52525B)", bg: "bg-black/5", icon: Archive }
 };
 
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(price);
+function formatPrice(price: number, currency: string = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(price);
 }
 
 interface Props {
@@ -102,7 +102,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
             </TableHead>
             <TableHead className="px-4">Product / Service</TableHead>
             <TableHead className="w-32 hidden lg:table-cell px-4">Category</TableHead>
-            <TableHead className="w-24 hidden lg:table-cell px-4 text-right">Price</TableHead>
+            <TableHead className="w-32 hidden lg:table-cell px-4 text-right">Price</TableHead>
             <TableHead className="w-32 hidden lg:table-cell px-4 text-right">Stock</TableHead>
             <TableHead className="w-32 px-4"><div className="w-full text-center">Status</div></TableHead>
             <TableHead className="w-28 px-4"><div className="w-full text-center">Actions</div></TableHead>
@@ -132,7 +132,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
                     />
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="w-full max-w-[0px]">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-8 h-8 rounded-lg overflow-hidden bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-all`}>
                       {product.imageUrl ? (
@@ -145,7 +145,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
                     </div>
                     <div className="flex flex-col min-w-0 gap-0.5">
                       <span 
-                        className="font-display font-semibold text-[13px] text-on-surface tracking-tight opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[100px] md:max-w-[150px] lg:max-w-[200px] xl:max-w-[280px]"
+                        className="font-display font-semibold text-[13px] text-on-surface tracking-tight opacity-90 group-hover:text-primary transition-colors leading-tight truncate block w-full"
                         title={product.name}
                       >
                         {product.name}
@@ -162,26 +162,29 @@ export default function ProductTable({ onSelectProduct }: Props) {
                   </div>
                 </TableCell>
 
-                <TableCell className="hidden lg:table-cell">
-                  <span className="font-display text-[11.5px] text-on-surface-variant opacity-70">
+                <TableCell className="hidden lg:table-cell max-w-[0px]">
+                  <span className="font-display text-[11.5px] text-on-surface-variant opacity-70 truncate block" title={product.category || ""}>
                     {product.category || "—"}
                   </span>
                 </TableCell>
 
-                <TableCell className="hidden lg:table-cell text-right">
-                  <span className="font-display text-[12.5px] font-bold text-on-surface opacity-80">
-                    {product.price > 0 ? formatPrice(product.price) : <span className="opacity-30">—</span>}
-                  </span>
+                <TableCell className="hidden lg:table-cell text-right max-w-[0px]">
+                  <div className="font-display text-[12.5px] font-bold text-on-surface opacity-80 truncate" title={product.price > 0 ? formatPrice(product.price, product.currency) : "—"}>
+                    {product.price > 0 ? formatPrice(product.price, product.currency) : <span className="opacity-30">—</span>}
+                  </div>
                 </TableCell>
 
-                <TableCell className="hidden lg:table-cell text-right">
+                <TableCell className="hidden lg:table-cell text-right max-w-[0px]">
                   {isService ? (
-                    <span className="font-display text-[11px] text-on-surface-variant opacity-40 italic">N/A</span>
+                    <div className="font-display text-[11px] text-on-surface-variant opacity-40 italic truncate">N/A</div>
                   ) : (
-                    <div className="flex flex-col gap-0.5 items-end">
-                      <span className={`font-display text-[12.5px] font-bold opacity-80 ${product.totalQuantity <= product.minThreshold && product.totalQuantity > 0 ? "text-amber-600" : product.totalQuantity === 0 ? "text-red-500" : "text-on-surface"}`}>
+                    <div className="flex flex-col gap-0.5 items-end min-w-0">
+                      <div 
+                        className={`font-display text-[12.5px] font-bold opacity-80 truncate w-full ${product.totalQuantity <= product.minThreshold && product.totalQuantity > 0 ? "text-amber-600" : product.totalQuantity === 0 ? "text-red-500" : "text-on-surface"}`}
+                        title={`${product.totalQuantity.toLocaleString()} Units`}
+                      >
                         {product.totalQuantity.toLocaleString()} <span className="text-[9px] opacity-60 font-medium uppercase tracking-tighter ml-0.5">Units</span>
-                      </span>
+                      </div>
                     </div>
                   )}
                 </TableCell>
@@ -189,12 +192,12 @@ export default function ProductTable({ onSelectProduct }: Props) {
                 <TableCell>
                   <div className="w-full flex justify-center">
                     {isService ? (
-                      <div className="px-2 py-0.5 rounded-[4px] bg-black/5 flex items-center gap-1.5">
-                        <span className="font-label-caps text-[8px] font-bold tracking-[0.1em] uppercase text-on-surface-variant opacity-60">SERVICE</span>
+                      <div className="px-1.5 py-0.5 rounded-[4px] bg-black/5 flex items-center w-fit mx-auto">
+                        <span className="font-display text-[11px] font-medium text-on-surface-variant opacity-70">Service</span>
                       </div>
                     ) : (
-                      <div className={`px-2 py-0.5 rounded-[4px] ${status.bg} flex items-center gap-1.5`}>
-                        <span className="font-label-caps text-[8px] font-bold tracking-[0.1em] uppercase" style={{ color: status.color }}>
+                      <div className={`px-1.5 py-0.5 rounded-[4px] ${status.bg} flex items-center w-fit mx-auto`}>
+                        <span className="font-display text-[11px] font-medium" style={{ color: status.color }}>
                           {status.label}
                         </span>
                       </div>

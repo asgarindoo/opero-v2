@@ -55,7 +55,13 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       totalAmount: totalAmount * 1.1,
       currency: "USD",
       notes: "",
-      activities: [],
+      activities: [{
+        id: "a" + Date.now(),
+        type: "status_change",
+        description: "Invoice created",
+        timestamp: new Date().toISOString(),
+        author: userName || "You"
+      }],
       attachments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

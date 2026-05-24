@@ -3,7 +3,7 @@ export type ProductType = "Physical" | "Service";
 
 export interface StockActivity {
   id: string;
-  type: "stock_in" | "stock_out" | "adjustment" | "note";
+  type: "stock_in" | "stock_out" | "adjustment" | "note" | "creation";
   description: string;
   quantity?: number;
   timestamp: string;
@@ -25,6 +25,7 @@ export interface Product {
   category: string;
   type: ProductType; // Physical or Service
   price: number; // Base selling price
+  currency: string;
   status: StockStatus;
   totalQuantity: number;
   minThreshold: number; // Low stock alert

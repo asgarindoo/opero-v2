@@ -47,7 +47,13 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
       assetCode: partial.assetCode || "AST-" + Math.floor(Math.random() * 1000),
       status: "Active",
       maintenanceHistory: [],
-      activities: [],
+      activities: [{
+        id: "a" + Date.now(),
+        type: "status_change",
+        description: "Asset record created",
+        timestamp: new Date().toISOString(),
+        author: userName || "You"
+      }],
       notes: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

@@ -49,6 +49,14 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addProduct = useCallback((partial: Partial<Product>) => {
+    const qty = partial.totalQuantity || 0;
+    const minT = partial.minThreshold || 10;
+    let status: StockStatus = "In Stock";
+    if (partial.type !== "Service") {
+      if (qty === 0) status = "Out of Stock";
+      else if (qty <= minT) status = "Low Stock";
+    }
+
     const newProduct: Product = {
       id: "p" + Date.now(),
       name: partial.name || "New Product",
@@ -56,11 +64,18 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       category: partial.category || "Uncategorized",
       type: partial.type || "Physical",
       price: partial.price || 0,
-      status: "In Stock",
-      totalQuantity: partial.totalQuantity || 0,
-      minThreshold: partial.minThreshold || 10,
+      currency: partial.currency || "USD",
+      status: status,
+      totalQuantity: qty,
+      minThreshold: minT,
       variants: partial.variants || [],
-      activities: [],
+      activities: [{
+        id: "a" + Date.now(),
+        type: "creation",
+        description: "Product record created",
+        timestamp: new Date().toISOString(),
+        author: userName || "You"
+      }],
       notes: partial.notes || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

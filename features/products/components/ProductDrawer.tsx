@@ -22,8 +22,8 @@ function Section({ label, count, children, defaultOpen = true }: { label: string
   );
 }
 
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(price);
+function formatPrice(price: number, currency: string = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(price);
 }
 
 export default function ProductDrawer({ productId, onClose }: { productId: string; onClose: () => void }) {
@@ -81,9 +81,14 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
             {product.name}
           </h1>
           <div className="flex items-center gap-2">
-            <Badge variant={product.status === "In Stock" ? "success" : product.status === "Archived" ? "warning" : "error"}>{product.status.toUpperCase()}</Badge>
+            <Badge variant={
+              product.status === "In Stock" ? "success" : 
+              product.status === "Low Stock" ? "warning" : 
+              product.status === "Archived" ? "neutral" : 
+              "error"
+            }>{product.status}</Badge>
             <Badge variant="info">{product.type}</Badge>
-            {product.category && <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30">{product.category.toUpperCase()}</span>}
+            {product.category && <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-wider">{product.category}</span>}
           </div>
         </div>
 
@@ -120,9 +125,9 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                     <div className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-40 uppercase tracking-wider mb-1">Price</div>
                     <div
                       className="font-display font-bold text-[18px] text-on-surface opacity-90 truncate"
-                      title={product.price > 0 ? formatPrice(product.price) : undefined}
+                      title={product.price > 0 ? formatPrice(product.price, product.currency) : undefined}
                     >
-                      {product.price > 0 ? formatPrice(product.price) : <span className="text-[14px] opacity-40">Not set</span>}
+                      {product.price > 0 ? formatPrice(product.price, product.currency) : <span className="text-[14px] opacity-40">Not set</span>}
                     </div>
                   </div>
                   <div className={`grid gap-4 ${isService ? "grid-cols-1" : "grid-cols-2"}`}>
@@ -271,37 +276,38 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                 {product.activities.length === 0 ? (
                   <div className="text-center py-4 text-on-surface-variant opacity-30 font-body-sm text-[11px]">No activities yet</div>
                 ) : (
-                  [...product.activities].reverse().map((activity: StockActivity) => {
-                    const isNote = activity.type === "note";
+                  [...product.activities].reverse().map((a: StockActivity) => {
+                    const isNote = a.type === "note";
                     return (
-                      <div key={activity.id} className="relative flex items-start gap-4">
+                      <div key={a.id} className="relative flex items-start gap-4">
                         <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                         <div className="flex-1 space-y-0.5">
                           <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                            <span className="font-bold text-on-surface">{activity.author || "System"}</span>
+                            <span className="font-bold text-on-surface">{a.author || "System"}</span>
                             {' '}
                             {isNote ? (
                               <>
-                                added a note
-                                <span className="whitespace-pre-wrap block mt-1 font-normal opacity-90 text-on-surface">
-                                  {activity.description}
+                                added a note:{" "}
+                                <span className="whitespace-pre-wrap font-normal opacity-90 text-on-surface">
+                                  "{a.description}"
                                 </span>
                               </>
                             ) : (
                               <>
-                                {activity.description}
-                                {activity.quantity !== undefined && activity.quantity !== 0 && (
+                                {a.description}
+                                {a.quantity !== undefined && a.quantity !== 0 && (
                                   <span className="font-bold text-on-surface">
-                                    {' '}({activity.quantity > 0 ? "+" : ""}{activity.quantity})
+                                    {' '}({a.quantity > 0 ? "+" : ""}{a.quantity})
                                   </span>
                                 )}
                               </>
                             )}
                           </p>
-                          <div className="flex items-center gap-1.5">
-                            <Clock size={10} className="opacity-20" />
-                            <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(activity.timestamp).toLocaleString()}</span>
-                          </div>
+                          <span className="font-label-caps text-[9px] text-on-surface-variant opacity-40">
+                            {new Date(a.timestamp).toLocaleString(undefined, { 
+                              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                            })}
+                          </span>
                         </div>
                       </div>
                     );

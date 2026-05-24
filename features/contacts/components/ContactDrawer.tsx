@@ -404,9 +404,9 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                       {' '}
                       {a.type === 'note' ? (
                         <>
-                          added a note
-                          <span className="whitespace-pre-wrap block mt-1 font-normal opacity-90 text-on-surface">
-                            {a.description}
+                          added a note:{" "}
+                          <span className="whitespace-pre-wrap font-normal opacity-90 text-on-surface">
+                            "{a.description}"
                           </span>
                         </>
                       ) : (

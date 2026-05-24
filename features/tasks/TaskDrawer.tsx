@@ -342,10 +342,10 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                       {' '}
                       {a.action === 'added a note' ? (
                         <>
-                          added a note
+                          added a note:{" "}
                           {a.detail && (
-                            <span className="whitespace-pre-wrap block mt-1 font-normal opacity-90 text-on-surface">
-                              {a.detail}
+                            <span className="whitespace-pre-wrap font-normal opacity-90 text-on-surface">
+                              "{a.detail}"
                             </span>
                           )}
                         </>

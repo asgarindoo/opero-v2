@@ -63,7 +63,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       reference: "TX-" + Math.floor(Math.random() * 10000),
       paymentMethod: "Bank Transfer",
       notes: "",
-      activities: [],
+      activities: [{
+        id: "a" + Date.now(),
+        type: "status_change",
+        description: "Transaction recorded manually",
+        timestamp: new Date().toISOString(),
+        author: userName || "System"
+      }],
       attachments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -99,7 +105,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       contactName,
       paymentMethod: "Cash",
       notes: `Auto-recorded from sale ${saleOrderNumber}`,
-      activities: [],
+      activities: [{
+        id: "a" + Date.now(),
+        type: "status_change",
+        description: `Income auto-recorded from sale ${saleOrderNumber}`,
+        timestamp: new Date().toISOString(),
+        author: "System"
+      }],
       attachments: [],
       sourceRef: saleOrderNumber,
       sourceType: "sale",
@@ -124,7 +136,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       contactName,
       paymentMethod: "Bank Transfer",
       notes: `Auto-recorded from invoice ${invoiceNumber}`,
-      activities: [],
+      activities: [{
+        id: "a" + Date.now(),
+        type: "status_change",
+        description: `Income auto-recorded from invoice ${invoiceNumber}`,
+        timestamp: new Date().toISOString(),
+        author: "System"
+      }],
       attachments: [],
       sourceRef: invoiceNumber,
       sourceType: "invoice",

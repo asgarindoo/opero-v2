@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Package, Tag, Layers, ShieldAlert, DollarSign, Wrench, ChevronDown } from "lucide-react";
+import { Package, Tag, Layers, ShieldAlert, Wallet, Wrench, ChevronDown } from "lucide-react";
 import { useProducts } from "../context/ProductsContext";
 import { ProductType } from "@/features/products";
 
@@ -25,9 +25,9 @@ function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen(v => !v)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04] transition-colors" style={{ border: "1px solid rgba(0,0,0,0.09)" }}>
+      <button type="button" onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-[6px] transition-colors" style={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.02)"}>
         {renderT(value)}
-        <ChevronDown size={10} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
+        <ChevronDown size={12} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
       </button>
       {open && (
         <div className="absolute top-full left-0 mt-1 z-50 py-1 rounded-[8px] shadow-xl" style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", minWidth: 155 }}>
@@ -61,6 +61,7 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState("");
   const [type, setType] = useState<ProductType>("Physical");
+  const [currency, setCurrency] = useState("USD");
   const [price, setPrice] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [minThreshold, setMinThreshold] = useState("10");
@@ -77,7 +78,8 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
       sku: sku.trim(),
       category: category.trim(),
       type,
-      price: parseFloat(price) || 0,
+      currency,
+      price: parseFloat(price.replace(/,/g, "")) || 0,
       totalQuantity: isService ? 0 : (parseInt(totalQuantity) || 0),
       minThreshold: parseInt(minThreshold) || 10,
       variants: [],
@@ -131,13 +133,28 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <SL icon={<DollarSign size={11} strokeWidth={1.75} />}>Pricing</SL>
-          <GlobalInput
-            type="number"
-            placeholder="Price (0.00)"
-            value={price}
-            onChange={e => setPrice(e.target.value)}
-          />
+          <SL icon={<Wallet size={11} strokeWidth={1.75} />}>Pricing</SL>
+          <div className="flex gap-2">
+            <div className="w-[85px]">
+              <Dd
+                value={currency} opts={["USD", "IDR", "EUR", "GBP", "SGD", "AUD"]} onChange={setCurrency}
+                renderT={c => <span className="font-body-md text-[13px] text-on-surface opacity-90">{c}</span>}
+                renderO={c => <span className="font-body-md text-[13px] text-on-surface-variant opacity-90">{c}</span>}
+              />
+            </div>
+            <div className="flex-1">
+              <GlobalInput
+                type="text"
+                placeholder="Price (0)"
+                value={price}
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  if (!val) setPrice("");
+                  else setPrice(parseInt(val, 10).toLocaleString("en-US"));
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {!isService && (
