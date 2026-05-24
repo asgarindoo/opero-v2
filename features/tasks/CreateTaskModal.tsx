@@ -20,6 +20,7 @@ import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import DatePicker from "@/components/ui/DatePicker";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 /* ── Reusable click dropdown ─────────────────────────────────────────────── */
 function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
@@ -77,6 +78,7 @@ interface Props {
    CreateTaskModal
 ══════════════════════════════════════════════════════════════════════════ */
 export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStatus = "Todo" }: Props) {
+  const { user } = useTenant();
   const [title,       setTitle]       = useState("");
   const [desc,        setDesc]        = useState("");
   const [priority,    setPriority]    = useState<Priority>("medium");
@@ -116,7 +118,7 @@ export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStat
       externalLinks: links,
       comments: [],
       reactions: {},
-      activity: [{ id: "a1", actor: "You", action: "created this task", timestamp: "Just now" }],
+      activity: [{ id: "a1", actor: user?.name || "System", action: "created this task", timestamp: new Date().toLocaleString() }],
       attachments,
       recurring: "none",
     };

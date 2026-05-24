@@ -77,18 +77,37 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
     };
   }, [task.id, task.title]);
 
+  const handleUpdate = (patch: Partial<Task>, actionDesc?: string, detailDesc?: string) => {
+    const actor = user?.name || "System";
+    const timestamp = new Date().toLocaleString();
+    
+    // Only log if there's a specific action to describe
+    if (actionDesc) {
+      const newActivity = { 
+        id: `a${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, 
+        actor, 
+        action: actionDesc, 
+        detail: detailDesc, 
+        timestamp 
+      };
+      patch.activity = [...task.activity, newActivity];
+    }
+    onUpdate(task.id, patch);
+  };
+
   function submitComment() {
     if (!comment.trim()) return;
     const author = user?.name || "Current User";
     const initials = author.substring(0, 2).toUpperCase();
-    const c: Comment = { id: `c${Date.now()}`, author, initials, avatar: user?.image, body: comment.trim(), timestamp: "Just now" };
-    onUpdate(task.id, { comments: [...task.comments, c], activity: [...task.activity, { id: `a${Date.now()}`, actor: author, action: "commented", timestamp: "Just now" }] });
+    const c: Comment = { id: `c${Date.now()}`, author, initials, avatar: user?.image, body: comment.trim(), timestamp: new Date().toLocaleString() };
+    handleUpdate({ comments: [...task.comments, c] }, "added a note", comment.trim());
     setComment("");
   }
 
   function toggleCheck(id: string) {
+    const item = task.checklist.find(c => c.id === id);
     const checklist = task.checklist.map(c => c.id === id ? { ...c, done: !c.done } : c);
-    onUpdate(task.id, { checklist });
+    handleUpdate({ checklist }, item ? (item.done ? "uncompleted item" : "completed item") : undefined, item?.text);
   }
 
   function handleCommentReaction(commentId: string, emoji: string) {
@@ -96,7 +115,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
       if (c.id !== commentId) return c;
       return { ...c, reactions: toggleReaction(c.reactions ?? {}, emoji) };
     });
-    onUpdate(task.id, { comments });
+    handleUpdate({ comments }); // Intentionally no activity log for reactions
   }
 
   const otherTasks = allTasks.filter(t => t.id !== task.id);
@@ -133,9 +152,9 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
               autoFocus
               value={titleVal}
               onChange={e => setTitleVal(e.target.value)}
-              onBlur={() => { onUpdate(task.id, { title: titleVal.trim() || task.title }); setEditTitle(false); }}
+              onBlur={() => { handleUpdate({ title: titleVal.trim() || task.title }, "changed title to", titleVal.trim()); setEditTitle(false); }}
               onKeyDown={e => {
-                if (e.key === "Enter") { onUpdate(task.id, { title: titleVal.trim() || task.title }); setEditTitle(false); }
+                if (e.key === "Enter") { handleUpdate({ title: titleVal.trim() || task.title }, "changed title to", titleVal.trim()); setEditTitle(false); }
                 if (e.key === "Escape") { setTitleVal(task.title); setEditTitle(false); }
               }}
               className="font-display text-[22px] font-bold p-0 bg-transparent border-none focus:shadow-none focus:bg-transparent h-auto"
@@ -160,20 +179,20 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
         <div className="grid grid-cols-2 gap-4 py-4 border-y border-black/[0.04]">
           <div className="space-y-1">
             <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Assignees</span>
-            <MemberPicker selected={task.assignees} onChange={a => onUpdate(task.id, { assignees: a })} />
+            <MemberPicker selected={task.assignees} onChange={a => handleUpdate({ assignees: a }, "updated assignees")} />
           </div>
           <div className="space-y-1">
             <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Due Date</span>
             <DatePicker
               value={task.due}
-              onChange={date => onUpdate(task.id, { due: date })}
+              onChange={date => handleUpdate({ due: date }, "changed due date to", date ? new Date(date).toLocaleDateString() : "None")}
             />
           </div>
         </div>
 
         {/* Labels */}
         <Section label="Labels">
-          <LabelManager selected={task.labels} onChange={l => onUpdate(task.id, { labels: l })} />
+          <LabelManager selected={task.labels} onChange={l => handleUpdate({ labels: l }, "updated labels")} />
         </Section>
 
         {/* Tabs for Details/Activity */}
@@ -220,7 +239,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                           {item.text}
                         </span>
                         <button
-                          onClick={(e) => { e.stopPropagation(); if(confirm("Delete item?")) onUpdate(task.id, { checklist: task.checklist.filter(c => c.id !== item.id) }); }}
+                          onClick={(e) => { e.stopPropagation(); if(confirm("Delete item?")) handleUpdate({ checklist: task.checklist.filter(c => c.id !== item.id) }, "deleted checklist item", item.text); }}
                           className="text-red-500 opacity-20 hover:opacity-100 p-1 rounded transition-all ml-auto"
                           title="Delete item"
                         >
@@ -233,11 +252,11 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
               </Section>
 
               <Section label="Links" count={task.externalLinks?.length || 0}>
-                <ExternalLinksPanel links={task.externalLinks || []} onChange={l => onUpdate(task.id, { externalLinks: l })} />
+                <ExternalLinksPanel links={task.externalLinks || []} onChange={l => handleUpdate({ externalLinks: l }, "updated external links")} />
               </Section>
 
               <Section label="Attachments" count={task.attachments.length}>
-                <AttachmentZone attachments={task.attachments} onChange={a => onUpdate(task.id, { attachments: a })} />
+                <AttachmentZone attachments={task.attachments} onChange={a => handleUpdate({ attachments: a }, "updated attachments")} />
               </Section>
 
               <Section label="Notes" count={task.comments.length}>
@@ -258,7 +277,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                             <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
                           </div>
                           <button
-                            onClick={() => { if (confirm("Delete this note?")) onUpdate(task.id, { comments: task.comments.filter(comment => comment.id !== c.id) }) }}
+                            onClick={() => { if (confirm("Delete this note?")) handleUpdate({ comments: task.comments.filter(comment => comment.id !== c.id) }, "deleted a note") }}
                             className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
                             title="Delete note"
                           >
@@ -319,7 +338,22 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                   <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                   <div className="flex-1 space-y-0.5">
                     <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                      <span className="font-bold text-on-surface">{a.actor}</span> {a.action} {a.detail && <span className="font-bold text-on-surface">{a.detail}</span>}
+                      <span className="font-bold text-on-surface">{a.actor}</span>
+                      {' '}
+                      {a.action === 'added a note' ? (
+                        <>
+                          added a note
+                          {a.detail && (
+                            <span className="whitespace-pre-wrap block mt-1 font-normal opacity-90 text-on-surface">
+                              {a.detail}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {a.action} {a.detail && <span className="font-bold text-on-surface">{a.detail}</span>}
+                        </>
+                      )}
                     </p>
                     <div className="flex items-center gap-1.5">
                       <Clock size={10} className="opacity-20" />

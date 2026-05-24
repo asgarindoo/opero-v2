@@ -42,7 +42,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
     e.preventDefault();
     const qty = parseInt(adjustQty);
     if (isNaN(qty) || qty === 0) return;
-    adjustStock(product.id, qty, qty > 0 ? "stock_in" : "stock_out", `Manual adjustment: ${qty > 0 ? "Stock In" : "Stock Out"}`);
+    adjustStock(product.id, qty, qty > 0 ? "stock_in" : "stock_out", "manually adjusted stock");
     setAdjustQty("");
   };
 
@@ -278,11 +278,24 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                         <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                         <div className="flex-1 space-y-0.5">
                           <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                            <span className="font-bold text-on-surface">{activity.author || "System"}</span> {isNote ? 'added a note:' : 'logged an activity:'} <span className={`font-bold text-on-surface ${isNote ? "whitespace-pre-wrap block mt-1 font-normal opacity-90" : ""}`}>{activity.description}</span>
-                            {!isNote && activity.quantity !== undefined && activity.quantity !== 0 && (
-                              <span className="font-bold text-on-surface">
-                                {' '}({activity.quantity > 0 ? "+" : ""}{activity.quantity})
-                              </span>
+                            <span className="font-bold text-on-surface">{activity.author || "System"}</span>
+                            {' '}
+                            {isNote ? (
+                              <>
+                                added a note
+                                <span className="whitespace-pre-wrap block mt-1 font-normal opacity-90 text-on-surface">
+                                  {activity.description}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                {activity.description}
+                                {activity.quantity !== undefined && activity.quantity !== 0 && (
+                                  <span className="font-bold text-on-surface">
+                                    {' '}({activity.quantity > 0 ? "+" : ""}{activity.quantity})
+                                  </span>
+                                )}
+                              </>
                             )}
                           </p>
                           <div className="flex items-center gap-1.5">

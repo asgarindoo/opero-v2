@@ -133,7 +133,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
                     id: Math.random().toString(36).substring(7),
                     type: "stock_out",
                     quantity: -item.quantity,
-                    description: `Sold via Sale ${updated.orderNumber}`,
+                    description: `sold via sale ${updated.orderNumber}`,
                     timestamp: new Date().toISOString(),
                     author: userName
                   };

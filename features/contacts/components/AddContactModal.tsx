@@ -9,6 +9,7 @@ import { ModalShell } from "@/components/ui/global/modal/ModalShell";
 import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import { useTenant } from "@/components/providers/TenantProvider";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
 
@@ -24,6 +25,7 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
 }
 
 export default function AddContactModal({ onClose }: { onClose: () => void }) {
+  const { user } = useTenant();
   const { addContact } = useContacts();
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -52,7 +54,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const isValid = name.trim().length > 0 && (!personEmail || validateEmail(personEmail));
+  const isValid = name.trim().length > 0 && personEmail.trim().length > 0 && validateEmail(personEmail);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -70,6 +72,13 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
       relationshipType,
       status,
       contextData,
+      activities: [{
+        id: "a" + Date.now(),
+        author: user?.name || "System",
+        type: "system",
+        description: "Created contact record",
+        timestamp: new Date().toISOString()
+      }],
       persons: personName.trim() || personEmail.trim() ? [{
         id: "p" + Date.now(),
         name: personName.trim() || "Unknown",
@@ -84,21 +93,24 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
   const isFinancialType = ["Customer", "Reseller", "Distributor", "Affiliate", "Investor", "Supplier", "Vendor"].includes(relationshipType);
 
   return (
-    <ModalShell onClose={onClose} maxWidth={540}>
+    <ModalShell onClose={onClose} maxWidth={800}>
       <ModalHeader title="New Contact" onClose={onClose} />
 
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
-          <GlobalInput
-            autoFocus
-            required
-            maxLength={40}
-            placeholder="Company or Contact Name…"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="font-display font-semibold"
-            style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
-          />
+          <div className="relative">
+            <GlobalInput
+              autoFocus
+              required
+              maxLength={40}
+              placeholder="Company or Contact Name…"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="font-display font-semibold pr-4"
+              style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
+            />
+            {name.length === 0 && <span className="absolute left-[200px] top-1 text-red-500 font-display">*</span>}
+          </div>
 
           <div className="grid grid-cols-2 gap-4 items-start">
             <div>
@@ -189,7 +201,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
         <div className="space-y-4">
-          <SL>Primary Contact</SL>
+          <SL>Primary Contact <span className="text-red-500">*</span></SL>
 
           <div className="grid grid-cols-2 gap-4 items-start">
             <GlobalInput

@@ -11,6 +11,7 @@ import CalendarView from "@/features/tasks/views/CalendarView";
 import TimelineView from "@/features/tasks/views/TimelineView";
 import TaskDrawer from "@/features/tasks/TaskDrawer";
 import CreateTaskModal from "@/features/tasks/CreateTaskModal";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 import ModuleHeader from "@/components/common/ModuleHeader";
 import SearchInput from "@/components/common/SearchInput";
@@ -48,16 +49,33 @@ export default function TasksPage() {
     fetchTasks();
   }, []);
 
+  const { user } = useTenant();
+
   const nextId = `T-${String(tasks.length + 1).padStart(3, "0")}`;
 
   async function updateTask(id: string, patch: Partial<Task>) {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...patch } : t));
-    setActiveTask(prev => prev?.id === id ? { ...prev, ...patch } : prev);
-    
     const taskToUpdate = tasks.find(t => t.id === id);
-    if (taskToUpdate?.recordId) {
+    if (!taskToUpdate) return;
+    
+    let finalPatch = { ...patch };
+    if (patch.status && patch.status !== taskToUpdate.status) {
+      const actor = user?.name || "System";
+      const timestamp = new Date().toLocaleString();
+      const newActivity = {
+        id: `a${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        actor,
+        action: `changed status to ${patch.status}`,
+        timestamp
+      };
+      finalPatch.activity = [...taskToUpdate.activity, newActivity];
+    }
+
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...finalPatch } : t));
+    setActiveTask(prev => prev?.id === id ? { ...prev, ...finalPatch } : prev);
+    
+    if (taskToUpdate.recordId) {
       try {
-        await updateTaskRecord<Task>(taskToUpdate.recordId, patch);
+        await updateTaskRecord<Task>(taskToUpdate.recordId, finalPatch);
       } catch (err) {
         console.error("Failed to update task", err);
       }

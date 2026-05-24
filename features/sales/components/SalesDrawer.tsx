@@ -72,7 +72,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
   const handleMarkPaid = () => {
     updateSale(sale.id, { paymentStatus: "Paid", status: "Completed" });
-    addActivity(sale.id, { type: "payment", description: "Marked sale as Paid and Completed" });
+    addActivity(sale.id, { type: "payment", description: "marked sale as Paid and Completed" });
   };
 
   const handleGenerateInvoice = async () => {
@@ -114,7 +114,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
     try {
       await createInvoice<Invoice>(newInvoice);
-      addActivity(sale.id, { type: "status_change", description: `Generated invoice ${newInvoice.invoiceNumber}` });
+      addActivity(sale.id, { type: "status_change", description: `generated invoice ${newInvoice.invoiceNumber}` });
       alert(`Invoice ${newInvoice.invoiceNumber} generated successfully!`);
     } catch (err) {
       console.error("Failed to generate invoice", err);
@@ -190,7 +190,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                        options={STATUSES.map(s => ({ value: s, label: s }))}
                        onChange={val => {
                          updateSale(sale.id, { status: val as SaleStatus });
-                         addActivity(sale.id, { type: "status_change", description: `Changed status to ${val}` });
+                         addActivity(sale.id, { type: "status_change", description: `changed status to ${val}` });
                        }}
                      />
                    </div>
@@ -201,7 +201,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                        options={["Paid", "Unpaid", "Partial"].map(s => ({ value: s, label: s }))}
                        onChange={val => {
                          updateSale(sale.id, { paymentStatus: val as any });
-                         addActivity(sale.id, { type: "payment", description: `Changed payment status to ${val}` });
+                         addActivity(sale.id, { type: "payment", description: `changed payment status to ${val}` });
                        }}
                      />
                    </div>
@@ -352,7 +352,18 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                     <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                     <div className="flex-1 space-y-0.5">
                       <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                        <span className="font-bold text-on-surface">{a.author || "System"}</span> {a.type === 'note' ? 'added a note.' : 'logged an activity:'} <span className="font-bold text-on-surface">{a.description}</span>
+                        <span className="font-bold text-on-surface">{a.author || "System"}</span>
+                        {' '}
+                        {a.type === 'note' ? (
+                          <>
+                            added a note
+                            <span className="whitespace-pre-wrap block mt-1 font-normal opacity-90 text-on-surface">
+                              {a.description}
+                            </span>
+                          </>
+                        ) : (
+                          <>{a.description}</>
+                        )}
                       </p>
                       <div className="flex items-center gap-1.5">
                         <Clock size={10} className="opacity-20" />
