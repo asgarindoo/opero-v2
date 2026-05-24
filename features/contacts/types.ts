@@ -7,6 +7,9 @@ export interface ContactActivity {
   description: string;
   timestamp: string;
   author: string;
+  avatar?: string;
+  initials?: string;
+  reactions?: Record<string, string[]>;
 }
 
 export interface ContactContextData {

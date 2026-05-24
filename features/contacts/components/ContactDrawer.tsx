@@ -8,6 +8,7 @@ import { useTenant } from "@/components/providers/TenantProvider";
 import { ContactStatus } from "@/features/contacts";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
+import ReactionsBar, { toggleReaction } from "@/features/tasks/components/ReactionsBar";
 
 function Section({ label, icon, count, children, defaultOpen = true }: { label: string; icon?: React.ReactNode; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -40,8 +41,31 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
 
   const submitComment = () => {
     if (!newNote.trim()) return;
-    addNote(contact.id, newNote);
+    const author = user?.name || "Current User";
+    const initials = author.substring(0, 2).toUpperCase();
+    const newActivity = {
+      id: "a" + Date.now(),
+      type: "note",
+      description: newNote.trim(),
+      timestamp: new Date().toISOString(),
+      author,
+      avatar: user?.image,
+      initials,
+    };
+    
+    updateContact(contact.id, {
+      activities: [newActivity, ...(contact.activities || [])],
+      lastContacted: newActivity.timestamp
+    });
     setNewNote("");
+  };
+
+  const handleNoteReaction = (activityId: string, emoji: string) => {
+    const activities = contact.activities?.map(a => {
+      if (a.id !== activityId) return a;
+      return { ...a, reactions: toggleReaction(a.reactions ?? {}, emoji) };
+    });
+    updateContact(contact.id, { activities });
   };
 
   const submitAddPerson = () => {
@@ -254,15 +278,29 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                    {/* Display Notes (currently they are all activities) */}
                    {(contact.activities || []).filter(a => a.type === 'note' || !a.type).map(c => (
                      <div key={c.id} className="flex gap-4 group">
-                        <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                           {c.author.substring(0, 2).toUpperCase()}
-                        </div>
+                        {c.avatar ? (
+                          <img src={c.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
+                            {c.initials || c.author.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
                         <div className="flex-1 space-y-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                             <span className="font-display text-[13px] font-bold">{c.author}</span>
-                             <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                               <span className="font-display text-[13px] font-bold">{c.author}</span>
+                               <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
+                            </div>
+                            <button
+                              onClick={() => { if (confirm("Delete this note?")) updateContact(contact.id, { activities: (contact.activities || []).filter(a => a.id !== c.id) }) }}
+                              className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
+                              title="Delete note"
+                            >
+                              <Trash2 size={12} />
+                            </button>
                           </div>
                           <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.description}</p>
+                          <ReactionsBar reactions={c.reactions ?? {}} onToggle={e => handleNoteReaction(c.id, e)} />
                         </div>
                      </div>
                    ))}
