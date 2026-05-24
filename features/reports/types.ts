@@ -1,4 +1,4 @@
-export type ReportType = "Sales" | "Operations" | "Finance" | "Inventory" | "Marketing" | "Activity";
+export type ReportType = "Sales" | "Operations" | "Finance" | "Marketing" | "Activity";
 export type ReportStatus = "Draft" | "Ready" | "Generating" | "Scheduled" | "Archived";
 export type ExportFormat = "PDF" | "CSV" | "XLSX";
 

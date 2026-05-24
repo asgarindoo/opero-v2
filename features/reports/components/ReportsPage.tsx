@@ -30,7 +30,6 @@ function ReportsContent() {
     { id: "Sales", label: "Sales" },
     { id: "Operations", label: "Operations" },
     { id: "Finance", label: "Finance" },
-    { id: "Inventory", label: "Inventory" },
     { id: "Marketing", label: "Marketing" },
     { id: "Activity", label: "Activity" }
   ];

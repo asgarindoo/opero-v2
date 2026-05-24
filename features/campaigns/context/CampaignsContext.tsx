@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import type { Campaign } from "@/features/campaigns";
 import { createCampaign, deleteCampaign, listCampaigns, updateCampaign as saveCampaign } from "@/features/campaigns/services/campaigns.client";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface CampaignsContextType {
   campaigns: Campaign[];
@@ -14,6 +15,9 @@ interface CampaignsContextType {
 const CampaignsContext = createContext<CampaignsContextType | undefined>(undefined);
 
 export function CampaignsProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
   useEffect(() => {
@@ -49,7 +53,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
       channel: partial.channel || "General",
       tags: partial.tags || [],
       goals: partial.goals || [],
-      activities: [{ id: "act" + Date.now(), type: "update", description: "Campaign created", timestamp: new Date().toISOString(), author: "You" }],
+      activities: [{ id: "act" + Date.now(), type: "update", description: "Campaign created", timestamp: new Date().toISOString(), author: userName }],
       attachments: partial.attachments || [],
       notes: partial.notes || "",
       createdAt: new Date().toISOString(),

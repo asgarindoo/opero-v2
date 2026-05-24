@@ -3,12 +3,14 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Product, StockStatus, StockActivity } from "../types";
 import { createProduct, deleteProduct, listProducts, updateProduct as saveProduct } from "../services/products.client";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface ProductsContextType {
   products: Product[];
   allProducts: Product[];
   addProduct: (product: Partial<Product>) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
+  addActivity: (productId: string, activity: Omit<StockActivity, "id" | "timestamp" | "author"> & { author?: string }) => void;
   adjustStock: (id: string, quantity: number, type: StockActivity["type"], reason: string) => void;
   getProductById: (id: string) => Product | undefined;
   searchQuery: string;
@@ -21,6 +23,9 @@ interface ProductsContextType {
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
 
 export function ProductsProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<"All" | StockStatus>("All");
@@ -78,6 +83,31 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const addActivity = useCallback((productId: string, activity: Omit<StockActivity, "id" | "timestamp" | "author"> & { author?: string }) => {
+    setProducts(prev => prev.map(p => {
+      if (p.id !== productId) return p;
+      const { author = userName, ...rest } = activity;
+      const newActivity: StockActivity = {
+        id: Math.random().toString(36).substring(7),
+        timestamp: new Date().toISOString(),
+        author,
+        ...rest
+      } as StockActivity;
+      
+      const updated = {
+        ...p,
+        activities: [newActivity, ...p.activities],
+        updatedAt: newActivity.timestamp
+      };
+      
+      const recordId = (p as { recordId?: string }).recordId ?? p.id;
+      saveProduct<Product>(recordId, updated).catch((err: unknown) => {
+        console.error("Failed to add activity:", err);
+      });
+      return updated;
+    }));
+  }, [userName]);
+
   const adjustStock = useCallback((id: string, quantity: number, type: StockActivity["type"], reason: string) => {
     setProducts(prev => prev.map(p => {
       if (p.id !== id) return p;
@@ -87,7 +117,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         description: reason,
         quantity,
         timestamp: new Date().toISOString(),
-        author: "You"
+        author: userName
       };
       const newTotal = p.totalQuantity + quantity;
       let newStatus: StockStatus = "In Stock";
@@ -140,6 +170,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     allProducts: products,
     addProduct,
     updateProduct,
+    addActivity,
     adjustStock,
     getProductById,
     searchQuery,
@@ -147,7 +178,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     selectedStatus,
     setSelectedStatus,
     deleteProducts
-  }), [filteredProducts, products, addProduct, updateProduct, adjustStock, getProductById, searchQuery, selectedStatus, deleteProducts]);
+  }), [filteredProducts, products, addProduct, updateProduct, addActivity, adjustStock, getProductById, searchQuery, selectedStatus, deleteProducts]);
 
   return <ProductsContext.Provider value={value}>{children}</ProductsContext.Provider>;
 }

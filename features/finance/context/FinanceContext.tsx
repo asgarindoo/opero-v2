@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Transaction, TransactionStatus, FinanceActivity, TransactionType, FinancialSummary, DateRange } from "@/features/finance";
 import { createTransaction, deleteTransaction, listTransactions, updateTransaction as saveTransaction } from "@/features/finance/services/finance.client";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface FinanceContextType {
   transactions: Transaction[];
@@ -24,6 +25,9 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"All" | TransactionType>("All");
@@ -140,7 +144,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         type: "approval",
         description: "Transaction approved",
         timestamp: new Date().toISOString(),
-        author: "You"
+        author: userName
       };
       const updated: Transaction = {
         ...tx,

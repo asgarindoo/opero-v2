@@ -16,7 +16,7 @@ function getDelegate(type: string) {
     case 'sales': return prisma.sale;
     case 'invoices': return prisma.invoice;
     case 'finance': return prisma.transaction;
-    case 'inventory': return prisma.product;
+    case 'products': return prisma.product;
     case 'assets': return prisma.asset;
     case 'documents': return prisma.document;
     case 'document-folders': return prisma.folder;

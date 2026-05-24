@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Contact, ContactActivity, ContactStatus, RelationshipType } from "@/features/contacts";
 import { createContact, deleteContact, listContacts, updateContact as saveContact } from "@/features/contacts/services/contacts.client";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface ContactsContextType {
   contacts: Contact[];
@@ -17,6 +18,9 @@ interface ContactsContextType {
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
 
 export function ContactsProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [contacts, setContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
@@ -45,7 +49,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
         type: "note",
         description: note,
         timestamp: new Date().toISOString(),
-        author: "You"
+        author: userName
       };
       const updated = {
         ...c,

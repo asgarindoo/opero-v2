@@ -10,6 +10,7 @@ import {
   listFolders,
   updateDocument,
 } from "@/features/documents/services/documents.client";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface DocumentsContextType {
   files: FileEntry[];
@@ -23,6 +24,9 @@ interface DocumentsContextType {
 const DocumentsContext = createContext<DocumentsContextType | undefined>(undefined);
 
 export function DocumentsProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
 
@@ -59,13 +63,13 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       size: partial.size || 0,
       status: "Active",
       tags: partial.tags || [],
-      versions: [{ id: "v" + Date.now(), version: "1.0", updatedAt: new Date().toISOString(), author: "You", size: partial.size || 0 }],
-      activities: [{ id: "act" + Date.now(), type: "upload", description: "Uploaded file", timestamp: new Date().toISOString(), author: "You" }],
+      versions: [{ id: "v" + Date.now(), version: "1.0", updatedAt: new Date().toISOString(), author: userName, size: partial.size || 0 }],
+      activities: [{ id: "act" + Date.now(), type: "upload", description: "Uploaded file", timestamp: new Date().toISOString(), author: userName }],
       notes: "",
       sharedWith: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      author: "You",
+      author: userName,
       ...partial
     };
     createDocument<FileEntry>(newFile)

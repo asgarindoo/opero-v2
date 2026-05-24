@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Bot, BotStatus } from "@/features/bots";
 import { createBot, deleteBot as removeBot, listBots, updateBot as saveBot } from "@/features/bots";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface BotContextType {
   bots: Bot[];
@@ -15,6 +16,9 @@ interface BotContextType {
 const BotContext = createContext<BotContextType | undefined>(undefined);
 
 export function BotProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [bots, setBots] = useState<Bot[]>([]);
 
   useEffect(() => {
@@ -51,7 +55,7 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
         defaultFallbackEnabled: false
       },
       commands: partial.commands || [],
-      activities: [{ id: "a" + Date.now(), type: "status_changed", description: "Bot created", timestamp: new Date().toISOString(), author: "Current User" }],
+      activities: [{ id: "a" + Date.now(), type: "status_changed", description: "Bot created", timestamp: new Date().toISOString(), author: userName }],
       assignedStaff: partial.assignedStaff || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -68,7 +72,7 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
         ...b, 
         ...updates, 
         updatedAt: new Date().toISOString(),
-        activities: [...b.activities, { id: "a" + Date.now(), type: "config_updated", description: "Configuration updated", timestamp: new Date().toISOString(), author: "Current User" }]
+        activities: [...b.activities, { id: "a" + Date.now(), type: "config_updated", description: "Configuration updated", timestamp: new Date().toISOString(), author: userName }]
       };
       const recordId = (b as { recordId?: string }).recordId ?? b.id;
       saveBot<Bot>(recordId, updated).catch((err) => {
@@ -94,7 +98,7 @@ export function BotProvider({ children }: { children: React.ReactNode }) {
         ...b, 
         status, 
         updatedAt: new Date().toISOString(),
-        activities: [...b.activities, { id: "a" + Date.now(), type: "status_changed", description: `Status changed to ${status}`, timestamp: new Date().toISOString(), author: "Current User" }]
+        activities: [...b.activities, { id: "a" + Date.now(), type: "status_changed", description: `Status changed to ${status}`, timestamp: new Date().toISOString(), author: userName }]
       };
       const recordId = (b as { recordId?: string }).recordId ?? b.id;
       saveBot<Bot>(recordId, updated).catch((err) => {

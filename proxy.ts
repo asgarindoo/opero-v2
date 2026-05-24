@@ -87,7 +87,7 @@ const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
 const TENANT_SHORTPATHS = new Set([
   "/activity", "/assets", "/bots", "/campaigns", "/chat",
   "/contacts", "/content-planner", "/documents", "/finance",
-  "/flows", "/goals", "/insights", "/inventory", "/invoices",
+  "/flows", "/goals", "/insights", "/invoices",
   "/members", "/reports", "/sales", "/settings",
   "/social-channels", "/tasks",
 ]);

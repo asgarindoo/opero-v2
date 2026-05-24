@@ -1,16 +1,23 @@
 import React, { useState } from "react";
 import { useProducts } from "../context/ProductsContext";
-import { X, Clock, ArrowUpRight, ArrowDownLeft, AlertTriangle, Package, Wrench, Star, DollarSign, FileText } from "lucide-react";
+import { X, Clock, ArrowUpRight, ArrowDownLeft, AlertTriangle, Package, Wrench, Star, DollarSign, FileText, MessageSquare } from "lucide-react";
 import type { StockActivity, ProductVariant } from "../types";
+import { useTenant } from "@/components/providers/TenantProvider";
+import Drawer from "@/components/ui/Drawer";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(price);
 }
 
 export default function ProductDrawer({ productId, onClose }: { productId: string; onClose: () => void }) {
-  const { allProducts, adjustStock } = useProducts();
+  const { allProducts, adjustStock, addActivity } = useProducts();
   const product = allProducts.find(p => p.id === productId);
+  const { user } = useTenant();
   const [adjustQty, setAdjustQty] = useState("");
+  const [tab, setTab] = useState<"details" | "activity">("details");
+  const [newNote, setNewNote] = useState("");
 
   if (!product) return null;
 
@@ -24,79 +31,96 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
     setAdjustQty("");
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/5 backdrop-blur-[1px] animate-fade-in" onClick={onClose} />
+  const handleAddNote = () => {
+    if (!newNote.trim()) return;
+    addActivity(product.id, { 
+      type: "note", 
+      description: newNote,
+      quantity: 0
+    });
+    setNewNote("");
+  };
 
-      <div className="relative w-full max-w-[560px] h-full bg-surface-container-lowest shadow-2xl flex flex-col animate-slide-in-right border-l border-black/[0.05]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-surface-container-lowest z-10 sticky top-0">
+  return (
+    <Drawer
+      isOpen={true}
+      onClose={onClose}
+      title={product.sku}
+      size="sm"
+      footer={
+        <div className="flex items-center justify-end w-full">
+          <Button variant="ghost" size="sm" onClick={onClose}>CLOSE</Button>
+        </div>
+      }
+    >
+      <div className="space-y-8">
+        {/* Title */}
+        <div className="space-y-2">
+          <h1
+            className="font-display text-[22px] font-bold text-on-surface tracking-tight break-words break-all line-clamp-3"
+            title={product.name}
+          >
+            {product.name}
+          </h1>
           <div className="flex items-center gap-2">
-            <div className="px-2 py-1 rounded bg-black/5 font-mono text-[10px] font-bold text-on-surface-variant opacity-60">
-              {product.sku}
-            </div>
-            <span className="font-label-caps text-[8px] font-bold px-1.5 py-0.5 rounded bg-black/5 text-on-surface-variant opacity-60 uppercase tracking-wide">
-              {product.type}
-            </span>
+            <Badge variant={product.status === "In Stock" ? "success" : product.status === "Archived" ? "warning" : "error"}>{product.status.toUpperCase()}</Badge>
+            <Badge variant="info">{product.type}</Badge>
+            {product.category && <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30">{product.category.toUpperCase()}</span>}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-md text-on-surface-variant opacity-50 hover:opacity-100 hover:bg-black/5 transition-colors">
-            <X size={14} />
-          </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-8">
-
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-label-caps text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-black/5 text-on-surface-variant border border-black/[0.03]">
-                {product.status.toUpperCase()}
-              </span>
-              {product.category && (
-                <span className="font-label-caps text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-black/5 text-on-surface-variant opacity-60">
-                  {product.category.toUpperCase()}
-                </span>
-              )}
-            </div>
-            <h3 
-              className="font-display font-bold text-[20px] text-on-surface leading-tight mb-2 break-words break-all line-clamp-3"
-              title={product.name}
-            >
-              {product.name}
-            </h3>
-            <div className="flex items-center gap-4 text-on-surface-variant opacity-70">
-              <div className="flex items-center gap-1.5 font-body-sm text-[12px]">
-                <DollarSign size={13} />
-                {product.price > 0 ? formatPrice(product.price) : "Price not set"}
-              </div>
-              <div className="flex items-center gap-1.5 font-body-sm text-[12px]">
-                <Clock size={13} /> Updated {new Date(product.updatedAt).toLocaleDateString()}
-              </div>
-            </div>
+        {/* Quick Meta */}
+        <div className="grid grid-cols-2 gap-4 py-4 border-y border-black/[0.04]">
+          <div className="space-y-1">
+            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Price</span>
+            <div className="font-body-sm text-[12px] text-on-surface flex items-center gap-1.5"><DollarSign size={13}/> {product.price > 0 ? formatPrice(product.price) : "Not set"}</div>
           </div>
+          <div className="space-y-1">
+            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Updated</span>
+            <div className="font-body-sm text-[12px] text-on-surface flex items-center gap-1.5"><Clock size={13}/> {new Date(product.updatedAt).toLocaleDateString()}</div>
+          </div>
+        </div>
 
-          {/* Quick Stats */}
-          <div className={`grid gap-4 mb-8 ${isService ? "grid-cols-2" : "grid-cols-3"}`}>
-            <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
-              <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Price</div>
-              <div 
-                className="font-display font-bold text-[18px] text-on-surface opacity-90 break-all"
-                title={product.price > 0 ? formatPrice(product.price) : undefined}
-              >
-                {product.price > 0 ? formatPrice(product.price) : <span className="text-[14px] opacity-40">Not set</span>}
-              </div>
-            </div>
-            {!isService && (
-              <>
+        {/* Tabs for Details/Activity */}
+        <div className="flex gap-6 border-b border-black/[0.04]">
+          {(["details", "activity"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`pb-3 font-label-caps text-[10px] font-bold uppercase tracking-wider transition-all relative ${tab === t ? 'text-primary' : 'text-on-surface-variant opacity-30 hover:opacity-100'}`}
+            >
+              {t === "details" ? "Details" : "Activities & Notes"}
+              {tab === t && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full animate-fade-in" />}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div className="animate-in fade-in duration-300">
+          {tab === "details" && (
+            <div className="space-y-8">
+              {/* Quick Stats */}
+              <div className={`grid gap-4 mb-8 ${isService ? "grid-cols-2" : "grid-cols-3"}`}>
                 <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
-                  <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Total Stock</div>
+                  <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Price</div>
                   <div 
-                    className={`font-display font-bold text-[18px] break-all ${product.totalQuantity <= product.minThreshold ? "text-amber-600" : "text-on-surface opacity-90"}`}
-                    title={product.totalQuantity.toLocaleString()}
+                    className="font-display font-bold text-[18px] text-on-surface opacity-90 break-all"
+                    title={product.price > 0 ? formatPrice(product.price) : undefined}
                   >
-                    {product.totalQuantity.toLocaleString()}
+                    {product.price > 0 ? formatPrice(product.price) : <span className="text-[14px] opacity-40">Not set</span>}
                   </div>
                 </div>
+                {!isService && (
+                  <>
+                    <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
+                      <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Total Stock</div>
+                      <div 
+                        className={`font-display font-bold text-[18px] break-all ${product.totalQuantity <= product.minThreshold ? "text-amber-600" : "text-on-surface opacity-90"}`}
+                        title={product.totalQuantity.toLocaleString()}
+                      >
+                        {product.totalQuantity.toLocaleString()}
+                      </div>
+                    </div>
                 <div className="p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
                   <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-1">Alert Threshold</div>
                   <div 
@@ -163,36 +187,36 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
           )}
 
           <div className="w-full h-px bg-black/5 mb-8" />
+            </div>
+          )}
 
-          {/* Stock History Timeline */}
-          {!isService && (
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-40 uppercase tracking-wider">Stock History</h4>
-                <button className="p-1.5 rounded-md hover:bg-black/5 text-on-surface-variant opacity-60 transition-colors">
-                  <FileText size={12} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
+          {/* Stock History & Notes Timeline */}
+          {tab === "activity" && (
+            <section className="space-y-6">
+              <div className="space-y-4 relative pl-4">
+                <div className="absolute left-[3px] top-2 bottom-2 w-px bg-black/[0.04]" />
                 {product.activities.length === 0 ? (
-                  <div className="text-center py-4 text-on-surface-variant opacity-30 font-body-sm text-[11px]">No stock movements yet</div>
+                  <div className="text-center py-4 text-on-surface-variant opacity-30 font-body-sm text-[11px]">No activities yet</div>
                 ) : (
-                  product.activities.map((activity: StockActivity) => {
-                    const Icon = activity.type === "stock_in" ? ArrowDownLeft : activity.type === "stock_out" ? ArrowUpRight : AlertTriangle;
-                    const color = activity.type === "stock_in" ? "text-green-500" : activity.type === "stock_out" ? "text-red-500" : "text-amber-500";
+                  [...product.activities].reverse().map((activity: StockActivity) => {
+                    const isNote = activity.type === "note";
+                    const Icon = isNote ? MessageSquare : activity.type === "stock_in" ? ArrowDownLeft : activity.type === "stock_out" ? ArrowUpRight : AlertTriangle;
+                    const color = isNote ? "text-blue-500" : activity.type === "stock_in" ? "text-green-500" : activity.type === "stock_out" ? "text-red-500" : "text-amber-500";
 
                     return (
-                      <div key={activity.id} className="flex items-start gap-3">
-                        <div className={`mt-0.5 opacity-40 ${color}`}><Icon size={12} /></div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="font-display font-medium text-[12px] text-on-surface opacity-90">{activity.description}</span>
-                            <span className="font-body-sm text-[10px] text-on-surface-variant opacity-40">{new Date(activity.timestamp).toLocaleDateString()}</span>
-                          </div>
+                      <div key={activity.id} className="relative flex items-start gap-4">
+                        <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
+                        <div className={`mt-0.5 opacity-60 ${color}`}><Icon size={12} /></div>
+                        <div className="flex-1 space-y-0.5">
+                          <p className="font-display text-[12.5px] text-on-surface-variant/80">
+                            <span className="font-bold text-on-surface">{activity.author || "System"}</span> {isNote ? 'added a note:' : 'logged an activity:'} <span className={`font-bold text-on-surface ${isNote ? "whitespace-pre-wrap block mt-1 font-normal opacity-90" : ""}`}>{activity.description}</span>
+                          </p>
                           <div className="flex items-center justify-between">
-                            <p className="font-body-sm text-[11px] text-on-surface-variant opacity-60">by {activity.author}</p>
-                            {activity.quantity && (
+                            <div className="flex items-center gap-1.5">
+                              <Clock size={10} className="opacity-20" />
+                              <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(activity.timestamp).toLocaleString()}</span>
+                            </div>
+                            {activity.quantity !== undefined && activity.quantity !== 0 && (
                               <span className={`font-mono text-[11px] font-bold ${activity.quantity > 0 ? "text-green-600" : "text-red-600"}`}>
                                 {activity.quantity > 0 ? "+" : ""}{activity.quantity}
                               </span>
@@ -204,10 +228,47 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                   })
                 )}
               </div>
+
+              <div className="pt-4 border-t border-black/[0.04]">
+                 <div className="flex gap-4">
+                   {user?.image ? (
+                     <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                   ) : (
+                     <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
+                       {(user?.name || "U").substring(0, 2).toUpperCase()}
+                     </div>
+                   )}
+                   <div className="flex-1 space-y-2">
+                     <textarea
+                       rows={2}
+                       placeholder="Add a note, update, or log activity..."
+                       value={newNote}
+                       onChange={e => setNewNote(e.target.value)}
+                       onKeyDown={e => {
+                         if (e.key === "Enter" && !e.shiftKey) {
+                           e.preventDefault();
+                           handleAddNote();
+                         }
+                       }}
+                       className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all"
+                     />
+                     <div className="flex items-center justify-end">
+                       <Button
+                         variant="primary"
+                         size="sm"
+                         disabled={!newNote.trim()}
+                         onClick={handleAddNote}
+                       >
+                         POST NOTE
+                       </Button>
+                     </div>
+                   </div>
+                 </div>
+              </div>
             </section>
           )}
         </div>
       </div>
-    </div>
+    </Drawer>
   );
 }

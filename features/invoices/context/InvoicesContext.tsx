@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Invoice, InvoiceActivity } from "@/features/invoices";
 import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/features/invoices";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface InvoicesContextType {
   invoices: Invoice[];
@@ -15,6 +16,9 @@ interface InvoicesContextType {
 const InvoicesContext = createContext<InvoicesContextType | undefined>(undefined);
 
 export function InvoicesProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
@@ -82,7 +86,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
         type: "payment",
         description: "Invoice marked as paid manually",
         timestamp: new Date().toISOString(),
-        author: "You"
+        author: userName
       };
       const updated: Invoice = {
         ...inv,

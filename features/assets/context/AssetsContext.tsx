@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { Asset, AssetActivity } from "@/features/assets";
 import { createAsset, deleteAsset, listAssets, updateAsset as saveAsset } from "@/features/assets/services/assets.client";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 interface AssetsContextType {
   assets: Asset[];
@@ -15,6 +16,9 @@ interface AssetsContextType {
 const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
 
 export function AssetsProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useTenant();
+  const userName = user?.name || "You";
+
   const [assets, setAssets] = useState<Asset[]>([]);
 
   useEffect(() => {
@@ -74,7 +78,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         type: "assignment",
         description: `Assigned to ${person}${department ? ` (${department})` : ""}`,
         timestamp: new Date().toISOString(),
-        author: "You"
+        author: userName
       };
       const updated: Asset = {
         ...a,

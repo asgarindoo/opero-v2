@@ -1,6 +1,6 @@
 import { apiRequest } from "@/lib/client/api";
 
-const endpoint = "/api/tenant/inventory";
+const endpoint = "/api/tenant/products";
 
 export async function listProducts<T>() {
   const payload = await apiRequest<{ items: T[] }>(endpoint, { method: "GET" });
