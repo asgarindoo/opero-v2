@@ -2,16 +2,16 @@
 
 import React, { useState } from "react";
 import { useDocuments } from "../context/DocumentsContext";
-import { 
-  FileText, 
-  Image as ImageIcon, 
-  FileSpreadsheet, 
-  FileCode, 
-  File, 
-  MoreVertical, 
-  Share2, 
-  Tag, 
-  Layers, 
+import {
+  FileText,
+  Image as ImageIcon,
+  FileSpreadsheet,
+  FileCode,
+  File,
+  MoreVertical,
+  Share2,
+  Tag,
+  Layers,
   Download,
   ChevronRight,
   Trash2
@@ -48,15 +48,15 @@ export default function DocumentTable({ searchQuery, filterMode, onSelectFile }:
   const itemsPerPage = 20;
 
   const filteredFiles = files.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
       f.relatedTo?.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (filterMode === "all") return matchesSearch;
-    if (filterMode === "recent") return matchesSearch; 
+    if (filterMode === "recent") return matchesSearch;
     if (filterMode === "shared") return matchesSearch && f.sharedWith.length > 0;
-    if (filterMode === "favorites") return matchesSearch; 
-    
+    if (filterMode === "favorites") return matchesSearch;
+
     return matchesSearch;
   });
 
@@ -119,14 +119,14 @@ export default function DocumentTable({ searchQuery, filterMode, onSelectFile }:
 
   return (
     <div className="flex flex-col h-full bg-background relative">
-      <div className="flex-1 overflow-hidden">
-        <Table>
+      <div className="flex-1 overflow-auto">
+        <Table className="min-w-[800px]">
           <TableHeader className="bg-[#faf5f5]/50">
             <TableRow>
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={selectedIds.size > 0 && selectedIds.size === paginatedFiles.length}
                     onChange={toggleAll}
                     className="w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
@@ -138,7 +138,7 @@ export default function DocumentTable({ searchQuery, filterMode, onSelectFile }:
               <TableHead>Size</TableHead>
               <TableHead>Last Modified</TableHead>
               <TableHead>Author</TableHead>
-              <TableHead className="px-6 py-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
+              <TableHead className="w-28 px-4"><div className="w-full text-center">Actions</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -146,83 +146,85 @@ export default function DocumentTable({ searchQuery, filterMode, onSelectFile }:
               const isSelected = selectedIds.has(file.id);
 
               return (
-                <TableRow 
+                <TableRow
                   key={file.id}
                   onClick={() => onSelectFile(file.id)}
                   className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
                 >
                   <TableCell onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={isSelected}
                         onChange={(e) => toggleOne(file.id, e as any)}
                         className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
                       />
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="max-w-[0px]">
                     <div className="flex items-center gap-3 ml-3">
                       <div className="w-7 h-7 rounded-[6px] bg-black/[0.03] flex items-center justify-center shrink-0">
                         {getFileIcon(file.type)}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-display font-semibold text-[13px] text-on-surface opacity-90 truncate group-hover:text-primary transition-colors leading-tight">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display font-semibold text-[13px] text-on-surface opacity-90 truncate w-full group-hover:text-primary transition-colors leading-tight block">
                           {file.name}
                         </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex items-center gap-1.5 mt-0.5 w-full truncate block">
                           {file.tags.map(tag => (
-                            <span key={tag} className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 bg-black/[0.04] px-1 py-0.5 rounded flex items-center gap-0.5 uppercase tracking-[0.05em]">
+                            <span key={tag} className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 bg-black/[0.04] px-1 py-0.5 rounded flex items-center gap-0.5 uppercase tracking-[0.05em] inline-flex">
                               <Tag size={7} /> {tag}
                             </span>
                           ))}
-                          {file.sharedWith.length > 0 && <Share2 size={8} className="text-primary opacity-50" />}
+                          {file.sharedWith.length > 0 && <Share2 size={8} className="text-primary opacity-50 inline-block" />}
                         </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="max-w-[0px]">
                     {file.relatedTo ? (
-                      <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface-variant opacity-60">
-                        <Layers size={10} className="opacity-60" />
-                        <span className="truncate max-w-[120px]">{file.relatedTo.name}</span>
+                      <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface-variant opacity-60 w-full">
+                        <Layers size={10} className="opacity-60 shrink-0" />
+                        <span className="truncate block w-full">{file.relatedTo.name}</span>
                       </div>
                     ) : (
-                      <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic">— Internal</span>
+                      <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic block truncate w-full">— Internal</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <span className="font-display text-[11px] text-on-surface-variant opacity-60">
+                  <TableCell className="hidden lg:table-cell max-w-[0px]">
+                    <span className="font-display text-[11px] text-on-surface-variant opacity-60 truncate block w-full">
                       {formatBytes(file.size)}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    <span className="font-display text-[11px] text-on-surface-variant opacity-60">
+                  <TableCell className="hidden lg:table-cell max-w-[0px]">
+                    <span className="font-display text-[11px] text-on-surface-variant opacity-60 truncate block w-full">
                       {new Date(file.updatedAt).toLocaleDateString()}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-70">
-                      <div className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center font-bold text-[8px] text-on-surface-variant">
+                  <TableCell className="hidden lg:table-cell max-w-[0px]">
+                    <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-70 w-full">
+                      <div className="w-5 h-5 shrink-0 rounded-full bg-black/5 flex items-center justify-center font-bold text-[8px] text-on-surface-variant">
                         {file.author.charAt(0)}
                       </div>
-                      <span className="truncate max-w-[80px]">{file.author}</span>
+                      <span className="truncate block w-full">{file.author}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-6 py-5 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 text-on-surface-variant opacity-40 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
+                  <TableCell className="px-4 text-center">
+                    <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
                         onClick={(e) => handleDeleteOne(e, file.id)}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={12} />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-on-surface-variant opacity-60">
-                        <Download size={13} />
+                      <Button variant="ghost" size="icon" className="h-6.5 w-6.5 text-on-surface-variant hover:text-on-surface hover:bg-black/5 transition-all">
+                        <Download size={12} />
                       </Button>
-                      <ChevronRight size={12} className="text-on-surface-variant opacity-60 ml-1" />
+                      <div className="ml-1 opacity-60">
+                        <ChevronRight size={13} />
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -232,7 +234,7 @@ export default function DocumentTable({ searchQuery, filterMode, onSelectFile }:
         </Table>
       </div>
 
-      <ListFooter 
+      <ListFooter
         totalItems={filteredFiles.length}
         itemsPerPage={itemsPerPage}
         currentPage={currentPage}
@@ -240,14 +242,14 @@ export default function DocumentTable({ searchQuery, filterMode, onSelectFile }:
         label="documents"
       />
 
-      <SelectionBar 
+      <SelectionBar
         count={selectedIds.size}
         onClear={() => setSelectedIds(new Set())}
         onDelete={() => setIsDeleteModalOpen(true)}
         label="documents"
       />
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);

@@ -111,8 +111,8 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
 
   return (
     <div className="flex flex-col h-full bg-background relative">
-      <div className="flex-1 overflow-auto">
-        <Table className="table-fixed">
+      <div className="flex-1 overflow-auto bg-background">
+        <Table className="min-w-[800px] table-fixed">
           <TableHeader className="bg-[#faf5f5]/50">
             <TableRow>
               <TableHead className="w-10">

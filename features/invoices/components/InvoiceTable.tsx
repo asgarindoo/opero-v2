@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { useInvoices } from "../context/InvoicesContext";
 import { InvoiceStatus } from "@/features/invoices";
-import { 
-  MoreVertical, 
+import {
+  MoreVertical,
   ChevronRight,
   Download,
   FileText,
@@ -36,14 +36,14 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
   const itemsPerPage = 15;
 
   const filteredInvoices = invoices.filter(inv => {
-    const matchesSearch = inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (inv.contactName ?? "").toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (filterMode === "all") return matchesSearch;
     if (filterMode === "paid") return matchesSearch && inv.status === "Paid";
     if (filterMode === "unpaid") return matchesSearch && inv.status === "Unpaid";
     if (filterMode === "overdue") return matchesSearch && inv.status === "Overdue";
-    
+
     return matchesSearch;
   });
 
@@ -106,14 +106,14 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
 
   return (
     <div className="flex flex-col h-full bg-[#fef8f8] relative">
-      <div className="flex-1 overflow-hidden">
-        <Table>
+      <div className="flex-1 overflow-auto">
+        <Table className="min-w-[800px]">
           <TableHeader className="bg-[#fbf5f5]">
             <TableRow>
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={selectedIds.size > 0 && selectedIds.size === paginatedInvoices.length}
                     onChange={toggleAll}
                     className="w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
@@ -134,37 +134,37 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
               const isSelected = selectedIds.has(inv.id);
 
               return (
-                <TableRow 
+                <TableRow
                   key={inv.id}
                   onClick={() => onSelectInvoice(inv.id)}
                   className={`group ${isSelected ? "bg-primary/[0.02]" : "hover:bg-black/[0.01]"}`}
                 >
                   <TableCell onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={isSelected}
                         onChange={(e) => toggleOne(inv.id, e as any)}
                         className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
                       />
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="max-w-[0px]">
                     <div className="flex items-center gap-2.5">
-                       <div className="w-6 h-6 rounded-[5px] bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
-                          <FileText size={11} />
-                       </div>
-                       <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight">
-                         {inv.invoiceNumber}
-                       </span>
+                      <div className="w-6 h-6 shrink-0 rounded-[5px] bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
+                        <FileText size={11} />
+                      </div>
+                      <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight truncate block">
+                        {inv.invoiceNumber}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="max-w-[0px]">
                     <div className="min-w-0 ml-3">
-                      <p className="font-display font-semibold text-[13px] text-on-surface opacity-90 truncate group-hover:text-primary transition-colors leading-tight">
+                      <p className="font-display font-semibold text-[13px] text-on-surface opacity-90 truncate w-full group-hover:text-primary transition-colors leading-tight block">
                         {inv.contactName ?? <span className="opacity-30">—</span>}
                       </p>
-                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate uppercase tracking-widest font-bold leading-none mt-0.5">
+                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate w-full uppercase tracking-widest font-bold leading-none mt-0.5 block">
                         {inv.items.length} items
                       </p>
                     </div>
@@ -181,31 +181,33 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
-                       <Clock size={10} className="text-on-surface-variant opacity-60" />
-                       <span className={`font-display text-[11.5px] ${inv.status === "Overdue" ? "text-red-500 opacity-80 font-semibold" : "text-on-surface-variant opacity-60"}`}>
-                         {new Date(inv.dueDate).toLocaleDateString()}
-                       </span>
+                      <Clock size={10} className="text-on-surface-variant opacity-60" />
+                      <span className={`font-display text-[11.5px] ${inv.status === "Overdue" ? "text-red-500 opacity-80 font-semibold" : "text-on-surface-variant opacity-60"}`}>
+                        {new Date(inv.dueDate).toLocaleDateString()}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <span 
+                    <span
                       className="font-bold text-on-surface font-display text-[12.5px] opacity-80 block truncate max-w-[100px] ml-auto"
                       title={new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
                     >
                       {new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
                     </span>
                   </TableCell>
-                  <TableCell className="px-6 py-5 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 text-on-surface-variant opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
+                  <TableCell className="px-4 text-center">
+                    <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
                         onClick={(e) => handleDeleteOne(e, inv.id)}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={12} />
                       </Button>
-                      <ChevronRight size={14} className="opacity-60 ml-1" />
+                      <div className="ml-1 opacity-60">
+                        <ChevronRight size={13} />
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -215,7 +217,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
         </Table>
       </div>
 
-      <ListFooter 
+      <ListFooter
         totalItems={filteredInvoices.length}
         itemsPerPage={itemsPerPage}
         currentPage={currentPage}
@@ -223,14 +225,14 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
         label="invoices"
       />
 
-      <SelectionBar 
+      <SelectionBar
         count={selectedIds.size}
         onClear={() => setSelectedIds(new Set())}
         onDelete={() => setIsDeleteModalOpen(true)}
         label="invoices"
       />
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);

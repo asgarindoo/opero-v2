@@ -101,7 +101,7 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
   return (
     <div className="flex flex-col h-full bg-background relative min-w-0">
       <div className="flex-1 overflow-auto">
-        <Table className="table-fixed">
+        <Table className="min-w-[800px]">
           <TableHeader className="bg-[#fbf5f5]">
             <TableRow className="h-10">
               <TableHead className="w-10 px-4">
