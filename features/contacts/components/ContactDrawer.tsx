@@ -71,24 +71,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
       title="Contact Details"
       size="sm"
       footer={(
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-50 uppercase">Status:</span>
-            <div className="w-32">
-              <Dropdown 
-                value={contact.status}
-                options={[
-                  { value: "New", label: "New" },
-                  { value: "Active", label: "Active" },
-                  { value: "Pending", label: "Pending" },
-                  { value: "Inactive", label: "Inactive" },
-                  { value: "Archived", label: "Archived" }
-                ]}
-                onChange={(v) => updateContact(contact.id, { status: v as ContactStatus })}
-                variant="minimal"
-              />
-            </div>
-          </div>
+        <div className="flex items-center justify-end w-full">
           <Button variant="ghost" size="sm" onClick={onClose}>CLOSE</Button>
         </div>
       )}
@@ -129,6 +112,44 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
         <div className="animate-in fade-in duration-300">
           {tab === "details" && (
             <div className="space-y-8">
+               {/* Properties */}
+               <Section label="Properties">
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1.5">
+                     <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Status</span>
+                     <Dropdown 
+                       value={contact.status}
+                       options={[
+                         { value: "New", label: "New" },
+                         { value: "Active", label: "Active" },
+                         { value: "Pending", label: "Pending" },
+                         { value: "Inactive", label: "Inactive" },
+                         { value: "Archived", label: "Archived" }
+                       ]}
+                       onChange={(v) => updateContact(contact.id, { status: v as ContactStatus })}
+                     />
+                   </div>
+                   <div className="space-y-1.5">
+                     <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Relationship</span>
+                     <Dropdown 
+                       value={contact.relationshipType}
+                       options={[
+                         { value: "Lead", label: "Lead" },
+                         { value: "Customer", label: "Customer" },
+                         { value: "Client", label: "Client" },
+                         { value: "Vendor", label: "Vendor" },
+                         { value: "Partner", label: "Partner" },
+                         { value: "Freelancer", label: "Freelancer" },
+                         { value: "Investor", label: "Investor" },
+                         { value: "Internal", label: "Internal" },
+                         { value: "Other", label: "Other" },
+                       ]}
+                       onChange={(v) => updateContact(contact.id, { relationshipType: v as any })}
+                     />
+                   </div>
+                 </div>
+               </Section>
+
                {/* Context Data */}
                {isFinancialType && Object.keys(contact.contextData).length > 0 && (
                  <Section label="Overview">
@@ -190,23 +211,29 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                    {(contact.persons || []).length < 5 && (
                       <div className="mt-3">
                         {showAddPerson ? (
-                          <div className="p-4 rounded-xl bg-surface-container-low border border-black/10 space-y-4">
-                            <GlobalInput 
-                              label="Name"
-                              placeholder="e.g. John Doe" 
-                              value={newPersonName} 
-                              onChange={e => setNewPersonName(e.target.value)}
-                            />
-                            <GlobalInput 
-                              label="Email Address"
-                              type="email" 
-                              placeholder="e.g. john@example.com" 
-                              value={newPersonEmail} 
-                              onChange={e => setNewPersonEmail(e.target.value)}
-                            />
-                            <div className="flex gap-2 pt-2">
-                              <Button variant="primary" size="sm" className="flex-1" onClick={submitAddPerson} disabled={!newPersonName.trim()}>Save Person</Button>
-                              <Button variant="ghost" size="sm" className="flex-1" onClick={() => setShowAddPerson(false)}>Cancel</Button>
+                          <div className="pt-2 space-y-3">
+                            <div className="flex gap-3">
+                              <div className="flex-1">
+                                <GlobalInput 
+                                  autoFocus
+                                  maxLength={40}
+                                  placeholder="Person Name" 
+                                  value={newPersonName} 
+                                  onChange={e => setNewPersonName(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <GlobalInput 
+                                  type="email" 
+                                  placeholder="Email Address" 
+                                  value={newPersonEmail} 
+                                  onChange={e => setNewPersonEmail(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="primary" size="sm" onClick={submitAddPerson} disabled={!newPersonName.trim()}>Add</Button>
+                              <Button variant="ghost" size="sm" onClick={() => setShowAddPerson(false)}>Cancel</Button>
                             </div>
                           </div>
                         ) : (
