@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useDocuments } from "../context/DocumentsContext";
-import { Upload, Tag, Layers, Lock, ChevronDown } from "lucide-react";
+import { Upload, Tag, Layers, Lock, ChevronDown, Check } from "lucide-react";
 import { FileType } from "@/features/documents";
 
 import { ModalShell } from "@/components/ui/global/modal/ModalShell";
@@ -10,8 +10,19 @@ import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
-import { GlobalSelect } from "@/components/ui/global/form/GlobalSelect";
-import { FormSection } from "@/components/ui/global/form/FormField";
+import Dropdown from "@/components/ui/Dropdown";
+
+/* ── Section label ───────────────────────────────────────────────────────── */
+function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+        {children}
+      </span>
+    </div>
+  );
+}
 
 export default function UploadModal({ onClose }: { onClose: () => void }) {
   const { addFile } = useDocuments();
@@ -22,6 +33,9 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Extra metadata for looks matching other modules
+  const [privacy, setPrivacy] = useState("internal");
 
   const selectFile = (selected: File) => {
     setFile(selected);
@@ -77,7 +91,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell onClose={onClose} maxWidth={480}>
-      <ModalHeader title="Upload Documents" icon={<Upload size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+      <ModalHeader title="Upload Document" onClose={onClose} />
       
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
@@ -88,6 +102,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
             placeholder="Document Name (e.g. Sales Report Q1)…"
             value={name}
             onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && isValid && handleSubmit()}
             className="font-display font-semibold"
             style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
           />
@@ -126,17 +141,12 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
           />
         </div>
 
-        {error && (
-          <p className="font-body-md text-[12px] px-3 py-2 rounded-[6px]" style={{ background: "rgba(186,26,26,0.05)", color: "rgba(186,26,26,0.9)" }}>
-            {error}
-          </p>
-        )}
-
-        <div className="space-y-4">
-
-          <div className="grid grid-cols-2 gap-4">
-            <GlobalSelect
-              label="File Type"
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <SL>File Type</SL>
+            <Dropdown
+              value={type}
+              onChange={(val) => setType(val as FileType)}
               options={[
                 { value: "other", label: "General" },
                 { value: "pdf", label: "PDF Document" },
@@ -145,13 +155,13 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
                 { value: "image", label: "Image / Media" },
                 { value: "design", label: "Design Asset" },
               ]}
-              value={type}
-              onChange={e => setType(e.target.value as FileType)}
             />
-
+          </div>
+          <div>
+            <SL icon={<Tag size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Tags
+            </SL>
             <GlobalInput
-              label="Tags"
-              icon={<Tag size={11} strokeWidth={1.75} />}
               maxLength={40}
               placeholder="finance, invoice..."
               value={tags}
@@ -160,36 +170,36 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <FormSection title="Visibility & Links">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                  Privacy
-                </span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-[6px]" style={{ border: "1px solid rgba(0,0,0,0.09)", background: "#fff" }}>
-                <Lock size={12} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-                <span className="font-body-md text-[12.5px]" style={{ color: "var(--color-on-surface)", opacity: 0.7 }}>Internal Only</span>
-                <ChevronDown size={12} className="ml-auto" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-                  Link Entity
-                </span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-[6px]" style={{ border: "1px solid rgba(0,0,0,0.09)", background: "#fff" }}>
-                <Layers size={12} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
-                <span className="font-body-md text-[12.5px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>Select module...</span>
-              </div>
-            </div>
+        <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <SL icon={<Lock size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Privacy
+            </SL>
+            <Dropdown
+              value={privacy}
+              onChange={setPrivacy}
+              options={[
+                { value: "internal", label: "Internal Only" },
+                { value: "public", label: "Public Link" },
+                { value: "restricted", label: "Restricted" },
+              ]}
+            />
           </div>
-        </FormSection>
+          <div>
+            <SL icon={<Layers size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Link Entity
+            </SL>
+            <button className="w-full flex items-center justify-between px-3 py-1.5 rounded-[6px] bg-black/[0.02] border border-black/[0.09] hover:bg-black/[0.04] transition-all font-body-md text-[12px] text-on-surface-variant opacity-70">
+              <span className="truncate">Select module...</span>
+              <ChevronDown size={14} className="shrink-0 opacity-50" />
+            </button>
+          </div>
+        </div>
       </ModalContent>
 
-      <ModalFooter>
+      <ModalFooter summary={error}>
         <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
           Cancel
         </button>

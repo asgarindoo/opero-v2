@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
-import { Landmark, Tag, MapPin, DollarSign } from "lucide-react";
+import { Tag, MapPin, DollarSign, LayoutGrid, Calendar } from "lucide-react";
 import { createTransaction } from "@/features/finance/services/finance.client";
 
 import { ModalShell } from "@/components/ui/global/modal/ModalShell";
@@ -10,9 +10,20 @@ import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
-import { GlobalDatePicker } from "@/components/ui/global/form/GlobalDatePicker";
 import { GlobalCheckbox } from "@/components/ui/global/form/GlobalCheckbox";
-import { FormSection } from "@/components/ui/global/form/FormField";
+import DatePicker from "@/components/ui/DatePicker";
+
+/* ── Section label ───────────────────────────────────────────────────────── */
+function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+        {children}
+      </span>
+    </div>
+  );
+}
 
 export default function AddAssetModal({ onClose }: { onClose: () => void }) {
   const { addAsset } = useAssets();
@@ -64,7 +75,7 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell onClose={onClose} maxWidth={480}>
-      <ModalHeader title="Register Asset" icon={<Landmark size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
+      <ModalHeader title="Register Asset" onClose={onClose} />
       
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
@@ -75,65 +86,87 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
             placeholder="Asset Name (e.g. MacBook Pro 16)…"
             value={name}
             onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && isValid && handleSubmit()}
             className="font-display font-semibold"
             style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
           />
         </div>
 
-
         <div className="grid grid-cols-2 gap-4">
-          <GlobalInput
-            label="Asset Code / Serial"
-            icon={<Tag size={11} strokeWidth={1.75} />}
-            required
-            maxLength={30}
-            placeholder="SN-123456"
-            value={assetCode}
-            onChange={e => setAssetCode(e.target.value)}
-          />
-          <GlobalInput
-            label="Category"
-            maxLength={30}
-            placeholder="Computing"
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-          />
+          <div>
+            <SL icon={<Tag size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Asset Code / Serial
+            </SL>
+            <GlobalInput
+              required
+              maxLength={30}
+              placeholder="SN-123456"
+              value={assetCode}
+              onChange={e => setAssetCode(e.target.value)}
+            />
+          </div>
+          <div>
+            <SL icon={<LayoutGrid size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Category
+            </SL>
+            <GlobalInput
+              maxLength={30}
+              placeholder="Computing"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            />
+          </div>
         </div>
 
-        <FormSection title="Assignment & Location">
-          <div className="grid grid-cols-2 gap-4">
+        <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <SL>Department</SL>
             <GlobalInput
-              label="Department"
               maxLength={30}
               placeholder="IT Dept"
               value={department}
               onChange={e => setDepartment(e.target.value)}
             />
+          </div>
+          <div>
+            <SL icon={<MapPin size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Initial Location
+            </SL>
             <GlobalInput
-              label="Initial Location"
-              icon={<MapPin size={11} strokeWidth={1.75} />}
               maxLength={40}
               placeholder="Floor 2"
               value={location}
               onChange={e => setLocation(e.target.value)}
             />
           </div>
-        </FormSection>
+        </div>
+
+        <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
         <div className="grid grid-cols-2 gap-4">
-          <GlobalInput
-            label="Purchase Value"
-            type="number"
-            icon={<DollarSign size={11} strokeWidth={1.75} />}
-            placeholder="0.00"
-            value={purchaseValue}
-            onChange={e => setPurchaseValue(e.target.value)}
-          />
-          <GlobalDatePicker
-            label="Purchase Date"
-            value={purchaseDate}
-            onChange={e => setPurchaseDate(e.target.value)}
-          />
+          <div>
+            <SL icon={<DollarSign size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Purchase Value
+            </SL>
+            <GlobalInput
+              type="number"
+              placeholder="0.00"
+              value={purchaseValue}
+              onChange={e => setPurchaseValue(e.target.value)}
+            />
+          </div>
+          <div>
+            <SL icon={<Calendar size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Purchase Date
+            </SL>
+            <DatePicker
+              value={purchaseDate}
+              onChange={val => setPurchaseDate(val || "")}
+              placeholder="Select date"
+            />
+          </div>
         </div>
 
         <div className="pt-2">
