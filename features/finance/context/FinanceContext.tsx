@@ -9,9 +9,6 @@ interface FinanceContextType {
   transactions: Transaction[];
   addTransaction: (tx: Partial<Transaction>) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
-  approveTransaction: (id: string) => void;
-  addIncomeFromSale: (saleOrderNumber: string, amount: number, contactName?: string) => void;
-  addIncomeFromInvoice: (invoiceNumber: string, amount: number, contactName?: string) => void;
   summary: FinancialSummary;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -32,6 +29,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"All" | TransactionType>("All");
   const [dateRange, setDateRange] = useState<DateRange>("All Time");
+  const [rates, setRates] = useState<Record<string, number>>({
+    USD: 1,
+    EUR: 0.92,
+    GBP: 0.79,
+    IDR: 16000,
+    SGD: 1.35
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +47,18 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error("Failed to load transactions:", err);
       }
+
+      try {
+        const res = await fetch("https://open.er-api.com/v6/latest/USD");
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && data.rates) {
+            setRates(prev => ({ ...prev, ...data.rates }));
+          }
+        }
+      } catch (e) {
+        // Silently fallback to default rates
+      }
     }
 
     load();
@@ -52,33 +68,42 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addTransaction = useCallback((partial: Partial<Transaction>) => {
+    const ts = Date.now();
+    const autoId = "t" + ts;
+    const autoRef = "T" + ts;
+
     const newTx: Transaction = {
-      id: "t" + Date.now(),
-      date: new Date().toISOString().split("T")[0],
+      id: autoId,
+      title: "Manual Transaction",
+      transactionDate: new Date().toISOString().split("T")[0],
       type: "Expense",
       category: "General",
       amount: 0,
       currency: "USD",
       status: "Pending",
-      reference: "TX-" + Math.floor(Math.random() * 10000),
+      reference: autoRef,
       paymentMethod: "Bank Transfer",
       notes: "",
       activities: [{
-        id: "a" + Date.now(),
+        id: "a" + ts,
         type: "status_change",
         description: "Transaction recorded manually",
         timestamp: new Date().toISOString(),
         author: userName || "System"
       }],
       attachments: [],
+      sourceType: "Manual",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      ...partial
+      ...partial,
     };
+    // Enforce auto-generated id and reference (cannot be overridden by partial)
+    newTx.id = autoId;
+    newTx.reference = partial.reference ?? autoRef;
     createTransaction<Transaction>(newTx)
       .then((created) => setTransactions(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create transaction:", err));
-  }, []);
+  }, [userName]);
 
   const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
     setTransactions(prev => prev.map(tx => {
@@ -87,92 +112,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       const recordId = (tx as { recordId?: string }).recordId ?? tx.id;
       saveTransaction<Transaction>(recordId, updated).catch((err) => {
         console.error("Failed to update transaction:", err);
-      });
-      return updated;
-    }));
-  }, []);
-
-  const addIncomeFromSale = useCallback((saleOrderNumber: string, amount: number, contactName?: string) => {
-    const newTx: Transaction = {
-      id: "t" + Date.now(),
-      date: new Date().toISOString().split("T")[0],
-      type: "Income",
-      category: "Sales Revenue",
-      amount,
-      currency: "USD",
-      status: "Paid",
-      reference: saleOrderNumber,
-      contactName,
-      paymentMethod: "Cash",
-      notes: `Auto-recorded from sale ${saleOrderNumber}`,
-      activities: [{
-        id: "a" + Date.now(),
-        type: "status_change",
-        description: `Income auto-recorded from sale ${saleOrderNumber}`,
-        timestamp: new Date().toISOString(),
-        author: "System"
-      }],
-      attachments: [],
-      sourceRef: saleOrderNumber,
-      sourceType: "sale",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    createTransaction<Transaction>(newTx)
-      .then((created) => setTransactions(prev => [created, ...prev]))
-      .catch((err) => console.error("Failed to record sale income:", err));
-  }, []);
-
-  const addIncomeFromInvoice = useCallback((invoiceNumber: string, amount: number, contactName?: string) => {
-    const newTx: Transaction = {
-      id: "t" + Date.now(),
-      date: new Date().toISOString().split("T")[0],
-      type: "Income",
-      category: "Invoice Payment",
-      amount,
-      currency: "USD",
-      status: "Paid",
-      reference: invoiceNumber,
-      contactName,
-      paymentMethod: "Bank Transfer",
-      notes: `Auto-recorded from invoice ${invoiceNumber}`,
-      activities: [{
-        id: "a" + Date.now(),
-        type: "status_change",
-        description: `Income auto-recorded from invoice ${invoiceNumber}`,
-        timestamp: new Date().toISOString(),
-        author: "System"
-      }],
-      attachments: [],
-      sourceRef: invoiceNumber,
-      sourceType: "invoice",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    createTransaction<Transaction>(newTx)
-      .then((created) => setTransactions(prev => [created, ...prev]))
-      .catch((err) => console.error("Failed to record invoice income:", err));
-  }, []);
-
-  const approveTransaction = useCallback((id: string) => {
-    setTransactions(prev => prev.map(tx => {
-      if (tx.id !== id) return tx;
-      const newActivity: FinanceActivity = {
-        id: Math.random().toString(36).substring(7),
-        type: "approval",
-        description: "Transaction approved",
-        timestamp: new Date().toISOString(),
-        author: userName
-      };
-      const updated: Transaction = {
-        ...tx,
-        status: "Approved",
-        activities: [newActivity, ...tx.activities],
-        updatedAt: newActivity.timestamp
-      };
-      const recordId = (tx as { recordId?: string }).recordId ?? tx.id;
-      saveTransaction<Transaction>(recordId, updated).catch((err) => {
-        console.error("Failed to approve transaction:", err);
       });
       return updated;
     }));
@@ -199,7 +138,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     return transactions.filter(t => {
       // Date filter
       if (dateRange !== "All Time") {
-        const txDate = new Date(t.date);
+        const txDateStr = t.transactionDate || (t as any).date || new Date().toISOString();
+        const txDate = new Date(txDateStr);
         const diffTime = today.getTime() - txDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
@@ -207,21 +147,37 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         if (diffDays < 0 || diffDays > maxDays) return false;
       }
 
-      const matchesSearch = t.category.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            t.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            t.contactName?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = (t.category || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (t.reference || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (t.contactName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (t.title || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = selectedType === "All" || t.type === selectedType;
       return matchesSearch && matchesType;
     });
   }, [transactions, searchQuery, selectedType, dateRange]);
 
   const summary = useMemo(() => {
-    const totalIncome = filteredTransactions.filter(t => t.type === "Income").reduce((acc, t) => acc + t.amount, 0);
-    const totalExpense = filteredTransactions.filter(t => t.type === "Expense").reduce((acc, t) => acc + t.amount, 0);
+    const convertToUSD = (amount: number, currency: string) => {
+      const rate = rates[currency] || 1;
+      return amount / rate;
+    };
+
+    // Only count Completed for income/expense, Refund is usually Expense from our pocket
+    const totalIncome = filteredTransactions
+      .filter(t => t.status === "Completed" && t.type === "Income")
+      .reduce((acc, t) => acc + convertToUSD(t.amount, t.currency || "USD"), 0);
+    const totalExpense = filteredTransactions
+      .filter(t => t.status === "Completed" && (t.type === "Expense" || t.type === "Refund"))
+      .reduce((acc, t) => acc + convertToUSD(t.amount, t.currency || "USD"), 0);
+    const pendingIncome = filteredTransactions
+      .filter(t => t.status === "Pending" && t.type === "Income")
+      .reduce((acc, t) => acc + convertToUSD(t.amount, t.currency || "USD"), 0);
+
     return {
       totalIncome,
       totalExpense,
-      balance: totalIncome - totalExpense
+      netBalance: totalIncome - totalExpense,
+      pendingIncome
     };
   }, [filteredTransactions]);
 
@@ -229,9 +185,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     transactions: filteredTransactions,
     addTransaction,
     updateTransaction,
-    approveTransaction,
-    addIncomeFromSale,
-    addIncomeFromInvoice,
     summary,
     searchQuery,
     setSearchQuery,
@@ -240,7 +193,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     dateRange,
     setDateRange,
     deleteTransactions
-  }), [filteredTransactions, addTransaction, updateTransaction, approveTransaction, addIncomeFromSale, addIncomeFromInvoice, summary, searchQuery, selectedType, dateRange, deleteTransactions]);
+  }), [filteredTransactions, addTransaction, updateTransaction, summary, searchQuery, selectedType, dateRange, deleteTransactions]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 }

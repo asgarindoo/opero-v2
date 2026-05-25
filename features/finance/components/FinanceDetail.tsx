@@ -1,197 +1,177 @@
 "use client";
 
-import { useState } from "react";
-import { X, Receipt, Download, Share2, Calendar, Filter, ChevronLeft, ChevronRight, MoreHorizontal, Shield, CreditCard, Banknote, Trash2, Edit3, CheckCircle2, AlertCircle, FileText, History } from "lucide-react";
+import { X, Trash2, ArrowUpRight, ArrowDownLeft, RotateCcw } from "lucide-react";
 import type { Transaction } from "@/features/finance";
 
 interface FinanceDetailProps {
   transaction: Transaction;
   onClose: () => void;
+  onDelete: () => void;
 }
 
-export default function FinanceDetail({ transaction, onClose }: FinanceDetailProps) {
-  const dateStr = new Date(transaction.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+export default function FinanceDetail({ transaction, onClose, onDelete }: FinanceDetailProps) {
+  const txDateStr = transaction.transactionDate || (transaction as any).date || transaction.createdAt || new Date().toISOString();
+  const dateStr = new Date(txDateStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   
+  const createdDateStr = transaction.createdAt ? new Date(transaction.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-";
+  const updatedDateStr = transaction.updatedAt ? new Date(transaction.updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-";
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-background animate-fade-in overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-white animate-fade-in overflow-hidden selection:bg-black/10">
       {/* Header */}
-      <header className="px-8 py-5 border-b border-black/[0.05] flex items-center justify-between bg-white/60 backdrop-blur-md sticky top-0 z-10 gap-6">
-        <div className="flex items-center gap-6 min-w-0 flex-1">
-          <button 
+      <header className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between bg-white shrink-0">
+        <div className="flex items-center gap-4">
+          <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-black/5 transition-all text-on-surface-variant opacity-60 hover:opacity-100 shrink-0"
+            className="p-1.5 rounded-md hover:bg-black/5 transition-all text-zinc-500 hover:text-zinc-900"
           >
-            <ChevronLeft size={18} />
+            <X size={18} />
           </button>
-          <div className="h-8 w-px bg-black/[0.05] shrink-0" />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`font-label-caps text-[9px] font-bold uppercase tracking-widest shrink-0 ${transaction.type === 'Income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                {transaction.type}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-sm font-display text-[10px] font-medium tracking-wide text-zinc-600 bg-zinc-100 uppercase">
+                Transaction
               </span>
-              <span className="w-1 h-1 rounded-full bg-black/10 shrink-0" />
-              <span 
-                className="font-label-caps text-[9px] font-semibold text-on-surface-variant opacity-60 uppercase tracking-widest truncate"
-                title={`Ref: ${transaction.reference}`}
-              >
-                Ref: {transaction.reference}
-              </span>
+              {transaction.status === 'Completed' ? (
+                <span className="px-2 py-0.5 rounded-sm font-display text-[10px] font-semibold tracking-wide text-emerald-800 bg-emerald-50 border border-emerald-100 uppercase">
+                  Completed
+                </span>
+              ) : transaction.status === 'Cancelled' ? (
+                <span className="px-2 py-0.5 rounded-sm font-display text-[10px] font-semibold tracking-wide text-red-800 bg-red-50 border border-red-100 uppercase">
+                  Cancelled
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-sm font-display text-[10px] font-semibold tracking-wide text-amber-800 bg-amber-50 border border-amber-100 uppercase">
+                  Pending
+                </span>
+              )}
+              <span className="font-display text-[11px] font-medium text-zinc-300">/</span>
+              <span className="font-display text-[11px] font-medium text-zinc-500">{(transaction.reference || transaction.id).toUpperCase()}</span>
             </div>
-            <h1 
-              className="font-display text-[18px] font-semibold text-on-surface tracking-tight truncate"
-              title={transaction.contactName || "Untitled Transaction"}
-            >
-              {transaction.contactName || "Untitled Transaction"}
-            </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-           <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-black/5 text-on-surface-variant opacity-60 hover:opacity-100 transition-all font-label-caps text-[10px] font-bold uppercase tracking-widest">
-              <Share2 size={14} /> Share
-           </button>
-           <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-caps text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-xl transition-all">
-              <FileText size={14} /> Export Receipt
-           </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onDelete}
+            className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
+            title="Delete Transaction"
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
       </header>
 
-      {/* Finance Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Transaction Details */}
-        <div className="flex-1 overflow-y-auto bg-black/[0.01] p-12">
-          <div className="max-w-4xl mx-auto space-y-12">
-            
-            {/* Amount Summary Card */}
-            <div className="p-10 rounded-[32px] bg-white border border-black/[0.03] shadow-sm flex flex-col items-center justify-center text-center">
-               <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] mb-4">Total Amount</span>
-               <div className="flex items-baseline gap-2 mb-2 max-w-full">
-                  <span className="font-display text-[16px] font-medium text-on-surface-variant opacity-60 shrink-0">{transaction.currency}</span>
-                  <span 
-                    className="font-display text-[48px] font-bold text-on-surface tracking-tighter leading-none truncate"
-                    title={transaction.amount.toLocaleString()}
-                  >
-                    {transaction.amount.toLocaleString()}
-                  </span>
-               </div>
-               <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-label-caps text-[9px] font-bold uppercase tracking-wider ${
-                 transaction.status === 'Paid' || transaction.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-               }`}>
-                  {transaction.status === 'Paid' ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
-                  {transaction.status}
-               </div>
+      {/* Main Content Split */}
+      <div className="flex-1 flex overflow-hidden lg:flex-row flex-col">
+        {/* Left Content */}
+        <div className="flex-1 overflow-y-auto p-6 lg:p-10 bg-white custom-scrollbar">
+          <div className="max-w-3xl mx-auto space-y-12">
+
+            {/* Header Content & Amount */}
+            <div className="space-y-6">
+              <h1 className="font-display text-[32px] font-semibold text-zinc-900 tracking-tight leading-tight">
+                {transaction.title || "Untitled Transaction"}
+              </h1>
+
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-[24px] font-medium text-zinc-400 shrink-0">{transaction.currency || "USD"}</span>
+                <span 
+                  className="font-display text-[48px] font-bold text-zinc-900 tracking-tighter leading-none truncate"
+                  title={transaction.amount.toLocaleString()}
+                >
+                  {transaction.amount.toLocaleString()}
+                </span>
+              </div>
             </div>
 
-            {/* Core Info Grid */}
-            <div className="grid grid-cols-2 gap-8">
-               <section className="space-y-6">
-                  <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Transaction Context</h4>
-                  <div className="p-6 rounded-2xl border border-black/[0.04] bg-white/50 space-y-5">
-                     <div className="flex items-center justify-between">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Date</span>
-                        <span className="font-display text-[13px] font-semibold text-on-surface">{dateStr}</span>
-                     </div>
-                     <div className="flex items-start justify-between gap-4">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Category</span>
-                        <span className="font-display text-[13px] font-semibold text-on-surface text-right break-words break-all">{transaction.category}</span>
-                     </div>
-                     <div className="flex items-start justify-between gap-4">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Payment Method</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                           <CreditCard size={14} className="opacity-60" />
-                           <span className="font-display text-[13px] font-semibold text-on-surface text-right break-words break-all">{transaction.paymentMethod}</span>
-                        </div>
-                     </div>
-                  </div>
-               </section>
-
-               <section className="space-y-6">
-                  <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Compliance & Safety</h4>
-                  <div className="p-6 rounded-2xl border border-black/[0.04] bg-white/50 space-y-5">
-                     <div className="flex items-start justify-between gap-4">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Reference</span>
-                        <span className="font-display text-[13px] font-semibold text-on-surface select-all text-right break-words break-all">{transaction.reference}</span>
-                     </div>
-                     <div className="flex items-center justify-between">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40">Verification</span>
-                        <div className="flex items-center gap-1.5 text-emerald-600 font-label-caps text-[9px] font-bold uppercase shrink-0">
-                           <Shield size={12} /> SECURE
-                        </div>
-                     </div>
-                     <div className="flex items-start justify-between gap-4">
-                        <span className="font-body-sm text-[12px] text-on-surface-variant opacity-40 shrink-0">Internal ID</span>
-                        <span className="font-display text-[11px] text-on-surface-variant opacity-60 text-right break-words break-all">{transaction.id}</span>
-                     </div>
-                  </div>
-               </section>
+            {/* Notes / Context */}
+            <div className="space-y-3">
+              <h2 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase border-b border-black/[0.06] pb-2">
+                Operational Notes
+              </h2>
+              <p className="font-display text-[15px] text-zinc-800 font-medium leading-relaxed max-w-2xl whitespace-pre-wrap">
+                {transaction.notes ? transaction.notes : <span className="text-zinc-400 italic font-normal">No additional notes provided.</span>}
+              </p>
             </div>
 
-            {/* Notes Section */}
-            <section className="space-y-6">
-               <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Operational Notes</h4>
-               <div className="p-8 rounded-2xl border border-black/[0.04] bg-white/50">
-                  <p className="font-body-md text-[14px] text-on-surface-variant leading-relaxed italic break-words break-all whitespace-pre-wrap">
-                     {transaction.notes || "No additional notes provided for this transaction."}
-                  </p>
-               </div>
-            </section>
           </div>
         </div>
 
-        {/* Right Sidebar: Timeline & Audit */}
-        <aside className="w-[340px] bg-white/20 backdrop-blur-xl border-l border-black/[0.04] flex flex-col">
-           <div className="p-8 space-y-12 overflow-y-auto">
-              {/* Audit Timeline */}
-              <section className="space-y-8">
-                 <div className="flex items-center justify-between">
-                    <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Transaction Audit</h4>
-                    <History size={14} className="opacity-60" />
-                 </div>
-                 
-                 <div className="space-y-8 relative">
-                    <div className="absolute left-[7px] top-2 bottom-2 w-[1px] bg-black/[0.05]" />
-                    {transaction.activities.map((act, idx) => (
-                      <div key={act.id} className="relative flex gap-4 pl-6 group">
-                         <div className="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-background bg-black/5 group-hover:bg-primary transition-colors z-10" />
-                         <div className="space-y-1">
-                            <p className="font-display text-[12px] font-semibold text-on-surface leading-tight">{act.description}</p>
-                            <div className="flex items-center gap-2 opacity-60">
-                               <span className="font-label-caps text-[8px] font-bold uppercase">{act.author}</span>
-                               <span className="w-1 h-1 rounded-full bg-current" />
-                               <span className="text-[10px] font-medium">{new Date(act.timestamp).toLocaleDateString()}</span>
-                            </div>
-                         </div>
-                      </div>
-                    ))}
-                 </div>
-              </section>
+        {/* Right Sidebar */}
+        <aside className="w-full lg:w-[280px] bg-[#F9F9F9] border-t lg:border-t-0 lg:border-l border-black/[0.06] flex flex-col justify-between overflow-y-auto custom-scrollbar shrink-0">
+          <div className="p-6 space-y-8">
 
-              {/* Attachments */}
-              <section className="pt-10 border-t border-black/[0.04] space-y-6">
-                 <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Linked Resources</h4>
-                 {transaction.attachments.length > 0 ? (
-                    <div className="space-y-3">
-                       {transaction.attachments.map((file, i) => (
-                          <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-black/[0.03] hover:border-primary/20 cursor-pointer transition-all">
-                             <FileText size={14} className="opacity-60" />
-                             <span className="font-display text-[12px] text-on-surface truncate">{file}</span>
-                          </div>
-                       ))}
-                    </div>
-                 ) : (
-                    <p className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic">No attachments found.</p>
-                 )}
-              </section>
-           </div>
+            {/* Details */}
+            <section>
+              <h4 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase mb-4 border-b border-black/[0.06] pb-2">Operational Info</h4>
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Type</span>
+                  <div className="flex items-center gap-1.5 font-display text-[13px] font-medium text-zinc-900">
+                    {transaction.type === 'Income' && <ArrowDownLeft size={14} className="text-emerald-600" />}
+                    {transaction.type === 'Expense' && <ArrowUpRight size={14} className="text-red-600" />}
+                    {transaction.type === 'Refund' && <RotateCcw size={14} className="text-amber-600" />}
+                    {transaction.type}
+                  </div>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Date</span>
+                  <span className="font-display text-[13px] font-medium text-zinc-900 text-right">
+                    {dateStr}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Category</span>
+                  <span className="font-display text-[13px] font-medium text-zinc-900 text-right break-words">
+                    {transaction.category || "-"}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Method</span>
+                  <span className="font-display text-[13px] font-medium text-zinc-900 text-right">
+                    {transaction.paymentMethod || "-"}
+                  </span>
+                </div>
+                {transaction.contactName && (
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Contact</span>
+                    <span className="font-display text-[13px] font-medium text-zinc-900 text-right break-words">
+                      {transaction.contactName}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </section>
 
-           <div className="mt-auto p-6 border-t border-black/[0.04] space-y-3">
-              <button className="w-full py-3 rounded-xl border border-black/[0.06] font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 hover:bg-black/5 transition-all uppercase tracking-widest">
-                 Reject Transaction
-              </button>
-              <button className="w-full py-3 rounded-xl bg-primary text-on-primary font-label-caps text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-xl transition-all">
-                 Approve & Close
-              </button>
-           </div>
+            {/* System Metadata */}
+            <section>
+              <h4 className="font-display text-[11px] font-medium text-zinc-400 tracking-wide uppercase mb-4 border-b border-black/[0.06] pb-2">System Metadata</h4>
+              <div className="space-y-4">
+                {transaction.sourceType && transaction.sourceType !== "Manual" && (
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Generated By</span>
+                    <span className="font-display text-[13px] font-medium text-zinc-900 text-right">
+                      {transaction.sourceType}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-start justify-between gap-4">
+                  <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Created</span>
+                  <span className="font-display text-[11px] font-medium text-zinc-600 text-right">
+                    {createdDateStr}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0">Last Updated</span>
+                  <span className="font-display text-[11px] font-medium text-zinc-600 text-right">
+                    {updatedDateStr}
+                  </span>
+                </div>
+              </div>
+            </section>
+
+          </div>
         </aside>
       </div>
     </div>

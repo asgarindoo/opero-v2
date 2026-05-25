@@ -37,7 +37,7 @@ function FinanceContent() {
     { id: "All", label: "All" },
     { id: "Income", label: "Income" },
     { id: "Expense", label: "Expense" },
-    { id: "Transfer", label: "Transfer" },
+    { id: "Refund", label: "Refund" },
   ];
 
   const filtered = transactions;
@@ -46,16 +46,22 @@ function FinanceContent() {
     transactions.find(tx => tx.id === selectedTxId) || null
   , [transactions, selectedTxId]);
 
+  const { deleteTransactions } = useFinance();
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
   };
 
   if (selectedTx) {
     return (
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-background relative">
          <FinanceDetail 
            transaction={selectedTx} 
            onClose={() => setSelectedTxId(null)} 
+           onDelete={() => {
+             deleteTransactions([selectedTx.id]);
+             setSelectedTxId(null);
+           }}
          />
       </div>
     );
@@ -69,8 +75,8 @@ function FinanceContent() {
         leftContent={(
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-               <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Balance</span>
-               <span className="font-display text-[14px] font-bold text-on-surface">{formatCurrency(summary.balance)}</span>
+               <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Net Balance</span>
+               <span className="font-display text-[14px] font-bold text-on-surface">{formatCurrency(summary.netBalance)}</span>
             </div>
             <div className="h-4 w-px bg-black/[0.06]" />
             <div className="flex items-center gap-5">

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useInvoices } from "../context/InvoicesContext";
 import { X, Building2, Clock, Tag, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, Download, Printer, Mail, Share2, History, AlertCircle } from "lucide-react";
 import { InvoiceStatus, InvoiceActivity } from "@/features/invoices";
-import { useFinance } from "@/features/finance/context/FinanceContext";
 import { useContacts } from "@/features/contacts/context/ContactsContext";
 import Button from "@/components/ui/Button";
 import { jsPDF } from "jspdf";
@@ -15,7 +14,6 @@ function formatCurrency(val: number, currency: string) {
 
 export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: string, onClose: () => void }) {
   const { invoices, updateInvoice, markAsPaid } = useInvoices();
-  const { addIncomeFromInvoice } = useFinance();
   const { contacts } = useContacts();
   const inv = invoices.find(i => i.id === invoiceId);
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -25,7 +23,6 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
 
   const handleMarkAsPaid = () => {
     markAsPaid(inv.id);
-    addIncomeFromInvoice(inv.invoiceNumber, inv.totalAmount, inv.contactName);
   };
 
   const handleCancel = () => {
@@ -143,7 +140,7 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
                   className="font-display font-bold text-[24px] text-on-surface leading-tight mb-1 break-words break-all line-clamp-3"
                   title={inv.contactName}
                 >
-                  {inv.contactName ?? <span className="opacity-40 text-[18px]">No Customer</span>}
+                  {inv.contactName ?? <span className="opacity-40 text-[18px]">No Contact</span>}
                 </h3>
                 <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 flex items-center gap-2">
                   <CalendarClock size={12} /> Due on {new Date(inv.dueDate).toLocaleDateString()}

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Invoice, InvoiceActivity } from "@/features/invoices";
-import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/features/invoices";
+import { Invoice, InvoiceActivity, InvoiceStatus } from "@/features/invoices";
+import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/features/invoices/services/invoices.client";
 import { useTenant } from "@/components/providers/TenantProvider";
 
 interface InvoicesContextType {
@@ -47,7 +47,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       contactName: partial.contactName || undefined,
       issueDate: new Date().toISOString().split("T")[0],
       dueDate: partial.dueDate || new Date().toISOString().split("T")[0],
-      status: "Draft",
+      status: (partial.status as InvoiceStatus) || "Unpaid",
       items: partial.items || [],
       subtotal: partial.subtotal ?? totalAmount,
       taxRate: partial.taxRate,
@@ -75,18 +75,28 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateInvoice = useCallback((id: string, updates: Partial<Invoice>) => {
+    let recordIdToSave: string | undefined;
+    let payloadToSave: Invoice | undefined;
+
     setInvoices(prev => prev.map(inv => {
       if (inv.id !== id) return inv;
       const updated = { ...inv, ...updates, updatedAt: new Date().toISOString() };
-      const recordId = (inv as { recordId?: string }).recordId ?? inv.id;
-      saveInvoice<Invoice>(recordId, updated).catch((err) => {
-        console.error("Failed to update invoice:", err);
-      });
+      recordIdToSave = (inv as { recordId?: string }).recordId ?? inv.id;
+      payloadToSave = updated;
       return updated;
     }));
+
+    if (recordIdToSave && payloadToSave) {
+      saveInvoice<Invoice>(recordIdToSave, payloadToSave).catch((err) => {
+        console.error("Failed to update invoice:", err);
+      });
+    }
   }, []);
 
   const markAsPaid = useCallback((id: string) => {
+    let recordIdToSave: string | undefined;
+    let payloadToSave: Invoice | undefined;
+
     setInvoices(prev => prev.map(inv => {
       if (inv.id !== id) return inv;
       const newActivity: InvoiceActivity = {
@@ -102,12 +112,16 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
         activities: [newActivity, ...inv.activities],
         updatedAt: newActivity.timestamp
       };
-      const recordId = (inv as { recordId?: string }).recordId ?? inv.id;
-      saveInvoice<Invoice>(recordId, updated).catch((err) => {
-        console.error("Failed to mark invoice as paid:", err);
-      });
+      recordIdToSave = (inv as { recordId?: string }).recordId ?? inv.id;
+      payloadToSave = updated;
       return updated;
     }));
+
+    if (recordIdToSave && payloadToSave) {
+      saveInvoice<Invoice>(recordIdToSave, payloadToSave).catch((err) => {
+        console.error("Failed to mark invoice as paid:", err);
+      });
+    }
   }, []);
 
   const deleteInvoices = useCallback((ids: string[]) => {

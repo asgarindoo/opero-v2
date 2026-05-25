@@ -8,7 +8,7 @@ import { useProducts } from "@/features/products/context/ProductsContext";
 // Async currency converter using live global rates (ExchangeRate-API free tier)
 const convertCurrency = async (amount: number, from: string, to: string) => {
   if (from === to) return amount;
-  
+
   try {
     const res = await fetch(`https://open.er-api.com/v6/latest/${from}`);
     if (!res.ok) throw new Error("Failed to fetch rates");
@@ -96,12 +96,12 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const subtotal = items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
   const parsedDiscount = parseFloat(discountRate) || 0;
   const parsedTax = parseFloat(taxRate) || 0;
-  
+
   const discountAmt = discountType === "fixed" ? parsedDiscount : subtotal * (parsedDiscount / 100);
   const clampedDiscount = Math.min(subtotal, Math.max(0, discountAmt));
   const taxAmt = Math.max(0, (subtotal - clampedDiscount) * (parsedTax / 100));
   const total = Math.max(0, subtotal - clampedDiscount + taxAmt);
-  
+
   const isValid = items.some(it => it.description?.trim()) && invoiceNumber.trim() && dueDate;
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -129,7 +129,7 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell onClose={onClose} maxWidth={640}>
       <ModalHeader title="New Invoice" onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput
@@ -161,8 +161,8 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
                 <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-surface-container-lowest border border-black/10 rounded-[8px] shadow-lg z-50 max-h-48 overflow-y-auto py-1">
                   {contacts.filter(c => c.name.toLowerCase().includes(contactName.toLowerCase())).length > 0 ? (
                     contacts.filter(c => c.name.toLowerCase().includes(contactName.toLowerCase())).map(c => (
-                      <div 
-                        key={c.id} 
+                      <div
+                        key={c.id}
                         className="px-3 py-2 cursor-pointer hover:bg-black/5 font-display text-[13px] text-on-surface transition-colors"
                         onClick={() => {
                           setContactName(c.name);
@@ -242,17 +242,17 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
                       <div className="absolute top-[calc(100%+4px)] left-0 w-[240px] bg-surface-container-lowest border border-black/10 rounded-[8px] shadow-lg z-50 max-h-48 overflow-y-auto py-1">
                         {allProducts.filter(p => p.name.toLowerCase().includes((item.description || "").toLowerCase())).length > 0 ? (
                           allProducts.filter(p => p.name.toLowerCase().includes((item.description || "").toLowerCase())).map(p => (
-                            <div 
-                              key={p.id} 
+                            <div
+                              key={p.id}
                               className="px-3 py-2 cursor-pointer hover:bg-black/5 flex justify-between items-center transition-colors"
                               onMouseDown={async (e) => {
                                 e.preventDefault(); // Prevent input from losing focus immediately
                                 updateItem(item.id!, "description", p.name);
-                                
+
                                 // Fetch live rate and update
                                 const convertedPrice = await convertCurrency(p.price, p.currency || "USD", currency);
                                 updateItem(item.id!, "unitPrice", convertedPrice);
-                                
+
                                 setActiveDropdownId(null);
                               }}
                             >

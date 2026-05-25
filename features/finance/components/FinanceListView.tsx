@@ -25,14 +25,11 @@ interface FinanceListViewProps {
 
 const getStatusVariant = (status: string): any => {
   switch (status) {
-    case "Paid":
-    case "Approved":
+    case "Completed":
       return "success";
     case "Pending":
-    case "Processing":
       return "warning";
-    case "Overdue":
-    case "Rejected":
+    case "Cancelled":
       return "error";
     default:
       return "neutral";
@@ -103,7 +100,7 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                 />
               </div>
             </TableHead>
-            <TableHead>Reference / Entity</TableHead>
+            <TableHead>Reference / Title</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Date</TableHead>
@@ -140,9 +137,9 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                     <div className="min-w-0 flex-1">
                       <span
                         className="font-display text-[12.5px] font-semibold text-on-surface tracking-tight group-hover:text-primary transition-colors block leading-tight opacity-90 truncate w-full"
-                        title={tx.contactName || "Direct Ledger Entry"}
+                        title={tx.title || "Manual Entry"}
                       >
-                        {tx.contactName || "Direct Ledger Entry"}
+                        {tx.title || "Manual Entry"}
                       </span>
                       <span className="font-mono text-[8.5px] text-on-surface-variant opacity-60 uppercase tracking-tighter truncate block">
                         {tx.reference || tx.id}
@@ -160,7 +157,7 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                 </TableCell>
                 <TableCell className="hidden lg:table-cell max-w-[0px]">
                   <span className="text-on-surface-variant opacity-70 text-[11px] font-display truncate block w-full">
-                    {new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {new Date(tx.transactionDate || (tx as any).date || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">

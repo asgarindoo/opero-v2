@@ -1,6 +1,6 @@
-export type TransactionType = "Income" | "Expense" | "Transfer";
+export type TransactionType = "Income" | "Expense" | "Refund";
 export type DateRange = "Today" | "Last 7 Days" | "Last 30 Days" | "Last 12 Months" | "All Time";
-export type TransactionStatus = "Pending" | "Paid" | "Processing" | "Approved" | "Rejected" | "Overdue" | "Cancelled";
+export type TransactionStatus = "Completed" | "Pending" | "Cancelled";
 export type PaymentMethod = "Bank Transfer" | "Credit Card" | "Cash" | "PayPal" | "Stripe";
 
 export interface FinanceActivity {
@@ -13,23 +13,22 @@ export interface FinanceActivity {
 
 export interface Transaction {
   id: string;
-  date: string;
+  title: string;
+  transactionDate: string;
   type: TransactionType;
   category: string;
   amount: number;
   currency: string;
   status: TransactionStatus;
-  reference: string; // Invoice # or Ref #
-  contactName?: string; // Vendor or Customer
+  reference: string;
+  contactName?: string;
   contactId?: string;
   paymentMethod: PaymentMethod;
   notes: string;
   activities: FinanceActivity[];
   attachments: string[];
-  /** Traces back to a sale or invoice that created this transaction */
-  sourceRef?: string;
-  /** "sale" | "invoice" | "manual" */
-  sourceType?: "sale" | "invoice" | "manual";
+  sourceType: "Manual" | "Invoice" | "Sale";
+  sourceId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,5 +36,6 @@ export interface Transaction {
 export interface FinancialSummary {
   totalIncome: number;
   totalExpense: number;
-  balance: number;
+  netBalance: number;
+  pendingIncome: number;
 }
