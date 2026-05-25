@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useSales } from "../context/SalesContext";
-import { listProducts } from "@/features/products/services/products.client";
-import type { Product } from "@/features/products/types";
-import { ShoppingCart, Plus, Trash2, Package, Wrench, Store, FileText, ChevronDown, User, DollarSign } from "lucide-react";
+import { useContacts } from "@/features/contacts/context/ContactsContext";
+import { useProducts } from "@/features/products/context/ProductsContext";
+import { ShoppingCart, Plus, Trash2, Package, Wrench, Store, FileText, ChevronDown, User } from "lucide-react";
 import { SaleStatus, PaymentStatus, SaleType, SaleItem } from "@/features/sales";
 
 import { ModalShell } from "@/components/ui/global/modal/ModalShell";
@@ -13,6 +13,20 @@ import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
+
+// Async currency converter using live global rates (ExchangeRate-API free tier)
+const convertCurrency = async (amount: number, from: string, to: string) => {
+  if (from === to) return amount;
+  try {
+    const res = await fetch(`https://open.er-api.com/v6/latest/${from}`);
+    if (!res.ok) throw new Error("Failed to fetch rates");
+    const data = await res.json();
+    const rate = data.rates[to];
+    if (rate) return amount * rate;
+  } catch {}
+  const fallbackRates: Record<string, number> = { USD: 1, EUR: 0.92, GBP: 0.79, IDR: 16000, SGD: 1.35 };
+  return (amount / (fallbackRates[from] || 1)) * (fallbackRates[to] || 1);
+};
 
 const SALE_TYPES: { value: SaleType; label: string; icon: React.ReactNode }[] = [
   { value: "Product Sale", label: "Product Sale", icon: <Package size={11} strokeWidth={2} /> },
@@ -44,14 +58,8 @@ function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   renderT: (v: T) => React.ReactNode; renderO: (v: T) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
-  }, [open]);
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button type="button" onClick={() => setOpen(v => !v)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04] transition-colors" style={{ border: "1px solid rgba(0,0,0,0.09)" }}>
         {renderT(value)}
         <ChevronDown size={10} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />
@@ -87,17 +95,14 @@ function SL({ icon, children, right }: { icon?: React.ReactNode; children: React
 
 export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const { addSale } = useSales();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    listProducts<Product>().then(res => active && setAllProducts(res)).catch(console.error);
-    return () => { active = false; };
-  }, []);
+  const { contacts } = useContacts();
+  const { allProducts } = useProducts();
 
   const [saleType, setSaleType] = useState<SaleType>("Product Sale");
   const [title, setTitle] = useState("");
   const [contactName, setContactName] = useState("");
+  const [isContactDropdownOpen, setIsContactDropdownOpen] = useState(false);
+  const [activeItemDropdownId, setActiveItemDropdownId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("Unpaid");
   const [items, setItems] = useState<SaleItem[]>([newItem()]);
   const [orderDiscount, setOrderDiscount] = useState("");
@@ -124,10 +129,8 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const rawOrderDiscount = parseFloat(orderDiscount) || 0;
   const orderDiscountAmt = orderDiscountType === "fixed" ? rawOrderDiscount : subtotal * (rawOrderDiscount / 100);
   const clampedOrderDiscountAmt = Math.min(subtotal, Math.max(0, orderDiscountAmt));
-
   const rawTax = parseFloat(taxPercentage) || 0;
   const taxAmt = Math.max(0, (subtotal - clampedOrderDiscountAmt) * (rawTax / 100));
-
   const total = Math.max(0, subtotal - clampedOrderDiscountAmt + taxAmt);
   const isValid = title.trim() || items.some(it => it.name.trim());
 
@@ -198,6 +201,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
       <ModalHeader title="New Sale" onClose={onClose} />
 
       <ModalContent className="db-sidebar space-y-6">
+        {/* Title */}
         <div className="space-y-4">
           <GlobalInput
             autoFocus
@@ -222,11 +226,11 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
               value={saleType} opts={SALE_TYPES.map(t => t.value)} onChange={setSaleType}
               renderT={t => {
                 const meta = SALE_TYPES.find(x => x.value === t)!;
-                return <><span style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }}>{meta.icon}</span><span className="font-label-caps text-[10px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.9 }}>{t.toUpperCase()}</span></>
+                return <><span style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }}>{meta.icon}</span><span className="font-label-caps text-[10px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.9 }}>{t.toUpperCase()}</span></>;
               }}
               renderO={t => {
                 const meta = SALE_TYPES.find(x => x.value === t)!;
-                return <><span style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }}>{meta.icon}</span><span className="font-body-md text-[12px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.9 }}>{t}</span></>
+                return <><span style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }}>{meta.icon}</span><span className="font-body-md text-[12px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.9 }}>{t}</span></>;
               }}
             />
             <Dd
@@ -242,27 +246,56 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div>
-          <SL icon={<User size={11} strokeWidth={1.75} />}>Customer Info</SL>
-          <GlobalInput
-            maxLength={40}
-            placeholder="Customer name or walk-in"
-            value={contactName}
-            onChange={e => setContactName(e.target.value)}
-          />
+        {/* Contact — matches Invoice design */}
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="relative">
+              <GlobalInput
+                label="Contact"
+                icon={<User size={11} strokeWidth={1.75} />}
+                maxLength={40}
+                placeholder="Select or enter contact"
+                value={contactName}
+                onChange={e => setContactName(e.target.value)}
+                onFocus={() => setIsContactDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setIsContactDropdownOpen(false), 200)}
+              />
+              {isContactDropdownOpen && (
+                <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-surface-container-lowest border border-black/10 rounded-[8px] shadow-lg z-50 max-h-48 overflow-y-auto py-1">
+                  {contacts.filter(c => c.name.toLowerCase().includes(contactName.toLowerCase())).length > 0 ? (
+                    contacts.filter(c => c.name.toLowerCase().includes(contactName.toLowerCase())).map(c => (
+                      <div
+                        key={c.id}
+                        className="px-3 py-2 cursor-pointer hover:bg-black/5 font-display text-[13px] text-on-surface transition-colors"
+                        onClick={() => {
+                          setContactName(c.name);
+                          setIsContactDropdownOpen(false);
+                        }}
+                      >
+                        {c.name}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-3 text-center text-on-surface-variant opacity-50 font-body-sm text-[12px]">
+                      No contacts found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
+        {/* Line Items — matches Invoice design */}
         <div className="space-y-3">
-          <SL
-            icon={<ShoppingCart size={11} strokeWidth={1.75} />}
-            right={
-              <button type="button" onClick={addLineItem} className="flex items-center gap-1.5 font-label-caps text-[9px] font-bold" style={{ color: "var(--color-primary)" }}>
-                <Plus size={10} strokeWidth={2} /> ADD ITEM
-              </button>
-            }
-          >
-            Line Items
-          </SL>
+          <div className="flex items-center justify-between">
+            <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+              Line Items
+            </span>
+            <button type="button" onClick={addLineItem} className="flex items-center gap-1.5 text-[10.5px] font-medium" style={{ color: "var(--color-primary)" }}>
+              <Plus size={12} strokeWidth={2} /> Add Item
+            </button>
+          </div>
 
           <div className="grid grid-cols-[1fr_56px_80px_80px_80px_28px] gap-2 items-center px-2">
             <span className="font-label-caps text-[8px] uppercase tracking-[0.12em] font-semibold opacity-40">Description</span>
@@ -277,55 +310,62 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
             {items.map((item) => (
               <div key={item.id} className="group">
                 <div className="grid grid-cols-[1fr_56px_80px_80px_80px_28px] gap-2 items-center">
+                  {/* Description with product autocomplete dropdown */}
                   <div className="relative">
                     <input
-                      list={`products-${item.id}`}
-                      placeholder="Item name or description"
+                      placeholder="Item description (type or select)..."
                       value={item.name}
                       maxLength={40}
                       onChange={e => {
-                        const val = e.target.value;
-                        const matchedProduct = allProducts.find(p => p.name === val);
-                        setItems(prev => prev.map(it => {
-                          if (it.id !== item.id) return it;
-                          const updated = { ...it, name: val };
-                          if (matchedProduct && it.productId !== matchedProduct.id) {
-                            updated.productId = matchedProduct.id;
-                            updated.price = matchedProduct.price || 0;
-                            updated.sku = matchedProduct.sku;
-                          } else if (!matchedProduct) {
-                            updated.productId = undefined;
-                            updated.sku = undefined;
-                          }
-                          updated.subtotal = calcSubtotal(updated);
-                          return updated;
-                        }));
+                        updateItem(item.id, "name", e.target.value);
                       }}
+                      onFocus={() => setActiveItemDropdownId(item.id)}
+                      onBlur={() => setTimeout(() => setActiveItemDropdownId(null), 200)}
                       className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[6px] px-3 py-1.5 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all placeholder:opacity-40"
                     />
-                    <datalist id={`products-${item.id}`}>
-                      {allProducts.map(p => <option key={p.id} value={p.name}>{p.sku ? `SKU: ${p.sku}` : "Product/Service"}</option>)}
-                    </datalist>
+                    {activeItemDropdownId === item.id && (
+                      <div className="absolute top-[calc(100%+4px)] left-0 w-[240px] bg-surface-container-lowest border border-black/10 rounded-[8px] shadow-lg z-50 max-h-48 overflow-y-auto py-1">
+                        {allProducts.filter(p => p.name.toLowerCase().includes((item.name || "").toLowerCase())).length > 0 ? (
+                          allProducts.filter(p => p.name.toLowerCase().includes((item.name || "").toLowerCase())).map(p => (
+                            <div
+                              key={p.id}
+                              className="px-3 py-2 cursor-pointer hover:bg-black/5 flex justify-between items-center transition-colors"
+                              onMouseDown={async (e) => {
+                                e.preventDefault();
+                                updateItem(item.id, "name", p.name);
+                                const convertedPrice = await convertCurrency(p.price, p.currency || "USD", currency);
+                                updateItem(item.id, "price", convertedPrice);
+                                setActiveItemDropdownId(null);
+                              }}
+                            >
+                              <span className="font-display text-[13px] text-on-surface truncate pr-2">{p.name}</span>
+                              <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 shrink-0">{formatCurrency(p.price, p.currency || "USD")}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-3 text-center text-on-surface-variant opacity-50 font-body-sm text-[12px]">
+                            No products found
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
+
                   <input
-                    type="number"
-                    min="1"
-                    max="999"
+                    type="number" min="1" max="999"
                     value={item.quantity || ""}
                     onChange={e => updateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
                     className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[6px] px-2 py-1.5 font-display text-[13px] outline-none text-center focus:bg-white focus:border-primary/30 transition-all"
                   />
                   <input
-                    type="number"
-                    min="0"
+                    type="number" min="0"
                     value={item.price || ""}
                     onChange={e => updateItem(item.id, "price", parseFloat(e.target.value) || 0)}
                     className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[6px] px-2 py-1.5 font-display text-[13px] outline-none text-right focus:bg-white focus:border-primary/30 transition-all"
                   />
                   <div className="relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
                     <input
-                      type="number"
-                      min="0"
+                      type="number" min="0"
                       value={item.discount || ""}
                       onChange={e => updateItem(item.id, "discount", parseFloat(e.target.value) || 0)}
                       className="w-full bg-transparent px-2 py-1.5 font-display text-[13px] outline-none text-right"
@@ -354,14 +394,14 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
             ))}
           </div>
 
+          {/* Totals */}
           <div className="flex justify-end pt-2">
             <div className="w-full flex justify-end items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold opacity-40 ml-auto">Order Discount</span>
                 <div className="w-[120px] relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
                   <input
-                    type="number"
-                    min="0"
+                    type="number" min="0"
                     value={orderDiscount}
                     onChange={e => setOrderDiscount(e.target.value)}
                     className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"
@@ -381,8 +421,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                 <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold opacity-40 ml-auto">Tax</span>
                 <div className="w-[100px] relative flex items-center bg-black/[0.02] border border-black/[0.06] rounded-[6px] focus-within:bg-white focus-within:border-primary/30 transition-all overflow-hidden">
                   <input
-                    type="number"
-                    min="0"
+                    type="number" min="0"
                     value={taxPercentage}
                     onChange={e => setTaxPercentage(e.target.value)}
                     className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"

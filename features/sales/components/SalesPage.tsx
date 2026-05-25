@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { SalesProvider, useSales } from "@/features/sales";
+import { ContactsProvider } from "@/features/contacts/context/ContactsContext";
+import { ProductsProvider } from "@/features/products/context/ProductsContext";
 import SalesList from "@/features/sales/components/SalesList";
 import SalesDrawer from "@/features/sales/components/SalesDrawer";
 import AddSaleModal from "@/features/sales/components/AddSaleModal";
@@ -96,8 +98,12 @@ function SalesPageContent() {
 
 export default function SalesPage() {
   return (
-    <SalesProvider>
-      <SalesPageContent />
-    </SalesProvider>
+    <ContactsProvider>
+      <ProductsProvider>
+        <SalesProvider>
+          <SalesPageContent />
+        </SalesProvider>
+      </ProductsProvider>
+    </ContactsProvider>
   );
 }
