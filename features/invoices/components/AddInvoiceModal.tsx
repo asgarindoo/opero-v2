@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useInvoices } from "../context/InvoicesContext";
 import { useContacts } from "@/features/contacts/context/ContactsContext";
 import { useProducts } from "@/features/products/context/ProductsContext";
@@ -69,6 +69,30 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const [taxRate, setTaxRate] = useState<string>("");
   const [discountRate, setDiscountRate] = useState<string>("");
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
+
+  // Track original product prices for re-conversion when currency changes
+  const [productOriginals, setProductOriginals] = useState<Record<string, { price: number; currency: string }>>({});
+
+  useEffect(() => {
+    if (Object.keys(productOriginals).length === 0) return;
+    const run = async () => {
+      const updates: Record<string, number> = {};
+      for (const [itemId, orig] of Object.entries(productOriginals)) {
+        updates[itemId] = await convertCurrency(orig.price, orig.currency, currency);
+      }
+      setItems(prev => prev.map(it => {
+        if (!it.id || updates[it.id] === undefined) return it;
+        const qty = it.quantity || 0;
+        const price = updates[it.id];
+        const disc = it.discount || 0;
+        const rawSub = qty * price;
+        const discAmt = it.discountType === "fixed" ? disc : rawSub * (disc / 100);
+        return { ...it, unitPrice: price, amount: Math.max(0, rawSub - discAmt) };
+      }));
+    };
+    run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency]);
 
   const addItem = () => {
     setItems([...items, { id: Math.random().toString(), description: "", quantity: 1, unitPrice: 0, discount: 0, discountType: "percentage", amount: 0 }]);
@@ -233,7 +257,11 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
                       placeholder="Item description (type or select)..."
                       value={item.description}
                       maxLength={40}
-                      onChange={e => updateItem(item.id!, "description", e.target.value)}
+                      onChange={e => {
+                        updateItem(item.id!, "description", e.target.value);
+                        // User manually editing — stop tracking original
+                        setProductOriginals(prev => { const n = { ...prev }; delete n[item.id!]; return n; });
+                      }}
                       onFocus={() => setActiveDropdownId(item.id!)}
                       onBlur={() => setTimeout(() => setActiveDropdownId(null), 200)}
                       className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[6px] px-3 py-1.5 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all placeholder:opacity-40"
@@ -246,13 +274,12 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
                               key={p.id}
                               className="px-3 py-2 cursor-pointer hover:bg-black/5 flex justify-between items-center transition-colors"
                               onMouseDown={async (e) => {
-                                e.preventDefault(); // Prevent input from losing focus immediately
+                                e.preventDefault();
                                 updateItem(item.id!, "description", p.name);
-
-                                // Fetch live rate and update
+                                // Store original for re-conversion on currency change
+                                setProductOriginals(prev => ({ ...prev, [item.id!]: { price: p.price, currency: p.currency || "USD" } }));
                                 const convertedPrice = await convertCurrency(p.price, p.currency || "USD", currency);
                                 updateItem(item.id!, "unitPrice", convertedPrice);
-
                                 setActiveDropdownId(null);
                               }}
                             >

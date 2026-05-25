@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSales } from "../context/SalesContext";
 import { useContacts } from "@/features/contacts/context/ContactsContext";
 import { useProducts } from "@/features/products/context/ProductsContext";
@@ -110,6 +110,28 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const [taxPercentage, setTaxPercentage] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [notes, setNotes] = useState("");
+
+  // Track original (pre-conversion) prices for product-linked items so we can re-convert when currency changes
+  const [productOriginals, setProductOriginals] = useState<Record<string, { price: number; currency: string }>>({});
+
+  // Re-convert item prices when currency changes
+  useEffect(() => {
+    if (Object.keys(productOriginals).length === 0) return;
+    const run = async () => {
+      const updates: Record<string, number> = {};
+      for (const [itemId, orig] of Object.entries(productOriginals)) {
+        updates[itemId] = await convertCurrency(orig.price, orig.currency, currency);
+      }
+      setItems(prev => prev.map(it => {
+        if (updates[it.id] === undefined) return it;
+        const updated = { ...it, price: updates[it.id] };
+        updated.subtotal = calcSubtotal(updated);
+        return updated;
+      }));
+    };
+    run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency]);
 
   const addLineItem = () => setItems(prev => [...prev, newItem()]);
   const removeLineItem = (id: string) => {
@@ -318,6 +340,8 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                       maxLength={40}
                       onChange={e => {
                         updateItem(item.id, "name", e.target.value);
+                        // User manually editing — clear original so we don't re-convert
+                        setProductOriginals(prev => { const n = { ...prev }; delete n[item.id]; return n; });
                       }}
                       onFocus={() => setActiveItemDropdownId(item.id)}
                       onBlur={() => setTimeout(() => setActiveItemDropdownId(null), 200)}
@@ -333,6 +357,8 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                               onMouseDown={async (e) => {
                                 e.preventDefault();
                                 updateItem(item.id, "name", p.name);
+                                // Store original for re-conversion on currency change
+                                setProductOriginals(prev => ({ ...prev, [item.id]: { price: p.price, currency: p.currency || "USD" } }));
                                 const convertedPrice = await convertCurrency(p.price, p.currency || "USD", currency);
                                 updateItem(item.id, "price", convertedPrice);
                                 setActiveItemDropdownId(null);
