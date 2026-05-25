@@ -86,13 +86,15 @@ export default function MemberPicker({ selected, onChange, max }: Props) {
       )}
 
       {/* Toggle button */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04] transition-colors font-label-caps text-[9px] font-semibold uppercase tracking-[0.08em]"
-        style={{ border: "1px dashed rgba(0,0,0,0.18)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}
-      >
-        {selected.length === 0 ? "+ Assign Member" : "+ Add More"}
-      </button>
+      {(!max || selected.length < max) && (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04] transition-colors font-label-caps text-[9px] font-semibold uppercase tracking-[0.08em]"
+          style={{ border: "1px dashed rgba(0,0,0,0.18)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}
+        >
+          {selected.length === 0 ? "+ Assign Member" : "+ Add More"}
+        </button>
+      )}
 
       {/* Dropdown */}
       {open && (

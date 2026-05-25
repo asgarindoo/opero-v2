@@ -12,12 +12,13 @@ interface Props {
   align?: "left" | "right";
   position?: "top" | "bottom";
   variant?: "default" | "minimal" | "ghost" | "compact";
+  triggerStyle?: React.CSSProperties;
 }
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-export default function DatePicker({ value, onChange, placeholder = "Select date", className = "", align = "left", position = "bottom", variant = "default" }: Props) {
+export default function DatePicker({ value, onChange, placeholder = "Select date", className = "", align = "left", position = "bottom", variant = "default", triggerStyle }: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
@@ -119,11 +120,12 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
           variant === "compact" ? "gap-1.5 px-2.5 py-1.5 rounded-[6px]" :
           "gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04]"
         }`}
-        style={
-          variant === "minimal" || variant === "ghost" ? {} : 
+        style={{
+          ...(variant === "minimal" || variant === "ghost" ? {} : 
           variant === "compact" ? { border: "1px solid rgba(0,0,0,0.09)" } : 
-          { border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.02)" }
-        }
+          { border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.02)" }),
+          ...triggerStyle
+        }}
       >
         {variant === "minimal" ? (
           <>

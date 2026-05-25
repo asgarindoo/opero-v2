@@ -1,18 +1,17 @@
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
-import { X, Building2, Clock, Tag, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, Wrench, ShieldCheck, MapPin, Landmark, History } from "lucide-react";
+import { X, Building2, Clock, Tag, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, ShieldCheck, MapPin, Landmark, History } from "lucide-react";
 import { AssetStatus, AssetActivity } from "@/features/assets";
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
 }
 
-const STATUSES: AssetStatus[] = ["Active", "In Use", "Maintenance", "Reserved", "Damaged", "Archived"];
+const STATUSES: AssetStatus[] = ["Available", "In Use", "Maintenance", "Damaged", "Archived"];
 
 export default function AssetDrawer({ assetId, onClose }: { assetId: string, onClose: () => void }) {
   const { assets, updateAsset } = useAssets();
   const asset = assets.find(a => a.id === assetId);
-  const [newNote, setNewNote] = useState("");
 
   if (!asset) return null;
 
@@ -57,9 +56,6 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
             <div className="flex items-center gap-4 text-on-surface-variant opacity-70">
               <div className="flex items-center gap-1.5 font-body-sm text-[12px]">
                 <MapPin size={13} /> {asset.location || "Unlocated"}
-              </div>
-              <div className="flex items-center gap-1.5 font-body-sm text-[12px]">
-                <Landmark size={13} /> {asset.department || "General"}
               </div>
             </div>
           </div>
@@ -124,65 +120,40 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
               </div>
             </div>
           </div>
-
-          {/* Maintenance Records */}
-          <section className="mb-8">
-             <div className="flex items-center justify-between mb-3">
-               <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider">Maintenance History</h4>
-               <button className="text-[10px] font-medium text-primary hover:underline flex items-center gap-1">
-                 <Wrench size={10} /> Log Service
-               </button>
-             </div>
-             <div className="space-y-2">
-               {asset.maintenanceHistory.length === 0 ? (
-                 <div className="py-4 text-center border border-dashed border-black/5 rounded-lg font-body-sm text-[11px] text-on-surface-variant opacity-60">No service records</div>
-               ) : (
-                 asset.maintenanceHistory.map(record => (
-                   <div key={record.id} className="p-3 rounded-lg bg-surface-container-low border border-black/[0.02]">
-                     <div className="flex justify-between items-start mb-1">
-                       <p className="font-display font-semibold text-[12px] text-on-surface opacity-90">{record.description}</p>
-                       <span className="font-body-sm text-[10px] text-on-surface-variant opacity-60">{new Date(record.date).toLocaleDateString()}</span>
-                     </div>
-                     <p className="font-body-sm text-[11px] text-on-surface-variant opacity-60 flex items-center gap-2">
-                       <span>Serviced by: {record.technician}</span>
-                       {record.cost && <span>• {formatCurrency(record.cost)}</span>}
-                     </p>
-                   </div>
-                 ))
-               )}
-             </div>
-          </section>
+          
+          {asset.notes && (
+            <div className="mb-8 p-4 rounded-xl bg-surface-container-low/50 border border-black/[0.03]">
+              <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider mb-2">Notes</div>
+              <p className="font-body-sm text-[12px] text-on-surface opacity-80 whitespace-pre-wrap">{asset.notes}</p>
+            </div>
+          )}
 
           {/* Activity timeline */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider">Asset Activity</h4>
-              <div className="flex gap-1">
-                <button className="p-1.5 rounded-md hover:bg-black/5 text-on-surface-variant opacity-80 transition-colors">
-                  <Paperclip size={12} />
-                </button>
-                <button className="p-1.5 rounded-md hover:bg-black/5 text-on-surface-variant opacity-80 transition-colors">
-                  <ShieldCheck size={12} />
-                </button>
-              </div>
             </div>
             
             <div className="space-y-4">
-              {asset.activities.map(activity => {
-                const Icon = activity.type === "assignment" ? User : activity.type === "maintenance" ? Wrench : activity.type === "status_change" ? TrendingUp : History;
-                return (
-                  <div key={activity.id} className="flex items-start gap-3">
-                    <div className="mt-0.5 opacity-60 text-on-surface-variant"><Icon size={12} /></div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="font-display font-medium text-[12px] text-on-surface opacity-90">{activity.author}</span>
-                        <span className="font-body-sm text-[10px] text-on-surface-variant opacity-60">{new Date(activity.timestamp).toLocaleDateString()}</span>
+              {(asset.activities || []).length === 0 ? (
+                <div className="py-4 text-center border border-dashed border-black/5 rounded-lg font-body-sm text-[11px] text-on-surface-variant opacity-60">No activity recorded</div>
+              ) : (
+                (asset.activities || []).map(activity => {
+                  const Icon = activity.type === "assignment" ? User : activity.type === "status_change" ? TrendingUp : History;
+                  return (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className="mt-0.5 opacity-60 text-on-surface-variant"><Icon size={12} /></div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-display font-medium text-[12px] text-on-surface opacity-90">{activity.author}</span>
+                          <span className="font-body-sm text-[10px] text-on-surface-variant opacity-60">{new Date(activity.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <p className="font-body-sm text-[12px] text-on-surface-variant leading-relaxed opacity-80">{activity.description}</p>
                       </div>
-                      <p className="font-body-sm text-[12px] text-on-surface-variant leading-relaxed opacity-80">{activity.description}</p>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </section>
           

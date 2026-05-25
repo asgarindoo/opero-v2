@@ -1,39 +1,33 @@
-export type AssetStatus = "Active" | "In Use" | "Maintenance" | "Reserved" | "Damaged" | "Archived";
+export type AssetStatus = "Available" | "In Use" | "Maintenance" | "Damaged" | "Archived";
 
 export interface AssetActivity {
   id: string;
-  type: "assignment" | "maintenance" | "note" | "status_change";
+  type: "assignment" | "status_change" | "note";
   description: string;
   timestamp: string;
   author: string;
 }
 
-export interface MaintenanceRecord {
-  id: string;
-  date: string;
-  description: string;
-  technician: string;
-  cost?: number;
-}
-
 export interface Asset {
   id: string;
-  name: string;
-  category: string;
-  assetCode: string; // SKU / Serial Number
+  name: string; // Asset Name
+  category: string; // Electronics, Vehicle, Furniture, Equipment, Property, Tools, Other
+  assetCode: string; // Unique tracking code
   status: AssetStatus;
-  assignedTo?: string; // Staff name
+  
+  // Optional Fields
+  assignedTo?: string;
   assignedToId?: string;
-  department?: string;
   location?: string;
   purchaseDate?: string;
   purchaseValue?: number;
   warrantyExpiry?: string;
   supplierName?: string;
-  maintenanceHistory: MaintenanceRecord[];
-  activities: AssetActivity[];
-  notes: string;
+  notes?: string;
+  imageUrl?: string;
+  
+  activities?: AssetActivity[];
+  
   createdAt: string;
   updatedAt: string;
-  imageUrl?: string;
 }

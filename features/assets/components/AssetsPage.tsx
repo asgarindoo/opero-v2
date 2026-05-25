@@ -71,10 +71,14 @@ function AssetsPageContent() {
   );
 }
 
+import { MembersProvider } from "@/features/members/context/MembersContext";
+
 export default function AssetsPage() {
   return (
-    <AssetsProvider>
-      <AssetsPageContent />
-    </AssetsProvider>
+    <MembersProvider>
+      <AssetsProvider>
+        <AssetsPageContent />
+      </AssetsProvider>
+    </MembersProvider>
   );
 }

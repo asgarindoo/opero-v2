@@ -2,73 +2,87 @@
 
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
-import { Tag, MapPin, DollarSign, LayoutGrid, Calendar } from "lucide-react";
-import { createTransaction } from "@/features/finance/services/finance.client";
+import { useMembers } from "@/features/members/context/MembersContext";
+import { Tag, MapPin, LayoutGrid, Calendar, Wallet, User } from "lucide-react";
+import MemberPicker from "@/features/tasks/components/MemberPicker";
+import { type Member as TaskMember } from "@/features/tasks";
 
 import { ModalShell } from "@/components/ui/global/modal/ModalShell";
 import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
-import { GlobalCheckbox } from "@/components/ui/global/form/GlobalCheckbox";
+import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
+import { FormField } from "@/components/ui/global/form/FormField";
 
-/* ── Section label ───────────────────────────────────────────────────────── */
-function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5 mb-2">
-      {icon}
-      <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
-        {children}
-      </span>
-    </div>
-  );
-}
+const CATEGORY_OPTIONS = [
+  { label: "Electronics", value: "Electronics" },
+  { label: "Vehicle", value: "Vehicle" },
+  { label: "Furniture", value: "Furniture" },
+  { label: "Equipment", value: "Equipment" },
+  { label: "Property", value: "Property" },
+  { label: "Tools", value: "Tools" },
+  { label: "Other", value: "Other" },
+];
+
+const CURRENCY_OPTIONS = [
+  { label: "USD", value: "USD" },
+  { label: "IDR", value: "IDR" },
+  { label: "EUR", value: "EUR" },
+  { label: "GBP", value: "GBP" },
+  { label: "SGD", value: "SGD" },
+];
 
 export default function AddAssetModal({ onClose }: { onClose: () => void }) {
-  const { addAsset } = useAssets();
+  const { assets, addAsset } = useAssets();
+  const { members } = useMembers(); // Keeping this if needed later, otherwise MemberPicker fetches its own members.
+
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("Electronics");
   const [assetCode, setAssetCode] = useState("");
+  const [status, setStatus] = useState<"Available" | "In Use" | "Maintenance" | "Damaged" | "Archived">("Available");
+
+  const [assignees, setAssignees] = useState<TaskMember[]>([]);
   const [location, setLocation] = useState("");
-  const [department, setDepartment] = useState("");
+
+  const [currency, setCurrency] = useState("USD");
   const [purchaseValue, setPurchaseValue] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
+  const [supplierName, setSupplierName] = useState("");
+  const [warrantyExpiry, setWarrantyExpiry] = useState("");
 
-  const [recordExpense, setRecordExpense] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const isValid = name.trim() && assetCode.trim();
+  const isValid = name.trim() && assetCode.trim() && category.trim();
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!isValid) return;
 
     const pValue = parseFloat(purchaseValue);
+    if (purchaseValue && (isNaN(pValue) || pValue < 0)) {
+      setError("Purchase value must be a valid positive number.");
+      return;
+    }
+
+    if (assets.some(a => a.assetCode.toLowerCase() === assetCode.trim().toLowerCase())) {
+      setError("Asset Code already exists.");
+      return;
+    }
 
     addAsset({
       name: name.trim(),
       category: category.trim(),
       assetCode: assetCode.trim(),
-      location: location.trim(),
-      department: department.trim(),
-      purchaseValue: pValue || undefined,
+      status: status,
+      assignedTo: assignees.length > 0 ? assignees[0].name : undefined,
+      location: location.trim() || undefined,
+      purchaseValue: !isNaN(pValue) ? pValue : undefined,
       purchaseDate: purchaseDate || undefined,
-      status: "Active"
+      supplierName: supplierName.trim() || undefined,
+      warrantyExpiry: warrantyExpiry || undefined,
     });
-
-    if (recordExpense && pValue > 0) {
-      createTransaction({
-        id: "tx" + Date.now(),
-        type: "Expense",
-        amount: pValue,
-        description: `Asset Purchase: ${name.trim()} (${assetCode.trim()})`,
-        date: purchaseDate || new Date().toISOString().split("T")[0],
-        category: category.trim() || "Asset Purchase",
-        paymentMethod: "Bank Transfer",
-        status: "Completed",
-        notes: "Auto-recorded from Asset Registration"
-      }).catch(err => console.error("Failed to record expense:", err));
-    }
 
     onClose();
   };
@@ -76,14 +90,14 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell onClose={onClose} maxWidth={480}>
       <ModalHeader title="Register Asset" onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput
             autoFocus
             required
             maxLength={60}
-            placeholder="Asset Name (e.g. MacBook Pro 16)…"
+            placeholder="Asset Name (e.g. MacBook Pro M3)…"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === "Enter" && isValid && handleSubmit()}
@@ -93,92 +107,116 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <SL icon={<Tag size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
-              Asset Code / Serial
-            </SL>
-            <GlobalInput
-              required
-              maxLength={30}
-              placeholder="SN-123456"
-              value={assetCode}
-              onChange={e => setAssetCode(e.target.value)}
-            />
-          </div>
-          <div>
-            <SL icon={<LayoutGrid size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
-              Category
-            </SL>
-            <GlobalInput
-              maxLength={30}
-              placeholder="Computing"
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-            />
-          </div>
+          <GlobalInput
+            label="Asset Code"
+            icon={<Tag size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}
+            required
+            maxLength={30}
+            placeholder="AST-2026-001"
+            value={assetCode}
+            onChange={e => {
+              setAssetCode(e.target.value);
+              setError(null);
+            }}
+          />
+          <FormField label="Category" icon={<LayoutGrid size={11} strokeWidth={1.75} />}>
+            <div style={{ padding: "4px 0", border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", borderRadius: "6px" }}>
+              <Dropdown
+                value={category}
+                onChange={setCategory}
+                options={CATEGORY_OPTIONS}
+                variant="minimal"
+              />
+            </div>
+          </FormField>
         </div>
 
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <SL>Department</SL>
-            <GlobalInput
-              maxLength={30}
-              placeholder="IT Dept"
-              value={department}
-              onChange={e => setDepartment(e.target.value)}
-            />
-          </div>
-          <div>
-            <SL icon={<MapPin size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
-              Initial Location
-            </SL>
-            <GlobalInput
-              maxLength={40}
-              placeholder="Floor 2"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-            />
-          </div>
+          <FormField label="Assigned To" icon={<User size={11} strokeWidth={1.75} />}>
+            <MemberPicker selected={assignees} onChange={setAssignees} max={1} />
+          </FormField>
+          <GlobalInput
+            label="Location"
+            icon={<MapPin size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}
+            maxLength={40}
+            placeholder="Main Office"
+            value={location}
+            onChange={e => setLocation(e.target.value)}
+          />
         </div>
 
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <SL icon={<DollarSign size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
-              Purchase Value
-            </SL>
-            <GlobalInput
-              type="number"
-              placeholder="0.00"
-              value={purchaseValue}
-              onChange={e => setPurchaseValue(e.target.value)}
-            />
+          <div className="flex gap-2">
+            <div className="w-[85px] shrink-0">
+              <FormField label="Currency" icon={<Wallet size={11} strokeWidth={1.75} />}>
+                <div style={{ padding: "4px 0", border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", borderRadius: "6px" }}>
+                  <Dropdown
+                    value={currency}
+                    onChange={setCurrency}
+                    options={CURRENCY_OPTIONS}
+                    variant="minimal"
+                  />
+                </div>
+              </FormField>
+            </div>
+            <div className="flex-1">
+              <GlobalInput
+                label="Value"
+                type="number"
+                placeholder="0.00"
+                value={purchaseValue}
+                onChange={e => {
+                  setPurchaseValue(e.target.value);
+                  setError(null);
+                }}
+              />
+            </div>
           </div>
-          <div>
-            <SL icon={<Calendar size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
-              Purchase Date
-            </SL>
+          <FormField label="Purchase Date" icon={<Calendar size={11} strokeWidth={1.75} />}>
             <DatePicker
               value={purchaseDate}
               onChange={val => setPurchaseDate(val || "")}
               placeholder="Select date"
+              position="top"
+              className="rounded-[6px]"
+              triggerStyle={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", paddingTop: "8px", paddingBottom: "8px" }}
             />
-          </div>
+          </FormField>
         </div>
 
-        <div className="pt-2">
-          <GlobalCheckbox
-            label="Automatically record this purchase as an Expense in Finance"
-            checked={recordExpense}
-            onChange={setRecordExpense}
+        <div className="grid grid-cols-2 gap-4">
+          <GlobalInput
+            label="Supplier / Vendor (Optional)"
+            maxLength={60}
+            placeholder="Vendor Name"
+            value={supplierName}
+            onChange={e => setSupplierName(e.target.value)}
           />
+          <FormField label="Warranty Expiry" icon={<Calendar size={11} strokeWidth={1.75} />}>
+            <DatePicker
+              value={warrantyExpiry}
+              onChange={val => setWarrantyExpiry(val || "")}
+              placeholder="Select date"
+              position="top"
+              className="rounded-[6px]"
+              triggerStyle={{ border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)", paddingTop: "8px", paddingBottom: "8px" }}
+            />
+          </FormField>
         </div>
+
       </ModalContent>
 
-      <ModalFooter>
+      <ModalFooter summary={
+        error ? (
+          <span className="text-red-600 font-display text-[11px] font-medium bg-red-50/50 border border-red-100 px-2.5 py-1 rounded-md">
+            {error}
+          </span>
+        ) : null
+      }>
         <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
           Cancel
         </button>

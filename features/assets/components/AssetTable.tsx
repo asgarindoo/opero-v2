@@ -50,7 +50,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
 
   const getStatusVariant = (status: AssetStatus): any => {
     switch (status) {
-      case "Active": return "success";
+      case "Available": return "success";
       case "In Use": return "info";
       case "Maintenance": return "warning";
       case "Damaged": return "error";
@@ -122,7 +122,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
               <TableHead className="w-[30%] ml-3">Asset Name / Category</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Assigned To</TableHead>
-              <TableHead>Location / Dept</TableHead>
+              <TableHead>Location</TableHead>
               <TableHead className="text-right">Purchased</TableHead>
               <TableHead className="px-6 py-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
             </TableRow>
@@ -182,7 +182,6 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                   <TableCell className="hidden lg:table-cell max-w-[0px]">
                     <div className="min-w-0">
                       <p className="font-display text-[11.5px] text-on-surface-variant opacity-70 truncate w-full block">{asset.location || "N/A"}</p>
-                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate w-full uppercase tracking-tighter leading-none mt-0.5 block">{asset.department || "No Department"}</p>
                     </div>
                   </TableCell>
                   <TableCell className="text-right hidden lg:table-cell max-w-[0px]">
