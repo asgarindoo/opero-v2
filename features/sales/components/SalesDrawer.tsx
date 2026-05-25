@@ -106,7 +106,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
       discountRate: sale.orderDiscountType === "percentage" ? sale.orderDiscountValue : undefined,
       discountTotal: sale.discountTotal,
       totalAmount: sale.total,
-      currency: "USD",
+      currency: sale.currency || "USD",
       notes: "Auto-generated from sale " + sale.orderNumber,
       activities: [],
       attachments: [],
