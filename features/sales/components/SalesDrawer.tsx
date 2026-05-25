@@ -77,8 +77,20 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
   const handleGenerateInvoice = async () => {
     const issuedAt = new Date();
-    const dueAt = new Date(issuedAt);
-    dueAt.setDate(dueAt.getDate() + 14);
+    const defaultDue = new Date(issuedAt);
+    defaultDue.setDate(defaultDue.getDate() + 14);
+    const defaultDueStr = defaultDue.toISOString().split("T")[0];
+
+    // Prompt user for due date
+    const dueDateInput = window.prompt("Set invoice due date (YYYY-MM-DD):", defaultDueStr);
+    if (dueDateInput === null) return; // User cancelled
+
+    let dueAt = new Date(dueDateInput);
+    if (isNaN(dueAt.getTime())) {
+      alert("Invalid date format. Using default +14 days.");
+      dueAt = defaultDue;
+    }
+
     const totalAmount = sale.items.reduce((acc, curr) => acc + curr.subtotal, 0);
     const invoiceItems: InvoiceItem[] = sale.items.map(it => ({
       id: crypto.randomUUID(),
@@ -98,7 +110,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
       saleOrderNumber: sale.orderNumber,
       issueDate: issuedAt.toISOString().split("T")[0],
       dueDate: dueAt.toISOString().split("T")[0],
-      status: "Unpaid",
+      status: sale.paymentStatus === "Paid" ? "Paid" : "Unpaid",
       items: invoiceItems,
       subtotal: totalAmount,
       taxRate: sale.taxPercentage,
