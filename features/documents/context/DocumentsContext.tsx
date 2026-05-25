@@ -1,50 +1,62 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { FileEntry, Folder, FileStatus, DocumentActivity } from "@/features/documents";
+import { DocumentEntry, Folder } from "@/features/documents";
 import {
   createDocument,
   createFolder,
   deleteDocument,
+  deleteFolder,
   listDocuments,
   listFolders,
   updateDocument,
+  updateFolder,
 } from "@/features/documents/services/documents.client";
-import { useTenant } from "@/components/providers/TenantProvider";
 
 interface DocumentsContextType {
-  files: FileEntry[];
+  documents: DocumentEntry[];
   folders: Folder[];
-  addFile: (file: Partial<FileEntry>) => void;
-  updateFile: (id: string, updates: Partial<FileEntry>) => void;
-  deleteFiles: (ids: string[]) => void;
+  activeFolderId: string | null;
+  setActiveFolderId: (id: string | null) => void;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  viewMode: "grid" | "list";
+  setViewMode: (mode: "grid" | "list") => void;
+
+  addDocument: (doc: Partial<DocumentEntry>) => void;
+  updateDocumentEntry: (id: string, updates: Partial<DocumentEntry>) => void;
+  deleteDocuments: (ids: string[]) => void;
+  
   addFolder: (name: string, parentId?: string) => void;
+  renameFolder: (id: string, newName: string) => void;
+  removeFolder: (id: string) => void;
 }
 
 const DocumentsContext = createContext<DocumentsContextType | undefined>(undefined);
 
 export function DocumentsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useTenant();
-  const userName = user?.name || "You";
-
-  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [documents, setDocuments] = useState<DocumentEntry[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
+  
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const [fileItems, folderItems] = await Promise.all([
-          listDocuments<FileEntry>(),
+        const [docItems, folderItems] = await Promise.all([
+          listDocuments<DocumentEntry>(),
           listFolders<Folder>(),
         ]);
         if (!cancelled) {
-          setFiles(fileItems);
+          setDocuments(docItems);
           setFolders(folderItems);
         }
       } catch (err) {
-        console.error("Failed to load documents:", err);
+        console.error("Failed to load documents workspace:", err);
       }
     }
 
@@ -54,74 +66,107 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const addFile = useCallback((partial: Partial<FileEntry>) => {
-    const newFile: FileEntry = {
-      id: "f" + Date.now(),
-      name: partial.name || "Untitled File",
-      type: partial.type || "other",
-      extension: partial.extension || "bin",
-      size: partial.size || 0,
+  const addDocument = useCallback((partial: Partial<DocumentEntry>) => {
+    const newDoc: DocumentEntry = {
+      id: partial.id || "doc-" + Date.now(),
+      title: partial.title || partial.fileName || "Untitled Document",
       status: "Active",
-      tags: partial.tags || [],
-      versions: [{ id: "v" + Date.now(), version: "1.0", updatedAt: new Date().toISOString(), author: userName, size: partial.size || 0 }],
-      activities: [{ id: "act" + Date.now(), type: "upload", description: "Uploaded file", timestamp: new Date().toISOString(), author: userName }],
-      notes: "",
-      sharedWith: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      author: userName,
+      folderId: activeFolderId || undefined,
       ...partial
     };
-    createDocument<FileEntry>(newFile)
-      .then((created) => setFiles(prev => [created, ...prev]))
-      .catch((err) => console.error("Failed to create file:", err));
-  }, []);
+    
+    // Optimistic update
+    setDocuments(prev => [newDoc, ...prev]);
 
-  const updateFile = useCallback((id: string, updates: Partial<FileEntry>) => {
-    setFiles(prev => prev.map(f => {
-      if (f.id !== id) return f;
-      const updated = { ...f, ...updates, updatedAt: new Date().toISOString() };
-      const recordId = (f as { recordId?: string }).recordId ?? f.id;
-      updateDocument<FileEntry>(recordId, updated).catch((err) => {
-        console.error("Failed to update file:", err);
+    createDocument<DocumentEntry>(newDoc)
+      .then((created) => {
+        setDocuments(prev => prev.map(d => d.id === newDoc.id ? created : d));
+      })
+      .catch((err) => {
+        console.error("Failed to create document:", err);
+        setDocuments(prev => prev.filter(d => d.id !== newDoc.id));
+      });
+  }, [activeFolderId]);
+
+  const updateDocumentEntry = useCallback((id: string, updates: Partial<DocumentEntry>) => {
+    setDocuments(prev => prev.map(d => {
+      if (d.id !== id) return d;
+      const updated = { ...d, ...updates, updatedAt: new Date().toISOString() };
+      
+      const recordId = (d as any).recordId ?? d.id;
+      updateDocument<DocumentEntry>(recordId, updated).catch((err) => {
+        console.error("Failed to update document:", err);
       });
       return updated;
     }));
   }, []);
 
-  const deleteFiles = useCallback((ids: string[]) => {
-    setFiles(prev => prev.filter(f => !ids.includes(f.id)));
+  const deleteDocuments = useCallback((ids: string[]) => {
+    setDocuments(prev => prev.filter(d => !ids.includes(d.id)));
     Promise.all(
       ids.map((id) => {
-        const recordId = files.find(f => f.id === id) as { recordId?: string } | undefined;
-        const targetId = recordId?.recordId ?? id;
-        return deleteDocument(targetId).catch((err) => {
-          console.error("Failed to delete file:", err);
+        return deleteDocument(id).catch((err) => {
+          console.error("Failed to delete document:", err);
         });
       })
     ).catch(() => undefined);
-  }, [files]);
-
-  const addFolder = useCallback((name: string, parentId?: string) => {
-    const newFolder: Folder = {
-      id: "fold" + Date.now(),
-      name,
-      parentId,
-      createdAt: new Date().toISOString()
-    };
-    createFolder<Folder>(newFolder)
-      .then((created) => setFolders(prev => [...prev, created]))
-      .catch((err) => console.error("Failed to create folder:", err));
   }, []);
 
+  const addFolderItem = useCallback((name: string, parentId?: string) => {
+    const newFolder: Folder = {
+      id: "fold-" + Date.now(),
+      title: name,
+      status: "Active",
+      parentId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setFolders(prev => [...prev, newFolder]);
+
+    createFolder<Folder>(newFolder)
+      .then((created) => {
+        setFolders(prev => prev.map(f => f.id === newFolder.id ? created : f));
+      })
+      .catch((err) => {
+        console.error("Failed to create folder:", err);
+        setFolders(prev => prev.filter(f => f.id !== newFolder.id));
+      });
+  }, []);
+
+  const renameFolder = useCallback((id: string, newName: string) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== id) return f;
+      const updated = { ...f, title: newName };
+      updateFolder<Folder>(id, { title: newName }).catch(err => console.error(err));
+      return updated;
+    }));
+  }, []);
+
+  const removeFolder = useCallback((id: string) => {
+    setFolders(prev => prev.filter(f => f.id !== id));
+    if (activeFolderId === id) setActiveFolderId(null);
+    deleteFolder(id).catch(err => console.error(err));
+  }, [activeFolderId]);
+
   const value = useMemo(() => ({
-    files,
+    documents,
     folders,
-    addFile,
-    updateFile,
-    deleteFiles,
-    addFolder
-  }), [files, folders, addFile, updateFile, deleteFiles, addFolder]);
+    activeFolderId,
+    setActiveFolderId,
+    searchQuery,
+    setSearchQuery,
+    viewMode,
+    setViewMode,
+    addDocument,
+    updateDocumentEntry,
+    deleteDocuments,
+    addFolder: addFolderItem,
+    renameFolder,
+    removeFolder
+  }), [documents, folders, activeFolderId, searchQuery, viewMode, addDocument, updateDocumentEntry, deleteDocuments, addFolderItem, renameFolder, removeFolder]);
 
   return <DocumentsContext.Provider value={value}>{children}</DocumentsContext.Provider>;
 }

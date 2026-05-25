@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
 import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { deletePrivateObject, TENANT_FILES_BUCKET } from "@/lib/server/supabase-storage";
 
 const MODULE = "DOCUMENTS";
 
@@ -42,6 +43,16 @@ export async function deleteDocument(id: string) {
   if (!current) return null;
   const result = await prisma.document.deleteMany({ where: { id, organizationId: ctx.tenantId } });
   if (result.count === 0) return null;
+  
+  const payload = parsePayload(current.payload);
+  if (typeof payload.storagePath === "string") {
+    try {
+      await deletePrivateObject(TENANT_FILES_BUCKET, payload.storagePath);
+    } catch (err) {
+      console.error(`Failed to delete storage object for document ${id}:`, err);
+    }
+  }
+
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Deleted", entityType: "Document", entityId: id, entityName: current.title });
   return { id };
 }

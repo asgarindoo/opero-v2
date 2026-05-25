@@ -8,10 +8,7 @@ import {
   FileSpreadsheet, 
   FileCode, 
   File, 
-  MoreHorizontal, 
-  Download, 
-  Share2, 
-  Star,
+  MoreHorizontal,
   Trash2
 } from "lucide-react";
 import { FileType } from "@/features/documents";
@@ -20,33 +17,43 @@ import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
 
 interface Props {
-  searchQuery: string;
-  filterMode: string;
   onSelectFile: (id: string) => void;
 }
 
-function formatBytes(bytes: number) {
-  if (bytes === 0) return "0 Bytes";
+function formatBytes(bytes?: number) {
+  if (!bytes) return "0 Bytes";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
-export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: Props) {
-  const { files, deleteFiles } = useDocuments();
+export default function DocumentGrid({ onSelectFile }: Props) {
+  const { documents, deleteDocuments, activeFolderId, searchQuery } = useDocuments();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
-  const filteredFiles = files.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (filterMode === "all") return matchesSearch;
-    if (filterMode === "shared") return matchesSearch && f.sharedWith.length > 0;
-    return matchesSearch;
+  const filteredDocs = documents.filter(d => {
+    // Filter by folder
+    if (activeFolderId && d.folderId !== activeFolderId) return false;
+    if (!activeFolderId && d.folderId) return false; // In "All Documents", maybe we show everything or just root? The Notion way usually shows everything if "All", but if they clicked a folder it shows contents. Let's say if activeFolderId is null, we show ALL documents regardless of folder.
+    // Wait, the user asked for simple folder system. Let's make "All Documents" show all documents, but if activeFolderId is set, show only those in the folder.
+    if (activeFolderId && d.folderId !== activeFolderId) return false;
+
+    // Filter by search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchesTitle = d.title?.toLowerCase().includes(q);
+      const matchesFileName = d.fileName?.toLowerCase().includes(q);
+      const matchesTag = d.tags?.some(t => t.toLowerCase().includes(q));
+      if (!matchesTitle && !matchesFileName && !matchesTag) return false;
+    }
+
+    return true;
   });
 
-  const getFileIcon = (type: FileType) => {
+  const getFileIcon = (type?: FileType | string) => {
     switch (type) {
       case "image": return <ImageIcon size={20} className="text-blue-500/60" />;
       case "pdf": return <FileText size={20} className="text-red-500/60" />;
@@ -54,6 +61,13 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
       case "design": return <FileCode size={20} className="text-purple-500/60" />;
       default: return <File size={20} className="text-on-surface-variant opacity-60" />;
     }
+  };
+
+  const getExtension = (fileName?: string) => {
+    if (!fileName) return "BIN";
+    const parts = fileName.split(".");
+    if (parts.length > 1) return parts[parts.length - 1].toUpperCase();
+    return "BIN";
   };
 
   const toggleOne = (id: string, e: React.MouseEvent) => {
@@ -72,21 +86,21 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
 
   const handleConfirmDelete = () => {
     if (fileToDelete) {
-      deleteFiles([fileToDelete]);
+      deleteDocuments([fileToDelete]);
       setFileToDelete(null);
     } else {
-      deleteFiles(Array.from(selectedIds));
+      deleteDocuments(Array.from(selectedIds));
       setSelectedIds(new Set());
     }
     setIsDeleteModalOpen(false);
   };
 
-  if (filteredFiles.length === 0) {
+  if (filteredDocs.length === 0) {
     return (
       <EmptyState
         icon="folder"
-        title="No documents found"
-        description="Try adjusting your filters or search query."
+        title="No documents here"
+        description="Upload a document or create a new one to get started."
       />
     );
   }
@@ -94,13 +108,13 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
   return (
     <div className="p-6 overflow-y-auto h-full relative db-sidebar">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-        {filteredFiles.map(file => {
-          const isSelected = selectedIds.has(file.id);
+        {filteredDocs.map(doc => {
+          const isSelected = selectedIds.has(doc.id);
 
           return (
             <div 
-              key={file.id}
-              onClick={() => onSelectFile(file.id)}
+              key={doc.id}
+              onClick={() => onSelectFile(doc.id)}
               className={`group relative flex flex-col bg-white rounded-xl border transition-all duration-300 cursor-pointer animate-fade-in ${
                 isSelected 
                   ? "border-primary shadow-[0_4px_12px_rgba(var(--primary-rgb),0.08)] ring-1 ring-primary/20" 
@@ -110,7 +124,7 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
               {/* Thumbnail Container */}
               <div className="aspect-[4/3] bg-[#fafafa] flex items-center justify-center relative overflow-hidden rounded-t-xl border-b border-black/[0.02]">
                  <div className="transition-transform duration-500 group-hover:scale-110 opacity-60 group-hover:opacity-100">
-                   {getFileIcon(file.type)}
+                   {getFileIcon(doc.fileType)}
                  </div>
                  
                  {/* Selection Checkbox - reveal on hover */}
@@ -121,7 +135,7 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
                    <input 
                     type="checkbox" 
                     checked={isSelected}
-                    onChange={(e) => toggleOne(file.id, e as any)}
+                    onChange={(e) => toggleOne(doc.id, e as any)}
                     className="w-4 h-4 rounded-[4px] border-black/10 accent-primary cursor-pointer shadow-sm" 
                    />
                  </div>
@@ -129,13 +143,10 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
                  {/* Quick Actions - reveal on hover */}
                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
                     <button 
-                      onClick={(e) => handleDeleteOne(e, file.id)}
+                      onClick={(e) => handleDeleteOne(e, doc.id)}
                       className="p-1.5 rounded-lg bg-white/90 backdrop-blur shadow-sm text-on-surface-variant hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={12} />
-                    </button>
-                    <button className="p-1.5 rounded-lg bg-white/90 backdrop-blur shadow-sm text-on-surface-variant hover:text-primary transition-colors">
-                      <Star size={12} />
                     </button>
                  </div>
               </div>
@@ -144,7 +155,7 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
               <div className="p-3">
                  <div className="flex items-start justify-between gap-2">
                    <h4 className="font-display font-semibold text-[12.5px] text-on-surface opacity-90 truncate flex-1 leading-tight group-hover:text-primary transition-colors">
-                     {file.name}
+                     {doc.title}
                    </h4>
                    <button className="shrink-0 text-on-surface-variant opacity-60 hover:opacity-100 transition-opacity">
                      <MoreHorizontal size={12} />
@@ -153,15 +164,17 @@ export default function DocumentGrid({ searchQuery, filterMode, onSelectFile }: 
                  <div className="flex items-center justify-between mt-3">
                    <div className="flex flex-col gap-0.5">
                       <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest leading-none">
-                        {file.extension}
+                        {getExtension(doc.fileName)}
                       </span>
                       <span className="font-display text-[9.5px] text-on-surface-variant opacity-60 font-medium leading-none">
-                        {formatBytes(file.size)}
+                        {formatBytes(doc.fileSize)}
                       </span>
                    </div>
-                   <div className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center font-bold text-[7px] text-on-surface-variant opacity-60 border border-black/[0.02] shadow-sm">
-                      {file.author.charAt(0)}
-                   </div>
+                   {doc.createdBy && (
+                    <div className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center font-bold text-[7px] text-on-surface-variant opacity-60 border border-black/[0.02] shadow-sm" title={doc.createdBy.name}>
+                        {doc.createdBy.name.charAt(0)}
+                    </div>
+                   )}
                  </div>
               </div>
             </div>

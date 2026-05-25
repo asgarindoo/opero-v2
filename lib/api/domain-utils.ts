@@ -48,6 +48,7 @@ export function mapDomainRecord(record: any, fallbackUser?: { id: string; name: 
     stages: record.stages ?? payloadData.stages ?? [],
     notes: record.notes ?? payloadData.notes ?? [],
     dueDate: record.dueDate?.toISOString?.() ?? payloadData.dueDate,
+    createdBy: ownerSource,
     owner: ownerSource
       ? {
           id: ownerSource.id ?? "system",

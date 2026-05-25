@@ -1,51 +1,38 @@
 export type FileType = "image" | "pdf" | "spreadsheet" | "document" | "design" | "other";
 export type FileStatus = "Active" | "Archived" | "Draft";
 
-export interface FileVersion {
+export interface DocumentEntry {
   id: string;
-  version: string;
-  updatedAt: string;
-  author: string;
-  size: number;
-}
-
-export interface DocumentActivity {
-  id: string;
-  type: "upload" | "view" | "edit" | "share" | "note";
-  description: string;
-  timestamp: string;
-  author: string;
-}
-
-export interface FileEntry {
-  id: string;
-  name: string;
-  type: FileType;
-  extension: string;
-  size: number;
-  status: FileStatus;
+  title: string;          // From DB Model
+  status: string;         // From DB Model
+  createdAt: string;      // From DB Model
+  updatedAt: string;      // From DB Model
+  
+  // From DB include
+  createdBy?: { id: string; name: string; image: string | null };
+  
+  // From Payload
+  description?: string;
   folderId?: string;
-  tags: string[];
-  relatedTo?: {
-    type: "Contact" | "Sale" | "Invoice" | "Asset";
-    name: string;
-    id: string;
-  };
   storagePath?: string;
   downloadUrl?: string;
-  thumbnailUrl?: string;
-  versions: FileVersion[];
-  activities: DocumentActivity[];
-  notes: string;
-  sharedWith: string[]; // List of names or emails
-  createdAt: string;
-  updatedAt: string;
-  author: string;
+  fileName?: string;
+  fileType?: FileType | string;
+  fileSize?: number;
+  tags?: string[];
 }
 
 export interface Folder {
   id: string;
-  name: string;
+  title: string;          // From DB Model
+  status: string;         // From DB Model
+  createdAt: string;      // From DB Model
+  updatedAt: string;      // From DB Model
+
+  // From DB include
+  createdBy?: { id: string; name: string; image: string | null };
+
+  // From Payload
   parentId?: string;
-  createdAt: string;
+  description?: string;
 }

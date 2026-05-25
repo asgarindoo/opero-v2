@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useDocuments } from "../context/DocumentsContext";
-import { Upload, Tag, Layers, Lock, ChevronDown, Check } from "lucide-react";
+import { Upload, Tag, Layers, Folder, AlignLeft, ChevronDown } from "lucide-react";
 import { FileType } from "@/features/documents";
 
 import { ModalShell } from "@/components/ui/global/modal/ModalShell";
@@ -25,30 +25,55 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
 }
 
 export default function UploadModal({ onClose }: { onClose: () => void }) {
-  const { addFile } = useDocuments();
-  const [name, setName] = useState("");
-  const [type, setType] = useState<FileType>("other");
+  const { addDocument, folders, activeFolderId } = useDocuments();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [folderId, setFolderId] = useState(activeFolderId || "none");
+  const [type, setType] = useState<FileType | string>("other");
   const [tags, setTags] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Extra metadata for looks matching other modules
-  const [privacy, setPrivacy] = useState("internal");
+
+  const folderOptions = [
+    { value: "none", label: "No Folder" },
+    ...folders.map(f => ({ value: f.id, label: f.title }))
+  ];
+
+  const ALLOWED_EXTENSIONS = new Set([
+    "pdf", "docx", "xlsx", "pptx", "txt", "csv",
+    "png", "jpg", "jpeg", "webp", "svg",
+    "zip", "rar"
+  ]);
+  const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB
 
   const selectFile = (selected: File) => {
-    setFile(selected);
     setError(null);
-    setName((current) => current || selected.name);
+    if (selected.size > MAX_FILE_SIZE) {
+      setError("Maximum upload size is 30MB.");
+      setFile(null);
+      return;
+    }
+
     const ext = selected.name.split(".").pop()?.toLowerCase();
+    if (!ext || !ALLOWED_EXTENSIONS.has(ext)) {
+      setError("Unsupported file type.");
+      setFile(null);
+      return;
+    }
+
+    setFile(selected);
+    setTitle((current) => current || selected.name);
+    
     if (selected.type.startsWith("image/")) setType("image");
     else if (ext === "pdf") setType("pdf");
-    else if (["xls", "xlsx", "csv"].includes(ext ?? "")) setType("spreadsheet");
-    else if (["doc", "docx"].includes(ext ?? "")) setType("document");
+    else if (["xls", "xlsx", "csv"].includes(ext)) setType("spreadsheet");
+    else if (["doc", "docx", "txt"].includes(ext)) setType("document");
+    else setType("other");
   };
 
-  const isValid = name.trim() && file && !isUploading;
+  const isValid = title.trim() && file && !isUploading;
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -72,12 +97,14 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
         throw new Error(payload.error ?? "Upload failed.");
       }
 
-      addFile({
-        name,
-        type,
-        extension: file.name.split(".").pop() || "bin",
-        size: payload.size ?? file.size,
-        tags: tags.split(",").map(t => t.trim()).filter(t => t),
+      addDocument({
+        title,
+        description,
+        folderId: folderId === "none" ? undefined : folderId,
+        fileName: file.name,
+        fileType: type,
+        fileSize: payload.size ?? file.size,
+        tags: Array.from(new Set(tags.split(",").map(t => t.trim()).filter(t => t))),
         storagePath: payload.storagePath,
         downloadUrl: payload.downloadUrl,
       });
@@ -99,9 +126,9 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
             autoFocus
             required
             maxLength={60}
-            placeholder="Document Name (e.g. Sales Report Q1)…"
-            value={name}
-            onChange={e => setName(e.target.value)}
+            placeholder="Project Proposal Q2"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
             onKeyDown={e => e.key === "Enter" && isValid && handleSubmit()}
             className="font-display font-semibold"
             style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
@@ -128,7 +155,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
               {file ? file.name : "Click or drag files to upload"}
             </p>
             <p className="font-body-md text-[11px] mt-1" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
-              {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "PDF, DOCX, XLSX, Images up to 30MB"}
+              {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Auto-detected type` : "PDF, DOCX, XLSX, Images up to 30MB"}
             </p>
           </div>
           <input
@@ -141,70 +168,61 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
           />
         </div>
 
+        <div>
+          <SL icon={<AlignLeft size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+            Description (Optional)
+          </SL>
+          <textarea
+            maxLength={250}
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Brief description of the document..."
+            className="w-full min-h-[60px] text-[13px] p-3 rounded-[8px] bg-black/[0.02] border border-black/[0.06] outline-none focus:border-primary/30 transition-all font-body-md"
+            style={{ color: "var(--color-on-surface)", resize: "none" }}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <SL>File Type</SL>
+            <SL icon={<Folder size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+              Folder
+            </SL>
             <Dropdown
-              value={type}
-              onChange={(val) => setType(val as FileType)}
-              options={[
-                { value: "other", label: "General" },
-                { value: "pdf", label: "PDF Document" },
-                { value: "document", label: "Office Document" },
-                { value: "spreadsheet", label: "Spreadsheet" },
-                { value: "image", label: "Image / Media" },
-                { value: "design", label: "Design Asset" },
-              ]}
+              value={folderId}
+              onChange={setFolderId}
+              options={folderOptions}
             />
           </div>
           <div>
             <SL icon={<Tag size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
               Tags
             </SL>
-            <GlobalInput
+            <input
               maxLength={40}
               placeholder="finance, invoice..."
               value={tags}
               onChange={e => setTags(e.target.value)}
+              className="w-full px-3 py-1.5 rounded-[6px] bg-black/[0.02] border border-black/[0.09] focus:bg-white focus:border-primary/40 transition-all font-body-md text-[12px] outline-none h-[32px]"
+              style={{ color: "var(--color-on-surface)" }}
             />
-          </div>
-        </div>
-
-        <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <SL icon={<Lock size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
-              Privacy
-            </SL>
-            <Dropdown
-              value={privacy}
-              onChange={setPrivacy}
-              options={[
-                { value: "internal", label: "Internal Only" },
-                { value: "public", label: "Public Link" },
-                { value: "restricted", label: "Restricted" },
-              ]}
-            />
-          </div>
-          <div>
-            <SL icon={<Layers size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
-              Link Entity
-            </SL>
-            <button className="w-full flex items-center justify-between px-3 py-1.5 rounded-[6px] bg-black/[0.02] border border-black/[0.09] hover:bg-black/[0.04] transition-all font-body-md text-[12px] text-on-surface-variant opacity-70">
-              <span className="truncate">Select module...</span>
-              <ChevronDown size={14} className="shrink-0 opacity-50" />
-            </button>
           </div>
         </div>
       </ModalContent>
 
-      <ModalFooter summary={error}>
+      <ModalFooter summary={
+        error ? (
+          <span className="text-red-600 font-display text-[11px] font-medium bg-red-50/50 border border-red-100 px-2.5 py-1 rounded-md">
+            {error}
+          </span>
+        ) : null
+      }>
         <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
           Cancel
         </button>
-        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
-          {isUploading ? "Uploading..." : "Start Upload"}
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all flex items-center justify-center min-w-[100px]" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          {isUploading ? (
+            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : "Start Upload"}
         </button>
       </ModalFooter>
     </ModalShell>

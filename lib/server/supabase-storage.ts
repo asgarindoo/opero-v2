@@ -134,7 +134,65 @@ export async function uploadTenantPrivateFile(params: {
   return objectPath;
 }
 
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set([
+  "pdf", "docx", "xlsx", "pptx", "txt", "csv", // Documents
+  "png", "jpg", "jpeg", "webp", "svg",         // Images
+  "zip", "rar"                                 // Archives
+]);
+
+const BLOCKED_EXTENSIONS = new Set([
+  "exe", "apk", "dmg", "bat", "sh", "js", "msi", "app", "cmd", "com"
+]);
+
+export async function uploadTenantDocument(params: {
+  organizationId: string;
+  file: File;
+  folder?: string;
+}) {
+  const maxBytes = 30 * 1024 * 1024;
+
+  if (params.file.size > maxBytes) {
+    throw new Error("Maximum upload size is 30MB.");
+  }
+
+  // Validate extension
+  const fileNameParts = params.file.name.split(".");
+  const ext = fileNameParts.length > 1 ? fileNameParts.pop()?.toLowerCase() || "" : "";
+
+  if (!ext || BLOCKED_EXTENSIONS.has(ext) || !ALLOWED_DOCUMENT_EXTENSIONS.has(ext)) {
+    throw new Error("Unsupported file type.");
+  }
+
+  const supabase = getSupabaseAdmin();
+  const folder = params.folder ? safeFileName(params.folder) : "uncategorized";
+  
+  const cleanBaseName = safeFileName(fileNameParts.join("."));
+  const objectPath = `tenants/${params.organizationId}/${folder}/${cleanBaseName}_${Date.now()}.${ext}`;
+  const buffer = Buffer.from(await params.file.arrayBuffer());
+
+  const { error } = await supabase.storage
+    .from(TENANT_FILES_BUCKET)
+    .upload(objectPath, buffer, {
+      contentType: params.file.type || "application/octet-stream",
+      upsert: false,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return objectPath;
+}
+
 export async function downloadPrivateObject(bucket: string, path: string) {
   const supabase = getSupabaseAdmin();
   return supabase.storage.from(bucket).download(path);
+}
+
+export async function deletePrivateObject(bucket: string, path: string) {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+  if (error) {
+    throw error;
+  }
 }

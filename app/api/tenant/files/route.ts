@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/server/auth-utils";
-import { downloadPrivateObject, TENANT_FILES_BUCKET, uploadTenantPrivateFile } from "@/lib/server/supabase-storage";
+import { downloadPrivateObject, TENANT_FILES_BUCKET, uploadTenantDocument } from "@/lib/server/supabase-storage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
 
-    const storagePath = await uploadTenantPrivateFile({
+    const storagePath = await uploadTenantDocument({
       organizationId: tenant.id,
       file,
       folder: typeof folder === "string" ? folder : undefined,
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     console.error("[POST /api/tenant/files]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal server error" },
-      { status: 500 }
+      { status: err instanceof Error && err.message.includes("Maximum upload size") ? 413 : 400 }
     );
   }
 }
@@ -51,11 +51,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
+    const isDownload = req.nextUrl.searchParams.get("download") === "true";
+    const filenameParam = req.nextUrl.searchParams.get("filename") || "file";
+
+    const headers: Record<string, string> = {
+      "Content-Type": data.type || "application/octet-stream",
+      "Cache-Control": "private, max-age=300",
+    };
+
+    if (isDownload) {
+      headers["Content-Disposition"] = `attachment; filename="${encodeURIComponent(filenameParam)}"`;
+    } else {
+      headers["Content-Disposition"] = "inline";
+    }
+
     return new NextResponse(data.stream(), {
-      headers: {
-        "Content-Type": data.type || "application/octet-stream",
-        "Cache-Control": "private, max-age=300",
-      },
+      headers,
     });
   } catch (err) {
     if (err instanceof Response) return err;
