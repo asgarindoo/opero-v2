@@ -124,10 +124,10 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const rawOrderDiscount = parseFloat(orderDiscount) || 0;
   const orderDiscountAmt = orderDiscountType === "fixed" ? rawOrderDiscount : subtotal * (rawOrderDiscount / 100);
   const clampedOrderDiscountAmt = Math.min(subtotal, Math.max(0, orderDiscountAmt));
-  
+
   const rawTax = parseFloat(taxPercentage) || 0;
   const taxAmt = Math.max(0, (subtotal - clampedOrderDiscountAmt) * (rawTax / 100));
-  
+
   const total = Math.max(0, subtotal - clampedOrderDiscountAmt + taxAmt);
   const isValid = title.trim() || items.some(it => it.name.trim());
 
@@ -160,34 +160,34 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   };
 
   const footerSummary = (
-    <div className="flex items-center gap-6">
-      <div className="font-display text-[12px] font-semibold flex gap-2 items-center" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
+    <div className="flex items-center gap-2 sm:gap-4">
+      <div className="font-display text-[11px] font-semibold flex gap-1.5 items-center shrink-0" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
         {items.filter(it => it.name.trim()).length} item{items.filter(it => it.name.trim()).length !== 1 ? "s" : ""}
       </div>
-      <div className="flex gap-6 font-display text-[13px] flex-1 justify-end mr-2">
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">Subtotal</span>
+      <div className="flex gap-2 sm:gap-4 font-display text-[11px] flex-1 justify-end mr-1">
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-[8px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">Subtotal</span>
           <span className="font-semibold text-on-surface/80">{formatCurrency(subtotal, currency)}</span>
         </div>
         {clampedOrderDiscountAmt > 0 && (
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">
-              Discount {orderDiscountType === "percentage" && orderDiscount ? `(${orderDiscount}%)` : ""}
+          <div className="flex flex-col items-end shrink-0">
+            <span className="text-[8px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">
+              Disc {orderDiscountType === "percentage" && orderDiscount ? `(${orderDiscount}%)` : ""}
             </span>
             <span className="font-semibold text-on-surface-variant/80">−{formatCurrency(clampedOrderDiscountAmt, currency)}</span>
           </div>
         )}
         {taxAmt > 0 && (
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">
+          <div className="flex flex-col items-end shrink-0">
+            <span className="text-[8px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">
               Tax {taxPercentage ? `(${taxPercentage}%)` : ""}
             </span>
             <span className="font-semibold text-on-surface-variant/80">+{formatCurrency(taxAmt, currency)}</span>
           </div>
         )}
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">Total</span>
-          <span className="font-bold text-[15px] text-on-surface">{formatCurrency(total, currency)}</span>
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-[8px] font-label-caps uppercase tracking-wider text-on-surface-variant/50">Total</span>
+          <span className="font-bold text-[13px] text-on-surface">{formatCurrency(total, currency)}</span>
         </div>
       </div>
     </div>
@@ -196,7 +196,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell onClose={onClose} maxWidth={640}>
       <ModalHeader title="New Sale" onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput
@@ -253,7 +253,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-3">
-          <SL 
+          <SL
             icon={<ShoppingCart size={11} strokeWidth={1.75} />}
             right={
               <button type="button" onClick={addLineItem} className="flex items-center gap-1.5 font-label-caps text-[9px] font-bold" style={{ color: "var(--color-primary)" }}>
@@ -330,8 +330,8 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                       onChange={e => updateItem(item.id, "discount", parseFloat(e.target.value) || 0)}
                       className="w-full bg-transparent px-2 py-1.5 font-display text-[13px] outline-none text-right"
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => updateItem(item.id, "discountType", item.discountType === "fixed" ? "percentage" : "fixed")}
                       className="px-1.5 py-1.5 text-[10px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 hover:bg-black/5 border-l border-black/[0.06] transition-all"
                     >
@@ -367,8 +367,8 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
                     className="w-full bg-transparent pl-3 pr-2 py-1.5 font-display text-[13px] outline-none text-right"
                     placeholder="0.00"
                   />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setOrderDiscountType(prev => prev === "fixed" ? "percentage" : "fixed")}
                     className="px-2 py-1.5 text-[11px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 hover:bg-black/5 border-l border-black/[0.06] transition-all"
                   >
@@ -399,18 +399,13 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
 
       </ModalContent>
 
-      <ModalFooter>
-        <div className="flex-1">
-          {footerSummary}
-        </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
-            Cancel
-          </button>
-          <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
-            Create Sale
-          </button>
-        </div>
+      <ModalFooter summary={footerSummary}>
+        <button type="button" onClick={onClose} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+          Cancel
+        </button>
+        <button type="button" onClick={handleSubmit} disabled={!isValid} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+          Create Sale
+        </button>
       </ModalFooter>
     </ModalShell>
   );

@@ -126,11 +126,11 @@ export default function SalesOverviewWidget() {
           <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40 py-2 text-center">No recent deals</p>
         ) : (
           <div className="space-y-1">
-            {recentDeals.map((deal) => {
+            {recentDeals.map((deal, idx) => {
               const sc = STAGE_COLOR[deal.stage] ?? STAGE_COLOR.Leads;
               return (
                 <div
-                  key={deal.name}
+                  key={`${deal.name}-${idx}`}
                   className="flex items-center gap-3 px-2.5 py-2 rounded-[6px] hover:bg-black/[0.02] transition-colors cursor-pointer"
                   style={{ border: "1px solid rgba(0,0,0,0.04)" }}
                 >
