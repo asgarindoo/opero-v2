@@ -96,10 +96,10 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
         linkedItems: [],
         activities: [{
           id: "a" + Date.now(),
-          type: "status_changed",
-          description: "Goal established",
+          type: "status_change",
+          content: "Goal established",
           timestamp: new Date().toISOString(),
-          author: userName
+          userId: user?.id || "me"
         }]
       };
 
