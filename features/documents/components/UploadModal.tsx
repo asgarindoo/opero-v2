@@ -79,7 +79,20 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
     <ModalShell onClose={onClose} maxWidth={480}>
       <ModalHeader title="Upload Documents" icon={<Upload size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
       
-      <ModalContent className="space-y-6">
+      <ModalContent className="db-sidebar space-y-6">
+        <div className="space-y-4">
+          <GlobalInput
+            autoFocus
+            required
+            maxLength={60}
+            placeholder="Document Name (e.g. Sales Report Q1)…"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="font-display font-semibold"
+            style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
+          />
+        </div>
+
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
@@ -120,15 +133,6 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="space-y-4">
-          <GlobalInput
-            label="Document Name"
-            required
-            maxLength={50}
-            autoFocus
-            placeholder="e.g. Sales Report Q1.pdf"
-            value={name}
-            onChange={e => setName(e.target.value)}
-          />
 
           <div className="grid grid-cols-2 gap-4">
             <GlobalSelect

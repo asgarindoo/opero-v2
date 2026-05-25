@@ -66,16 +66,20 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
     <ModalShell onClose={onClose} maxWidth={480}>
       <ModalHeader title="Register Asset" icon={<Landmark size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
       
-      <ModalContent className="space-y-6">
-        <GlobalInput
-          label="Asset Name"
-          required
-          maxLength={50}
-          autoFocus
-          placeholder="e.g. MacBook Pro 16"
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
+      <ModalContent className="db-sidebar space-y-6">
+        <div className="space-y-4">
+          <GlobalInput
+            autoFocus
+            required
+            maxLength={60}
+            placeholder="Asset Name (e.g. MacBook Pro 16)…"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="font-display font-semibold"
+            style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
+          />
+        </div>
+
 
         <div className="grid grid-cols-2 gap-4">
           <GlobalInput

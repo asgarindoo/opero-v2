@@ -462,3 +462,15 @@ html {
   background-size: 200% 100%;
   animation: progressShimmer 2.5s ease-in-out infinite;
 }
+
+/* ── Print Styles ── */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

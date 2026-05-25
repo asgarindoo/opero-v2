@@ -30,10 +30,8 @@ interface Props {
 export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice }: Props) {
   const { invoices, deleteInvoices } = useInvoices();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
-  const itemsPerPage = 15;
 
   const filteredInvoices = invoices.filter(inv => {
     const matchesSearch = inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -42,30 +40,28 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
     if (filterMode === "all") return matchesSearch;
     if (filterMode === "paid") return matchesSearch && inv.status === "Paid";
     if (filterMode === "unpaid") return matchesSearch && inv.status === "Unpaid";
-    if (filterMode === "overdue") return matchesSearch && inv.status === "Overdue";
+    if (filterMode === "overdue") return matchesSearch && inv.status === "Unpaid" && new Date(inv.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
+    if (filterMode === "cancelled") return matchesSearch && inv.status === "Cancelled";
 
     return matchesSearch;
   });
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
 
-  const getStatusVariant = (status: InvoiceStatus): any => {
+
+  const getStatusVariant = (status: InvoiceStatus, dueDate: string): any => {
+    if (status === "Unpaid" && new Date(dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0)) return "error"; // Overdue
     switch (status) {
       case "Paid": return "success";
-      case "Unpaid": return "neutral";
-      case "Overdue": return "error";
-      case "Draft": return "neutral";
       case "Cancelled": return "error";
       default: return "neutral";
     }
   };
 
   const toggleAll = () => {
-    if (selectedIds.size === paginatedInvoices.length) {
+    if (selectedIds.size === filteredInvoices.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(paginatedInvoices.map(i => i.id)));
+      setSelectedIds(new Set(filteredInvoices.map(i => i.id)));
     }
   };
 
@@ -114,7 +110,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                 <div className="flex items-center justify-center">
                   <input
                     type="checkbox"
-                    checked={selectedIds.size > 0 && selectedIds.size === paginatedInvoices.length}
+                    checked={selectedIds.size > 0 && selectedIds.size === filteredInvoices.length}
                     onChange={toggleAll}
                     className="w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
                   />
@@ -130,7 +126,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedInvoices.map((inv) => {
+            {filteredInvoices.map((inv) => {
               const isSelected = selectedIds.has(inv.id);
 
               return (
@@ -170,8 +166,8 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(inv.status)}>
-                      {inv.status}
+                    <Badge variant={getStatusVariant(inv.status, inv.dueDate)}>
+                      {inv.status === "Unpaid" && new Date(inv.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) ? "Overdue" : inv.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -182,7 +178,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                   <TableCell>
                     <div className="flex items-center gap-1.5">
                       <Clock size={10} className="text-on-surface-variant opacity-60" />
-                      <span className={`font-display text-[11.5px] ${inv.status === "Overdue" ? "text-red-500 opacity-80 font-semibold" : "text-on-surface-variant opacity-60"}`}>
+                      <span className={`font-display text-[11.5px] ${inv.status === "Unpaid" && new Date(inv.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) ? "text-red-500 opacity-80 font-semibold" : "text-on-surface-variant opacity-60"}`}>
                         {new Date(inv.dueDate).toLocaleDateString()}
                       </span>
                     </div>
@@ -216,14 +212,6 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
           </TableBody>
         </Table>
       </div>
-
-      <ListFooter
-        totalItems={filteredInvoices.length}
-        itemsPerPage={itemsPerPage}
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        label="invoices"
-      />
 
       <SelectionBar
         count={selectedIds.size}

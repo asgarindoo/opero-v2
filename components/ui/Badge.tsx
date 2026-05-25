@@ -40,7 +40,7 @@ export default function Badge({
   return (
     <div className={`
       inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] 
-      font-display text-[10.5px] font-bold tracking-tight
+      font-display text-[10.5px] font-medium tracking-tight
       ${variants[variant]} ${className}
     `}>
       {dot && <div className={`w-1 h-1 rounded-full ${dotColors[variant]} opacity-70`} />}
@@ -54,7 +54,7 @@ export function Tag({ children, className = "" }: { children: React.ReactNode; c
     <div className={`
       inline-flex items-center px-1.5 py-0.5 rounded-[4px] 
       bg-black/[0.04] text-on-surface-variant opacity-60
-      font-label-caps text-[9px] font-bold uppercase tracking-widest
+      font-label-caps text-[9px] font-medium uppercase tracking-widest
       ${className}
     `}>
       {children}

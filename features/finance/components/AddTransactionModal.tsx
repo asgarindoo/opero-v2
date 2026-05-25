@@ -49,7 +49,29 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
     <ModalShell onClose={onClose} maxWidth={480}>
       <ModalHeader title="New Transaction" icon={<DollarSign size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }} />} onClose={onClose} />
       
-      <ModalContent className="space-y-6">
+      <ModalContent className="db-sidebar space-y-6">
+        <div className="space-y-4">
+          <GlobalInput
+            autoFocus
+            required
+            maxLength={60}
+            placeholder="Transaction Reference (e.g. INV-001)…"
+            value={reference}
+            onChange={e => setReference(e.target.value)}
+            className="font-display font-semibold"
+            style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
+          />
+
+          <GlobalTextarea
+            rows={2}
+            maxLength={300}
+            placeholder="Notes (Optional)…"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+          />
+        </div>
+
+
         <div>
           <div className="flex p-1 rounded-[8px]" style={{ background: "rgba(0,0,0,0.03)" }}>
             <button
@@ -95,15 +117,7 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <GlobalInput
-              label="Reference #"
-              required
-              maxLength={30}
-              placeholder="INV-001"
-              value={reference}
-              onChange={e => setReference(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-4">
             <GlobalInput
               label="Category"
               maxLength={30}
@@ -151,14 +165,6 @@ export default function AddTransactionModal({ onClose }: { onClose: () => void }
           </div>
         </FormSection>
 
-        <GlobalTextarea
-          label="Notes"
-          maxLength={300}
-          rows={2}
-          placeholder="Internal record notes..."
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-        />
       </ModalContent>
 
       <ModalFooter>

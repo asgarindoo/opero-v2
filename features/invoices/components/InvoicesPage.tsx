@@ -7,6 +7,9 @@ import {
   Download
 } from "lucide-react";
 import { InvoicesProvider, useInvoices } from "@/features/invoices";
+import { FinanceProvider } from "@/features/finance/context/FinanceContext";
+import { ContactsProvider } from "@/features/contacts/context/ContactsContext";
+import { ProductsProvider } from "@/features/products/context/ProductsContext";
 import InvoiceTable from "@/features/invoices/components/InvoiceTable";
 import InvoiceDrawer from "@/features/invoices/components/InvoiceDrawer";
 import AddInvoiceModal from "@/features/invoices/components/AddInvoiceModal";
@@ -15,7 +18,7 @@ import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
 
-type FilterMode = "all" | "unpaid" | "paid" | "overdue";
+type FilterMode = "all" | "unpaid" | "paid" | "overdue" | "cancelled";
 
 function InvoicesPageContent() {
   const { invoices } = useInvoices();
@@ -30,11 +33,13 @@ function InvoicesPageContent() {
     { id: "unpaid", label: "Unpaid" },
     { id: "paid", label: "Paid" },
     { id: "overdue", label: "Overdue" },
+    { id: "cancelled", label: "Cancelled" },
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#fef8f8]">
-      <ModuleHeader 
+    <div className={`flex flex-col h-full overflow-hidden bg-[#fef8f8] ${selectedInvoiceId ? "print:h-auto print:overflow-visible print:bg-white" : ""}`}>
+      <div className="print:hidden">
+        <ModuleHeader 
         title="Billing & Invoices"
         count={invoices.length}
         rightContent={(
@@ -64,16 +69,19 @@ function InvoicesPageContent() {
           </>
         )}
       />
+      </div>
 
-      <ModuleTabs 
-        tabs={tabs}
-        activeTab={filterMode}
-        onTabChange={(id) => setFilterMode(id as any)}
-        background="bg-[#fbf5f5]" // Applied specific brand tone for filters
-      />
+      <div className="print:hidden">
+        <ModuleTabs 
+          tabs={tabs}
+          activeTab={filterMode}
+          onTabChange={(id) => setFilterMode(id as any)}
+          background="bg-[#fbf5f5]" // Applied specific brand tone for filters
+        />
+      </div>
 
       {/* Main Table Area */}
-      <div className="flex-1 overflow-hidden bg-[#fef8f8]">
+      <div className="flex-1 overflow-hidden bg-[#fef8f8] print:hidden">
         <InvoiceTable searchQuery={searchQuery} filterMode={filterMode} onSelectInvoice={setSelectedInvoiceId} />
       </div>
 
@@ -86,8 +94,14 @@ function InvoicesPageContent() {
 
 export default function InvoicesPage() {
   return (
-    <InvoicesProvider>
-      <InvoicesPageContent />
-    </InvoicesProvider>
+    <FinanceProvider>
+      <ContactsProvider>
+        <ProductsProvider>
+          <InvoicesProvider>
+            <InvoicesPageContent />
+          </InvoicesProvider>
+        </ProductsProvider>
+      </ContactsProvider>
+    </FinanceProvider>
   );
 }
