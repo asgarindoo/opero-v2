@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/server/auth-utils";
-import { downloadPrivateObject, TENANT_FILES_BUCKET, uploadTenantDocument } from "@/lib/server/supabase-storage";
+import { downloadPrivateObject, deletePrivateObject, TENANT_FILES_BUCKET, uploadTenantDocument } from "@/lib/server/supabase-storage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -71,6 +71,25 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("[GET /api/tenant/files]", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { tenant } = await requireRole(["owner", "admin", "member"]);
+    const path = req.nextUrl.searchParams.get("path");
+
+    if (!path || !path.startsWith(`tenants/${tenant.id}/`)) {
+      return NextResponse.json({ error: "Invalid path or not authorized" }, { status: 400 });
+    }
+
+    await deletePrivateObject(TENANT_FILES_BUCKET, path);
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    if (err instanceof Response) return err;
+    console.error("[DELETE /api/tenant/files]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
