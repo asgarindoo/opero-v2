@@ -58,9 +58,9 @@ export default function Dropdown({
           bg-transparent hover:bg-black/[0.04] transition-all font-display text-[12px] text-on-surface font-medium
           disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none
         ` : `
-          w-full flex items-center justify-between px-3 py-1.5 rounded-[6px]
+          w-full flex items-center justify-between px-3 py-2.5 rounded-[6px]
           bg-black/[0.02] border border-black/[0.09] focus:bg-white focus:border-primary/40
-          transition-all font-body-md text-[12px] text-on-surface
+          transition-all font-body-md text-[13px] text-on-surface
           disabled:opacity-50 disabled:cursor-not-allowed
         `}
       >

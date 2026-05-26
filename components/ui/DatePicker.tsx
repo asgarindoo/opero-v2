@@ -118,12 +118,12 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
           variant === "minimal" ? "gap-1.5 group" : 
           variant === "ghost" ? "w-full justify-between px-2 py-1 rounded hover:bg-black/[0.04] group" : 
           variant === "compact" ? "gap-1.5 px-2.5 py-1.5 rounded-[6px]" :
-          "gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-black/[0.04]"
+          "gap-2 px-3 py-2.5 rounded-[6px] hover:bg-black/[0.04]"
         }`}
         style={{
           ...(variant === "minimal" || variant === "ghost" ? {} : 
           variant === "compact" ? { border: "1px solid rgba(0,0,0,0.09)" } : 
-          { border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.02)" }),
+          { border: "1px solid rgba(0,0,0,0.09)", background: "rgba(0,0,0,0.02)" }),
           ...triggerStyle
         }}
       >
@@ -151,7 +151,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         ) : (
           <>
             <CalendarDays size={13} style={{ color: "var(--color-primary)" }} />
-            <span className="font-display text-[12px] flex-1 truncate" style={{ color: value ? "var(--color-on-surface)" : "var(--color-on-surface-variant)", opacity: value ? 1 : 0.6 }}>
+            <span className="font-display text-[13px] flex-1 truncate" style={{ color: value ? "var(--color-on-surface)" : "var(--color-on-surface-variant)", opacity: value ? 1 : 0.6 }}>
               {displayFormat}
             </span>
             {value && (
