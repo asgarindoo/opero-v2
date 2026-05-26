@@ -24,9 +24,11 @@ function AssetsPageContent() {
   // Removed icons for a cleaner, unified high-density look
   const tabs = [
     { id: "all", label: "All Assets" },
-    { id: "in_use", label: "Assigned" },
+    { id: "available", label: "Available" },
+    { id: "in_use", label: "In Use" },
     { id: "maintenance", label: "Maintenance" },
     { id: "damaged", label: "Damaged" },
+    { id: "archived", label: "Archived" },
   ];
 
   return (

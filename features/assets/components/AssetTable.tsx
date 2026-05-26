@@ -35,12 +35,14 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
     const matchesSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.assetCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.assignedTo?.toLowerCase().includes(searchQuery.toLowerCase());
+      (Array.isArray(a.assignedTo) ? a.assignedTo : (a.assignedTo ? [a.assignedTo] : [])).join(" ").toLowerCase().includes(searchQuery.toLowerCase());
 
     if (filterMode === "all") return matchesSearch;
+    if (filterMode === "available") return matchesSearch && a.status === "Available";
     if (filterMode === "in_use") return matchesSearch && a.status === "In Use";
     if (filterMode === "maintenance") return matchesSearch && a.status === "Maintenance";
     if (filterMode === "damaged") return matchesSearch && a.status === "Damaged";
+    if (filterMode === "archived") return matchesSearch && a.status === "Archived";
 
     return matchesSearch;
   });
@@ -154,8 +156,11 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                   </TableCell>
                   <TableCell className="max-w-[0px]">
                     <div className="min-w-0 ml-3">
-                      <p className="font-display font-semibold text-[13px] text-on-surface truncate w-full group-hover:text-primary transition-colors opacity-90 leading-tight block">
-                        {asset.name}
+                      <p className="font-display font-semibold text-[13px] text-on-surface truncate w-full group-hover:text-primary transition-colors opacity-90 leading-tight flex items-center gap-1.5">
+                        <span>{asset.name}</span>
+                        {asset.quantity > 1 && (
+                          <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest bg-black/5 px-1 rounded shrink-0">x{asset.quantity}</span>
+                        )}
                       </p>
                       <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate w-full uppercase font-bold tracking-widest mt-0.5 leading-none block">
                         {asset.category}
@@ -168,16 +173,25 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell max-w-[0px]">
-                    {asset.assignedTo ? (
-                      <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-80 w-full">
-                        <div className="w-5 h-5 shrink-0 rounded-full bg-black/5 flex items-center justify-center font-bold text-[8px] text-on-surface-variant">
-                          {asset.assignedTo.charAt(0)}
+                    {(() => {
+                      const assignees = Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo as unknown as string] : []);
+                      return assignees.length > 0 ? (
+                        <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-80 w-full">
+                          <div className="flex -space-x-1.5 shrink-0">
+                            {assignees.slice(0, 3).map((owner, i) => (
+                              <div key={i} className="w-5 h-5 rounded-full bg-black/5 border border-white flex items-center justify-center font-bold text-[8px] text-on-surface-variant relative z-10">
+                                {owner.charAt(0)}
+                              </div>
+                            ))}
+                          </div>
+                          <span className="truncate block w-full">
+                            {assignees.join(", ")}
+                          </span>
                         </div>
-                        <span className="truncate block w-full">{asset.assignedTo}</span>
-                      </div>
-                    ) : (
-                      <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic block truncate w-full">— Unassigned</span>
-                    )}
+                      ) : (
+                        <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic block truncate w-full">— Unassigned</span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell max-w-[0px]">
                     <div className="min-w-0">

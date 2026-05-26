@@ -9,7 +9,7 @@ interface AssetsContextType {
   assets: Asset[];
   addAsset: (asset: Partial<Asset>) => void;
   updateAsset: (id: string, updates: Partial<Asset>) => void;
-  assignAsset: (id: string, person: string, department?: string) => void;
+  assignAsset: (id: string, persons: string[]) => void;
   deleteAssets: (ids: string[]) => void;
 }
 
@@ -53,7 +53,8 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString(),
         author: userName || "You"
       }],
-      notes: "",
+      comments: [],
+      quantity: partial.quantity ?? 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...partial
@@ -75,20 +76,21 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const assignAsset = useCallback((id: string, person: string) => {
+  const assignAsset = useCallback((id: string, persons: string[]) => {
     setAssets(prev => prev.map(a => {
       if (a.id !== id) return a;
+      const personList = persons.length > 0 ? persons.join(", ") : "Unassigned";
       const newActivity: AssetActivity = {
         id: Math.random().toString(36).substring(7),
         type: "assignment",
-        description: `Assigned to ${person}`,
+        description: persons.length > 0 ? `Assigned to ${personList}` : "Unassigned",
         timestamp: new Date().toISOString(),
         author: userName
       };
       const updated: Asset = {
         ...a,
-        assignedTo: person,
-        status: "In Use",
+        assignedTo: persons.length > 0 ? persons : undefined,
+        status: persons.length > 0 ? "In Use" : "Available",
         activities: [newActivity, ...(a.activities || [])],
         updatedAt: newActivity.timestamp
       };
@@ -101,12 +103,23 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
   }, [userName]);
 
   const deleteAssets = useCallback((ids: string[]) => {
+    const toDelete = assets.filter(a => ids.includes(a.id));
     setAssets(prev => prev.filter(a => !ids.includes(a.id)));
     Promise.all(
-      ids.map((id) => {
-        const recordId = assets.find(a => a.id === id) as { recordId?: string } | undefined;
-        const targetId = recordId?.recordId ?? id;
-        return deleteAsset(targetId).catch((err) => {
+      toDelete.map(async (a) => {
+        if (a.imageUrl) {
+          try {
+            const parsed = new URL(a.imageUrl, window.location.origin);
+            const path = parsed.searchParams.get("path");
+            if (path) {
+              await fetch(`/api/tenant/files?path=${encodeURIComponent(path)}`, { method: "DELETE" });
+            }
+          } catch (err) {
+            console.error("Failed to delete asset image from storage", err);
+          }
+        }
+        const recordId = (a as { recordId?: string }).recordId ?? a.id;
+        return deleteAsset(recordId).catch((err) => {
           console.error("Failed to delete asset:", err);
         });
       })
