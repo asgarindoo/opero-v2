@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getTenantContext } from "@/lib/server/auth-utils";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { TenantProvider } from "@/components/providers/TenantProvider";
+import { SocialChannelsProvider } from "@/features/social-channels";
 
 export const metadata: Metadata = {
   title: "Dashboard — OPERO",
@@ -18,7 +19,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <TenantProvider context={context}>
-      <DashboardShell>{children}</DashboardShell>
+      <SocialChannelsProvider>
+        <DashboardShell>{children}</DashboardShell>
+      </SocialChannelsProvider>
     </TenantProvider>
   );
 }

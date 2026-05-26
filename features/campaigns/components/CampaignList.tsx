@@ -1,32 +1,36 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Activity, CalendarDays, CheckCircle2, MessageSquare, Trash2, Inbox, ChevronRight, User } from "lucide-react";
+import { Trash2, ChevronRight, ListTodo } from "lucide-react";
 import { useCampaigns } from "../context/CampaignsContext";
 import type { Campaign, CampaignStatus } from "@/features/campaigns";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
-import { EmptyState } from "@/components/common/DataState";
 import Button from "@/components/ui/Button";
+import { EmptyState } from "@/components/common/DataState";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface Props {
   searchQuery: string;
   filterMode: string;
+  priorityFilter: string;
   onSelectCampaign: (id: string) => void;
 }
 
-function progressFor(campaign: Campaign) {
-  if (!campaign.goals.length) return 0;
-  return Math.round((campaign.goals.filter(goal => goal.isCompleted).length / campaign.goals.length) * 100);
+function getName(val: any): string {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object" && val.name) return String(val.name);
+  return String(val);
 }
 
-function initials(name: string) {
-  return name.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase();
+function formatCurrency(val?: number, curr: string = "USD") {
+  if (!val) return "—";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: curr, currencyDisplay: "code", maximumFractionDigits: 0 }).format(val);
 }
 
-export default function CampaignList({ searchQuery, filterMode, onSelectCampaign }: Props) {
+export default function CampaignList({ searchQuery, filterMode, priorityFilter, onSelectCampaign }: Props) {
   const { campaigns, deleteCampaigns } = useCampaigns();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -36,19 +40,21 @@ export default function CampaignList({ searchQuery, filterMode, onSelectCampaign
     const q = searchQuery.toLowerCase();
     return campaigns.filter(campaign => {
       const matchesSearch =
-        campaign.name.toLowerCase().includes(q) ||
-        campaign.owner.toLowerCase().includes(q) ||
-        campaign.channel.toLowerCase().includes(q);
+        getName(campaign.name).toLowerCase().includes(q) ||
+        getName(campaign.owner).toLowerCase().includes(q);
 
       if (filterMode === "active") return matchesSearch && campaign.status === "Active";
       if (filterMode === "planning") return matchesSearch && campaign.status === "Planning";
       if (filterMode === "paused") return matchesSearch && campaign.status === "Paused";
+
+      if (priorityFilter !== "all" && campaign.priority !== priorityFilter) return false;
+
       return matchesSearch;
     });
-  }, [campaigns, filterMode, searchQuery]);
+  }, [campaigns, filterMode, priorityFilter, searchQuery]);
 
   const toggleAll = () => {
-    if (selectedIds.size === filteredCampaigns.length) {
+    if (selectedIds.size === filteredCampaigns.length && filteredCampaigns.length > 0) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(filteredCampaigns.map(c => c.id)));
@@ -58,7 +64,8 @@ export default function CampaignList({ searchQuery, filterMode, onSelectCampaign
   const toggleOne = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelectedIds(next);
   };
 
@@ -79,117 +86,132 @@ export default function CampaignList({ searchQuery, filterMode, onSelectCampaign
     setIsDeleteModalOpen(false);
   };
 
-  const getStatusVariant = (status: CampaignStatus): any => {
-    switch (status) {
-      case "Active": return "primary";
-      case "Planning": return "warning";
-      case "Paused": return "neutral";
-      case "Completed": return "success";
-      default: return "neutral";
-    }
-  };
-
-  if (!filteredCampaigns.length) {
+  if (filteredCampaigns.length === 0) {
     return (
-      <EmptyState 
-        icon="campaign"
+      <EmptyState
+        icon="campaigns"
         title="No campaigns found"
         description="Try adjusting your filters or create a new campaign."
       />
     );
   }
 
+  const getStatusVariant = (status: CampaignStatus | string): any => {
+    switch (status) {
+      case "Active": return "success";
+      case "Planning": return "info";
+      case "Paused": return "warning";
+      case "Completed": return "slate";
+      case "Cancelled": return "error";
+      default: return "neutral";
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#fef8f8] relative">
-      <div className="flex-1 overflow-y-auto">
-        <Table>
-          <TableHeader className="bg-[#f9f5f5] border-b border-black/[0.04] sticky top-0 z-10">
-            <TableRow className="bg-[#f9f5f5] border-none hover:bg-[#f9f5f5]">
-              <TableHead className="w-12">
+    <div className="flex flex-col h-full bg-background relative min-w-0">
+      <div className="flex-1 overflow-auto">
+        <Table className="min-w-[800px]">
+          <TableHeader className="bg-[#fbf5f5]">
+            <TableRow className="h-10">
+              <TableHead className="w-10 px-4">
                 <div className="flex items-center justify-center">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={selectedIds.size > 0 && selectedIds.size === filteredCampaigns.length}
                     onChange={toggleAll}
-                    className="w-3.5 h-3.5 rounded-sm border-black/10 accent-black cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
+                    className="w-3 h-3 rounded-[3px] border-black/10 accent-primary cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
                   />
                 </div>
               </TableHead>
-              <TableHead className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] py-4">Campaign Unit</TableHead>
-              <TableHead className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] py-4">Status</TableHead>
-              <TableHead className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] py-4">Fulfillment</TableHead>
-              <TableHead className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] py-4">Owner</TableHead>
-              <TableHead className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em] py-4 text-right">Schedule</TableHead>
-              <TableHead className="w-16"></TableHead>
+              <TableHead className="w-[30%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Campaign Unit</TableHead>
+              <TableHead className="w-[20%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Accounts</TableHead>
+              <TableHead className="w-[10%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Tasks</TableHead>
+              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Owner</TableHead>
+              <TableHead className="w-[10%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Schedule</TableHead>
+              <TableHead className="w-[10%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Status</TableHead>
+              <TableHead className="w-[5%] px-4"><div className="w-full text-center font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredCampaigns.map((campaign) => {
               const isSelected = selectedIds.has(campaign.id);
-              const progress = progressFor(campaign);
 
               return (
-                <TableRow 
+                <TableRow
                   key={campaign.id}
                   onClick={() => onSelectCampaign(campaign.id)}
-                  className={`group transition-colors ${isSelected ? "bg-black/[0.01]" : "bg-[#fef8f8] hover:bg-black/[0.005]"}`}
+                  className={`group h-12 hover:bg-black/[0.015] cursor-pointer transition-colors ${isSelected ? "bg-primary/[0.02]" : ""}`}
                 >
-                  <TableCell onClick={e => e.stopPropagation()}>
+                  <TableCell className="px-4" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={isSelected}
                         onChange={(e) => toggleOne(campaign.id, e as any)}
-                        className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-black cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                        className={`w-3 h-3 rounded-[3px] border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
                       />
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5 py-1">
-                      <span className="font-display font-bold text-[13px] text-on-surface tracking-tight group-hover:text-primary transition-colors">
-                        {campaign.name}
+                  <TableCell className="px-4 whitespace-nowrap">
+                    <div className="flex flex-col min-w-0 gap-0.5">
+                      <span
+                        className="font-display font-semibold text-[12px] text-on-surface opacity-90 group-hover:text-primary transition-colors leading-tight truncate block max-w-[150px] md:max-w-[200px] lg:max-w-[250px] xl:max-w-[320px]"
+                        title={getName(campaign.name)}
+                      >
+                        {getName(campaign.name)}
                       </span>
-                      <span className="font-label-caps text-[7px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">
-                        {campaign.id} • {campaign.channel}
-                      </span>
+                      <p className={`font-body-sm text-[7px] truncate uppercase font-bold tracking-[0.2em] leading-none mt-1 ${campaign.priority === 'Critical' || campaign.priority === 'High' ? 'text-red-500 opacity-80' : 'text-on-surface-variant opacity-60'}`}>
+                        {campaign.priority} PRIORITY
+                      </p>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex">
-                       <span className={`px-2 py-0.5 rounded-[4px] font-label-caps text-[8px] font-bold uppercase tracking-widest ${campaign.status === 'Active' ? 'bg-black text-white' : 'bg-black/[0.05] text-on-surface-variant opacity-70'}`}>
-                          {campaign.status}
-                       </span>
+                  <TableCell className="px-4 whitespace-nowrap">
+                    <div className="flex flex-col min-w-0 gap-1.5">
+                      {campaign.campaignAccounts && campaign.campaignAccounts.length > 0 ? (
+                        <span className="font-display font-medium text-[11px] text-on-surface truncate block max-w-[150px]">
+                          {campaign.campaignAccounts.map(a => a.platform).slice(0, 2).join(", ")}
+                          {campaign.campaignAccounts.length > 2 && ", ..."}
+                        </span>
+                      ) : (
+                        <span className="font-body-sm text-[10px] text-on-surface-variant opacity-40 italic">No campaign accounts</span>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-4 min-w-[120px]">
-                      <div className="flex-1 h-1 rounded-full bg-black/[0.04] overflow-hidden">
-                        <div className="h-full bg-black opacity-60 rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
-                      </div>
-                      <span className="font-display text-[11px] font-bold text-on-surface opacity-60 tabular-nums">{progress}%</span>
+                  <TableCell className="px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 font-display text-[11px] text-on-surface opacity-80">
+                      <ListTodo size={10} className="opacity-50" />
+                      {Array.isArray(campaign.linkedTasks) ? campaign.linkedTasks.length : 0}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                       <div className="h-6 w-6 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-display font-bold text-[8px] text-on-surface-variant opacity-60">
-                          {initials(campaign.owner)}
-                       </div>
-                       <span className="font-body-sm text-[12.5px] font-medium text-on-surface opacity-60">{campaign.owner}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-tight">
-                      {new Date(campaign.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {new Date(campaign.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  <TableCell className="px-4 whitespace-nowrap">
+                    <span className="font-display font-medium text-[11px] text-on-surface truncate block max-w-[150px]">
+                      {getName(campaign.owner)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-all pr-4">
-                       <button 
-                         className="p-1.5 text-on-surface-variant opacity-60 hover:opacity-100 hover:text-red-500 transition-all"
-                         onClick={(e) => handleDeleteOne(e, campaign.id)}
-                       >
-                         <Trash2 size={13} />
-                       </button>
+                  <TableCell className="px-4 whitespace-nowrap">
+                    <span className="font-display text-[11px] text-on-surface-variant opacity-80">
+                      {new Date(campaign.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                    <span className="font-body-sm text-[9px] text-on-surface-variant opacity-50 block mt-0.5">
+                      to {new Date(campaign.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-4 whitespace-nowrap">
+                    <Badge variant={getStatusVariant(campaign.status)} className="text-[10px] py-0 px-1.5 h-4.5">
+                      {campaign.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-4 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50"
+                        onClick={(e) => handleDeleteOne(e, campaign.id)}
+                      >
+                        <Trash2 size={12} />
+                      </Button>
+                      <ChevronRight size={13} className="text-on-surface-variant ml-0.5" />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -208,12 +230,13 @@ export default function CampaignList({ searchQuery, filterMode, onSelectCampaign
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        onClose={() => { setIsDeleteModalOpen(false); setCampaignToDelete(null); }}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setCampaignToDelete(null);
+        }}
         onConfirm={handleConfirmDelete}
         title={campaignToDelete ? "Delete Campaign" : "Delete Selected Campaigns"}
-        description={campaignToDelete
-          ? "This will permanently remove this campaign and its linked workspace data."
-          : `Delete ${selectedIds.size} selected campaigns? This cannot be undone.`}
+        description={campaignToDelete ? "Are you sure you want to delete this campaign? All tasks and activity will be permanently removed." : `Are you sure you want to delete ${selectedIds.size} selected campaigns? This action cannot be undone.`}
       />
     </div>
   );

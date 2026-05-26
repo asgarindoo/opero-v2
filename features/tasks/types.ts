@@ -107,6 +107,7 @@ export interface Task {
   attachments: Attachment[];
   watchers?: string[];              // member ids
   project?: string;
+  campaignId?: string;
   recordId?: string;
   recordCreatedAt?: string;
   recordUpdatedAt?: string;

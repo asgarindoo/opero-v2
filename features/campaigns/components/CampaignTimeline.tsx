@@ -8,7 +8,15 @@ import type { Campaign } from "@/features/campaigns";
 interface Props {
   searchQuery: string;
   filterMode: string;
+  priorityFilter: string;
   onSelectCampaign: (id: string) => void;
+}
+
+function getName(val: any): string {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object" && val.name) return String(val.name);
+  return String(val);
 }
 
 const DAY_WIDTH = 28;
@@ -28,28 +36,31 @@ function progressFor(campaign: Campaign) {
   return Math.round((campaign.goals.filter(goal => goal.isCompleted).length / campaign.goals.length) * 100);
 }
 
-function initials(name: string) {
-  return name.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase();
+function initials(name: any) {
+  const n = getName(name);
+  if (!n) return "?";
+  return n.split(" ").filter(Boolean).map((part: string) => part[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function CampaignTimeline({ searchQuery, filterMode, onSelectCampaign }: Props) {
+export default function CampaignTimeline({ searchQuery, filterMode, priorityFilter, onSelectCampaign }: Props) {
   const { campaigns } = useCampaigns();
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return campaigns.filter(campaign => {
       const matchesSearch =
-        campaign.name.toLowerCase().includes(q) ||
-        campaign.owner.toLowerCase().includes(q) ||
-        campaign.channel.toLowerCase().includes(q) ||
-        campaign.tags.some(tag => tag.toLowerCase().includes(q));
+        getName(campaign.name).toLowerCase().includes(q) ||
+        getName(campaign.owner).toLowerCase().includes(q) ||
+        campaign.campaignAccounts?.some(acc => acc.platform.toLowerCase().includes(q) || acc.username.toLowerCase().includes(q)) ||
+        campaign.tags?.some(tag => tag.toLowerCase().includes(q));
 
       if (filterMode === "active") return matchesSearch && campaign.status === "Active";
       if (filterMode === "planning") return matchesSearch && campaign.status === "Planning";
       if (filterMode === "paused") return matchesSearch && campaign.status === "Paused";
+      if (priorityFilter !== "all" && campaign.priority !== priorityFilter) return false;
       return matchesSearch;
     });
-  }, [campaigns, filterMode, searchQuery]);
+  }, [campaigns, filterMode, priorityFilter, searchQuery]);
 
   const timeline = useMemo(() => {
     if (!filtered.length) return { baseDate: "", totalDays: 45, rows: [] as Array<{ campaign: Campaign; start: number; width: number }> };
@@ -121,12 +132,12 @@ export default function CampaignTimeline({ searchQuery, filterMode, onSelectCamp
                       {initials(campaign.owner)}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-display text-[13px] font-bold text-on-surface truncate tracking-tight">{campaign.name}</h4>
+                      <h4 className="font-display text-[13px] font-bold text-on-surface truncate tracking-tight">{getName(campaign.name)}</h4>
                       <div className="flex items-center gap-2 mt-1">
                          <span className={`px-1.5 py-0.5 rounded-[3px] font-label-caps text-[6px] font-bold uppercase tracking-widest ${campaign.status === 'Active' ? 'bg-black text-white' : 'bg-black/[0.05] text-on-surface-variant opacity-70'}`}>
                             {campaign.status}
                          </span>
-                         <span className="font-label-caps text-[7px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">{campaign.channel}</span>
+                         <span className="font-label-caps text-[7px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">{campaign.campaignAccounts?.slice(0, 2).map(a => a.platform).join(", ")}</span>
                       </div>
                     </div>
                   </div>
@@ -146,7 +157,7 @@ export default function CampaignTimeline({ searchQuery, filterMode, onSelectCamp
                     }}
                   >
                     <div className="flex items-center justify-between gap-3 mb-2">
-                      <span className="font-body-sm text-[11px] font-bold text-on-surface truncate group-hover:text-primary transition-colors">{campaign.name}</span>
+                      <span className="font-body-sm text-[11px] font-bold text-on-surface truncate group-hover:text-primary transition-colors">{getName(campaign.name)}</span>
                       <span className="font-display text-[10px] font-bold text-on-surface opacity-60 tabular-nums">{progress}%</span>
                     </div>
                     <div className="h-1 w-full bg-black/[0.04] rounded-full overflow-hidden">

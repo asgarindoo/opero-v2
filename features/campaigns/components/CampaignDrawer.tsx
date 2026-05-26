@@ -2,211 +2,292 @@
 
 import React, { useState } from "react";
 import { useCampaigns } from "../context/CampaignsContext";
-import { X, Clock, User, CheckCircle2, ListTodo, Trash2, Calendar, Share2, Mail, Globe, Activity, ExternalLink } from "lucide-react";
+import { Target, Calendar, Clock, Share2, MoreVertical, Plus, DollarSign, ChevronDown } from "lucide-react";
+import type { CampaignStatus, CampaignPriority } from "../types";
+import Drawer from "@/components/ui/Drawer";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+import Dropdown from "@/components/ui/Dropdown";
 
-export default function CampaignDrawer({ campaignId, onClose }: { campaignId: string, onClose: () => void }) {
-  const { campaigns, deleteCampaigns } = useCampaigns();
-  const [activeTab, setActiveTab] = useState<"details" | "activities">("details");
+function getName(val: any): string {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object" && val.name) return String(val.name);
+  return String(val);
+}
+
+function formatCurrency(val?: number, curr: string = "USD") {
+  if (!val) return "—";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: curr, currencyDisplay: "code", maximumFractionDigits: 0 }).format(val);
+}
+
+function getDaysRemaining(endDate: string) {
+  const end = new Date(endDate);
+  const now = new Date();
+  return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function Section({ label, count, children }: { label: string; count?: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="space-y-3">
+      <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 w-full">
+        <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.15em] text-left">
+          {label}{count !== undefined && ` ({count})`}
+        </span>
+        <div className="h-px flex-1 bg-black/[0.03]" />
+      </button>
+      {open && children}
+    </div>
+  );
+}
+
+export default function CampaignDrawer({ campaignId, onClose }: { campaignId: string; onClose: () => void }) {
+  const { campaigns, deleteCampaigns, updateCampaign } = useCampaigns();
+  const [tab, setTab] = useState<"details" | "activity">("details");
   const campaign = campaigns.find(c => c.id === campaignId);
 
   if (!campaign) return null;
 
+  const remainingDays = getDaysRemaining(campaign.endDate);
+  const isCritical = campaign.priority === "Critical" || campaign.priority === "High";
+  const durationDays = Math.max(1, Math.ceil(
+    (new Date(campaign.endDate).getTime() - new Date(campaign.startDate).getTime()) / (1000 * 60 * 60 * 24)
+  ));
+
+  const handleDelete = () => {
+    if (confirm("Delete this campaign? This action cannot be undone.")) {
+      deleteCampaigns([campaign.id]);
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/5 backdrop-blur-[1px] animate-fade-in" onClick={onClose} />
-      
-      <div className="relative w-full max-w-[560px] h-full bg-white shadow-2xl flex flex-col animate-slide-in-right border-l border-black/[0.05]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-white z-10 sticky top-0 border-b border-black/[0.02]">
+    <Drawer
+      isOpen={true}
+      onClose={onClose}
+      size="sm"
+    >
+      <div className="space-y-8">
+
+        {/* ── TOP: Title + Badges ── */}
+        <div className="space-y-4">
+          <h1
+            className="font-display text-[26px] font-bold text-on-surface leading-tight tracking-tight break-words line-clamp-3"
+            title={getName(campaign.name)}
+          >
+            {getName(campaign.name)}
+          </h1>
           <div className="flex items-center gap-2">
-             <div className="px-2 py-0.5 rounded font-label-caps text-[9px] font-bold border text-on-surface-variant bg-black/[0.04] border-black/[0.06] opacity-70">
-               {campaign.priority.toUpperCase()} PRIORITY
-             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => { if(confirm("Delete campaign?")) { deleteCampaigns([campaign.id]); onClose(); } }}
-              className="p-1.5 rounded-md text-on-surface-variant opacity-60 hover:opacity-100 hover:text-red-500 hover:bg-red-50 transition-all"
-            >
-              <Trash2 size={14} />
-            </button>
-            <button onClick={onClose} className="p-1.5 rounded-md text-on-surface-variant opacity-60 hover:opacity-100 hover:bg-black/5 transition-colors">
-              <X size={14} />
-            </button>
+            <Badge variant={campaign.status === "Completed" ? "success" : campaign.status === "Active" ? "info" : "warning"}>
+              {campaign.status}
+            </Badge>
+            <Badge variant={isCritical ? "error" : "info"}>{campaign.priority}</Badge>
           </div>
         </div>
 
-        {/* Tab Selection */}
-        <div className="flex border-b border-black/[0.03] bg-black/[0.01]">
-           <button 
-             onClick={() => setActiveTab("details")}
-             className={`px-6 py-3 font-label-caps text-[9px] font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'details' ? 'border-black text-black' : 'border-transparent text-on-surface-variant opacity-60 hover:opacity-100'}`}
-           >
-              Campaign Details
-           </button>
-           <button 
-             onClick={() => setActiveTab("activities")}
-             className={`px-6 py-3 font-label-caps text-[9px] font-bold uppercase tracking-widest border-b-2 transition-all ${activeTab === 'activities' ? 'border-black text-black' : 'border-transparent text-on-surface-variant opacity-60 hover:opacity-100'}`}
-           >
-              Marketing Activities
-           </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 pb-12 pt-6">
-          
-          {activeTab === "details" && (
-            <div className="animate-in fade-in duration-300">
-               <div className="mb-10">
-                 <div className="flex items-center gap-2 mb-3">
-                   <span className={`font-label-caps text-[9px] font-bold px-2 py-0.5 rounded bg-black/5 border border-black/[0.03] text-on-surface opacity-60 uppercase tracking-widest`}>
-                     {campaign.status.toUpperCase()}
-                   </span>
-                   <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60">Created {new Date(campaign.createdAt).toLocaleDateString()}</span>
-                 </div>
-                 <h3 className="font-display font-bold text-[24px] text-on-surface leading-tight mb-3">{campaign.name}</h3>
-                 <p className="font-body-sm text-[12.5px] text-on-surface-variant opacity-70 leading-relaxed mb-6">
-                   {campaign.description || "No description provided."}
-                 </p>
- 
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3.5 rounded-xl bg-black/[0.01] border border-black/[0.04]">
-                       <p className="font-label-caps text-[8.5px] text-on-surface-variant opacity-60 uppercase tracking-widest mb-1.5">Owner</p>
-                       <div className="flex items-center gap-2 font-display font-bold text-[13px] text-on-surface opacity-80">
-                          <User size={13} className="opacity-60" /> {campaign.owner}
-                       </div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-black/[0.01] border border-black/[0.04]">
-                       <p className="font-label-caps text-[8.5px] text-on-surface-variant opacity-60 uppercase tracking-widest mb-1.5">Linked Tasks</p>
-                       <div className="flex items-center gap-2 font-display font-bold text-[13px] text-on-surface opacity-80">
-                          <ListTodo size={13} className="opacity-60" /> {campaign.linkedTasks} tasks
-                       </div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-black/[0.01] border border-black/[0.04]">
-                       <p className="font-label-caps text-[8.5px] text-on-surface-variant opacity-60 uppercase tracking-widest mb-1.5">Start Date</p>
-                       <div className="flex items-center gap-2 font-display font-bold text-[13px] text-on-surface opacity-80">
-                          <Calendar size={13} className="opacity-60" /> {new Date(campaign.startDate).toLocaleDateString()}
-                       </div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-black/[0.01] border border-black/[0.04]">
-                       <p className="font-label-caps text-[8.5px] text-on-surface-variant opacity-60 uppercase tracking-widest mb-1.5">End Date</p>
-                       <div className="flex items-center gap-2 font-display font-bold text-[13px] text-on-surface opacity-80">
-                          <Clock size={13} className="opacity-60" /> {new Date(campaign.endDate).toLocaleDateString()}
-                       </div>
-                    </div>
-                 </div>
-               </div>
-
-               <section className="mb-10">
-                  <div className="flex items-center justify-between mb-4">
-                     <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider">Campaign Goals</h4>
-                     <button className="text-[10px] font-bold text-black border-b border-black/20 hover:border-black transition-all">+ ADD GOAL</button>
-                  </div>
-                  <div className="space-y-2">
-                     {campaign.goals.map(goal => (
-                       <div key={goal.id} className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.01] border border-black/[0.03]">
-                         <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${goal.isCompleted ? "bg-black border-black text-white" : "border-black/10 text-transparent"}`}>
-                            <CheckCircle2 size={11} />
-                         </div>
-                         <span className={`font-body-sm text-[12px] flex-1 ${goal.isCompleted ? "text-on-surface-variant opacity-60 line-through" : "text-on-surface opacity-80 font-medium"}`}>
-                            {goal.description}
-                         </span>
-                       </div>
-                     ))}
-                  </div>
-               </section>
-
-               <section className="mb-10">
-                  <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider mb-4">Assigned Team</h4>
-                  <div className="flex flex-wrap gap-3">
-                     {campaign.assignedStaff.map((staff, i) => (
-                       <div key={i} className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-black/[0.03] border border-black/[0.04]">
-                         <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center font-bold text-[8px]">
-                           {staff.charAt(0)}
-                         </div>
-                         <span className="font-body-sm text-[11px] font-bold text-on-surface opacity-70">{staff}</span>
-                       </div>
-                     ))}
-                     <button className="w-8 h-8 rounded-full border border-dashed border-black/20 flex items-center justify-center text-on-surface-variant opacity-60 hover:opacity-100 transition-all">+</button>
-                  </div>
-               </section>
+        {/* Meta strip: Status · Priority */}
+        <div className="flex items-center gap-8 pt-4 border-t border-black/[0.04]">
+          {/* Status dropdown */}
+          <div className="space-y-1">
+            <span className="block font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Status</span>
+            <div className="-ml-2">
+              <Dropdown
+                value={campaign.status}
+                onChange={(val) => updateCampaign(campaign.id, { status: val as CampaignStatus })}
+                options={(["Planning", "Active", "Paused", "Completed", "Cancelled"] as CampaignStatus[]).map(s => ({ label: s, value: s }))}
+              />
             </div>
-          )}
+          </div>
 
-          {activeTab === "activities" && (
-            <div className="animate-in fade-in duration-300 space-y-6">
-               <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Operational Execution</h4>
-                  <button className="text-[10px] font-bold text-black border border-black/10 px-3 py-1.5 rounded-[6px] hover:bg-black/[0.03] transition-all">LINK ACTIVITY</button>
-               </div>
-               
-               <div className="space-y-4">
-                  {[
-                    { title: "Summer Launch Broadcast", type: "Broadcast", platform: "Email", status: "Sent", icon: Mail },
-                    { title: "Brand Refresh Instagram Post", type: "Social", platform: "Instagram", status: "Scheduled", icon: Share2 },
-                    { title: "Technical Architecture Blog", type: "Content", platform: "Web", status: "Draft", icon: Globe },
-                  ].map((act, i) => (
-                    <div key={i} className="group p-4 rounded-xl bg-black/[0.01] border border-black/[0.04] hover:border-black/[0.1] transition-all cursor-pointer">
-                       <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-lg bg-black/[0.04] flex items-center justify-center">
-                                <act.icon size={14} className="text-black/60" />
-                             </div>
-                             <div>
-                                <h5 className="font-display text-[13.5px] font-bold text-on-surface leading-none group-hover:text-primary transition-colors">{act.title}</h5>
-                                <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40 mt-1">{act.type} • {act.platform}</p>
-                             </div>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded font-label-caps text-[8px] font-bold uppercase tracking-widest ${act.status === 'Sent' ? 'bg-black text-white' : 'bg-black/[0.06] text-on-surface-variant'}`}>
-                             {act.status}
-                          </span>
-                       </div>
-                       <button className="flex items-center gap-1 text-[10px] font-bold text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
-                          View Workspace <ExternalLink size={10} />
-                       </button>
+          {/* Priority dropdown */}
+          <div className="space-y-1">
+            <span className="block font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Priority</span>
+            <div className="-ml-2">
+              <Dropdown
+                value={campaign.priority}
+                onChange={(val) => updateCampaign(campaign.id, { priority: val as CampaignPriority })}
+                options={(["Low", "Medium", "High", "Critical"] as CampaignPriority[]).map(p => ({ label: p, value: p }))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── TABS ── */}
+        <div className="flex gap-6 border-b border-black/[0.04]">
+          {(["details", "activity"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`pb-3 font-label-caps text-[10px] font-bold uppercase tracking-wider transition-all relative ${tab === t ? "text-primary" : "text-on-surface-variant opacity-30 hover:opacity-100"
+                }`}
+            >
+              {t}
+              {tab === t && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+            </button>
+          ))}
+        </div>
+
+        {/* ── DETAILS TAB ── */}
+        {tab === "details" && (
+          <div className="space-y-8 pb-8">
+
+            {/* Overview */}
+            <Section label="Overview">
+              <p className="font-display text-[13px] leading-relaxed text-on-surface-variant/80 break-words whitespace-pre-wrap">
+                {campaign.description || "No objective or description provided."}
+              </p>
+            </Section>
+
+            {/* Campaign Information */}
+            <Section label="Campaign Information">
+              <div className="flex flex-col gap-6">
+                {/* Duration */}
+                <div className="space-y-1">
+                  <span className="block font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Duration</span>
+                  <div className="flex items-center gap-1.5 font-display text-[12px] font-medium text-on-surface">
+                    <Calendar size={11} className="opacity-40" />
+                    {new Date(campaign.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {" – "}
+                    {new Date(campaign.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    <span className="opacity-40 font-bold text-[11px]">• {durationDays} days</span>
+                  </div>
+                </div>
+
+                {campaign.budget && (
+                  <div className="space-y-1">
+                    <span className="block font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Budget</span>
+                    <div className="font-display text-[13px] font-semibold text-on-surface">
+                      {formatCurrency(campaign.budget, campaign.currency)}
+                    </div>
+                  </div>
+                )}
+                {campaign.tags && campaign.tags.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="block font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Tags</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {campaign.tags.map((tag, i) => (
+                        <span key={i} className="flex items-center gap-1 font-label-caps text-[9px] font-bold px-2.5 py-1 rounded-full border bg-zinc-900 text-white border-transparent shadow-sm cursor-default tracking-wide">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Section>
+
+            {/* Campaign Accounts */}
+            <Section label="Campaign Accounts" count={campaign.campaignAccounts?.length ?? 0}>
+              <div className="flex justify-end -mt-1 mb-2">
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] font-semibold flex items-center gap-1 border border-black/[0.08]">
+                  <Plus size={10} strokeWidth={2.5} /> Add Accounts
+                </Button>
+              </div>
+              {campaign.campaignAccounts && campaign.campaignAccounts.length > 0 ? (
+                <div className="space-y-2">
+                  {campaign.campaignAccounts.map(channel => (
+                    <div
+                      key={channel.id}
+                      className="group flex items-center gap-3 px-3 py-2.5 rounded-[8px] bg-white cursor-pointer"
+                      style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}
+                    >
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,0.04)" }}>
+                        <Share2 size={13} strokeWidth={2} style={{ color: "var(--color-on-surface)", opacity: 0.7 }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-[13px] font-semibold truncate text-on-surface">{channel.name}</p>
+                        <p className="font-label-caps text-[8.5px] font-bold uppercase tracking-widest truncate mt-0.5 text-on-surface-variant opacity-50">
+                          {channel.platform} • {channel.username}
+                        </p>
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-60 transition-opacity">
+                        <MoreVertical size={13} strokeWidth={2} className="text-on-surface-variant" />
+                      </div>
                     </div>
                   ))}
-               </div>
+                </div>
+              ) : (
+                <p className="font-body-sm text-[12px] italic text-on-surface-variant opacity-40">No campaign accounts attached.</p>
+              )}
+            </Section>
 
-               <div className="pt-6 border-t border-black/[0.04]">
-                  <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider mb-4">Execution History</h4>
-                  <div className="space-y-4 relative before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-px before:bg-black/[0.04]">
-                    {campaign.activities.map(activity => (
-                      <div key={activity.id} className="flex gap-4 relative">
-                        <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-black/[0.1] z-10 mt-1" />
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center mb-1">
-                            <p className="font-display font-semibold text-[12px] text-on-surface opacity-90">{activity.description}</p>
-                            <span className="font-body-sm text-[10px] text-on-surface-variant opacity-60">{new Date(activity.timestamp).toLocaleDateString()}</span>
-                          </div>
-                          <p className="font-body-sm text-[11px] text-on-surface-variant opacity-60">by {activity.author}</p>
-                        </div>
+            {/* Campaign Tasks */}
+            <Section label="Campaign Tasks" count={campaign.linkedTasks?.length ?? 0}>
+              <div className="flex justify-end -mt-1 mb-2">
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] font-semibold flex items-center gap-1 border border-black/[0.08]">
+                  <Plus size={10} strokeWidth={2.5} /> Add Task
+                </Button>
+              </div>
+              {campaign.linkedTasks && campaign.linkedTasks.length > 0 ? (
+                <div className="space-y-2">
+                  {campaign.linkedTasks.map(task => (
+                    <div
+                      key={task.id}
+                      className="group flex items-center gap-3 px-3 py-2.5 rounded-[8px] bg-white cursor-pointer"
+                      style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}
+                    >
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,0.04)" }}>
+                        <Target size={13} strokeWidth={2} style={{ color: "var(--color-on-surface)", opacity: 0.7 }} />
                       </div>
-                    ))}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-[13px] font-semibold truncate text-on-surface">{task.title}</p>
+                        <p className="font-label-caps text-[8.5px] font-bold uppercase tracking-widest truncate mt-0.5 text-on-surface-variant opacity-50">
+                          {task.id}
+                        </p>
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-60 transition-opacity">
+                        <MoreVertical size={13} strokeWidth={2} className="text-on-surface-variant" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 flex flex-col items-center justify-center text-center rounded-[8px] border border-dashed border-black/[0.08]">
+                  <div className="w-10 h-10 rounded-[10px] bg-black/5 flex items-center justify-center mb-3">
+                    <Target size={16} className="opacity-30" />
                   </div>
-               </div>
-            </div>
-          )}
-          
-        </div>
-      </div>
+                  <p className="font-display text-[13px] font-semibold text-on-surface mb-1">No campaign tasks yet.</p>
+                  <p className="font-body-sm text-[11px] text-on-surface-variant opacity-50 max-w-[200px] leading-relaxed">
+                    Attach existing tasks or create new tasks related to this campaign.
+                  </p>
+                </div>
+              )}
+            </Section>
 
-      <style jsx global>{`
-        .animate-fade-in {
-          animation: fadeIn 0.4s ease-out forwards;
-        }
-        .animate-slide-in-right {
-          animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
-    </div>
+          </div>
+        )}
+
+        {/* ── ACTIVITY TAB ── */}
+        {tab === "activity" && (
+          <div className="space-y-6 relative pl-4 pb-8">
+            <div className="absolute left-[3px] top-2 bottom-2 w-px bg-black/[0.04]" />
+            {campaign.activities && campaign.activities.length > 0 ? (
+              campaign.activities.map(act => (
+                <div key={act.id} className="relative flex items-start gap-4">
+                  <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
+                  <div className="flex-1 space-y-0.5">
+                    <p className="font-display text-[12.5px] text-on-surface-variant/80">
+                      <span className="font-bold text-on-surface">{act.author}</span>{" "}
+                      {act.description}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={10} className="opacity-20" />
+                      <span className="text-[10px] text-on-surface-variant opacity-30">
+                        {new Date(act.timestamp).toLocaleDateString()} at{" "}
+                        {new Date(act.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="font-body-sm text-[12px] italic text-on-surface-variant opacity-30">No activity recorded.</p>
+            )}
+          </div>
+        )}
+
+      </div>
+    </Drawer>
   );
 }

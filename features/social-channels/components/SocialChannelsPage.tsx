@@ -5,27 +5,7 @@ import ModuleHeader from "@/components/common/ModuleHeader";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
 import { Plus, Globe, Edit2, X, Check, ArrowUpRight, Calendar, Activity, Users, Eye, ChevronDown } from "lucide-react";
-
-type ChannelStatus = "Active" | "Inactive" | "Archived";
-type ChannelCategory = "Social" | "Email" | "Community" | "Marketplace" | "Custom";
-
-interface Channel {
-   id: string;
-   name: string;
-   platform: string;
-   username: string;
-   profileLink: string;
-   status: ChannelStatus;
-   followers: number;
-   postsThisMonth: number;
-   interactions: number;
-   monthlyReach?: number;
-   averageViews?: number;
-   lastActiveDate: string;
-   notes: string;
-}
-
-const INITIAL_CHANNELS: Channel[] = [];
+import { useSocialChannels, Channel, ChannelStatus } from "../context/SocialChannelsContext";
 
 const SCHEDULED: any[] = [];
 
@@ -67,7 +47,7 @@ const calculateEngagement = (followers: number, interactions: number) => {
 type AddForm = Partial<Channel>;
 
 export default function SocialChannelsPage() {
-   const [channels, setChannels] = useState<Channel[]>(INITIAL_CHANNELS);
+   const { channels, addChannel, updateChannel, removeChannel } = useSocialChannels();
    const [search, setSearch] = useState("");
    const [showAdd, setShowAdd] = useState(false);
    const [editId, setEditId] = useState<string | null>(null);
@@ -94,12 +74,11 @@ export default function SocialChannelsPage() {
       setShowAdd(true);
    };
    const openEdit = (ch: Channel) => { setForm({ ...ch }); setEditId(ch.id); setShowAdd(true); };
-   const removeChannel = (id: string) => setChannels(prev => prev.filter(c => c.id !== id));
 
    const saveChannel = () => {
       if (!form.name || !form.platform) return;
       if (editId) {
-         setChannels(prev => prev.map(c => c.id === editId ? { ...c, ...form } as Channel : c));
+         updateChannel(editId, form);
       } else {
          const newCh: Channel = {
             id: `ch-${Date.now()}`,
@@ -116,7 +95,7 @@ export default function SocialChannelsPage() {
             lastActiveDate: form.lastActiveDate || new Date().toISOString().split('T')[0],
             notes: form.notes || "",
          };
-         setChannels(prev => [...prev, newCh]);
+         addChannel(newCh);
       }
       setShowAdd(false); setForm({}); setEditId(null);
    };

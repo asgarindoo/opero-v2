@@ -11,6 +11,7 @@ import AddCampaignModal from "@/features/campaigns/components/AddCampaignModal";
 import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
+import Dropdown from "@/components/ui/Dropdown";
 import Button from "@/components/ui/Button";
 
 type ViewMode = "list" | "board" | "timeline";
@@ -27,6 +28,7 @@ function CampaignsPageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -79,6 +81,21 @@ function CampaignsPageContent() {
               width={200}
             />
 
+            <div className="w-36">
+               <Dropdown
+                 value={priorityFilter}
+                 onChange={(val) => setPriorityFilter(val as string)}
+                 options={[
+                   { value: "all", label: "All Priorities" },
+                   { value: "Low", label: "Low" },
+                   { value: "Medium", label: "Medium" },
+                   { value: "High", label: "High" },
+                   { value: "Critical", label: "Critical" },
+                 ]}
+                 align="right"
+               />
+            </div>
+
             <Button variant="primary" size="sm" icon={Plus} onClick={() => setShowAddModal(true)}>
               NEW CAMPAIGN
             </Button>
@@ -95,13 +112,13 @@ function CampaignsPageContent() {
 
       <div className="flex-1 overflow-hidden bg-[#fdf8f8]">
         {viewMode === "list" && (
-          <CampaignList searchQuery={searchQuery} filterMode={filterMode} onSelectCampaign={setSelectedCampaignId} />
+          <CampaignList searchQuery={searchQuery} filterMode={filterMode} priorityFilter={priorityFilter} onSelectCampaign={setSelectedCampaignId} />
         )}
         {viewMode === "board" && (
-          <CampaignBoard searchQuery={searchQuery} onSelectCampaign={setSelectedCampaignId} />
+          <CampaignBoard searchQuery={searchQuery} priorityFilter={priorityFilter} onSelectCampaign={setSelectedCampaignId} />
         )}
         {viewMode === "timeline" && (
-          <CampaignTimeline searchQuery={searchQuery} filterMode={filterMode} onSelectCampaign={setSelectedCampaignId} />
+          <CampaignTimeline searchQuery={searchQuery} filterMode={filterMode} priorityFilter={priorityFilter} onSelectCampaign={setSelectedCampaignId} />
         )}
       </div>
 

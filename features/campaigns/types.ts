@@ -1,5 +1,5 @@
 export type CampaignStatus = "Planning" | "Active" | "Paused" | "Completed" | "Cancelled" | "Archived";
-export type CampaignPriority = "Low" | "Medium" | "High";
+export type CampaignPriority = "Low" | "Medium" | "High" | "Critical";
 
 export interface CampaignActivity {
   id: string;
@@ -25,8 +25,10 @@ export interface Campaign {
   startDate: string;
   endDate: string;
   assignedStaff: string[]; // List of names
-  linkedTasks: number;
-  channel: string;
+  linkedTasks: { id: string; title: string; status: string }[];
+  campaignAccounts: { id: string; name: string; platform: string; username: string }[];
+  budget?: number;
+  currency?: string;
   tags: string[];
   goals: CampaignGoal[];
   activities: CampaignActivity[];
