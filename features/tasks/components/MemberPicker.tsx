@@ -53,7 +53,7 @@ export default function MemberPicker({ selected, onChange, max }: Props) {
     ), [members, query]);
 
   function toggle(member: Member) {
-    const isSelected = selected.some((s) => s.id === member.id);
+    const isSelected = selected.some((s) => s.id === member.id || s.name === member.name);
     if (isSelected) {
       onChange(selected.filter((s) => s.id !== member.id));
     } else {
@@ -119,7 +119,7 @@ export default function MemberPicker({ selected, onChange, max }: Props) {
             ) : filtered.length === 0 ? (
               <p className="px-4 py-3 font-body-sm text-[11px] text-center" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>No members found</p>
             ) : filtered.map((m) => {
-              const isSelected = selected.some((s) => s.id === m.id);
+              const isSelected = selected.some((s) => s.id === m.id || s.name === m.name);
               return (
                 <button
                   key={m.id}
