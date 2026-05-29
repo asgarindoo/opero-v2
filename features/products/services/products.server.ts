@@ -2,13 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
 import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
 
-const MODULE = "SYSTEM";
+const MODULE = "SALES";
 const ENTITY = "Product";
 
 export async function listProducts() {
   const ctx = await requireTenant();
   const products = await prisma.product.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
-  return products.map((product) => mapDomainRecord(product));
+  return products.map((product: any) => mapDomainRecord(product));
 }
 
 export async function getProductById(id: string) {

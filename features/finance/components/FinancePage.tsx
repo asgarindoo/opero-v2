@@ -27,7 +27,8 @@ function FinanceContent() {
     selectedType, 
     setSelectedType,
     dateRange,
-    setDateRange
+    setDateRange,
+    loading
   } = useFinance();
   
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
@@ -126,10 +127,10 @@ function FinanceContent() {
       />
 
       <main className="flex-1 overflow-y-auto">
-         <FinanceListView 
-           transactions={filtered} 
-           onTransactionClick={(tx) => setSelectedTxId(tx.id)} 
-         />
+        <FinanceListView 
+          transactions={filtered} 
+          onTransactionClick={(tx) => setSelectedTxId(tx.id)} 
+        />
       </main>
 
       {isAddModalOpen && (

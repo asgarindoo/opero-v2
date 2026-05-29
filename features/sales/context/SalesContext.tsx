@@ -16,6 +16,7 @@ interface SalesContextType {
   /** Callback bridge: when a sale is marked Paid, this fires so Finance can record income */
   onSalePaid?: (sale: SaleOpportunity) => void;
   setSalePaidCallback: (cb: ((sale: SaleOpportunity) => void) | undefined) => void;
+  loading: boolean;
 }
 
 const SalesContext = createContext<SalesContextType | undefined>(undefined);
@@ -25,6 +26,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
   const userName = user?.name || "You";
 
   const [sales, setSales] = useState<SaleOpportunity[]>([]);
+  const [loading, setLoading] = useState(true);
   const [onSalePaid, setOnSalePaid] = useState<((sale: SaleOpportunity) => void) | undefined>(undefined);
 
   useEffect(() => {
@@ -32,10 +34,13 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
+        setLoading(true);
         const items = await listSales<SaleOpportunity>();
         if (!cancelled) setSales(items);
       } catch (err) {
         console.error("Failed to load sales:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -203,7 +208,8 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     deleteSales,
     onSalePaid,
     setSalePaidCallback,
-  }), [sales, addSale, updateSale, addActivity, deleteSales, onSalePaid, setSalePaidCallback]);
+    loading
+  }), [sales, addSale, updateSale, addActivity, deleteSales, onSalePaid, setSalePaidCallback, loading]);
 
   return <SalesContext.Provider value={value}>{children}</SalesContext.Provider>;
 }

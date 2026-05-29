@@ -43,7 +43,7 @@ export async function createChannel(data: Record<string, unknown>) {
   await prisma.tenantActivity.create({
     data: {
       organizationId: context.tenant.id,
-      module: "SocialChannels",
+      module: "MARKETING",
       action: "Added Channel",
       entityId: ch.id,
       entityType: "SocialChannel",
@@ -81,7 +81,7 @@ export async function updateChannel(id: string, patch: Record<string, unknown>) 
   await prisma.tenantActivity.create({
     data: {
       organizationId: context.tenant.id,
-      module: "SocialChannels",
+      module: "MARKETING",
       action: "Updated Channel",
       entityId: ch.id,
       entityType: "SocialChannel",
@@ -107,7 +107,7 @@ export async function deleteChannel(id: string) {
   await prisma.tenantActivity.create({
     data: {
       organizationId: context.tenant.id,
-      module: "SocialChannels",
+      module: "MARKETING",
       action: "Deleted Channel",
       entityId: id,
       entityType: "SocialChannel",

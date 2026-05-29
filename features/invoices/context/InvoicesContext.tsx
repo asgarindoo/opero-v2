@@ -11,6 +11,7 @@ interface InvoicesContextType {
   updateInvoice: (id: string, updates: Partial<Invoice>) => void;
   markAsPaid: (id: string) => void;
   deleteInvoices: (ids: string[]) => void;
+  loading: boolean;
 }
 
 const InvoicesContext = createContext<InvoicesContextType | undefined>(undefined);
@@ -20,16 +21,20 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
   const userName = user?.name || "You";
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
+        setLoading(true);
         const items = await listInvoices<Invoice>();
         if (!cancelled) setInvoices(items);
       } catch (err) {
         console.error("Failed to load invoices:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -142,8 +147,9 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
     addInvoice,
     updateInvoice,
     markAsPaid,
-    deleteInvoices
-  }), [invoices, addInvoice, updateInvoice, markAsPaid, deleteInvoices]);
+    deleteInvoices,
+    loading
+  }), [invoices, addInvoice, updateInvoice, markAsPaid, deleteInvoices, loading]);
 
   return <InvoicesContext.Provider value={value}>{children}</InvoicesContext.Provider>;
 }

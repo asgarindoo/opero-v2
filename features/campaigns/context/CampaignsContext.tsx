@@ -7,6 +7,7 @@ import { useTenant } from "@/components/providers/TenantProvider";
 
 interface CampaignsContextType {
   campaigns: Campaign[];
+  loading: boolean;
   addCampaign: (campaign: Partial<Campaign>) => void;
   updateCampaign: (id: string, updates: Partial<Campaign>) => void;
   deleteCampaigns: (ids: string[]) => void;
@@ -19,6 +20,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
   const userName = user?.name || "You";
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,9 +28,13 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
     async function load() {
       try {
         const items = await listCampaigns<Campaign>();
-        if (!cancelled) setCampaigns(items);
+        if (!cancelled) {
+          setCampaigns(items);
+          setLoading(false);
+        }
       } catch (err) {
         console.error("Failed to load campaigns:", err);
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -94,10 +100,11 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({
     campaigns,
+    loading,
     addCampaign,
     updateCampaign,
     deleteCampaigns
-  }), [campaigns, addCampaign, updateCampaign, deleteCampaigns]);
+  }), [campaigns, loading, addCampaign, updateCampaign, deleteCampaigns]);
 
   return <CampaignsContext.Provider value={value}>{children}</CampaignsContext.Provider>;
 }

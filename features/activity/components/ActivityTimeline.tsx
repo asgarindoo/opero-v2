@@ -18,7 +18,37 @@ interface Props {
 }
 
 export default function ActivityTimeline({ onSelect }: Props) {
-  const { groupedActivities } = useActivity();
+  const { groupedActivities, loading } = useActivity();
+
+  if (loading) {
+    return (
+      <div className="flex flex-col w-full pb-20">
+        {[...Array(2)].map((_, groupIdx) => (
+          <div key={groupIdx} className="flex flex-col mb-8 animate-pulse">
+            <div className="px-8 py-2.5 bg-black/[0.01] border-y border-black/[0.03] flex items-center gap-4">
+               <div className="h-3 w-32 bg-black/[0.04] rounded" />
+               <div className="h-px flex-1 bg-black/[0.03]" />
+            </div>
+            <div className="flex flex-col divide-y divide-black/[0.02]">
+               {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-8 py-2.5">
+                     <div className="flex items-center gap-3 shrink-0">
+                        <div className="h-3 w-16 bg-black/[0.04] rounded" />
+                        <div className="h-3 w-20 bg-black/[0.04] rounded" />
+                     </div>
+                     <div className="w-1 h-1 rounded-full bg-black/[0.04] shrink-0" />
+                     <div className="flex-1 flex items-center gap-2">
+                        <div className="h-3 w-2/3 bg-black/[0.04] rounded" />
+                     </div>
+                     <div className="h-3 w-16 bg-black/[0.04] rounded ml-4 shrink-0" />
+                  </div>
+               ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (groupedActivities.length === 0) {
     return <ActivityEmptyState />;

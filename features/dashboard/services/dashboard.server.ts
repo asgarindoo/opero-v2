@@ -180,22 +180,16 @@ export async function getDashboardSummary() {
   const contents = contentRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
 
   let calendarEvents = contents
-    .filter((c: any) => c.date && String(c.date).slice(0, 10) === todayStr)
+    .filter((c: any) => {
+      const dateStr = c.date || c.postDate || c.publishDate || (c.createdAt ? String(c.createdAt) : "");
+      return dateStr && String(dateStr).slice(0, 10) === todayStr;
+    })
     .map((c: any) => ({
-      title: c.title ?? "Content Post",
+      title: c.title ?? c.name ?? "Content Post",
       type: "event",
       time: c.time ?? "Today",
-    }));
-
-  if (calendarEvents.length === 0) {
-    calendarEvents = contents.slice(0, 5).map((c: any) => ({
-      title: c.title ?? "Content Post",
-      type: "event",
-      time: c.time ?? "Upcoming",
-    }));
-  }
-
-  calendarEvents = calendarEvents.slice(0, 5);
+    }))
+    .slice(0, 5);
   const performanceMetrics = [
     {
       label: "Tasks Completed",

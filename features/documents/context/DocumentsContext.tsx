@@ -30,6 +30,7 @@ interface DocumentsContextType {
   addFolder: (name: string, parentId?: string) => void;
   renameFolder: (id: string, newName: string) => void;
   removeFolder: (id: string) => void;
+  loading: boolean;
 }
 
 const DocumentsContext = createContext<DocumentsContextType | undefined>(undefined);
@@ -41,12 +42,14 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
+        setLoading(true);
         const [docItems, folderItems] = await Promise.all([
           listDocuments<DocumentEntry>(),
           listFolders<Folder>(),
@@ -57,6 +60,8 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error("Failed to load documents workspace:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -165,8 +170,9 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     deleteDocuments,
     addFolder: addFolderItem,
     renameFolder,
-    removeFolder
-  }), [documents, folders, activeFolderId, searchQuery, viewMode, addDocument, updateDocumentEntry, deleteDocuments, addFolderItem, renameFolder, removeFolder]);
+    removeFolder,
+    loading
+  }), [documents, folders, activeFolderId, searchQuery, viewMode, addDocument, updateDocumentEntry, deleteDocuments, addFolderItem, renameFolder, removeFolder, loading]);
 
   return <DocumentsContext.Provider value={value}>{children}</DocumentsContext.Provider>;
 }

@@ -81,7 +81,7 @@ function InvoicesPageContent() {
       </div>
 
       {/* Main Table Area */}
-      <div className="flex-1 overflow-hidden bg-[#fef8f8] print:hidden">
+      <div className="flex-1 overflow-hidden bg-background">
         <InvoiceTable searchQuery={searchQuery} filterMode={filterMode} onSelectInvoice={setSelectedInvoiceId} />
       </div>
 

@@ -2,13 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
 import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
 
-const MODULE = "CAMPAIGNS";
+const MODULE = "MARKETING";
 const ENTITY = "Campaign";
 
 export async function listCampaigns() {
   const ctx = await requireTenant();
   const campaigns = await prisma.campaign.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
-  return campaigns.map((campaign) => mapDomainRecord(campaign));
+  return campaigns.map((campaign: any) => mapDomainRecord(campaign));
 }
 
 export async function getCampaignById(id: string) {

@@ -17,6 +17,7 @@ interface FinanceContextType {
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
   deleteTransactions: (ids: string[]) => void;
+  loading: boolean;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -29,6 +30,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"All" | TransactionType>("All");
   const [dateRange, setDateRange] = useState<DateRange>("All Time");
+  const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Record<string, number>>({
     USD: 1,
     EUR: 0.92,
@@ -42,6 +44,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
+        setLoading(true);
         const items = await listTransactions<Transaction>();
         if (!cancelled) setTransactions(items);
       } catch (err) {
@@ -58,6 +61,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {
         // Silently fallback to default rates
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -142,15 +147,15 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         const txDate = new Date(txDateStr);
         const diffTime = today.getTime() - txDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
+
         const maxDays = dateRange === "Today" ? 1 : dateRange === "Last 7 Days" ? 7 : dateRange === "Last 30 Days" ? 30 : 365;
         if (diffDays < 0 || diffDays > maxDays) return false;
       }
 
-      const matchesSearch = (t.category || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            (t.reference || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (t.contactName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (t.title || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = (t.category || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.reference || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.contactName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.title || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = selectedType === "All" || t.type === selectedType;
       return matchesSearch && matchesType;
     });
@@ -192,8 +197,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     setSelectedType,
     dateRange,
     setDateRange,
-    deleteTransactions
-  }), [filteredTransactions, addTransaction, updateTransaction, summary, searchQuery, selectedType, dateRange, deleteTransactions]);
+    deleteTransactions,
+    loading
+  }), [filteredTransactions, addTransaction, updateTransaction, summary, searchQuery, selectedType, dateRange, deleteTransactions, loading]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 }

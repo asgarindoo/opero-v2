@@ -82,30 +82,6 @@ export default function ActivityDetailsDrawer({ activityId, onClose }: { activit
               </div>
            </section>
 
-           {/* Metadata / Technical Log (Softer) */}
-           <section className="pt-8 border-t border-black/[0.03]">
-              <h4 className="flex items-center gap-2 font-display font-semibold text-[14px] text-on-surface mb-6 opacity-60">
-                 <History size={14} />
-                 Event Trace
-              </h4>
-              <div className="space-y-4 p-5 rounded-2xl bg-surface-container-low/50 border border-black/[0.02]">
-                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                       <p className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-30 uppercase mb-1">IP ADDRESS</p>
-                       <p className="font-body-sm text-[11px] text-on-surface-variant opacity-60">192.168.1.104</p>
-                    </div>
-                    <div>
-                       <p className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-30 uppercase mb-1">PLATFORM</p>
-                       <p className="font-body-sm text-[11px] text-on-surface-variant opacity-60">Web / Chrome</p>
-                    </div>
-                    <div className="col-span-2">
-                       <p className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-30 uppercase mb-1">TRACE ID</p>
-                       <p className="font-mono text-[10px] text-on-surface-variant opacity-40 select-all">trc_9a8b7c6d5e4f3g2h1i0j</p>
-                    </div>
-                 </div>
-              </div>
-           </section>
-
         </div>
       </div>
     </div>

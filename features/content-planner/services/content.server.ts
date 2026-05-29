@@ -36,6 +36,18 @@ export async function createContentPost(data: Record<string, unknown>) {
     }
   });
 
+  await prisma.tenantActivity.create({
+    data: {
+      organizationId: context.tenant.id,
+      module: "MARKETING",
+      action: "Created",
+      entityId: post.id,
+      entityType: "ContentPost",
+      entityName: post.title,
+      userId: context.user.id
+    }
+  });
+
   return {
     title: post.title || "",
     status: post.status || "Planned",
@@ -69,6 +81,18 @@ export async function updateContentPost(id: string, patch: Record<string, unknow
     }
   });
 
+  await prisma.tenantActivity.create({
+    data: {
+      organizationId: context.tenant.id,
+      module: "MARKETING",
+      action: "Updated",
+      entityId: post.id,
+      entityType: "ContentPost",
+      entityName: post.title,
+      userId: context.user.id
+    }
+  });
+
   return {
     title: post.title || "",
     status: post.status || "Planned",
@@ -89,5 +113,17 @@ export async function deleteContentPost(id: string) {
   }
 
   await prisma.contentPost.delete({ where: { id } });
+
+  await prisma.tenantActivity.create({
+    data: {
+      organizationId: context.tenant.id,
+      module: "MARKETING",
+      action: "Deleted",
+      entityId: id,
+      entityType: "ContentPost",
+      entityName: existing.title,
+      userId: context.user.id
+    }
+  });
   return { success: true };
 }

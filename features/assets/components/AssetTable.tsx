@@ -24,7 +24,7 @@ interface Props {
 }
 
 export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: Props) {
-  const { assets, deleteAssets } = useAssets();
+  const { assets, deleteAssets, loading } = useAssets();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -94,7 +94,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
     setIsDeleteModalOpen(false);
   };
 
-  if (filteredAssets.length === 0) {
+  if (!loading && filteredAssets.length === 0) {
     return (
       <EmptyState
         icon="web_asset"
@@ -130,97 +130,136 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedAssets.map((asset) => {
-              const isSelected = selectedIds.has(asset.id);
-
-              return (
-                <TableRow
-                  key={asset.id}
-                  onClick={() => onSelectAsset(asset.id)}
-                  className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
-                >
-                  <TableCell onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-center">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => toggleOne(asset.id, e as any)}
-                        className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
-                      />
+            {loading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i} className="h-14 hover:bg-black/[0.015] transition-colors">
+                  <TableCell>
+                    <div className="w-full flex justify-center">
+                      <div className="w-3.5 h-3.5 rounded-sm bg-black/[0.04] animate-pulse" />
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[0px]">
-                    <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight truncate block w-full">
-                      {asset.assetCode}
-                    </span>
+                    <div className="h-3 w-16 bg-black/[0.04] rounded animate-pulse" />
                   </TableCell>
                   <TableCell className="max-w-[0px]">
-                    <div className="min-w-0 ml-3">
-                      <p className="font-display font-semibold text-[13px] text-on-surface truncate w-full group-hover:text-primary transition-colors opacity-90 leading-tight flex items-center gap-1.5">
-                        <span>{asset.name}</span>
-                        {asset.quantity > 1 && (
-                          <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest bg-black/5 px-1 rounded shrink-0">x{asset.quantity}</span>
-                        )}
-                      </p>
-                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate w-full uppercase font-bold tracking-widest mt-0.5 leading-none block">
-                        {asset.category}
-                      </p>
+                    <div className="flex flex-col gap-1.5 w-full ml-3">
+                      <div className="h-3.5 w-32 bg-black/[0.04] rounded animate-pulse" />
+                      <div className="h-2 w-20 bg-black/[0.04] rounded animate-pulse" />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(asset.status)}>
-                      {asset.status}
-                    </Badge>
+                    <div className="h-4.5 w-16 bg-black/[0.04] rounded-sm animate-pulse" />
                   </TableCell>
                   <TableCell className="hidden lg:table-cell max-w-[0px]">
-                    {(() => {
-                      const assignees = Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo as unknown as string] : []);
-                      return assignees.length > 0 ? (
-                        <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-80 w-full">
-                          <div className="flex -space-x-1.5 shrink-0">
-                            {assignees.slice(0, 3).map((owner, i) => (
-                              <div key={i} className="w-5 h-5 rounded-full bg-black/5 border border-white flex items-center justify-center font-bold text-[8px] text-on-surface-variant relative z-10">
-                                {owner.charAt(0)}
-                              </div>
-                            ))}
-                          </div>
-                          <span className="truncate block w-full">
-                            {assignees.join(", ")}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic block truncate w-full">— Unassigned</span>
-                      );
-                    })()}
+                    <div className="h-3 w-20 bg-black/[0.04] rounded animate-pulse" />
                   </TableCell>
                   <TableCell className="hidden lg:table-cell max-w-[0px]">
-                    <div className="min-w-0">
-                      <p className="font-display text-[11.5px] text-on-surface-variant opacity-70 truncate w-full block">{asset.location || "N/A"}</p>
-                    </div>
+                    <div className="h-3 w-16 bg-black/[0.04] rounded animate-pulse" />
                   </TableCell>
                   <TableCell className="text-right hidden lg:table-cell max-w-[0px]">
-                    <span className="font-display text-[11px] text-on-surface-variant opacity-60 truncate block w-full">
-                      {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : "N/A"}
-                    </span>
+                    <div className="h-3.5 w-16 bg-black/[0.04] rounded animate-pulse ml-auto" />
                   </TableCell>
                   <TableCell className="px-4 text-center">
-                    <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
-                        onClick={(e) => handleDeleteOne(e, asset.id)}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
-                      <div className="ml-1 opacity-60">
-                        <ChevronRight size={13} />
-                      </div>
+                    <div className="w-full flex justify-center items-center gap-1.5">
+                      <div className="h-5 w-5 bg-black/[0.04] rounded animate-pulse" />
+                      <div className="h-4 w-4 bg-black/[0.04] rounded animate-pulse" />
                     </div>
                   </TableCell>
                 </TableRow>
-              );
-            })}
+              ))
+            ) : (
+              paginatedAssets.map((asset) => {
+                const isSelected = selectedIds.has(asset.id);
+
+                return (
+                  <TableRow
+                    key={asset.id}
+                    onClick={() => onSelectAsset(asset.id)}
+                    className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
+                  >
+                    <TableCell onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => toggleOne(asset.id, e as any)}
+                          className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[0px]">
+                      <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight truncate block w-full">
+                        {asset.assetCode}
+                      </span>
+                    </TableCell>
+                    <TableCell className="max-w-[0px]">
+                      <div className="min-w-0 ml-3">
+                        <p className="font-display font-semibold text-[13px] text-on-surface truncate w-full group-hover:text-primary transition-colors opacity-90 leading-tight flex items-center gap-1.5">
+                          <span>{asset.name}</span>
+                          {asset.quantity > 1 && (
+                            <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest bg-black/5 px-1 rounded shrink-0">x{asset.quantity}</span>
+                          )}
+                        </p>
+                        <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate w-full uppercase font-bold tracking-widest mt-0.5 leading-none block">
+                          {asset.category}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(asset.status)}>
+                        {asset.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell max-w-[0px]">
+                      {(() => {
+                        const assignees = Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo as unknown as string] : []);
+                        return assignees.length > 0 ? (
+                          <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-80 w-full">
+                            <div className="flex -space-x-1.5 shrink-0">
+                              {assignees.slice(0, 3).map((owner, i) => (
+                                <div key={i} className="w-5 h-5 rounded-full bg-black/5 border border-white flex items-center justify-center font-bold text-[8px] text-on-surface-variant relative z-10">
+                                  {owner.charAt(0)}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="truncate block w-full">
+                              {assignees.join(", ")}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic block truncate w-full">— Unassigned</span>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell max-w-[0px]">
+                      <div className="min-w-0">
+                        <p className="font-display text-[11.5px] text-on-surface-variant opacity-70 truncate w-full block">{asset.location || "N/A"}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right hidden lg:table-cell max-w-[0px]">
+                      <span className="font-display text-[11px] text-on-surface-variant opacity-60 truncate block w-full">
+                        {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : "N/A"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 text-center">
+                      <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
+                          onClick={(e) => handleDeleteOne(e, asset.id)}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                        <div className="ml-1 opacity-60">
+                          <ChevronRight size={13} />
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>

@@ -2,17 +2,17 @@
 
 import { useDashboardData } from "@/features/dashboard/context/DashboardDataContext";
 
-const DAYS = ["M","T","W","T","F","S","S"];
+const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 const TYPE_STYLE: Record<string, { icon: string; bg: string }> = {
-  meeting:  { icon: "videocam",  bg: "rgba(0,0,0,0.06)"       },
-  deadline: { icon: "flag",      bg: "rgba(186,26,26,0.07)"    },
-  task:     { icon: "task_alt",  bg: "rgba(0,0,0,0.04)"        },
-  default:  { icon: "event",     bg: "rgba(0,0,0,0.04)"        },
+  meeting: { icon: "videocam", bg: "rgba(0,0,0,0.06)" },
+  deadline: { icon: "flag", bg: "rgba(186,26,26,0.07)" },
+  task: { icon: "task_alt", bg: "rgba(0,0,0,0.04)" },
+  default: { icon: "event", bg: "rgba(0,0,0,0.04)" },
 };
 
 export default function CalendarWidget() {
-  const { data } = useDashboardData();
+  const { data, loading } = useDashboardData();
 
   const now = new Date();
   const today = now.getDay(); // 0=Sun
@@ -74,7 +74,17 @@ export default function CalendarWidget() {
           <span className="font-label-caps text-[9px] uppercase tracking-[0.08em] font-semibold block mb-2" style={{ color: "var(--color-on-surface-variant)", opacity: 0.4 }}>
             Today
           </span>
-          {events.length === 0 ? (
+          {loading ? (
+            <div className="space-y-1.5">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2.5 p-2 rounded-[6px]" style={{ border: "1px solid rgba(0,0,0,0.04)" }}>
+                  <div className="w-6 h-6 rounded-full bg-black/[0.04] animate-pulse shrink-0" />
+                  <div className="flex-1 h-3 rounded bg-black/[0.04] animate-pulse" />
+                  <div className="w-10 h-2.5 rounded bg-black/[0.04] animate-pulse shrink-0" />
+                </div>
+              ))}
+            </div>
+          ) : events.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 gap-2">
               <span className="material-symbols-outlined" style={{ fontSize: 24, color: "var(--color-on-surface-variant)", opacity: 0.22 }}>event_busy</span>
               <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40">No events scheduled</p>

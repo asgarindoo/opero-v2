@@ -13,6 +13,7 @@ interface ContactsContextType {
   updateContact: (contactId: string, updates: Partial<Contact>) => void;
   addContact: (contact: Partial<Contact>) => void;
   deleteContacts: (ids: string[]) => void;
+  loading: boolean;
 }
 
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
@@ -22,16 +23,20 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
   const userName = user?.name || "You";
 
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
+        setLoading(true);
         const items = await listContacts<Contact>();
         if (!cancelled) setContacts(items);
       } catch (err) {
         console.error("Failed to load contacts:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -145,8 +150,9 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     updateRelationshipType,
     updateContact,
     addContact,
-    deleteContacts
-  }), [contacts, addNote, updateStatus, updateRelationshipType, updateContact, addContact, deleteContacts]);
+    deleteContacts,
+    loading
+  }), [contacts, addNote, updateStatus, updateRelationshipType, updateContact, addContact, deleteContacts, loading]);
 
   return (
     <ContactsContext.Provider value={value}>

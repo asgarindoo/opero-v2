@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTenant } from "@/components/providers/TenantProvider";
 import React, { useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import ModuleHeader from "@/components/common/ModuleHeader";
@@ -26,13 +27,6 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
          </span>
       </div>
    );
-}
-
-function getTenantSlug() {
-   if (typeof window === 'undefined') return '';
-   const path = window.location.pathname;
-   const match = path.match(/^\/([^\/]+)/);
-   return match ? match[1] : '';
 }
 
 const statusDot = (s: ChannelStatus) =>
@@ -71,25 +65,25 @@ const calculateEngagement = (followers: number, interactions: number) => {
 type AddForm = Partial<Channel>;
 
 export default function SocialChannelsPage() {
-   const { channels, addChannel, updateChannel, removeChannel } = useSocialChannels();
+   const { channels, loading, addChannel, updateChannel, removeChannel } = useSocialChannels();
    const [search, setSearch] = useState("");
    const [showAdd, setShowAdd] = useState(false);
    const [editId, setEditId] = useState<string | null>(null);
    const [form, setForm] = useState<AddForm>({});
    const [activeChannel, setActiveChannel] = useState<string | null>(null);
    const [isStatusOpen, setIsStatusOpen] = useState(false);
-   
-   const router = useRouter();
-   const { mutate: globalMutate } = useSWRConfig();
 
-   const slug = getTenantSlug();
-   const { data: contentPosts } = useSWR(`/api/tenant/content-planner`, async (url) => {
+   const router = useRouter();
+   const { tenant } = useTenant();
+   const slug = tenant?.slug || "dashboard";
+   const { mutate: globalMutate } = useSWRConfig();
+   const { data: contentPosts, isLoading: isLoadingContent } = useSWR(`/api/tenant/content-planner`, async (url) => {
       const res = await fetch(url);
       if (!res.ok) return [];
       return res.json();
    }, { fallbackData: [] });
 
-   const { data: activities } = useSWR(slug ? `/api/tenant/${slug}/social-channels/activity` : null, async (url) => {
+   const { data: activities, isLoading: isLoadingActivities } = useSWR(slug ? `/api/tenant/${slug}/social-channels/activity` : null, async (url) => {
       const res = await fetch(url);
       if (!res.ok) return [];
       return res.json();
@@ -137,11 +131,11 @@ export default function SocialChannelsPage() {
       setEditId(null);
       setShowAdd(true);
    };
-   const openEdit = (ch: Channel) => { 
-      setForm({ ...ch }); 
-      setEditId(ch.id); 
-      setActiveChannel(ch.id); 
-      setShowAdd(false); 
+   const openEdit = (ch: Channel) => {
+      setForm({ ...ch });
+      setEditId(ch.id);
+      setActiveChannel(ch.id);
+      setShowAdd(false);
    };
 
    const saveChannel = async () => {
@@ -394,7 +388,36 @@ export default function SocialChannelsPage() {
                      </div>
 
                      <div className="space-y-3">
-                        {filtered.map(ch => (
+                        {loading ? (
+                           [...Array(3)].map((_, i) => (
+                              <div key={i} className="bg-white border border-black/[0.06] rounded-[8px] px-7 py-5 flex items-center gap-5 overflow-hidden animate-pulse">
+                                 <div className="min-w-0 flex-1 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                       <div className="h-4 w-32 bg-black/[0.04] rounded" />
+                                       <div className="h-3 w-16 bg-black/[0.04] rounded" />
+                                    </div>
+                                    <div className="h-3 w-24 bg-black/[0.04] rounded" />
+                                 </div>
+                                 <div className="hidden md:flex items-center gap-10 shrink-0">
+                                    <div className="text-right space-y-2">
+                                       <div className="h-3 w-16 bg-black/[0.04] rounded ml-auto" />
+                                       <div className="h-4 w-12 bg-black/[0.04] rounded ml-auto" />
+                                    </div>
+                                    <div className="text-right space-y-2">
+                                       <div className="h-3 w-16 bg-black/[0.04] rounded ml-auto" />
+                                       <div className="h-4 w-12 bg-black/[0.04] rounded ml-auto" />
+                                    </div>
+                                    <div className="text-right space-y-2">
+                                       <div className="h-3 w-16 bg-black/[0.04] rounded ml-auto" />
+                                       <div className="h-4 w-12 bg-black/[0.04] rounded ml-auto" />
+                                    </div>
+                                 </div>
+                                 <div className="flex items-center gap-4 shrink-0 ml-4">
+                                    <div className="h-6 w-16 rounded bg-black/[0.04]" />
+                                 </div>
+                              </div>
+                           ))
+                        ) : filtered.map(ch => (
                            <div
                               key={ch.id}
                               onClick={() => setActiveChannel(activeChannel === ch.id ? null : ch.id)}
@@ -545,20 +568,34 @@ export default function SocialChannelsPage() {
                      <div className="space-y-4">
                         <div className="flex items-center justify-between">
                            <h2 className="font-display text-[13px] font-bold text-on-surface tracking-tight">Upcoming Content</h2>
-                           <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">{SCHEDULED.length} items</span>
+                           <span className="font-label-caps text-[8px] font-normal text-on-surface-variant opacity-60 uppercase tracking-widest">{SCHEDULED.length} items</span>
                         </div>
 
                         <div className="space-y-2">
-                           {SCHEDULED.length > 0 ? SCHEDULED.map((post: any) => (
+                           {isLoadingContent ? (
+                              [...Array(3)].map((_, i) => (
+                                 <div key={i} className="bg-white border border-black/[0.06] rounded-[8px] px-5 py-4 animate-pulse shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                                    <div className="flex items-start justify-between gap-3 mb-2.5">
+                                       <div className="h-3 w-3/4 bg-black/[0.04] rounded" />
+                                       <div className="h-3 w-12 bg-black/[0.04] rounded shrink-0" />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                       <div className="h-2 w-16 bg-black/[0.04] rounded" />
+                                       <div className="w-0.5 h-0.5 rounded-full bg-black/10 shrink-0" />
+                                       <div className="h-2 w-16 bg-black/[0.04] rounded" />
+                                    </div>
+                                 </div>
+                              ))
+                           ) : SCHEDULED.length > 0 ? SCHEDULED.map((post: any) => (
                               <div key={post.id} className="bg-white border border-black/[0.06] rounded-[8px] px-5 py-4 group hover:border-black/15 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                                  <div className="flex items-start justify-between gap-3 mb-2.5">
-                                    <h4 className="font-display text-[12.5px] font-bold text-on-surface tracking-tight leading-snug line-clamp-2">{post.title}</h4>
-                                    <span className={`px-1.5 py-0.5 rounded-[4px] font-label-caps text-[7.5px] font-bold uppercase tracking-widest shrink-0 ${postDot(post.status)}`}>{post.status}</span>
+                                    <h4 className="font-display text-[12.5px] font-medium text-on-surface tracking-tight leading-snug line-clamp-2">{post.title}</h4>
+                                    <span className={`px-1.5 py-0.5 rounded-[4px] font-label-caps text-[7.5px] font-semibold uppercase tracking-widest shrink-0 ${postDot(post.status)}`}>{post.status}</span>
                                  </div>
                                  <div className="flex items-center gap-2">
                                     {(post as any).channel !== "Multiple" && (
                                        <>
-                                          <span className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-80 uppercase tracking-widest truncate">{post.channel}</span>
+                                          <span className="font-label-caps text-[7.5px] font-semibold text-on-surface-variant opacity-80 uppercase tracking-widest truncate">{post.channel}</span>
                                           <div className="w-0.5 h-0.5 rounded-full bg-black/10 shrink-0" />
                                        </>
                                     )}
@@ -581,15 +618,31 @@ export default function SocialChannelsPage() {
                         </div>
 
                         <div className="space-y-px bg-white border border-black/[0.06] rounded-[8px] overflow-hidden divide-y divide-black/[0.03] shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                           {ACTIVITY.slice(0, 5).length > 0 ? ACTIVITY.slice(0, 5).map((act: any) => (
+                           {isLoadingActivities ? (
+                              [...Array(4)].map((_, i) => (
+                                 <div key={i} className="relative px-5 py-4 flex items-start gap-3 animate-pulse">
+                                    <div className="flex-1 min-w-0">
+                                       <div className="flex items-start justify-between gap-3 mb-1">
+                                          <div className="h-3 w-3/4 bg-black/[0.04] rounded" />
+                                          <div className="h-2 w-10 bg-black/[0.04] rounded shrink-0 mt-0.5" />
+                                       </div>
+                                       <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                          <div className="h-3 w-16 bg-black/[0.04] rounded" />
+                                          <div className="w-1 h-1 rounded-full bg-black/10 mx-1" />
+                                          <div className="h-2 w-20 bg-black/[0.04] rounded" />
+                                       </div>
+                                    </div>
+                                 </div>
+                              ))
+                           ) : ACTIVITY.slice(0, 5).length > 0 ? ACTIVITY.slice(0, 5).map((act: any) => (
                               <div key={act.id} className="relative px-5 py-4 group hover:bg-black/[0.01] transition-colors flex items-start gap-3">
                                  <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-3 mb-1">
-                                       <h4 className="font-display text-[12px] font-bold text-on-surface tracking-tight leading-snug">{act.action}</h4>
-                                       <span className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest shrink-0 mt-0.5">{act.time}</span>
+                                       <h4 className="font-display text-[12px] font-medium text-on-surface tracking-tight leading-snug">{act.action}</h4>
+                                       <span className="font-label-caps text-[7.5px] font-semibold text-on-surface-variant opacity-60 uppercase tracking-widest shrink-0 mt-0.5">{act.time}</span>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                       <span className="font-label-caps text-[7.5px] font-bold text-black/60 bg-black/[0.04] px-1.5 py-0.5 rounded-[4px] uppercase tracking-widest truncate max-w-[120px]">{act.channel}</span>
+                                       <span className="font-label-caps text-[7.5px] font-semibold text-black/60 bg-black/[0.04] px-1.5 py-0.5 rounded-[4px] uppercase tracking-widest truncate max-w-[120px]">{act.channel}</span>
                                        <div className="w-1 h-1 rounded-full bg-black/10 mx-1" />
                                        <span className="font-body-sm text-[10px] text-on-surface-variant opacity-80">by <span className="font-medium text-black/80">{act.user}</span></span>
                                     </div>

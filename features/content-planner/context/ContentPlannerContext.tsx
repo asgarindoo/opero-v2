@@ -6,6 +6,7 @@ import { createContentPost, deleteContentPost, listContentPosts, updateContentPo
 
 interface ContentPlannerContextType {
   posts: ContentPost[];
+  loading: boolean;
   addPost: (post: Partial<ContentPost>) => void;
   updatePost: (id: string, updates: Partial<ContentPost>) => void;
   deletePosts: (ids: string[]) => void;
@@ -15,6 +16,7 @@ const ContentPlannerContext = createContext<ContentPlannerContextType | undefine
 
 export function ContentPlannerProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<ContentPost[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,9 +24,13 @@ export function ContentPlannerProvider({ children }: { children: React.ReactNode
     async function load() {
       try {
         const items = await listContentPosts<ContentPost>();
-        if (!cancelled) setPosts(items);
+        if (!cancelled) {
+          setPosts(items);
+          setLoading(false);
+        }
       } catch (err) {
         console.error("Failed to load content posts:", err);
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -87,10 +93,11 @@ export function ContentPlannerProvider({ children }: { children: React.ReactNode
 
   const value = useMemo(() => ({
     posts,
+    loading,
     addPost,
     updatePost,
     deletePosts
-  }), [posts, addPost, updatePost, deletePosts]);
+  }), [posts, loading, addPost, updatePost, deletePosts]);
 
   return <ContentPlannerContext.Provider value={value}>{children}</ContentPlannerContext.Provider>;
 }

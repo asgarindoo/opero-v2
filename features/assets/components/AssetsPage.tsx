@@ -64,7 +64,7 @@ function AssetsPageContent() {
       />
 
       <div className="flex-1 overflow-hidden bg-background">
-        <AssetTable searchQuery={searchQuery} filterMode={filterMode} onSelectAsset={setSelectedAssetId} />
+        <AssetTable filterMode={filterMode} searchQuery={searchQuery} onSelectAsset={setSelectedAssetId} />
       </div>
 
       {selectedAssetId && <AssetDrawer assetId={selectedAssetId} onClose={() => setSelectedAssetId(null)} />}

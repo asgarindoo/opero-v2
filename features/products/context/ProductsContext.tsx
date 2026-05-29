@@ -18,6 +18,7 @@ interface ProductsContextType {
   selectedStatus: "All" | StockStatus;
   setSelectedStatus: (status: "All" | StockStatus) => void;
   deleteProducts: (ids: string[]) => void;
+  loading: boolean;
 }
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
@@ -29,16 +30,20 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<"All" | StockStatus>("All");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
+        setLoading(true);
         const items = await listProducts<Product>();
         if (!cancelled) setProducts(items);
       } catch (err) {
         console.error("Failed to load products:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -192,8 +197,9 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     setSearchQuery,
     selectedStatus,
     setSelectedStatus,
-    deleteProducts
-  }), [filteredProducts, products, addProduct, updateProduct, addActivity, adjustStock, getProductById, searchQuery, selectedStatus, deleteProducts]);
+    deleteProducts,
+    loading
+  }), [filteredProducts, products, addProduct, updateProduct, addActivity, adjustStock, getProductById, searchQuery, selectedStatus, deleteProducts, loading]);
 
   return <ProductsContext.Provider value={value}>{children}</ProductsContext.Provider>;
 }

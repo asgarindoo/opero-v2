@@ -11,6 +11,7 @@ interface AssetsContextType {
   updateAsset: (id: string, updates: Partial<Asset>) => void;
   assignAsset: (id: string, persons: string[]) => void;
   deleteAssets: (ids: string[]) => void;
+  loading: boolean;
 }
 
 const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
@@ -20,16 +21,20 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
   const userName = user?.name || "You";
 
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
+        setLoading(true);
         const items = await listAssets<Asset>();
         if (!cancelled) setAssets(items);
       } catch (err) {
         console.error("Failed to load assets:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -131,8 +136,9 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
     addAsset,
     updateAsset,
     assignAsset,
-    deleteAssets
-  }), [assets, addAsset, updateAsset, assignAsset, deleteAssets]);
+    deleteAssets,
+    loading
+  }), [assets, addAsset, updateAsset, assignAsset, deleteAssets, loading]);
 
   return <AssetsContext.Provider value={value}>{children}</AssetsContext.Provider>;
 }

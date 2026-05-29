@@ -56,7 +56,7 @@ export default function TasksPage() {
       if (taskId) {
         const t = tasks.find(t => t.id === taskId);
         if (t) {
-          setActiveTask(t);
+          setTimeout(() => setActiveTask(t), 0);
           url.searchParams.delete("taskId");
           window.history.replaceState({}, "", url.toString());
         }
@@ -72,7 +72,7 @@ export default function TasksPage() {
     const taskToUpdate = tasks.find(t => t.id === id);
     if (!taskToUpdate) return;
     
-    let finalPatch = { ...patch };
+    const finalPatch = { ...patch };
     if (patch.status && patch.status !== taskToUpdate.status) {
       const actor = user?.name || "System";
       const timestamp = new Date().toLocaleString();

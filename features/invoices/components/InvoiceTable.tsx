@@ -28,7 +28,7 @@ interface Props {
 }
 
 export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice }: Props) {
-  const { invoices, deleteInvoices } = useInvoices();
+  const { invoices, deleteInvoices, loading } = useInvoices();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
@@ -90,7 +90,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
     setIsDeleteModalOpen(false);
   };
 
-  if (filteredInvoices.length === 0) {
+  if (!loading && filteredInvoices.length === 0) {
     return (
       <EmptyState
         icon="receipt_long"
@@ -126,89 +126,134 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredInvoices.map((inv) => {
-              const isSelected = selectedIds.has(inv.id);
-
-              return (
-                <TableRow
-                  key={inv.id}
-                  onClick={() => onSelectInvoice(inv.id)}
-                  className={`group ${isSelected ? "bg-primary/[0.02]" : "hover:bg-black/[0.01]"}`}
-                >
-                  <TableCell onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-center">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => toggleOne(inv.id, e as any)}
-                        className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
-                      />
+            {loading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i} className="h-14 hover:bg-black/[0.015] transition-colors">
+                  <TableCell>
+                    <div className="w-full flex justify-center">
+                      <div className="w-3.5 h-3.5 rounded-sm bg-black/[0.04] animate-pulse" />
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[0px]">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 shrink-0 rounded-[5px] bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
-                        <FileText size={11} />
-                      </div>
-                      <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight truncate block">
-                        {inv.invoiceNumber}
-                      </span>
+                      <div className="w-6 h-6 shrink-0 rounded-[5px] bg-black/[0.04] animate-pulse" />
+                      <div className="h-3 w-16 bg-black/[0.04] rounded animate-pulse" />
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[0px]">
-                    <div className="min-w-0 ml-3">
-                      <p className="font-display font-semibold text-[13px] text-on-surface opacity-90 truncate w-full group-hover:text-primary transition-colors leading-tight block">
-                        {inv.contactName ?? <span className="opacity-30">—</span>}
-                      </p>
-                      <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate w-full uppercase tracking-widest font-bold leading-none mt-0.5 block">
-                        {inv.items.length} items
-                      </p>
+                    <div className="flex flex-col gap-1.5 w-full ml-3">
+                      <div className="h-3.5 w-32 bg-black/[0.04] rounded animate-pulse" />
+                      <div className="h-2 w-20 bg-black/[0.04] rounded animate-pulse" />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(inv.status, inv.dueDate)}>
-                      {inv.status === "Unpaid" && new Date(inv.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) ? "Overdue" : inv.status}
-                    </Badge>
+                    <div className="h-4.5 w-16 bg-black/[0.04] rounded-sm animate-pulse" />
                   </TableCell>
                   <TableCell>
-                    <span className="font-display text-[11px] text-on-surface-variant opacity-60">
-                      {new Date(inv.issueDate).toLocaleDateString()}
-                    </span>
+                    <div className="h-3 w-20 bg-black/[0.04] rounded animate-pulse" />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      <Clock size={10} className="text-on-surface-variant opacity-60" />
-                      <span className={`font-display text-[11.5px] ${inv.status === "Unpaid" && new Date(inv.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) ? "text-red-500 opacity-80 font-semibold" : "text-on-surface-variant opacity-60"}`}>
-                        {new Date(inv.dueDate).toLocaleDateString()}
-                      </span>
+                    <div className="flex items-center gap-1.5 w-full">
+                      <div className="w-2.5 h-2.5 rounded-full bg-black/[0.04] animate-pulse shrink-0" />
+                      <div className="h-3 w-20 bg-black/[0.04] rounded animate-pulse" />
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <span
-                      className="font-bold text-on-surface font-display text-[12.5px] opacity-80 block truncate max-w-[100px] ml-auto"
-                      title={new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
-                    >
-                      {new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
-                    </span>
+                    <div className="h-3.5 w-16 bg-black/[0.04] rounded animate-pulse ml-auto" />
                   </TableCell>
                   <TableCell className="px-4 text-center">
-                    <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
-                        onClick={(e) => handleDeleteOne(e, inv.id)}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
-                      <div className="ml-1 opacity-60">
-                        <ChevronRight size={13} />
-                      </div>
+                    <div className="w-full flex justify-center items-center gap-1.5">
+                      <div className="h-5 w-5 bg-black/[0.04] rounded animate-pulse" />
+                      <div className="h-4 w-4 bg-black/[0.04] rounded animate-pulse" />
                     </div>
                   </TableCell>
                 </TableRow>
-              );
-            })}
+              ))
+            ) : (
+              filteredInvoices.map((inv) => {
+                const isSelected = selectedIds.has(inv.id);
+
+                return (
+                  <TableRow
+                    key={inv.id}
+                    onClick={() => onSelectInvoice(inv.id)}
+                    className={`group ${isSelected ? "bg-primary/[0.02]" : "hover:bg-black/[0.01]"}`}
+                  >
+                    <TableCell onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => toggleOne(inv.id, e as any)}
+                          className={`w-3.5 h-3.5 rounded-sm border-black/10 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[0px]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 shrink-0 rounded-[5px] bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
+                          <FileText size={11} />
+                        </div>
+                        <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight truncate block">
+                          {inv.invoiceNumber}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[0px]">
+                      <div className="min-w-0 ml-3">
+                        <p className="font-display font-semibold text-[13px] text-on-surface opacity-90 truncate w-full group-hover:text-primary transition-colors leading-tight block">
+                          {inv.contactName ?? <span className="opacity-30">—</span>}
+                        </p>
+                        <p className="font-body-sm text-[9px] text-on-surface-variant opacity-60 truncate w-full uppercase tracking-widest font-bold leading-none mt-0.5 block">
+                          {inv.items.length} items
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(inv.status, inv.dueDate)}>
+                        {inv.status === "Unpaid" && new Date(inv.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) ? "Overdue" : inv.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-display text-[11px] text-on-surface-variant opacity-60">
+                        {new Date(inv.issueDate).toLocaleDateString()}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={10} className="text-on-surface-variant opacity-60" />
+                        <span className={`font-display text-[11.5px] ${inv.status === "Unpaid" && new Date(inv.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) ? "text-red-500 opacity-80 font-semibold" : "text-on-surface-variant opacity-60"}`}>
+                          {new Date(inv.dueDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span
+                        className="font-bold text-on-surface font-display text-[12.5px] opacity-80 block truncate max-w-[100px] ml-auto"
+                        title={new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
+                      >
+                        {new Intl.NumberFormat("en-US", { style: "currency", currency: inv.currency || "USD" }).format(inv.totalAmount)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 text-center">
+                      <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
+                          onClick={(e) => handleDeleteOne(e, inv.id)}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                        <div className="ml-1 opacity-60">
+                          <ChevronRight size={13} />
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>

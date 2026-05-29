@@ -33,6 +33,7 @@ function ActivityContent() {
     { id: "MARKETING", label: "Marketing" },
     { id: "TEAM", label: "Team" },
     { id: "FINANCE", label: "Finance" },
+    { id: "SALES", label: "Sales" },
     { id: "DOCUMENTS", label: "Documents" },
     { id: "SYSTEM", label: "System" }
   ];

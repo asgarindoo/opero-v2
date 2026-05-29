@@ -25,6 +25,7 @@ export interface Channel {
 
 interface SocialChannelsContextType {
   channels: Channel[];
+  loading: boolean;
   setChannels: React.Dispatch<React.SetStateAction<Channel[]>>;
   addChannel: (channel: Channel) => Promise<void>;
   updateChannel: (id: string, channel: Partial<Channel>) => Promise<void>;
@@ -36,7 +37,7 @@ const SocialChannelsContext = createContext<SocialChannelsContextType | undefine
 const MOCK_CHANNELS: Channel[] = [];
 
 export function SocialChannelsProvider({ children }: { children: React.ReactNode }) {
-  const { data, mutate } = useSWR<Channel[]>("social-channels", fetchChannels, {
+  const { data, mutate, isLoading } = useSWR<Channel[]>("social-channels", fetchChannels, {
     fallbackData: [],
   });
 
@@ -63,6 +64,7 @@ export function SocialChannelsProvider({ children }: { children: React.ReactNode
 
   const value = useMemo(() => ({
     channels,
+    loading: isLoading,
     setChannels: () => {}, // unused but kept for interface compat if needed
 
     addChannel,
