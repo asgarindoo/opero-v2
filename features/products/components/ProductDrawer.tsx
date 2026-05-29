@@ -65,11 +65,6 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
       onClose={onClose}
       title={product.sku}
       size="sm"
-      footer={
-        <div className="flex items-center justify-end w-full">
-          <Button variant="ghost" size="sm" onClick={onClose}>CLOSE</Button>
-        </div>
-      }
     >
       <div className="space-y-8">
         {/* Title */}

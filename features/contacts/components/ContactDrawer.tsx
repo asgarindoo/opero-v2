@@ -113,24 +113,6 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
       onClose={onClose}
       title="Contact Details"
       size="sm"
-      footer={(
-        <div className="flex items-center justify-between w-full">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-500 hover:bg-red-50"
-            onClick={() => {
-              if (confirm("Are you sure you want to delete this contact?")) {
-                deleteContacts([contact.id]);
-                onClose();
-              }
-            }}
-          >
-            DELETE
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onClose}>CLOSE</Button>
-        </div>
-      )}
     >
       <div className="space-y-8">
         {/* Title */}
