@@ -117,12 +117,12 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
           </div>
         </div>
 
-        {/* Meta strip: Status · Priority */}
-        <div className="flex items-center gap-8 pt-4 border-t border-black/[0.04]">
+        {/* Meta strip: Status · Priority — same layout as TaskDrawer */}
+        <div className="flex items-center gap-2 py-2 border-y border-black/[0.04] relative z-20">
           {/* Status dropdown */}
-          <div className="space-y-1">
-            <span className="block font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Status</span>
-            <div className="-ml-2">
+          <div className="space-y-1 relative z-30">
+            <span className="block font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Status</span>
+            <div className="w-[100px]">
               <Dropdown
                 value={campaign.status}
                 onChange={(val) => updateCampaign(campaign.id, { status: val as CampaignStatus })}
@@ -132,9 +132,9 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
           </div>
 
           {/* Priority dropdown */}
-          <div className="space-y-1">
-            <span className="block font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Priority</span>
-            <div className="-ml-2">
+          <div className="space-y-1 relative z-20">
+            <span className="block font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Priority</span>
+            <div className="w-[100px]">
               <Dropdown
                 value={campaign.priority}
                 onChange={(val) => updateCampaign(campaign.id, { priority: val as CampaignPriority })}
@@ -232,37 +232,38 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
                     const totalCheck = task.checklist?.length || 0;
                     const doneCheck = task.checklist?.filter(c => c.done).length || 0;
                     const progressPct = totalCheck > 0 ? Math.round((doneCheck / totalCheck) * 100) : (task.status === "Done" ? 100 : 0);
-                    
+
                     return (
-                    <div
-                      key={task.id}
-                      onClick={() => {
-                        window.location.href = `/dashboard/tasks?taskId=${task.id}`;
-                      }}
-                      className={`group flex items-start gap-3 py-3 cursor-pointer hover:bg-black/[0.02] px-2 -mx-2 rounded-lg ${idx !== campaignTasks.length - 1 ? 'border-b border-black/[0.04]' : ''}`}
-                    >
-                      <div className="mt-0.5">
-                        <div className="w-4 h-4 rounded-full border-[1.5px] border-black/[0.15] flex items-center justify-center bg-transparent transition-colors" />
-                      </div>
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <p className={`font-display text-[13px] font-medium leading-tight truncate ${task.status === "Done" ? "text-on-surface-variant opacity-50 line-through" : "text-on-surface"}`}>{task.title}</p>
-                        <div className="flex items-center gap-2">
-                           <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{task.id}</span>
-                           <span className="w-1 h-1 rounded-full bg-black/[0.1]" />
-                           <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{task.status}</span>
-                           <span className="w-1 h-1 rounded-full bg-black/[0.1]" />
-                           <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{progressPct}%</span>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleRemoveTask(task); }}
-                        className="opacity-0 group-hover:opacity-100 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 hover:bg-black/[0.04] rounded transition-all"
-                        title="Remove task from campaign"
+                      <div
+                        key={task.id}
+                        onClick={() => {
+                          window.location.href = `/dashboard/tasks?taskId=${task.id}`;
+                        }}
+                        className={`group flex items-start gap-3 py-3 cursor-pointer hover:bg-black/[0.02] px-2 -mx-2 rounded-lg ${idx !== campaignTasks.length - 1 ? 'border-b border-black/[0.04]' : ''}`}
                       >
-                        <X size={12} strokeWidth={2} />
-                      </button>
-                    </div>
-                  )})}
+                        <div className="mt-0.5">
+                          <div className="w-4 h-4 rounded-full border-[1.5px] border-black/[0.15] flex items-center justify-center bg-transparent transition-colors" />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className={`font-display text-[13px] font-medium leading-tight truncate ${task.status === "Done" ? "text-on-surface-variant opacity-50 line-through" : "text-on-surface"}`}>{task.title}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{task.id}</span>
+                            <span className="w-1 h-1 rounded-full bg-black/[0.1]" />
+                            <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{task.status}</span>
+                            <span className="w-1 h-1 rounded-full bg-black/[0.1]" />
+                            <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{progressPct}%</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRemoveTask(task); }}
+                          className="opacity-0 group-hover:opacity-100 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 hover:bg-black/[0.04] rounded transition-all"
+                          title="Remove task from campaign"
+                        >
+                          <X size={12} strokeWidth={2} />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="py-8 flex flex-col items-center justify-center text-center rounded-[8px] border border-dashed border-black/[0.08]">
