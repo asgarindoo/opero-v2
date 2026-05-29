@@ -275,23 +275,21 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                     <p className="font-body-sm text-[11px] text-on-surface-variant opacity-40">No line items recorded.</p>
                   ) : (
                     sale.items.map(item => (
-                      <div key={item.id} className="flex items-center justify-between py-2.5 px-1 border-b border-black/[0.02] last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-7 h-7 rounded bg-black/5 flex items-center justify-center text-on-surface-variant opacity-60">
-                            <Package size={12} />
-                          </div>
-                          <div>
-                            <p className="font-display font-medium text-[12.5px] text-on-surface opacity-90">{item.name}</p>
-                            <p className="font-body-sm text-[10px] text-on-surface-variant opacity-50 flex items-center gap-2">
-                              {item.sku && <span>SKU: {item.sku}</span>}
-                              {item.sku && <span>•</span>}
-                              <span>Qty: {item.quantity}</span>
-                              {item.discount > 0 && <span>• {item.discount}% off</span>}
-                            </p>
-                          </div>
+                      <div key={item.id} className="flex items-center gap-3 py-2.5 px-1 border-b border-black/[0.02] last:border-0">
+                        <div className="w-7 h-7 shrink-0 rounded bg-black/5 flex items-center justify-center text-on-surface-variant opacity-60">
+                          <Package size={12} />
                         </div>
-                        <div className="text-right shrink-0 min-w-[60px]">
-                          <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80 truncate">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-display font-medium text-[12.5px] text-on-surface opacity-90 truncate" title={item.name}>{item.name}</p>
+                          <p className="font-body-sm text-[10px] text-on-surface-variant opacity-50 flex items-center gap-1.5 flex-wrap">
+                            {item.sku && <span>SKU: {item.sku}</span>}
+                            {item.sku && <span>•</span>}
+                            <span>Qty: {item.quantity}</span>
+                            {item.discount > 0 && <span>• {item.discount}% off</span>}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80 whitespace-nowrap">
                             {formatCurrency(item.price, sale.currency)}
                           </p>
                         </div>
