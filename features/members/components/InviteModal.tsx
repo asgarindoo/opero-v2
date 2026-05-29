@@ -1,62 +1,101 @@
+"use client";
+
 import React, { useState } from "react";
-import { X, ChevronDown, Link, Copy, Trash2, Clock, Check, Users, Hash, ShieldCheck } from "lucide-react";
+import { Link, Copy, Trash2, Clock, Check, Users, Hash, ShieldCheck } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
-import Button from "@/components/ui/Button";
+
+import { ModalShell }    from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader }   from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent }  from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter }   from "@/components/ui/global/modal/ModalFooter";
+import Dropdown          from "@/components/ui/Dropdown";
+
+/* ── Section label — same as CreateFlowModal ───────────────────────────── */
+function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <span
+        className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold"
+        style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/* ── Info box ───────────────────────────────────────────────────────────── */
+function InfoBox({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div
+      className="flex gap-3 items-start p-3 rounded-[8px]"
+      style={{ background: "rgba(0,0,0,0.025)", border: "1px solid rgba(0,0,0,0.05)" }}
+    >
+      <span className="mt-0.5 shrink-0" style={{ color: "var(--color-primary)", opacity: 0.65 }}>
+        {icon}
+      </span>
+      <p
+        className="font-body-md text-[12px] leading-relaxed"
+        style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }}
+      >
+        {children}
+      </p>
+    </div>
+  );
+}
+
+const EXPIRE_OPTIONS = [
+  { value: "1",     label: "24 Hours"      },
+  { value: "7",     label: "7 Days"        },
+  { value: "30",    label: "30 Days"       },
+  { value: "never", label: "Never Expires" },
+];
 
 export default function InviteModal({ onClose }: { onClose: () => void }) {
   const { inviteLinks, generateInviteLink, revokeInviteLink, tenantCode } = useMembers();
 
-  const [expireDays, setExpireDays] = useState<number | "never">(7);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [isExpireDropdownOpen, setIsExpireDropdownOpen] = useState(false);
+  const [expireDays, setExpireDays] = useState("7");
+  const [copiedId, setCopiedId]     = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const expireOptions = [
-    { value: 1, label: "24 Hours" },
-    { value: 7, label: "7 Days" },
-    { value: 30, label: "30 Days" },
-    { value: "never", label: "Never Expires" }
-  ];
-
-  const selectedExpireLabel = expireOptions.find(o => o.value === expireDays)?.label;
-
+  /* ── copy helper ── */
   const copyText = async (text: string) => {
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
         return true;
       }
-    } catch {
-      // Fall through to the textarea fallback below.
-    }
-
+    } catch { /* fallback below */ }
     try {
       const el = document.createElement("textarea");
       el.value = text;
-      el.style.position = "fixed";
-      el.style.opacity = "0";
+      el.style.cssText = "position:fixed;opacity:0";
       document.body.appendChild(el);
-      el.focus();
-      el.select();
-      const copied = document.execCommand("copy");
+      el.focus(); el.select();
+      const ok = document.execCommand("copy");
       document.body.removeChild(el);
-      return copied;
-    } catch {
-      return false;
-    }
+      return ok;
+    } catch { return false; }
   };
 
-  const handleGenerateLink = async () => {
-    const days = expireDays === "never" ? null : expireDays;
+  const handleCopy = async (text: string, id: string) => {
+    const ok = await copyText(text);
+    if (!ok) return false;
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    return true;
+  };
+
+  const handleGenerate = async () => {
+    const days = expireDays === "never" ? null : Number(expireDays);
     setIsGenerating(true);
     setError(null);
     try {
       const link = await generateInviteLink(days);
-      const copied = await handleCopy(link.url, link.id);
-      if (!copied) {
-        setError("Invite link created. Copy it from the list below.");
-      }
+      const ok   = await handleCopy(link.url, link.id);
+      if (!ok) setError("Invite link created. Copy it from the list below.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate invite link");
     } finally {
@@ -64,177 +103,187 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const handleCopy = async (text: string, id: string) => {
-    const copied = await copyText(text);
-    if (!copied) return false;
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-    return true;
-  };
+  /* ── footer summary ── */
+  const footerSummary = (
+    <>
+      <span
+        className="font-label-caps text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
+        style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
+      >
+        {EXPIRE_OPTIONS.find(o => o.value === expireDays)?.label}
+      </span>
+      {inviteLinks.length > 0 && (
+        <span
+          className="font-label-caps text-[9px] font-semibold"
+          style={{ color: "var(--color-on-surface-variant)", opacity: 0.45 }}
+        >
+          {inviteLinks.length} active link{inviteLinks.length !== 1 ? "s" : ""}
+        </span>
+      )}
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/5 backdrop-blur-[1px] animate-fade-in"
-        onClick={onClose}
-      />
+    <ModalShell onClose={onClose} maxWidth={500}>
+      <ModalHeader title="Workspace Access" onClose={onClose} />
 
-      {/* Modal */}
-      <div
-        className="relative w-full max-w-[480px] bg-background rounded-lg shadow-[0_20px_60px_rgba(0,0,0,0.1)] overflow-hidden animate-scale-up flex flex-col max-h-[90vh]"
-        style={{ border: "1px solid rgba(0,0,0,0.06)" }}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
-          <div className="flex items-center gap-2">
-            <Users size={16} className="text-primary" />
-            <h2 className="font-display font-semibold text-[14px] text-on-surface">Workspace Access</h2>
+      <ModalContent className="db-sidebar space-y-6">
+
+        {/* ── Permanent Code ──────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <SL icon={<Hash size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+            Permanent Workspace Code
+          </SL>
+          <p
+            className="font-body-md text-[12px] leading-relaxed"
+            style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}
+          >
+            Share this unique code for persistent, direct access to the workspace.
+          </p>
+
+          <div
+            className="flex items-center gap-3 px-4 py-2.5 rounded-[8px]"
+            style={{ border: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.015)" }}
+          >
+            <span
+              className="flex-1 font-display font-bold text-[18px] tracking-[0.22em]"
+              style={{ color: "var(--color-on-surface)" }}
+            >
+              {tenantCode || (
+                <span className="inline-block h-5 w-24 rounded animate-pulse" style={{ background: "rgba(0,0,0,0.06)" }} />
+              )}
+            </span>
+            <button
+              onClick={() => tenantCode && handleCopy(tenantCode, "tenant-code")}
+              disabled={!tenantCode}
+              className="flex items-center gap-1.5 font-label-caps text-[9px] font-bold uppercase tracking-[0.08em] px-3 py-1.5 rounded-[6px] hover:-translate-y-px transition-all disabled:opacity-40"
+              style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
+            >
+              {copiedId === "tenant-code" ? <><Check size={10} strokeWidth={2} /> Copied</> : <><Copy size={10} strokeWidth={2} /> Copy</>}
+            </button>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-on-surface-variant opacity-60 hover:opacity-100 hover:bg-black/[0.04] transition-all">
-            <X size={16} />
-          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="space-y-10">
-            {/* Permanent Workspace Code Section */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest mb-1">Permanent Workspace Code</h3>
-                <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 leading-relaxed">
-                  Share this unique code for persistent, direct access to the workspace.
-                </p>
-              </div>
+        <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
-              <div className="flex items-center gap-2 p-1 pl-4 rounded-lg border border-black/[0.06] bg-black/[0.01]">
-                <Hash size={14} className="text-on-surface-variant opacity-60" />
-                <span className="flex-1 font-display font-bold text-[16px] text-on-surface tracking-[0.2em]">
-                  {tenantCode || <div className="h-5 w-24 bg-black/[0.05] animate-pulse rounded" />}
-                </span>
-                <button
-                  onClick={() => tenantCode && handleCopy(tenantCode, 'tenant-code')}
-                  disabled={!tenantCode}
-                  className="px-4 py-2 rounded-md bg-white border border-black/[0.06] font-label-caps text-[10px] font-bold text-primary hover:shadow-sm transition-all relative disabled:opacity-50"
-                >
-                  {copiedId === 'tenant-code' ? 'COPIED' : 'COPY CODE'}
-                </button>
-              </div>
+        {/* ── Generate Invite Link ─────────────────────────────────────── */}
+        <div className="space-y-3">
+          <SL icon={<Link size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+            Generate Invite Link
+          </SL>
+          <p
+            className="font-body-md text-[12px] leading-relaxed"
+            style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}
+          >
+            Create a shareable link with optional expiration. All joins default to <strong style={{ color: "var(--color-on-surface)" }}>Staff</strong>.
+          </p>
+
+          <div className="flex items-center gap-2">
+            <div className="w-[180px]">
+              <Dropdown
+                value={expireDays}
+                options={EXPIRE_OPTIONS}
+                onChange={setExpireDays}
+              />
             </div>
-
-            {/* Invite Link Generation Section */}
-            <div className="space-y-4 pt-8 border-t border-black/[0.04]">
-              <div>
-                <h3 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest mb-1">Generated Invite Link</h3>
-                <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 leading-relaxed">
-                  Create a shareable link with optional expiration. All joins default to <strong className="text-on-surface">Staff</strong>.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <button
-                    onClick={() => setIsExpireDropdownOpen(!isExpireDropdownOpen)}
-                    className={`w-full h-11 flex items-center justify-between px-4 rounded-lg font-body-sm text-[13px] outline-none transition-all border ${isExpireDropdownOpen
-                        ? "bg-black/[0.02] border-primary/20"
-                        : "bg-black/[0.01] border-black/[0.04] hover:border-black/[0.08]"
-                      } text-on-surface`}
-                  >
-                    <span className="opacity-80">{selectedExpireLabel}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`text-on-surface-variant transition-transform duration-200 ${isExpireDropdownOpen ? "rotate-180" : "opacity-60"}`}
-                    />
-                  </button>
-
-                  {isExpireDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setIsExpireDropdownOpen(false)} />
-                      <div className="absolute bottom-[calc(100%+4px)] left-0 w-full bg-background rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-black/[0.06] overflow-hidden z-20 animate-fade-in origin-bottom">
-                        {expireOptions.map(option => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              setExpireDays(option.value as number | "never");
-                              setIsExpireDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-3 font-body-sm text-[13px] transition-colors flex items-center justify-between ${expireDays === option.value
-                                ? "bg-primary/[0.03] text-primary font-semibold"
-                                : "text-on-surface hover:bg-black/[0.02]"
-                              }`}
-                          >
-                            {option.label}
-                            {expireDays === option.value && <Check size={14} />}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-                <Button
-                  variant="primary"
-                  className="h-11 px-6 font-bold tracking-wider"
-                  icon={Link}
-                  onClick={handleGenerateLink}
-                  isLoading={isGenerating}
-                >
-                  GENERATE
-                </Button>
-              </div>
-              {error && (
-                <p className="font-body-sm text-[12px] text-red-600">{error}</p>
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="flex items-center gap-1.5 font-label-caps text-[10px] font-bold uppercase tracking-[0.05em] px-4 py-2 rounded-[6px] hover:-translate-y-px disabled:opacity-30 transition-all"
+              style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
+            >
+              {isGenerating ? (
+                <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Link size={11} strokeWidth={2} />
               )}
-            </div>
+              {isGenerating ? "Generating…" : "Generate"}
+            </button>
+          </div>
 
-            {/* Active Links List */}
-            {inviteLinks.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.1em]">Shared Access Links</h3>
-                <div className="flex flex-col gap-2">
-                  {inviteLinks.map(link => (
-                    <div key={link.id} className="p-3 pl-4 rounded-lg border border-black/[0.04] bg-black/[0.01] flex items-center justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-body-sm text-[12px] text-on-surface truncate opacity-80 mb-0.5">
-                          {link.url}
-                        </div>
-                        <div className="flex items-center gap-3 font-body-sm text-[10px] text-on-surface-variant opacity-60 uppercase tracking-wider">
-                          <span className="flex items-center gap-1 font-bold"><Users size={10} /> {link.uses} uses</span>
-                          {link.expiresAt && (
-                             <span className="flex items-center gap-1"><Clock size={10} /> Exp: {new Date(link.expiresAt).toLocaleDateString()}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleCopy(link.url, link.id)}
-                          className="p-2 rounded-md hover:bg-black/[0.04] text-on-surface-variant transition-colors group relative"
-                        >
-                          {copiedId === link.id ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="opacity-60 group-hover:opacity-100" />}
-                        </button>
-                        <button
-                          onClick={() => revokeInviteLink(link.id)}
-                          className="p-2 rounded-md hover:bg-red-50 text-red-600 transition-colors opacity-60 hover:opacity-100"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+          {error && (
+            <p className="font-body-md text-[11px]" style={{ color: "rgba(186,26,26,0.8)" }}>{error}</p>
+          )}
+        </div>
+
+        {/* ── Active Links ─────────────────────────────────────────────── */}
+        {inviteLinks.length > 0 && (
+          <>
+            <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
+            <div className="space-y-2">
+              <SL icon={<Users size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
+                Active Links
+              </SL>
+              <div className="space-y-2">
+                {inviteLinks.map(link => (
+                  <div
+                    key={link.id}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-[8px]"
+                    style={{ border: "1px solid rgba(0,0,0,0.05)", background: "rgba(0,0,0,0.01)" }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="font-display text-[12px] truncate mb-0.5"
+                        style={{ color: "var(--color-on-surface)", opacity: 0.8 }}
+                      >
+                        {link.url}
+                      </p>
+                      <div
+                        className="flex items-center gap-3 font-label-caps text-[9px] font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}
+                      >
+                        <span className="flex items-center gap-1"><Users size={9} /> {link.uses} uses</span>
+                        {link.expiresAt && (
+                          <span className="flex items-center gap-1">
+                            <Clock size={9} /> Exp: {new Date(link.expiresAt).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => handleCopy(link.url, link.id)}
+                        className="p-1.5 rounded-[5px] hover:bg-black/[0.05] transition-colors"
+                        title="Copy link"
+                      >
+                        {copiedId === link.id
+                          ? <Check size={13} strokeWidth={1.75} style={{ color: "var(--color-primary)" }} />
+                          : <Copy size={13} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }} />
+                        }
+                      </button>
+                      <button
+                        onClick={() => revokeInviteLink(link.id)}
+                        className="p-1.5 rounded-[5px] hover:bg-red-50 transition-colors"
+                        title="Revoke link"
+                      >
+                        <Trash2 size={13} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.55)" }} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-
-            
-            {/* Automatic Role Note */}
-            <div className="p-4 rounded-lg bg-black/[0.02] border border-black/[0.04] flex gap-3 items-start">
-               <ShieldCheck size={16} className="text-primary mt-0.5 opacity-60" />
-               <p className="font-body-sm text-[11px] text-on-surface-variant opacity-60 leading-relaxed">
-                 All users joining via these methods are automatically assigned the <strong className="text-on-surface">Staff</strong> role. 
-                 Access scope and positions can be modified by an Admin after they join.
-               </p>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </>
+        )}
+
+        {/* ── Role note ────────────────────────────────────────────────── */}
+        <InfoBox icon={<ShieldCheck size={14} strokeWidth={1.75} />}>
+          All users joining via these methods are automatically assigned the{" "}
+          <strong style={{ color: "var(--color-on-surface)" }}>Staff</strong> role.
+          Access scope and positions can be modified by an Admin after they join.
+        </InfoBox>
+
+      </ModalContent>
+
+      <ModalFooter summary={footerSummary}>
+        <button
+          onClick={onClose}
+          className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors"
+          style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}
+        >
+          Close
+        </button>
+      </ModalFooter>
+    </ModalShell>
   );
 }
