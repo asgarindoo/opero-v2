@@ -360,7 +360,7 @@ export default function SettingsPage() {
                       <div className="p-6 border-b border-black/[0.04] flex items-center gap-4">
                         <div className="w-16 h-16 rounded-xl bg-white border border-black/[0.06] flex items-center justify-center overflow-hidden shrink-0">
                           {data.tenant.logo ? (
-                            <Image src={getTenantLogoSrc(data.tenant.id, data.tenant.logo)} alt="Logo" width={64} height={64} className="object-cover" unoptimized />
+                            <Image src={getTenantLogoSrc(data.tenant.id, data.tenant.logo)!} alt="Logo" width={64} height={64} className="object-cover" unoptimized />
                           ) : (
                             <Building size={24} className="text-on-surface-variant opacity-40" />
                           )}
