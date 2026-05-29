@@ -49,6 +49,21 @@ export default function TasksPage() {
     fetchTasks();
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && tasks.length > 0) {
+      const url = new URL(window.location.href);
+      const taskId = url.searchParams.get("taskId");
+      if (taskId) {
+        const t = tasks.find(t => t.id === taskId);
+        if (t) {
+          setActiveTask(t);
+          url.searchParams.delete("taskId");
+          window.history.replaceState({}, "", url.toString());
+        }
+      }
+    }
+  }, [tasks]);
+
   const { user } = useTenant();
 
   const nextId = `T-${String(tasks.length + 1).padStart(3, "0")}`;

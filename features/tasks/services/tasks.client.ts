@@ -26,3 +26,8 @@ export async function updateTask<T>(id: string, data: Partial<T>) {
 export async function deleteTask(id: string) {
   await apiRequest<{ success: boolean }>(`${endpoint}/${id}`, { method: "DELETE" });
 }
+
+export async function listCampaignTasks<T>(campaignId: string) {
+  const payload = await apiRequest<{ items: T[] }>(`/api/tenant/campaigns/${campaignId}/tasks`, { method: "GET" });
+  return payload.items ?? [];
+}

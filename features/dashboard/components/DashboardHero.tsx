@@ -70,11 +70,11 @@ export default function DashboardHero() {
         {/* Left: Greeting */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-label-caps text-[9px] uppercase tracking-[0.1em] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <span suppressHydrationWarning className="font-label-caps text-[9px] uppercase tracking-[0.1em] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
               {today}
             </span>
           </div>
-          <h1 className="font-display text-[22px] font-bold leading-tight mb-3" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
+          <h1 suppressHydrationWarning className="font-display text-[22px] font-bold leading-tight mb-3" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
             {greeting}, {userName} 👋
           </h1>
           <div className="flex items-center gap-3 flex-wrap">

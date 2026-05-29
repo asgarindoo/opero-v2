@@ -9,9 +9,12 @@ import {
   MessageSquare,
   Trash2,
   Square,
-  Clock
+  Clock,
+  Target,
+  X
 } from "lucide-react";
 import type { Task, Comment } from "@/features/tasks";
+import { getCampaign } from "@/features/campaigns/services/campaigns.client";
 import { PRIORITY_META, STATUS_META, ALL_STATUSES, ALL_PRIORITIES } from "@/features/tasks";
 import AttachmentZone from "./AttachmentZone";
 import LabelManager from "./LabelManager";
@@ -58,6 +61,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
   const [comment, setComment] = useState("");
   const [editTitle, setEditTitle] = useState(false);
   const [titleVal, setTitleVal] = useState(task.title);
+  const [campaignName, setCampaignName] = useState<string | null>(null);
 
   const done = task.checklist.filter(c => c.done).length;
   const total = task.checklist.length;
@@ -72,10 +76,20 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
       setEditTitle(false);
     });
 
+    if (task.campaignId) {
+      getCampaign<{ name?: string }>(task.campaignId)
+        .then((c) => {
+          if (!cancelled && c?.name) setCampaignName(c.name);
+        })
+        .catch(console.error);
+    } else {
+      setCampaignName(null);
+    }
+
     return () => {
       cancelled = true;
     };
-  }, [task.id, task.title]);
+  }, [task.id, task.title, task.campaignId]);
 
   const handleUpdate = (patch: Partial<Task>, actionDesc?: string, detailDesc?: string) => {
     const actor = user?.name || "System";
@@ -189,6 +203,29 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
             />
           </div>
         </div>
+
+        {/* Campaign Linkage */}
+        {task.campaignId && (
+          <div className="flex items-center gap-3 group pb-2">
+            <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-40 uppercase tracking-[0.15em]">
+              Campaign
+            </span>
+            <span className="w-1 h-1 rounded-full bg-black/[0.1]" />
+            <span className="font-display text-[13px] font-medium text-on-surface">
+              {campaignName || "Loading..."}
+            </span>
+            <button 
+              onClick={() => {
+                if (confirm("Remove task from campaign?")) {
+                  handleUpdate({ campaignId: null }, "removed from campaign");
+                }
+              }}
+              className="opacity-0 group-hover:opacity-100 font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 transition-opacity ml-auto"
+            >
+              Detach
+            </button>
+          </div>
+        )}
 
         {/* Labels */}
         <Section label="Labels">

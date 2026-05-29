@@ -7,6 +7,11 @@ export async function listCampaigns<T>() {
   return payload.items ?? [];
 }
 
+export async function getCampaign<T>(id: string) {
+  const payload = await apiRequest<{ item: T }>(`${endpoint}/${id}`, { method: "GET" });
+  return payload.item;
+}
+
 export async function createCampaign<T>(data: T) {
   const payload = await apiRequest<{ item: T }>(endpoint, {
     method: "POST",

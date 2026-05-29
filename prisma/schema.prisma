@@ -346,6 +346,9 @@ model Task {
   createdBy    User?        @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy    User?        @relation("TaskUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
+  campaignId   String?
+  campaign     Campaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
   @@index([organizationId])
   @@map("task")
 }
@@ -390,6 +393,8 @@ model Campaign {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User?        @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy    User?        @relation("CampaignUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  tasks        Task[]
 
   @@index([organizationId])
   @@map("campaign")

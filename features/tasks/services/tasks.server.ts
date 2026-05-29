@@ -4,6 +4,7 @@ import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord,
 
 const MODULE = "TASKS";
 const ENTITY = "Task";
+// Trigger TS refresh
 
 export async function listTasks() {
   const ctx = await requireTenant();
@@ -12,7 +13,17 @@ export async function listTasks() {
     orderBy: { createdAt: "desc" },
     include: { createdBy: { select: { id: true, name: true, image: true } } },
   });
-  return tasks.map((task) => mapDomainRecord(task));
+  return tasks.map((task: any) => mapDomainRecord(task));
+}
+
+export async function listCampaignTasks(campaignId: string) {
+  const ctx = await requireTenant();
+  const tasks = await prisma.task.findMany({
+    where: { organizationId: ctx.tenantId, campaignId },
+    orderBy: { createdAt: "desc" },
+    include: { createdBy: { select: { id: true, name: true, image: true } } },
+  });
+  return tasks.map((task: any) => mapDomainRecord(task));
 }
 
 export async function getTaskById(id: string) {
@@ -31,6 +42,7 @@ export async function createTask(data: Record<string, unknown>) {
     data: {
       id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
       organizationId: ctx.tenantId,
+      campaignId: typeof data.campaignId === "string" ? data.campaignId : undefined,
       title,
       status: getStatus(data),
       payload: createPayload(data),
@@ -38,7 +50,7 @@ export async function createTask(data: Record<string, unknown>) {
       updatedById: ctx.userId,
     },
   });
-  await logDomainActivity({
+  logDomainActivity({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     module: MODULE,
@@ -47,35 +59,31 @@ export async function createTask(data: Record<string, unknown>) {
     entityId: task.id,
     entityName: title,
     description: typeof data.description === "string" ? data.description : null,
-  });
+  }).catch(console.error);
   return mapDomainRecord(task, ctx.user);
 }
 
 export async function updateTask(id: string, patch: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const current = await prisma.task.findFirst({ where: { id, organizationId: ctx.tenantId } });
-  if (!current) return null;
+  const current = await prisma.task.findUnique({ where: { id } });
+  if (!current || current.organizationId !== ctx.tenantId) return null;
 
   const currentPayload = parsePayload(current.payload);
   const mergedPayload = { ...currentPayload, ...patch };
-  const result = await prisma.task.updateMany({
-    where: { id, organizationId: ctx.tenantId },
+  
+  const updated = await prisma.task.update({
+    where: { id },
     data: {
       title: getTitle(patch, current.title ?? "Untitled"),
       status: typeof patch.status === "string" ? patch.status : current.status,
+      campaignId: patch.campaignId !== undefined ? (patch.campaignId as string | null) : current.campaignId,
       payload: mergedPayload,
       updatedById: ctx.userId,
     },
-  });
-  if (result.count === 0) return null;
-
-  const updated = await prisma.task.findFirst({
-    where: { id, organizationId: ctx.tenantId },
     include: { createdBy: { select: { id: true, name: true, image: true } } },
   });
-  if (!updated) return null;
 
-  await logDomainActivity({
+  logDomainActivity({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     module: MODULE,
@@ -84,19 +92,18 @@ export async function updateTask(id: string, patch: Record<string, unknown>) {
     entityId: id,
     entityName: updated.title,
     description: typeof patch.description === "string" ? patch.description : null,
-  });
+  }).catch(console.error);
   return mapDomainRecord(updated);
 }
 
 export async function deleteTask(id: string) {
   const ctx = await requireTenant();
-  const current = await prisma.task.findFirst({ where: { id, organizationId: ctx.tenantId } });
-  if (!current) return null;
+  const current = await prisma.task.findUnique({ where: { id } });
+  if (!current || current.organizationId !== ctx.tenantId) return null;
 
-  const result = await prisma.task.deleteMany({ where: { id, organizationId: ctx.tenantId } });
-  if (result.count === 0) return null;
+  await prisma.task.delete({ where: { id } });
 
-  await logDomainActivity({
+  logDomainActivity({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     module: MODULE,
@@ -104,6 +111,6 @@ export async function deleteTask(id: string) {
     entityType: ENTITY,
     entityId: id,
     entityName: current.title,
-  });
+  }).catch(console.error);
   return { id };
 }

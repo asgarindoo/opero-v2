@@ -212,40 +212,61 @@ export const resolveTenantFromRequest = cache(async function resolveTenantFromRe
  * re-check session, tenant status, and membership here before touching data.
  */
 export const getTenantContext = cache(async function getTenantContext(): Promise<TenantContext | null> {
-  console.log("[CACHE MISS] getTenantContext resolving...");
+  const session = await getSession();
+  if (!session?.user) return null;
+
   const hdrs = await headers();
-  const user = await getCurrentUser();
-  if (!user) return null;
-
-  // We only get slug from proxy now
   const headerTenantSlug = hdrs.get("x-tenant-slug");
-  const sessionTenant = await getCurrentTenant();
+  
+  let membership;
 
-  const tenant = headerTenantSlug
-    ? await prisma.organization.findUnique({
-      where: { slug: headerTenantSlug },
-      select: { id: true, name: true, slug: true, logo: true, status: true },
-    })
-    : sessionTenant;
+  if (headerTenantSlug) {
+    membership = await prisma.member.findFirst({
+      where: { 
+        userId: session.user.id,
+        organization: { slug: headerTenantSlug, status: "active" },
+        status: "active"
+      },
+      select: { 
+        role: true, 
+        organization: {
+          select: { id: true, name: true, slug: true, logo: true, status: true }
+        } 
+      }
+    });
+  } else if (session.session?.activeOrganizationId) {
+    membership = await prisma.member.findUnique({
+      where: {
+        organizationId_userId: { organizationId: session.session.activeOrganizationId, userId: session.user.id },
+      },
+      select: {
+        role: true,
+        status: true,
+        organization: {
+          select: { id: true, name: true, slug: true, logo: true, status: true }
+        }
+      }
+    });
+    
+    if (membership && (membership.status !== "active" || membership.organization.status !== "active")) {
+      membership = null;
+    }
+  }
 
-  if (!tenant || tenant.status !== "active") return null;
-
-  const membership = await prisma.member.findUnique({
-    where: {
-      organizationId_userId: { organizationId: tenant.id, userId: user.id },
-    },
-    select: { role: true, status: true },
-  });
-
-  if (!membership || membership.status !== "active") return null;
+  if (!membership || !membership.organization) return null;
 
   return {
-    tenant,
-    user,
+    tenant: membership.organization,
+    user: {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      image: session.user.image ?? null,
+    },
     role: membership.role as OrgRole,
-    tenantId: tenant.id,
-    tenantSlug: tenant.slug,
-    userId: user.id,
+    tenantId: membership.organization.id,
+    tenantSlug: membership.organization.slug,
+    userId: session.user.id,
   };
 });
 

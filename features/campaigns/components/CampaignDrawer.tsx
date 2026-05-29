@@ -2,12 +2,15 @@
 
 import React, { useState } from "react";
 import { useCampaigns } from "../context/CampaignsContext";
-import { Target, Calendar, Clock, Share2, MoreVertical, Plus, DollarSign, ChevronDown } from "lucide-react";
+import { Target, Calendar, Clock, Share2, MoreVertical, Plus, DollarSign, ChevronDown, X } from "lucide-react";
 import type { CampaignStatus, CampaignPriority } from "../types";
 import Drawer from "@/components/ui/Drawer";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Dropdown from "@/components/ui/Dropdown";
+import { CampaignChannelPicker } from "./CampaignChannelPicker";
+import { TaskSelector } from "./TaskSelector";
+import { listCampaignTasks, updateTask, type Task } from "@/features/tasks";
 
 function getName(val: any): string {
   if (!val) return "";
@@ -33,7 +36,7 @@ function Section({ label, count, children }: { label: string; count?: number; ch
     <div className="space-y-3">
       <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 w-full">
         <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.15em] text-left">
-          {label}{count !== undefined && ` ({count})`}
+          {label}{count !== undefined && ` (${count})`}
         </span>
         <div className="h-px flex-1 bg-black/[0.03]" />
       </button>
@@ -45,9 +48,37 @@ function Section({ label, count, children }: { label: string; count?: number; ch
 export default function CampaignDrawer({ campaignId, onClose }: { campaignId: string; onClose: () => void }) {
   const { campaigns, deleteCampaigns, updateCampaign } = useCampaigns();
   const [tab, setTab] = useState<"details" | "activity">("details");
+  const [campaignTasks, setCampaignTasks] = useState<Task[]>([]);
   const campaign = campaigns.find(c => c.id === campaignId);
 
+  React.useEffect(() => {
+    if (campaignId) {
+      listCampaignTasks<Task>(campaignId).then(setCampaignTasks).catch(console.error);
+    }
+  }, [campaignId]);
+
   if (!campaign) return null;
+
+  async function handleAttachTask(task: Task) {
+    if (!task.recordId) return;
+    try {
+      await updateTask(task.recordId, { campaignId });
+      setCampaignTasks(prev => [{ ...task, campaignId }, ...prev]);
+    } catch (err) {
+      console.error("Failed to attach task", err);
+    }
+  }
+
+  async function handleRemoveTask(task: Task) {
+    if (!task.recordId) return;
+    try {
+      // Pass null to remove
+      await updateTask(task.recordId, { campaignId: null });
+      setCampaignTasks(prev => prev.filter(t => t.id !== task.id));
+    } catch (err) {
+      console.error("Failed to remove task", err);
+    }
+  }
 
   const remainingDays = getDaysRemaining(campaign.endDate);
   const isCritical = campaign.priority === "Critical" || campaign.priority === "High";
@@ -179,68 +210,59 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
 
             {/* Campaign Accounts */}
             <Section label="Campaign Accounts" count={campaign.campaignAccounts?.length ?? 0}>
-              <div className="flex justify-end -mt-1 mb-2">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] font-semibold flex items-center gap-1 border border-black/[0.08]">
-                  <Plus size={10} strokeWidth={2.5} /> Add Accounts
-                </Button>
+              <div className="pt-2">
+                <CampaignChannelPicker
+                  selected={campaign.campaignAccounts || []}
+                  onChange={(accounts) => updateCampaign(campaign.id, { campaignAccounts: accounts })}
+                />
               </div>
-              {campaign.campaignAccounts && campaign.campaignAccounts.length > 0 ? (
-                <div className="space-y-2">
-                  {campaign.campaignAccounts.map(channel => (
-                    <div
-                      key={channel.id}
-                      className="group flex items-center gap-3 px-3 py-2.5 rounded-[8px] bg-white cursor-pointer"
-                      style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}
-                    >
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,0.04)" }}>
-                        <Share2 size={13} strokeWidth={2} style={{ color: "var(--color-on-surface)", opacity: 0.7 }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display text-[13px] font-semibold truncate text-on-surface">{channel.name}</p>
-                        <p className="font-label-caps text-[8.5px] font-bold uppercase tracking-widest truncate mt-0.5 text-on-surface-variant opacity-50">
-                          {channel.platform} • {channel.username}
-                        </p>
-                      </div>
-                      <div className="opacity-0 group-hover:opacity-60 transition-opacity">
-                        <MoreVertical size={13} strokeWidth={2} className="text-on-surface-variant" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="font-body-sm text-[12px] italic text-on-surface-variant opacity-40">No campaign accounts attached.</p>
-              )}
             </Section>
 
             {/* Campaign Tasks */}
-            <Section label="Campaign Tasks" count={campaign.linkedTasks?.length ?? 0}>
-              <div className="flex justify-end -mt-1 mb-2">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] font-semibold flex items-center gap-1 border border-black/[0.08]">
-                  <Plus size={10} strokeWidth={2.5} /> Add Task
-                </Button>
+            <Section label="Campaign Tasks" count={campaignTasks.length}>
+              <div className="flex justify-start -mt-1 mb-2">
+                <TaskSelector
+                  selectedTasks={campaignTasks}
+                  onSelect={handleAttachTask}
+                />
               </div>
-              {campaign.linkedTasks && campaign.linkedTasks.length > 0 ? (
-                <div className="space-y-2">
-                  {campaign.linkedTasks.map(task => (
+              {campaignTasks.length > 0 ? (
+                <div className="flex flex-col">
+                  {campaignTasks.map((task, idx) => {
+                    const totalCheck = task.checklist?.length || 0;
+                    const doneCheck = task.checklist?.filter(c => c.done).length || 0;
+                    const progressPct = totalCheck > 0 ? Math.round((doneCheck / totalCheck) * 100) : (task.status === "Done" ? 100 : 0);
+                    
+                    return (
                     <div
                       key={task.id}
-                      className="group flex items-center gap-3 px-3 py-2.5 rounded-[8px] bg-white cursor-pointer"
-                      style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}
+                      onClick={() => {
+                        window.location.href = `/dashboard/tasks?taskId=${task.id}`;
+                      }}
+                      className={`group flex items-start gap-3 py-3 cursor-pointer hover:bg-black/[0.02] px-2 -mx-2 rounded-lg ${idx !== campaignTasks.length - 1 ? 'border-b border-black/[0.04]' : ''}`}
                     >
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,0.04)" }}>
-                        <Target size={13} strokeWidth={2} style={{ color: "var(--color-on-surface)", opacity: 0.7 }} />
+                      <div className="mt-0.5">
+                        <div className="w-4 h-4 rounded-full border-[1.5px] border-black/[0.15] flex items-center justify-center bg-transparent transition-colors" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display text-[13px] font-semibold truncate text-on-surface">{task.title}</p>
-                        <p className="font-label-caps text-[8.5px] font-bold uppercase tracking-widest truncate mt-0.5 text-on-surface-variant opacity-50">
-                          {task.id}
-                        </p>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className={`font-display text-[13px] font-medium leading-tight truncate ${task.status === "Done" ? "text-on-surface-variant opacity-50 line-through" : "text-on-surface"}`}>{task.title}</p>
+                        <div className="flex items-center gap-2">
+                           <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{task.id}</span>
+                           <span className="w-1 h-1 rounded-full bg-black/[0.1]" />
+                           <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{task.status}</span>
+                           <span className="w-1 h-1 rounded-full bg-black/[0.1]" />
+                           <span className="font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-40">{progressPct}%</span>
+                        </div>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-60 transition-opacity">
-                        <MoreVertical size={13} strokeWidth={2} className="text-on-surface-variant" />
-                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleRemoveTask(task); }}
+                        className="opacity-0 group-hover:opacity-100 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 hover:bg-black/[0.04] rounded transition-all"
+                        title="Remove task from campaign"
+                      >
+                        <X size={12} strokeWidth={2} />
+                      </button>
                     </div>
-                  ))}
+                  )})}
                 </div>
               ) : (
                 <div className="py-8 flex flex-col items-center justify-center text-center rounded-[8px] border border-dashed border-black/[0.08]">
@@ -249,7 +271,7 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
                   </div>
                   <p className="font-display text-[13px] font-semibold text-on-surface mb-1">No campaign tasks yet.</p>
                   <p className="font-body-sm text-[11px] text-on-surface-variant opacity-50 max-w-[200px] leading-relaxed">
-                    Attach existing tasks or create new tasks related to this campaign.
+                    Attach existing tasks to this campaign.
                   </p>
                 </div>
               )}
