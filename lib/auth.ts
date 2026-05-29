@@ -64,9 +64,11 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     // Extend session on activity
     updateAge: 60 * 60 * 24, // re-validate once per day
+    // Keep Better Auth from storing full session/user data in cookies.
+    // That cache can be chunked into many Set-Cookie headers and break
+    // organization.setActive() with ERR_RESPONSE_HEADERS_TOO_BIG.
     cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5, // 5 min client-side cache
+      enabled: false,
     },
   },
 

@@ -48,13 +48,14 @@ export function isExternalImageUrl(value: string | null | undefined) {
   return !!value && /^https?:\/\//i.test(value);
 }
 
-export async function uploadTenantLogoFromDataUrl(params: {
-  organizationId: string;
+async function uploadImageFromDataUrl(params: {
   dataUrl: string;
+  label: string;
+  objectPath: string;
 }) {
   const match = params.dataUrl.match(DATA_URL_PATTERN);
   if (!match) {
-    throw new Error("Logo must be a valid image data URL.");
+    throw new Error(`${params.label} must be a valid image data URL.`);
   }
 
   const [, contentType, base64] = match;
@@ -62,16 +63,14 @@ export async function uploadTenantLogoFromDataUrl(params: {
   const maxBytes = 2 * 1024 * 1024;
 
   if (buffer.byteLength > maxBytes) {
-    throw new Error("Logo must be smaller than 2MB.");
+    throw new Error(`${params.label} must be smaller than 2MB.`);
   }
 
   const supabase = getSupabaseAdmin();
-  const ext = extensionFromMime(contentType);
-  const objectPath = `${TENANT_LOGO_FOLDER}/${params.organizationId}/logo-${Date.now()}.${ext}`;
 
   const { error } = await supabase.storage
     .from(TENANT_ASSETS_BUCKET)
-    .upload(objectPath, buffer, {
+    .upload(params.objectPath, buffer, {
       contentType,
       upsert: true,
     });
@@ -80,7 +79,37 @@ export async function uploadTenantLogoFromDataUrl(params: {
     throw error;
   }
 
-  return objectPath;
+  return params.objectPath;
+}
+
+export async function uploadTenantLogoFromDataUrl(params: {
+  organizationId: string;
+  dataUrl: string;
+}) {
+  const match = params.dataUrl.match(DATA_URL_PATTERN);
+  const ext = extensionFromMime(match?.[1] ?? "");
+  const objectPath = `${TENANT_LOGO_FOLDER}/${params.organizationId}/logo-${Date.now()}.${ext}`;
+
+  return uploadImageFromDataUrl({
+    dataUrl: params.dataUrl,
+    label: "Logo",
+    objectPath,
+  });
+}
+
+export async function uploadUserAvatarFromDataUrl(params: {
+  userId: string;
+  dataUrl: string;
+}) {
+  const match = params.dataUrl.match(DATA_URL_PATTERN);
+  const ext = extensionFromMime(match?.[1] ?? "");
+  const objectPath = `${USER_AVATAR_FOLDER}/${params.userId}/avatar-${Date.now()}.${ext}`;
+
+  return uploadImageFromDataUrl({
+    dataUrl: params.dataUrl,
+    label: "Avatar",
+    objectPath,
+  });
 }
 
 export async function removePrivateObject(bucket: string, path: string | null | undefined) {

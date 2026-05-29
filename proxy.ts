@@ -36,6 +36,8 @@ import { verifyHandoffToken, createHandoffToken } from "@/lib/handoff";
 // ─── Route classification ─────────────────────────────────────────────────────
 
 const SESSION_COOKIE = "better-auth.session_token";
+const SESSION_DATA_COOKIE = "better-auth.session_data";
+const SESSION_DATA_COOKIE_CLEAR_LIMIT = 32;
 
 // ─── Cookie signing ───────────────────────────────────────────────────────────
 
@@ -171,7 +173,74 @@ function pendingSlugCookieOpts() {
   };
 }
 
+function authCookieExpireOpts() {
+  const local = isLocalDev();
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+  return {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: !local,
+    maxAge: 0,
+    ...(!local && rootDomain ? { domain: `.${rootDomain}` } : {}),
+  };
+}
+
+function expireAuthCookie(response: NextResponse, name: string) {
+  response.cookies.set(name, "", authCookieExpireOpts());
+}
+
+function isSessionDataCookieName(name: string) {
+  return (
+    name === SESSION_DATA_COOKIE ||
+    name.startsWith(`${SESSION_DATA_COOKIE}.`) ||
+    name === `__Secure-${SESSION_DATA_COOKIE}` ||
+    name.startsWith(`__Secure-${SESSION_DATA_COOKIE}.`)
+  );
+}
+
+function sessionDataCookieSortKey(name: string) {
+  const normalized = name.startsWith("__Secure-") ? name.slice("__Secure-".length) : name;
+  if (normalized === SESSION_DATA_COOKIE) return -1;
+  const index = Number(normalized.slice(`${SESSION_DATA_COOKIE}.`.length));
+  return Number.isFinite(index) ? index : Number.MAX_SAFE_INTEGER;
+}
+
+function cleanupSessionDataCookies(request: NextRequest, response: NextResponse) {
+  const cookieNames = Array.from(
+    new Set(
+      request.cookies
+        .getAll()
+        .map((cookie) => cookie.name)
+        .filter(isSessionDataCookieName)
+    )
+  )
+    .sort((a, b) => sessionDataCookieSortKey(a) - sessionDataCookieSortKey(b) || a.localeCompare(b))
+    .slice(0, SESSION_DATA_COOKIE_CLEAR_LIMIT);
+
+  for (const cookieName of cookieNames) {
+    expireAuthCookie(response, cookieName);
+  }
+
+  return response;
+}
+
 // ─── Request helpers ──────────────────────────────────────────────────────────
+
+function stripSessionDataCookies(cookieHeader: string | null) {
+  if (!cookieHeader) return null;
+
+  const cookies = cookieHeader
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .filter(Boolean)
+    .filter((cookie) => {
+      const [name] = cookie.split("=");
+      return name ? !isSessionDataCookieName(name.trim()) : false;
+    });
+
+  return cookies.length > 0 ? cookies.join("; ") : null;
+}
 
 function getHost(request: NextRequest): string {
   return request.headers.get("host") ?? request.nextUrl.host;
@@ -182,19 +251,23 @@ function sanitizeHeaders(headers: Headers): Headers {
   ["x-tenant-id", "x-tenant-slug", "x-user-id", "x-user-role"].forEach((k) =>
     h.delete(k)
   );
+  const cookieHeader = stripSessionDataCookies(h.get("cookie"));
+  if (cookieHeader) h.set("cookie", cookieHeader);
+  else h.delete("cookie");
   return h;
 }
 
 function passThrough(request: NextRequest): NextResponse {
-  return NextResponse.next({
+  const response = NextResponse.next({
     request: { headers: sanitizeHeaders(request.headers) },
   });
+  return cleanupSessionDataCookies(request, response);
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
 
 async function getSession(request: NextRequest) {
-  return auth.api.getSession({ headers: request.headers }).catch(() => null);
+  return auth.api.getSession({ headers: sanitizeHeaders(request.headers) }).catch(() => null);
 }
 
 // ─── Tenant resolution ────────────────────────────────────────────────────────
@@ -216,10 +289,16 @@ async function resolveTenant(
   if (normalPath !== request.nextUrl.pathname) {
     const rewriteUrl = request.nextUrl.clone();
     rewriteUrl.pathname = normalPath;
-    return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+    return cleanupSessionDataCookies(
+      request,
+      NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
+    );
   }
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  return cleanupSessionDataCookies(
+    request,
+    NextResponse.next({ request: { headers: requestHeaders } })
+  );
 }
 
 // ─── Main proxy ───────────────────────────────────────────────────────────────
@@ -248,8 +327,10 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     console.log(`[PROXY]   handoff verify result: ${rawSessionToken ? "✓ valid" : "✗ invalid/expired"}`);
     if (rawSessionToken) {
       const signedToken = await signSessionToken(rawSessionToken);
-      const cleanUrl = new URL(request.url);
-      cleanUrl.searchParams.delete("__handoff");
+      const cleanSearch = new URLSearchParams(request.nextUrl.searchParams);
+      cleanSearch.delete("__handoff");
+      const cleanUrl = buildTenantUrl(tenantSlug, pathname);
+      cleanUrl.search = cleanSearch.toString();
       const response = NextResponse.redirect(cleanUrl);
 
       // Set the new session token (properly signed so Better Auth can verify it)
@@ -267,13 +348,12 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
       // subdomain, that stale cache will be returned by getSession() even though
       // we just set a new session_token — causing the wrong account to appear.
       // Expiring it forces a fresh DB lookup on the next request.
-      const SESSION_DATA_COOKIE = "better-auth.session_data";
-      const cookieExpireOpts = { path: "/", maxAge: 0, httpOnly: true, sameSite: "lax" as const };
-      response.cookies.set(SESSION_DATA_COOKIE, "", cookieExpireOpts);
+      expireAuthCookie(response, SESSION_DATA_COOKIE);
       // Also bust any chunked variants (better-auth.session_data.0, .1, .2 …)
       for (let i = 0; i < 5; i++) {
-        response.cookies.set(`${SESSION_DATA_COOKIE}.${i}`, "", cookieExpireOpts);
+        expireAuthCookie(response, `${SESSION_DATA_COOKIE}.${i}`);
       }
+      cleanupSessionDataCookies(request, response);
 
       console.log(`[PROXY]   ✓ handoff → signed cookie set + session_data cache busted, redirect → ${cleanUrl.href}`);
       return response;
