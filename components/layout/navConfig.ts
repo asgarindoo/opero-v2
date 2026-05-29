@@ -79,17 +79,11 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: "social-channels",label: "Social Channels",icon: Share2,    materialIcon: "share",          href: "/dashboard/social-channels" },
     ],
   },
-  {
-    label: "CONNECT",
-    items: [
-      { id: "bots", label: "Bot Manager", icon: Bot, materialIcon: "smart_toy", href: "/dashboard/bots" },
-    ],
-  },
+
   {
     label: "MONITOR",
     items: [
       { id: "insights",  label: "Insights",     icon: BarChart2,   materialIcon: "bar_chart",  href: "/dashboard/insights"  },
-      { id: "reports",   label: "Reports",      icon: FileBarChart,materialIcon: "summarize",   href: "/dashboard/reports"   },
       { id: "activity",  label: "Activity Log", icon: Activity,    materialIcon: "history",     href: "/dashboard/activity"  },
     ],
   },
