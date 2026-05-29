@@ -12,11 +12,10 @@ const PIPELINE_COLORS = [
 ];
 
 const STAGE_COLOR: Record<string, { bg: string; text: string }> = {
-  Leads:     { bg: "rgba(0,0,0,0.05)",     text: "var(--color-on-surface-variant)" },
-  Qualified: { bg: "rgba(0,0,0,0.06)",     text: "var(--color-on-surface-variant)" },
-  Proposal:  { bg: "rgba(0,0,0,0.07)",     text: "var(--color-on-surface-variant)" },
-  Closing:   { bg: "rgba(0,0,0,0.08)",     text: "var(--color-on-surface)" },
-  Won:       { bg: "var(--color-primary)", text: "var(--color-on-primary)" },
+  Pending:    { bg: "rgba(0,0,0,0.05)",     text: "var(--color-on-surface-variant)" },
+  Processing: { bg: "rgba(0,0,0,0.08)",     text: "var(--color-on-surface)" },
+  Completed:  { bg: "var(--color-primary)", text: "var(--color-on-primary)" },
+  Cancelled:  { bg: "rgba(186,26,26,0.08)", text: "rgba(186,26,26,0.8)" },
 };
 
 function SkeletonPipeline() {
@@ -38,7 +37,7 @@ export default function SalesOverviewWidget() {
   const stages = data?.salesOverview.stages ?? [];
   const recentDeals = data?.salesOverview.recentDeals ?? [];
 
-  const closingCount = stages.find((s) => s.label === "Closing")?.count ?? 0;
+  const closingCount = stages.find((s) => s.label === "Processing")?.count ?? 0;
   const maxPct = Math.max(...stages.map((s) => s.pct), 1);
 
   return (
@@ -53,7 +52,7 @@ export default function SalesOverviewWidget() {
           <span className="font-h3 text-[13px] font-semibold text-on-surface">Sales Overview</span>
           {!loading && closingCount > 0 && (
             <span className="font-label-caps text-[8px] font-bold px-1.5 py-[3px] rounded-full" style={{ background: "rgba(0,0,0,0.06)", color: "var(--color-on-surface-variant)" }}>
-              {closingCount} deal{closingCount !== 1 ? "s" : ""} closing
+              {closingCount} processing
             </span>
           )}
         </div>
@@ -93,9 +92,8 @@ export default function SalesOverviewWidget() {
                   <div className="flex-1 h-[5px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
                     <div className="h-full rounded-full transition-all duration-700" style={{ width: `${displayPct}%`, background: color }} />
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 w-[90px] justify-end">
-                    <span className="font-body-sm text-[10px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}>{stage.count}</span>
-                    <span className="font-body-sm text-[11px] font-semibold text-on-surface">{valueStr}</span>
+                  <div className="flex items-center gap-2 shrink-0 justify-end">
+                    <span className="font-body-sm text-[11px] font-medium text-on-surface">{stage.count}</span>
                   </div>
                 </div>
               );
@@ -127,16 +125,13 @@ export default function SalesOverviewWidget() {
         ) : (
           <div className="space-y-1">
             {recentDeals.map((deal, idx) => {
-              const sc = STAGE_COLOR[deal.stage] ?? STAGE_COLOR.Leads;
+              const sc = STAGE_COLOR[deal.stage] ?? STAGE_COLOR.Pending;
               return (
                 <div
                   key={`${deal.name}-${idx}`}
                   className="flex items-center gap-3 px-2.5 py-2 rounded-[6px] hover:bg-black/[0.02] transition-colors cursor-pointer"
                   style={{ border: "1px solid rgba(0,0,0,0.04)" }}
                 >
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center font-display font-bold text-[8px] shrink-0" style={{ background: "rgba(0,0,0,0.08)", color: "var(--color-on-surface-variant)" }}>
-                    {deal.name[0]}
-                  </div>
                   <div className="flex-1 min-w-0">
                     <span className="font-body-md text-[12px] font-semibold text-on-surface truncate block">{deal.name}</span>
                   </div>
@@ -144,8 +139,7 @@ export default function SalesOverviewWidget() {
                     {deal.stage}
                   </span>
                   <div className="text-right shrink-0">
-                    <div className="font-body-md text-[12px] font-semibold text-on-surface">{deal.value}</div>
-                    <div className="font-body-sm text-[9px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>{deal.ago}</div>
+                    <div className="font-body-sm text-[10px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.7 }}>{deal.ago}</div>
                   </div>
                 </div>
               );

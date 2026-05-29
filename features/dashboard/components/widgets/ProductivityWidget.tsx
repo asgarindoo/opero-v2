@@ -47,46 +47,53 @@ export default function ProductivityWidget() {
 
       <div className="px-4 py-4">
         {/* Bar chart */}
-        <div className="flex items-end gap-2 h-24 mb-3">
-          {loading ? (
-            [...Array(7)].map((_, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t-[3px] bg-black/[0.05] animate-pulse"
-                  style={{ height: `${30 + ((i * 23) % 50)}%` }}
-                />
-                <div className="h-2 w-4 rounded bg-black/[0.04] animate-pulse" />
-              </div>
-            ))
-          ) : bars.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <span className="font-body-sm text-[11px] text-on-surface-variant opacity-40">No data</span>
-            </div>
-          ) : (
-            bars.map((bar, i) => {
-              const height = maxTasks > 0 ? Math.max((bar.tasks / maxTasks) * 100, bar.tasks > 0 ? 8 : 3) : 3;
-              const isToday = i === adjustedToday;
-              return (
-                <div key={bar.day} className="flex-1 flex flex-col items-center gap-1">
+        <div className="relative h-28 mb-5 mt-2">
+          {/* Background Grid Lines */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-5 px-1">
+            <div className="w-full border-t border-dashed border-black/[0.05]"></div>
+            <div className="w-full border-t border-dashed border-black/[0.05]"></div>
+            <div className="w-full border-t border-solid border-black/[0.08]"></div>
+          </div>
+
+          <div className="flex items-end gap-2 h-full relative z-10">
+            {loading ? (
+              [...Array(7)].map((_, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
                   <div
-                    className="w-full rounded-t-[3px] animate-grow-up relative group"
-                    style={{ height: `${height}%`, background: isToday ? "var(--color-primary)" : "rgba(0,0,0,0.10)", animationDelay: `${i * 80}ms` }}
-                  >
-                    {bar.tasks > 0 && (
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center whitespace-nowrap">
-                        <span className="font-label-caps text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "var(--color-primary)", color: "#fff" }}>
+                    className="w-full rounded-t-[3px] bg-black/[0.05] animate-pulse"
+                    style={{ height: `${30 + ((i * 23) % 50)}%` }}
+                  />
+                  <div className="h-2 w-4 rounded bg-black/[0.04] animate-pulse" />
+                </div>
+              ))
+            ) : bars.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <span className="font-body-sm text-[11px] text-on-surface-variant opacity-40">No data</span>
+              </div>
+            ) : (
+              bars.map((bar, i) => {
+                const height = maxTasks > 0 ? Math.max((bar.tasks / maxTasks) * 100, bar.tasks > 0 ? 8 : 3) : 3;
+                const isToday = i === adjustedToday;
+                return (
+                  <div key={bar.day} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
+                    <div
+                      className="w-full rounded-t-[3px] animate-grow-up relative"
+                      style={{ height: `calc(${height}% - 14px)`, background: isToday ? "var(--color-primary)" : "rgba(0,0,0,0.12)", animationDelay: `${i * 80}ms` }}
+                    >
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center whitespace-nowrap z-20">
+                        <span className="font-label-caps text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm" style={{ background: "var(--color-primary)", color: "#fff" }}>
                           {bar.tasks}
                         </span>
                       </div>
-                    )}
+                    </div>
+                    <span className="font-label-caps text-[8px] uppercase tracking-[0.04em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: isToday ? 0.8 : 0.45 }}>
+                      {bar.day}
+                    </span>
                   </div>
-                  <span className="font-label-caps text-[8px] uppercase tracking-[0.04em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: isToday ? 0.8 : 0.45 }}>
-                    {bar.day}
-                  </span>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Metric chips */}

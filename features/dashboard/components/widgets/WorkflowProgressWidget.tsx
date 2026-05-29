@@ -32,7 +32,7 @@ export default function WorkflowProgressWidget() {
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>view_kanban</span>
-          <span className="font-h3 text-[13px] font-semibold text-on-surface">Active Boards</span>
+          <span className="font-h3 text-[13px] font-semibold text-on-surface">Active Flows</span>
           {!loading && (
             <span className="font-label-caps text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.06)", color: "var(--color-on-surface-variant)" }}>
               {boards.length}
@@ -44,17 +44,17 @@ export default function WorkflowProgressWidget() {
           style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}
           onClick={() => window.location.href = "/dashboard/flows"}
         >
-          All boards →
+          All flows →
         </button>
       </div>
 
-      <div className="px-4 py-3 space-y-4">
+      <div className="px-4 py-3 space-y-4 max-h-[320px] overflow-y-auto custom-scrollbar">
         {loading ? (
           [...Array(3)].map((_, i) => <SkeletonBoard key={i} />)
         ) : boards.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-on-surface-variant)", opacity: 0.25 }}>view_kanban</span>
-            <p className="font-body-sm text-[12px] text-on-surface-variant opacity-50">No active boards yet</p>
+            <p className="font-body-sm text-[12px] text-on-surface-variant opacity-50">No active flows yet</p>
             <button
               className="font-label-caps text-[10px] font-semibold px-3 py-1.5 rounded-[5px] transition-colors hover:bg-black/[0.04]"
               style={{ color: "var(--color-primary)", border: "1px solid rgba(0,0,0,0.08)" }}
@@ -70,11 +70,11 @@ export default function WorkflowProgressWidget() {
             return (
               <div key={board.id ?? `${board.name}-${boardIndex}`} className="cursor-pointer group">
                 {/* Board name */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-body-md text-[12.5px] font-semibold text-on-surface group-hover:text-primary transition-colors">
+                <div className="flex items-center justify-between mb-2 gap-3">
+                  <span className="font-body-md text-[12.5px] font-semibold text-on-surface group-hover:text-primary transition-colors truncate flex-1">
                     {board.name}
                   </span>
-                  <span className="font-label-caps text-[9px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
+                  <span className="font-label-caps text-[9px] font-semibold whitespace-nowrap" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
                     {board.total} items
                   </span>
                 </div>

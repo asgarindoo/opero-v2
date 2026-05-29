@@ -21,7 +21,7 @@ export default function TeamPerformanceWidget() {
 
   return (
     <div
-      className="db-widget rounded-[10px] overflow-hidden"
+      className="db-widget rounded-[10px] overflow-hidden flex flex-col h-full"
       style={{ border: "1px solid rgba(0,0,0,0.07)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
     >
       {/* Header */}
@@ -39,7 +39,7 @@ export default function TeamPerformanceWidget() {
         </button>
       </div>
 
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-4 py-3 space-y-3 max-h-[320px] overflow-y-auto custom-scrollbar flex-1">
         {loading ? (
           [...Array(4)].map((_, i) => <SkeletonMember key={i} />)
         ) : team.length === 0 ? (
@@ -60,8 +60,8 @@ export default function TeamPerformanceWidget() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-body-md text-[12px] font-semibold text-on-surface">{member.name}</span>
+                <div className="flex items-center justify-between mb-1 gap-2">
+                  <span className="font-body-md text-[12px] font-semibold text-on-surface truncate flex-1">{member.name}</span>
                   <span
                     className="font-label-caps text-[9px] font-semibold px-1.5 py-0.5 rounded"
                     style={{ background: "rgba(0,0,0,0.04)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}
@@ -91,7 +91,7 @@ export default function TeamPerformanceWidget() {
       </div>
 
       {/* Footer summary */}
-      <div className="px-4 py-2.5 border-t flex items-center justify-between" style={{ borderColor: "rgba(0,0,0,0.05)", background: "rgba(0,0,0,0.015)" }}>
+      <div className="px-4 py-2.5 border-t flex items-center justify-between mt-auto" style={{ borderColor: "rgba(0,0,0,0.05)", background: "rgba(0,0,0,0.015)" }}>
         {loading ? (
           <div className="h-2.5 w-40 rounded bg-black/[0.05] animate-pulse" />
         ) : (
