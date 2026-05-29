@@ -85,10 +85,10 @@ const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
 
 /** Short dashboard paths that map to /dashboard/<path>. */
 const TENANT_SHORTPATHS = new Set([
-  "/activity", "/assets", "/bots", "/campaigns", "/chat",
+  "/activity", "/assets", "/campaigns", "/chat",
   "/contacts", "/content-planner", "/documents", "/finance",
-  "/flows", "/goals", "/insights", "/invoices",
-  "/members", "/reports", "/sales", "/settings",
+  "/flows", "/goals", "/invoices",
+  "/members", "/sales", "/settings",
   "/social-channels", "/tasks",
 ]);
 
@@ -159,14 +159,14 @@ function isLocalDev(): boolean {
 }
 
 function pendingSlugCookieOpts() {
-  const local     = isLocalDev();
+  const local = isLocalDev();
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
   return {
-    path:     "/",
+    path: "/",
     httpOnly: false,        // login page reads this with getCookieValue()
     sameSite: "lax" as const,
-    secure:   !local,
-    maxAge:   600,          // 10 minutes
+    secure: !local,
+    maxAge: 600,          // 10 minutes
     ...(!local && rootDomain ? { domain: `.${rootDomain}` } : {}),
   };
 }
@@ -200,22 +200,22 @@ async function getSession(request: NextRequest) {
 // ─── Tenant resolution ────────────────────────────────────────────────────────
 
 async function resolveTenant(
-  request:    NextRequest,
+  request: NextRequest,
   tenantSlug: string,
-  userId:     string
+  userId: string
 ): Promise<NextResponse> {
   // Inject trusted tenant context headers — read in Server Components via headers()
   // Note: We no longer run heavy Prisma queries here. Next.js Server Components
   // (via requireTenant/getTenantContext) will validate tenant existence and membership.
   const requestHeaders = sanitizeHeaders(request.headers);
   requestHeaders.set("x-tenant-slug", tenantSlug);
-  requestHeaders.set("x-user-id",     userId);
+  requestHeaders.set("x-user-id", userId);
 
   // Rewrite short paths to /dashboard/<path>
   const normalPath = normalizeToTenantPath(request.nextUrl.pathname);
   if (normalPath !== request.nextUrl.pathname) {
-    const rewriteUrl      = request.nextUrl.clone();
-    rewriteUrl.pathname   = normalPath;
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = normalPath;
     return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
   }
 
@@ -226,10 +226,10 @@ async function resolveTenant(
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
-  const host         = getHost(request);
-  const tenantSlug   = extractTenantSlugFromHost(host);
-  const hasSession   = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
-  const handoff      = request.nextUrl.searchParams.get("__handoff");
+  const host = getHost(request);
+  const tenantSlug = extractTenantSlugFromHost(host);
+  const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
+  const handoff = request.nextUrl.searchParams.get("__handoff");
 
   // ── Debug ─────────────────────────────────────────────────────────────────
   // We only log handoffs or important redirects to keep the terminal clean
@@ -255,10 +255,10 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
       // Set the new session token (properly signed so Better Auth can verify it)
       response.cookies.set(SESSION_COOKIE, signedToken, {
         httpOnly: true,
-        secure:   false,   // localhost is HTTP
+        secure: false,   // localhost is HTTP
         sameSite: "lax",
-        path:     "/",
-        maxAge:   60 * 60 * 24 * 30,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
       });
 
       // CRITICAL: Bust the session_data cache cookie.
@@ -322,7 +322,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
         const pending = request.cookies.get("pendingTenantSlug")?.value;
         if (pending && session.session?.token) {
           // Pending tenant: skip /tenants, go directly with handoff
-          const token  = await createHandoffToken(session.session.token);
+          const token = await createHandoffToken(session.session.token);
           const target = buildTenantUrl(pending, "/dashboard");
           target.searchParams.set("__handoff", token);
           console.log(`[PROXY] auth + pending="${pending}" → handoff ${target.href}`);
@@ -342,7 +342,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   if (!hasSession) {
     const loginUrl = buildRootUrl("/login");
     console.log(`[PROXY] ✗ unauthenticated (no session cookie) → ${loginUrl.href}`);
-    const res  = NextResponse.redirect(loginUrl);
+    const res = NextResponse.redirect(loginUrl);
     const slug = tenantSlug;
     if (slug) {
       res.cookies.set("pendingTenantSlug", slug, pendingSlugCookieOpts());
@@ -354,7 +354,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   // ── 8. Load full session ──────────────────────────────────────────────────
   const session = await getSession(request);
   if (!session?.user?.id) {
-    const res  = NextResponse.redirect(buildRootUrl("/login"));
+    const res = NextResponse.redirect(buildRootUrl("/login"));
     if (tenantSlug) res.cookies.set("pendingTenantSlug", tenantSlug, pendingSlugCookieOpts());
     return res;
   }
@@ -372,12 +372,12 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     const activeOrgId = session.session?.activeOrganizationId;
     if (pathname.startsWith("/dashboard") && activeOrgId) {
       const org = await prisma.organization.findUnique({
-        where:  { id: activeOrgId },
+        where: { id: activeOrgId },
         select: { slug: true },
       });
       if (org) {
         if (session.session?.token) {
-          const token  = await createHandoffToken(session.session.token);
+          const token = await createHandoffToken(session.session.token);
           const target = buildTenantUrl(org.slug, pathname);
           target.searchParams.set("__handoff", token);
           console.log(`[PROXY] /dashboard → handoff ${target.href}`);

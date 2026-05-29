@@ -15,7 +15,6 @@ import {
   Megaphone,
   Share2,
   Bot,
-  BarChart2,
   FileBarChart,
   Activity,
   Calendar,
@@ -83,7 +82,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "MONITOR",
     items: [
-      { id: "insights",  label: "Insights",     icon: BarChart2,   materialIcon: "bar_chart",  href: "/dashboard/insights"  },
       { id: "activity",  label: "Activity Log", icon: Activity,    materialIcon: "history",     href: "/dashboard/activity"  },
     ],
   },
