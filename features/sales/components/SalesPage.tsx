@@ -31,7 +31,8 @@ function SalesPageContent() {
   ];
 
   // Summary stats
-  const totalRevenue = sales.filter(s => s.paymentStatus === "Paid").reduce((acc, s) => acc + s.total, 0);
+  const salesValue = sales.reduce((acc, s) => acc + s.total, 0);
+  const ordersCount = sales.length;
   const unpaidCount = sales.filter(s => s.paymentStatus === "Unpaid").length;
 
   function formatCurrency(val: number, currency: string = "USD") {
@@ -47,12 +48,15 @@ function SalesPageContent() {
         leftContent={(
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Revenue:</span>
-              <span className="font-display text-[14px] font-bold text-on-surface opacity-80">{formatCurrency(totalRevenue)}</span>
+              <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Sales Value:</span>
+              <span className="font-display text-[14px] font-bold text-on-surface opacity-80">{formatCurrency(salesValue)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Orders:</span>
+              <span className="font-display text-[14px] font-bold text-on-surface opacity-80">{ordersCount}</span>
             </div>
             {unpaidCount > 0 && (
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
                 <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Unpaid:</span>
                 <span className="font-display text-[14px] font-bold text-red-500 opacity-80">{unpaidCount}</span>
               </div>
