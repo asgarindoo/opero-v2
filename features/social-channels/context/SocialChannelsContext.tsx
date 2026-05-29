@@ -1,6 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
+import useSWR from "swr";
+import { fetchChannels, createChannel as apiCreate, updateChannel as apiUpdate, deleteChannel as apiDelete } from "../services/channels.client";
 
 export type ChannelStatus = "Active" | "Inactive" | "Archived";
 export type ChannelCategory = "Social" | "Email" | "Community" | "Marketplace" | "Custom";
@@ -24,71 +26,45 @@ export interface Channel {
 interface SocialChannelsContextType {
   channels: Channel[];
   setChannels: React.Dispatch<React.SetStateAction<Channel[]>>;
-  addChannel: (channel: Channel) => void;
-  updateChannel: (id: string, channel: Partial<Channel>) => void;
-  removeChannel: (id: string) => void;
+  addChannel: (channel: Channel) => Promise<void>;
+  updateChannel: (id: string, channel: Partial<Channel>) => Promise<void>;
+  removeChannel: (id: string) => Promise<void>;
 }
 
 const SocialChannelsContext = createContext<SocialChannelsContextType | undefined>(undefined);
 
-const MOCK_CHANNELS: Channel[] = [
-  {
-    id: "ch-1",
-    name: "Opero Official",
-    platform: "Instagram",
-    username: "@opero_official",
-    profileLink: "https://instagram.com/opero_official",
-    status: "Active",
-    followers: 12500,
-    postsThisMonth: 12,
-    interactions: 3400,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    notes: "Main brand account"
-  },
-  {
-    id: "ch-2",
-    name: "Opero Support",
-    platform: "X/Twitter",
-    username: "@opero_support",
-    profileLink: "https://twitter.com/opero_support",
-    status: "Active",
-    followers: 4300,
-    postsThisMonth: 45,
-    interactions: 1200,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    notes: "Customer service channel"
-  },
-  {
-    id: "ch-3",
-    name: "Opero Highlights",
-    platform: "TikTok",
-    username: "@opero_tiktok",
-    profileLink: "https://tiktok.com/@opero_tiktok",
-    status: "Active",
-    followers: 89000,
-    postsThisMonth: 8,
-    interactions: 45000,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    notes: "Viral video content"
-  }
-];
+const MOCK_CHANNELS: Channel[] = [];
 
 export function SocialChannelsProvider({ children }: { children: React.ReactNode }) {
-  const [channels, setChannels] = useState<Channel[]>(MOCK_CHANNELS);
+  const { data, mutate } = useSWR<Channel[]>("social-channels", fetchChannels, {
+    fallbackData: [],
+  });
 
-  const addChannel = (channel: Channel) => setChannels(prev => [...prev, channel]);
-  
-  const updateChannel = (id: string, updates: Partial<Channel>) => {
-    setChannels(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  const channels = data || [];
+
+  const addChannel = async (channel: Channel) => {
+    // optimistic
+    mutate([...channels, channel], false);
+    await apiCreate(channel);
+    mutate();
   };
   
-  const removeChannel = (id: string) => {
-    setChannels(prev => prev.filter(c => c.id !== id));
+  const updateChannel = async (id: string, updates: Partial<Channel>) => {
+    mutate(channels.map(c => c.id === id ? { ...c, ...updates } : c), false);
+    await apiUpdate(id, updates);
+    mutate();
+  };
+  
+  const removeChannel = async (id: string) => {
+    mutate(channels.filter(c => c.id !== id), false);
+    await apiDelete(id);
+    mutate();
   };
 
   const value = useMemo(() => ({
     channels,
-    setChannels,
+    setChannels: () => {}, // unused but kept for interface compat if needed
+
     addChannel,
     updateChannel,
     removeChannel

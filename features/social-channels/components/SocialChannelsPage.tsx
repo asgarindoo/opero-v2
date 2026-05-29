@@ -1,15 +1,39 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
 import ModuleHeader from "@/components/common/ModuleHeader";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
-import { Plus, Globe, Edit2, X, Check, ArrowUpRight, Calendar, Activity, Users, Eye, ChevronDown } from "lucide-react";
+import { Plus, Globe, Edit2, X, Check, ArrowUpRight, Calendar, Activity, Users, Eye, ChevronDown, Trash2 } from "lucide-react";
 import { useSocialChannels, Channel, ChannelStatus } from "../context/SocialChannelsContext";
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
+import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
+import Dropdown from "@/components/ui/Dropdown";
+import DatePicker from "@/components/ui/DatePicker";
 
-const SCHEDULED: any[] = [];
+function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+   return (
+      <div className="flex items-center gap-1.5 mb-2">
+         {icon}
+         <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>
+            {children}
+         </span>
+      </div>
+   );
+}
 
-const ACTIVITY: any[] = [];
+function getTenantSlug() {
+   if (typeof window === 'undefined') return '';
+   const path = window.location.pathname;
+   const match = path.match(/^\/([^\/]+)/);
+   return match ? match[1] : '';
+}
 
 const statusDot = (s: ChannelStatus) =>
    s === "Active" ? "bg-black" : s === "Inactive" ? "bg-black/60" : "bg-black/60";
@@ -54,6 +78,46 @@ export default function SocialChannelsPage() {
    const [form, setForm] = useState<AddForm>({});
    const [activeChannel, setActiveChannel] = useState<string | null>(null);
    const [isStatusOpen, setIsStatusOpen] = useState(false);
+   
+   const router = useRouter();
+   const { mutate: globalMutate } = useSWRConfig();
+
+   const slug = getTenantSlug();
+   const { data: contentPosts } = useSWR(`/api/tenant/content-planner`, async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      return res.json();
+   }, { fallbackData: [] });
+
+   const { data: activities } = useSWR(slug ? `/api/tenant/${slug}/social-channels/activity` : null, async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      return res.json();
+   }, { fallbackData: [] });
+
+   const SCHEDULED = (contentPosts || [])
+      .filter((p: any) => p.status !== "Published" && p.status !== "Archived")
+      .slice(0, 4) // Batasi ke 4
+      .map((p: any) => ({
+         id: p.id,
+         title: p.title,
+         status: p.status,
+         type: p.type || "Post",
+         channel: channels.find(c => c.id === p.targetAccountId)?.name || "Multiple",
+         date: p.date ? p.date.split('T')[0] : "—"
+      }));
+
+   const ACTIVITY = (activities || [])
+      .slice(0, 5) // Batasi ke 5
+      .map((act: any) => {
+         const date = new Date(act.time);
+         const isToday = date.toDateString() === new Date().toDateString();
+         const timeStr = isToday ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : date.toLocaleDateString();
+         return {
+            ...act,
+            time: timeStr
+         };
+      });
 
    const filtered = channels.filter(c =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -73,12 +137,17 @@ export default function SocialChannelsPage() {
       setEditId(null);
       setShowAdd(true);
    };
-   const openEdit = (ch: Channel) => { setForm({ ...ch }); setEditId(ch.id); setShowAdd(true); };
+   const openEdit = (ch: Channel) => { 
+      setForm({ ...ch }); 
+      setEditId(ch.id); 
+      setActiveChannel(ch.id); 
+      setShowAdd(false); 
+   };
 
-   const saveChannel = () => {
+   const saveChannel = async () => {
       if (!form.name || !form.platform) return;
       if (editId) {
-         updateChannel(editId, form);
+         await updateChannel(editId, form);
       } else {
          const newCh: Channel = {
             id: `ch-${Date.now()}`,
@@ -95,8 +164,13 @@ export default function SocialChannelsPage() {
             lastActiveDate: form.lastActiveDate || new Date().toISOString().split('T')[0],
             notes: form.notes || "",
          };
-         addChannel(newCh);
+         await addChannel(newCh);
       }
+
+      if (slug) {
+         setTimeout(() => globalMutate(`/api/tenant/${slug}/social-channels/activity`), 300);
+      }
+
       setShowAdd(false); setForm({}); setEditId(null);
    };
 
@@ -120,144 +194,136 @@ export default function SocialChannelsPage() {
 
          {/* Side Panel */}
          {showAdd && (
-            <div className="fixed inset-0 z-[100] flex justify-end">
-               <div className="absolute inset-0 bg-black/15 backdrop-blur-[2px]" onClick={() => setShowAdd(false)} />
-               <div className="relative bg-white w-full max-w-[460px] h-full shadow-[-10px_0_30px_rgba(0,0,0,0.04)] border-l border-black/[0.06] flex flex-col animate-in slide-in-from-right duration-300">
-                  <div className="px-8 py-7 border-b border-black/[0.05] flex items-center justify-between shrink-0">
-                     <div className="space-y-0.5">
-                        <h2 className="font-display text-[13px] font-bold text-on-surface tracking-tight">{editId ? "Update Channel" : "New Social Channel"}</h2>
-                        <p className="text-[11px] text-on-surface opacity-60">Manage your channel details and tracking stats</p>
-                     </div>
-                     <button onClick={() => setShowAdd(false)} className="p-2 hover:bg-black/[0.05] rounded-full transition-colors opacity-80 hover:opacity-100"><X size={18} /></button>
-                  </div>
+            <ModalShell onClose={() => setShowAdd(false)} maxWidth={640}>
+               <ModalHeader title={editId ? "Update Channel" : "New Social Channel"} onClose={() => setShowAdd(false)} />
 
-                  <div className="flex-1 overflow-y-auto p-8 space-y-8">
-
-                     {/* Identity Section */}
-                     <div className="space-y-5">
-                        <h3 className="font-display text-[11px] font-bold text-black uppercase tracking-[0.1em]">Identity & Platform</h3>
-                        <div className="grid grid-cols-2 gap-5">
-                           <div className="space-y-1.5">
-                              <label className={lc}>Platform Name</label>
-                              <input
-                                 className={ic}
-                                 placeholder="e.g. Instagram, TikTok, WhatsApp"
-                                 value={form.platform || ""}
-                                 onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}
-                              />
-                           </div>
-                           <div className="space-y-1.5">
-                              <label className={lc}>Account Label</label>
-                              <input className={ic} placeholder="e.g. Opero" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                           </div>
+               <ModalContent className="db-sidebar space-y-6">
+                  {/* Identity Section */}
+                  <div className="space-y-4">
+                     <SL>Identity & Platform</SL>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <GlobalInput
+                              maxLength={30}
+                              placeholder="Platform (e.g. Instagram)"
+                              value={form.platform || ""}
+                              onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}
+                           />
                         </div>
-
-                        <div className="grid grid-cols-2 gap-5">
-                           <div className="space-y-1.5">
-                              <label className={lc}>Username / Handle</label>
-                              <input className={ic} placeholder="@username" value={form.username || ""} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} />
-                           </div>
-                           <div className="space-y-1.5">
-                              <label className={lc}>Profile Link</label>
-                              <input className={ic} placeholder="https://..." value={form.profileLink || ""} onChange={e => setForm(f => ({ ...f, profileLink: e.target.value }))} />
-                           </div>
+                        <div>
+                           <GlobalInput
+                              maxLength={50}
+                              placeholder="Account Label (e.g. Opero)"
+                              value={form.name || ""}
+                              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                           />
                         </div>
                      </div>
 
-                     {/* Stats Section */}
-                     <div className="space-y-5 pt-2">
-                        <h3 className="font-display text-[11px] font-bold text-black/100 uppercase tracking-[0.1em]">Operational Stats</h3>
-                        <div className="grid grid-cols-2 gap-5">
-                           <div className="space-y-1.5">
-                              <label className={lc}>Followers / Subscribers</label>
-                              <input type="number" className={ic} placeholder="e.g. 12500" value={form.followers || ""} onChange={e => setForm(f => ({ ...f, followers: parseInt(e.target.value) || 0 }))} />
-                              <span className={hc}>Total people following this account</span>
-                           </div>
-                           <div className="space-y-1.5">
-                              <label className={lc}>Total Interactions</label>
-                              <input type="number" className={ic} placeholder="e.g. 4300" value={form.interactions || ""} onChange={e => setForm(f => ({ ...f, interactions: parseInt(e.target.value) || 0 }))} />
-                              <span className={hc}>Likes, comments, shares, or reactions</span>
-                           </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <GlobalInput
+                              maxLength={50}
+                              placeholder="@username"
+                              value={form.username || ""}
+                              onChange={e => {
+                                 let val = e.target.value;
+                                 if (val && !val.startsWith('@')) val = '@' + val;
+                                 setForm(f => ({ ...f, username: val }));
+                              }}
+                           />
                         </div>
-
-                        <div className="grid grid-cols-2 gap-5">
-                           <div className="space-y-1.5">
-                              <label className={lc}>Posts This Month</label>
-                              <input type="number" className={ic} placeholder="e.g. 18" value={form.postsThisMonth || ""} onChange={e => setForm(f => ({ ...f, postsThisMonth: parseInt(e.target.value) || 0 }))} />
-                              <span className={hc}>Total content published this month</span>
-                           </div>
-                           <div className="space-y-1.5">
-                              <label className={lc}>Average Views <span className="opacity-80 italic ml-1">(Optional)</span></label>
-                              <input type="number" className={ic} placeholder="0" value={form.averageViews || ""} onChange={e => setForm(f => ({ ...f, averageViews: parseInt(e.target.value) || 0 }))} />
-                              <span className={hc}>Average views per content/post</span>
-                           </div>
-                        </div>
-                     </div>
-
-                     {/* Configuration Section */}
-                     <div className="space-y-5 pt-2">
-                        <h3 className="font-display text-[11px] font-bold text-black/100 uppercase tracking-[0.1em]">Management</h3>
-                        <div className="grid grid-cols-2 gap-5">
-                           <div className="space-y-1.5">
-                              <label className={lc}>Last Active Date</label>
-                              <input type="date" className={ic} value={form.lastActiveDate || ""} onChange={e => setForm(f => ({ ...f, lastActiveDate: e.target.value }))} />
-                           </div>
-                           <div className="space-y-1.5">
-                              <label className={lc}>Status</label>
-                              <div className="relative">
-                                 <button
-                                    onClick={() => setIsStatusOpen(!isStatusOpen)}
-                                    className={`${ic} flex items-center justify-between group`}
-                                 >
-                                    <span className="flex items-center gap-2">
-                                       <div className={`w-1.5 h-1.5 rounded-full ${statusLabel(form.status || "Active").split(' ')[1]}`} />
-                                       {form.status || "Active"}
-                                    </span>
-                                    <ChevronDown size={14} className={`opacity-60 group-hover:opacity-80 transition-all ${isStatusOpen ? "rotate-180" : ""}`} />
-                                 </button>
-
-                                 {isStatusOpen && (
-                                    <>
-                                       <div className="fixed inset-0 z-10" onClick={() => setIsStatusOpen(false)} />
-                                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-black/[0.06] rounded-[4px] shadow-xl z-20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                          {STATUSES.map(s => (
-                                             <button
-                                                key={s}
-                                                onClick={() => {
-                                                   setForm(f => ({ ...f, status: s }));
-                                                   setIsStatusOpen(false);
-                                                }}
-                                                className="w-full text-left px-4 py-2.5 font-display text-[12px] text-on-surface hover:bg-black/[0.03] flex items-center justify-between transition-colors group"
-                                             >
-                                                <span className="flex items-center gap-2">
-                                                   <div className={`w-1.5 h-1.5 rounded-full ${statusLabel(s).split(' ')[1]}`} />
-                                                   {s}
-                                                </span>
-                                                {form.status === s && <Check size={12} className="opacity-80" />}
-                                             </button>
-                                          ))}
-                                       </div>
-                                    </>
-                                 )}
-                              </div>
-                           </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                           <label className={lc}>Operational Notes</label>
-                           <textarea className={`${ic} h-28 resize-none`} placeholder="Channel purpose, strategy, or notes..." value={form.notes || ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                        <div>
+                           <GlobalInput
+                              maxLength={200}
+                              placeholder="Profile Link (https://...)"
+                              value={form.profileLink || ""}
+                              onChange={e => setForm(f => ({ ...f, profileLink: e.target.value }))}
+                           />
                         </div>
                      </div>
                   </div>
 
-                  <div className="p-8 border-t border-black/[0.05] flex gap-3 shrink-0 bg-[#fdf8f8]/50">
-                     <button onClick={saveChannel} className="flex-1 bg-black text-white px-6 py-4 rounded-[8px] font-label-caps text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black/90 transition-all flex items-center justify-center gap-2">
-                        <Check size={14} />{editId ? "Update Channel" : "Create Channel"}
-                     </button>
-                     <button onClick={() => setShowAdd(false)} className="px-6 py-4 border border-black/[0.08] rounded-[8px] font-label-caps text-[10px] font-bold uppercase tracking-[0.15em] text-black/60 hover:text-black hover:border-black/20 transition-all">Cancel</button>
+                  <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
+
+                  {/* Stats Section */}
+                  <div className="space-y-4">
+                     <SL>Operational Stats</SL>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <GlobalInput
+                              type="number"
+                              placeholder="Followers / Subscribers"
+                              value={form.followers || ""}
+                              onChange={e => setForm(f => ({ ...f, followers: parseInt(e.target.value) || 0 }))}
+                           />
+                        </div>
+                        <div>
+                           <GlobalInput
+                              type="number"
+                              placeholder="Total Interactions"
+                              value={form.interactions || ""}
+                              onChange={e => setForm(f => ({ ...f, interactions: parseInt(e.target.value) || 0 }))}
+                           />
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <GlobalInput
+                              type="number"
+                              placeholder="Total Post"
+                              value={form.postsThisMonth || ""}
+                              onChange={e => setForm(f => ({ ...f, postsThisMonth: parseInt(e.target.value) || 0 }))}
+                           />
+                        </div>
+                        <div>
+                           <GlobalInput
+                              type="number"
+                              placeholder="Average Views"
+                              value={form.averageViews || ""}
+                              onChange={e => setForm(f => ({ ...f, averageViews: parseInt(e.target.value) || 0 }))}
+                           />
+                        </div>
+                     </div>
                   </div>
-               </div>
-            </div>
+
+                  <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
+
+                  {/* Configuration Section */}
+                  <div className="space-y-4">
+                     <SL>Management</SL>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col justify-center col-span-2 md:col-span-1">
+                           <Dropdown
+                              value={form.status || "Active"}
+                              onChange={(val) => setForm(f => ({ ...f, status: val as ChannelStatus }))}
+                              options={STATUSES.map(s => ({ value: s, label: s }))}
+                           />
+                        </div>
+                     </div>
+
+                     <div>
+                        <GlobalTextarea
+                           rows={3}
+                           maxLength={500}
+                           placeholder="Operational notes, channel purpose, or strategy..."
+                           value={form.notes || ""}
+                           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                        />
+                     </div>
+                  </div>
+               </ModalContent>
+
+               <ModalFooter>
+                  <button onClick={() => setShowAdd(false)} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}>
+                     Cancel
+                  </button>
+                  <button onClick={saveChannel} className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] hover:-translate-y-px transition-all" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
+                     {editId ? "Update Channel" : "Create Channel"}
+                  </button>
+               </ModalFooter>
+            </ModalShell>
          )}
 
          {/* Header */}
@@ -303,8 +369,8 @@ export default function SocialChannelsPage() {
 
                      <div className="flex items-center gap-12 shrink-0">
                         {[
-                           { label: "Managed Channels", value: channels.length, trend: "Active Units" },
-                           { label: "Content Published", value: formatStat(totalPostsNum), trend: "This Month" },
+                           { label: "Managed Channels", value: channels.length, trend: "Total Channel" },
+                           { label: "Content Published", value: formatStat(totalPostsNum), trend: "Total Post" },
                            { label: "Global Audience", value: formatStat(totalFollowersNum), trend: "Total reach" },
                         ].map((s, i) => (
                            <div key={i} className="space-y-1">
@@ -391,30 +457,72 @@ export default function SocialChannelsPage() {
                                  <div className="flex items-center gap-4 shrink-0 ml-4">
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                        <button onClick={(e) => { e.stopPropagation(); openEdit(ch); }} className="p-1.5 text-black/100 hover:text-black transition-colors rounded-[4px] hover:bg-black/[0.04]"><Edit2 size={12} /></button>
-                                       <button onClick={(e) => { e.stopPropagation(); removeChannel(ch.id); }} className="p-1.5 text-black/60 hover:text-red-500 transition-colors rounded-[4px] hover:bg-red-50"><X size={12} /></button>
+                                       <button onClick={async (e) => { e.stopPropagation(); await removeChannel(ch.id); if (slug) { setTimeout(() => globalMutate(`/api/tenant/${slug}/social-channels/activity`), 300); } }} className="p-1.5 text-black/60 hover:text-red-500 transition-colors rounded-[4px] hover:bg-red-50"><X size={12} /></button>
                                     </div>
                                  </div>
                               </div>
 
                               {/* Expanded Detail */}
                               {activeChannel === ch.id && (
-                                 <div className="border-t border-black/[0.04] bg-[#fdf8f8]/60 px-7 py-6 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
-                                    <div className="space-y-3">
-                                       {ch.notes && <p className="font-body-sm text-[12.5px] text-on-surface opacity-60 leading-relaxed">{ch.notes}</p>}
-                                       <div className="flex items-center gap-4 pt-1">
-                                          <span className={`px-2 py-0.5 rounded-[4px] font-label-caps text-[8.5px] font-bold uppercase tracking-widest ${statusLabel(ch.status)}`}>{ch.status}</span>
-                                          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-80 uppercase tracking-widest italic">Last Active: {ch.lastActiveDate}</span>
-                                          <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-80 uppercase tracking-widest">{ch.postsThisMonth} posts this month</span>
+                                 <div onClick={(e) => e.stopPropagation()} className="border-t border-black/[0.04] bg-[#fdf8f8]/60 px-7 py-6">
+                                    {editId === ch.id ? (
+                                       <div className="space-y-6">
+                                          <div className="space-y-4">
+                                             <SL>Identity & Platform</SL>
+                                             <div className="grid grid-cols-2 gap-4">
+                                                <GlobalInput placeholder="Platform (e.g. Instagram)" value={form.platform || ""} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} />
+                                                <GlobalInput placeholder="Account Label" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                                             </div>
+                                             <div className="grid grid-cols-2 gap-4">
+                                                <GlobalInput placeholder="@username" value={form.username || ""} onChange={e => {
+                                                   let val = e.target.value;
+                                                   if (val && !val.startsWith('@')) val = '@' + val;
+                                                   setForm(f => ({ ...f, username: val }));
+                                                }} />
+                                                <GlobalInput placeholder="Profile Link" value={form.profileLink || ""} onChange={e => setForm(f => ({ ...f, profileLink: e.target.value }))} />
+                                             </div>
+                                          </div>
+
+                                          <div className="space-y-4">
+                                             <SL>Operational Stats</SL>
+                                             <div className="grid grid-cols-2 gap-4">
+                                                <Dropdown value={form.status || "Active"} onChange={(val) => setForm(f => ({ ...f, status: val as ChannelStatus }))} options={STATUSES.map(s => ({ value: s, label: s }))} />
+                                                <GlobalInput type="number" placeholder="Total Post" value={form.postsThisMonth || ""} onChange={e => setForm(f => ({ ...f, postsThisMonth: parseInt(e.target.value) || 0 }))} />
+                                             </div>
+                                             <div className="grid grid-cols-2 gap-4">
+                                                <GlobalInput type="number" placeholder="Followers" value={form.followers || ""} onChange={e => setForm(f => ({ ...f, followers: parseInt(e.target.value) || 0 }))} />
+                                                <GlobalInput type="number" placeholder="Interactions" value={form.interactions || ""} onChange={e => setForm(f => ({ ...f, interactions: parseInt(e.target.value) || 0 }))} />
+                                             </div>
+                                          </div>
+
+                                          <div className="space-y-4">
+                                             <SL>Additional Context</SL>
+                                             <textarea className={ic + " min-h-[80px] resize-none"} placeholder="Internal notes or strategy..." value={form.notes || ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                                          </div>
+
+                                          <div className="flex gap-2 justify-end pt-2">
+                                             <button onClick={() => setEditId(null)} className="px-4 py-1.5 rounded-[6px] font-label-caps text-[10px] font-bold uppercase tracking-widest text-black/60 hover:bg-black/5 transition-colors">Cancel</button>
+                                             <button onClick={saveChannel} className="px-4 py-1.5 rounded-[6px] font-label-caps text-[10px] font-bold uppercase tracking-widest bg-black text-white hover:bg-black/80 transition-colors">Save Changes</button>
+                                          </div>
                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                       {ch.profileLink && (
-                                          <a href={ch.profileLink} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 font-label-caps text-[9px] font-bold text-black/100 hover:text-black transition-colors uppercase tracking-widest">
-                                             <Globe size={12} /> Open <ArrowUpRight size={10} />
-                                          </a>
-                                       )}
-                                       <button onClick={() => openEdit(ch)} className="font-label-caps text-[9px] font-bold text-black/100 hover:text-black uppercase tracking-widest transition-colors">Update Stats</button>
-                                    </div>
+                                    ) : (
+                                       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
+                                          <div className="space-y-3">
+                                             {ch.notes && <p className="font-body-sm text-[12.5px] text-on-surface opacity-60 leading-relaxed">{ch.notes}</p>}
+                                             <div className="flex items-center gap-4 pt-1">
+                                                <span className={`px-2 py-0.5 rounded-[4px] font-label-caps text-[8.5px] font-bold uppercase tracking-widest ${statusLabel(ch.status)}`}>{ch.status}</span>
+                                                <span className="font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-80 uppercase tracking-widest">{ch.postsThisMonth} Total Post</span>
+                                             </div>
+                                          </div>
+                                          <div className="flex items-center gap-3">
+                                             {ch.profileLink && (
+                                                <a href={ch.profileLink} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 font-label-caps text-[9px] font-bold text-black/100 hover:text-black transition-colors uppercase tracking-widest">
+                                                   <Globe size={12} /> Open <ArrowUpRight size={10} />
+                                                </a>
+                                             )}
+                                          </div>
+                                       </div>
+                                    )}
                                  </div>
                               )}
                            </div>
@@ -441,16 +549,19 @@ export default function SocialChannelsPage() {
                         </div>
 
                         <div className="space-y-2">
-                           {SCHEDULED.length > 0 ? SCHEDULED.map(post => (
+                           {SCHEDULED.length > 0 ? SCHEDULED.map((post: any) => (
                               <div key={post.id} className="bg-white border border-black/[0.06] rounded-[8px] px-5 py-4 group hover:border-black/15 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                                  <div className="flex items-start justify-between gap-3 mb-2.5">
                                     <h4 className="font-display text-[12.5px] font-bold text-on-surface tracking-tight leading-snug line-clamp-2">{post.title}</h4>
                                     <span className={`px-1.5 py-0.5 rounded-[4px] font-label-caps text-[7.5px] font-bold uppercase tracking-widest shrink-0 ${postDot(post.status)}`}>{post.status}</span>
                                  </div>
                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded-[4px] bg-black/[0.04] flex items-center justify-center font-display font-bold text-[8px] text-black/60">{(post as any).type?.[0]}</div>
-                                    <span className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-80 uppercase tracking-widest">{post.channel}</span>
-                                    <div className="w-0.5 h-0.5 rounded-full bg-black/10" />
+                                    {(post as any).channel !== "Multiple" && (
+                                       <>
+                                          <span className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-80 uppercase tracking-widest truncate">{post.channel}</span>
+                                          <div className="w-0.5 h-0.5 rounded-full bg-black/10 shrink-0" />
+                                       </>
+                                    )}
                                     <span className="font-body-sm text-[10.5px] text-on-surface-variant opacity-80">{post.date}</span>
                                  </div>
                               </div>
@@ -460,7 +571,7 @@ export default function SocialChannelsPage() {
                               </div>
                            )}
                         </div>
-                        <button className="w-full py-2.5 font-label-caps text-[8px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 uppercase tracking-widest transition-opacity text-center">Open Content Planner →</button>
+                        <button onClick={() => router.push(`/${slug}/content-planner`)} className="w-full py-2.5 font-label-caps text-[8px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 uppercase tracking-widest transition-opacity text-center">Open Content Planner →</button>
                      </div>
 
                      {/* Recent Activity */}
@@ -470,17 +581,18 @@ export default function SocialChannelsPage() {
                         </div>
 
                         <div className="space-y-px bg-white border border-black/[0.06] rounded-[8px] overflow-hidden divide-y divide-black/[0.03] shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                           {ACTIVITY.length > 0 ? ACTIVITY.map(act => (
-                              <div key={act.id} className="px-5 py-4 group hover:bg-black/[0.01] transition-colors">
-                                 <div className="flex items-start justify-between gap-3 mb-1.5">
-                                    <h4 className="font-display text-[12px] font-bold text-on-surface tracking-tight leading-snug">{act.action}</h4>
-                                    <span className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest shrink-0 mt-0.5">{act.time}</span>
-                                 </div>
-                                 <div className="flex items-center gap-2">
-                                    <div className="w-3.5 h-3.5 rounded-[4px] bg-black/[0.04] flex items-center justify-center font-display font-bold text-[7px] text-black/60">{act.channel[0]}</div>
-                                    <span className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-80 uppercase tracking-widest">{act.channel}</span>
-                                    <div className="w-0.5 h-0.5 rounded-full bg-black/10" />
-                                    <span className="font-body-sm text-[10.5px] text-on-surface-variant opacity-80">by {act.user}</span>
+                           {ACTIVITY.slice(0, 5).length > 0 ? ACTIVITY.slice(0, 5).map((act: any) => (
+                              <div key={act.id} className="relative px-5 py-4 group hover:bg-black/[0.01] transition-colors flex items-start gap-3">
+                                 <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-3 mb-1">
+                                       <h4 className="font-display text-[12px] font-bold text-on-surface tracking-tight leading-snug">{act.action}</h4>
+                                       <span className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest shrink-0 mt-0.5">{act.time}</span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                       <span className="font-label-caps text-[7.5px] font-bold text-black/60 bg-black/[0.04] px-1.5 py-0.5 rounded-[4px] uppercase tracking-widest truncate max-w-[120px]">{act.channel}</span>
+                                       <div className="w-1 h-1 rounded-full bg-black/10 mx-1" />
+                                       <span className="font-body-sm text-[10px] text-on-surface-variant opacity-80">by <span className="font-medium text-black/80">{act.user}</span></span>
+                                    </div>
                                  </div>
                               </div>
                            )) : (
