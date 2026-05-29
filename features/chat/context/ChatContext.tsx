@@ -707,14 +707,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const deleteChannel = useCallback(async (channelId: string) => {
     try {
       await deleteChannelRequest(channelId);
-      setChannels((current) => {
-        const next = current.filter((channel) => channel.id !== channelId);
-        if (activeChannelIdRef.current === channelId) {
-          const target = next[0]?.id;
-          router.replace(target ? `/dashboard/chat/${target}` : "/dashboard/chat");
-        }
-        return next;
-      });
+      // Determine navigation target *before* state updates to avoid
+      // calling router inside a setState updater (which runs during render).
+      const isActive = activeChannelIdRef.current === channelId;
+      const remainingChannels = channelsRef.current.filter((ch) => ch.id !== channelId);
+      const navTarget = isActive
+        ? remainingChannels[0]?.id
+          ? `/dashboard/chat/${remainingChannels[0].id}`
+          : "/dashboard/chat"
+        : null;
+
+      setChannels((current) => current.filter((channel) => channel.id !== channelId));
       setMessages((current) => {
         const next = { ...current };
         delete next[channelId];
@@ -725,6 +728,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         delete next[channelId];
         return next;
       });
+
+      // Navigate after state updates are committed, outside of any updater.
+      if (navTarget) {
+        window.setTimeout(() => router.replace(navTarget), 0);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete channel.");
       void refreshChannels({ redirect: false, silent: true });
