@@ -16,6 +16,8 @@ interface ContentCalendarProps {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+import { useSocialChannels } from "@/features/social-channels";
+
 function ContentCard({
   post,
   isDragging,
@@ -27,6 +29,11 @@ function ContentCard({
   onDragStart: (e: React.DragEvent) => void;
   onClick: () => void;
 }) {
+  const { channels } = useSocialChannels();
+  const targetChannel = channels.find(c => c.id === post.targetAccountId);
+
+  const STATUS_COLORS: Record<string, string> = { "Planned": "bg-gray-400", "Ready": "bg-blue-400", "Published": "bg-green-400", "Skipped": "bg-red-400" };
+
   return (
     <div
       draggable
@@ -37,15 +44,19 @@ function ContentCard({
       }`}
     >
       <div className="bg-white border border-black/[0.07] rounded-[4px] px-2.5 py-2 hover:border-black/[0.18] hover:shadow-[0_1px_6px_rgba(0,0,0,0.05)] transition-all duration-150">
-        {/* Title */}
-        <p className="font-display text-[10.5px] font-semibold text-black/80 leading-snug line-clamp-2 tracking-tight">
-          {post.title}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          {/* Title */}
+          <p className="font-display text-[10.5px] font-semibold text-black/80 leading-snug line-clamp-2 tracking-tight">
+            {post.title}
+          </p>
+          {/* Status Dot */}
+          <div className={`shrink-0 w-1.5 h-1.5 rounded-full mt-1 ${STATUS_COLORS[post.status] || "bg-gray-200"}`} title={post.status} />
+        </div>
 
-        {/* Category */}
-        {post.category && (
+        {/* Target Account */}
+        {targetChannel && (
           <p className="font-display text-[9px] text-black/60 mt-0.5 leading-none truncate">
-            {post.category}
+            {targetChannel.name}
           </p>
         )}
 
@@ -113,7 +124,7 @@ export default function ContentCalendar({
     e.preventDefault();
     const id = e.dataTransfer.getData("postId");
     const post = posts.find(p => p.id === id);
-    if (post) onUpdatePost({ ...post, date });
+    if (post) onUpdatePost({ ...post, date: date.toISOString() });
     setDraggedPostId(null);
   };
 
@@ -138,7 +149,7 @@ export default function ContentCalendar({
         {days.map(({ date, isCurrentMonth }, idx) => {
           const dateStr = date.toDateString();
           const isToday = dateStr === todayStr;
-          const items = posts.filter(p => p.date.toDateString() === dateStr);
+          const items = posts.filter(p => new Date(p.date).toDateString() === dateStr);
 
           return (
             <div
