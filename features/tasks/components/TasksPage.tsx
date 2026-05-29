@@ -159,12 +159,15 @@ export default function TasksPage() {
             />
             
             {view === "list" && (
-              <Dropdown 
-                label="Group"
-                value={groupBy}
-                options={GROUP_OPTIONS}
-                onChange={(v) => setGroupBy(v as GroupBy)}
-              />
+              <div className="w-[110px]">
+                <Dropdown 
+                  label="Group"
+                  value={groupBy}
+                  options={GROUP_OPTIONS}
+                  onChange={(v) => setGroupBy(v as GroupBy)}
+                  size="sm"
+                />
+              </div>
             )}
 
             <ViewSwitcher active={view} onChange={setView} />

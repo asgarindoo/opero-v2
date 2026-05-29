@@ -19,6 +19,7 @@ interface DropdownProps {
   align?: "left" | "right";
   disabled?: boolean;
   variant?: "default" | "minimal";
+  size?: "sm" | "md";
 }
 
 export default function Dropdown({
@@ -29,7 +30,8 @@ export default function Dropdown({
   className = "",
   align = "left",
   disabled = false,
-  variant = "default"
+  variant = "default",
+  size = "md"
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,10 +60,10 @@ export default function Dropdown({
           bg-transparent hover:bg-black/[0.04] transition-all font-display text-[12px] text-on-surface font-medium
           disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none
         ` : `
-          w-full flex items-center justify-between px-3 py-2.5 rounded-[6px]
+          w-full flex items-center justify-between rounded-[6px]
           bg-black/[0.02] border border-black/[0.09] focus:bg-white focus:border-primary/40
-          transition-all font-body-md text-[13px] text-on-surface
-          disabled:opacity-50 disabled:cursor-not-allowed
+          transition-all text-on-surface disabled:opacity-50 disabled:cursor-not-allowed
+          ${size === 'sm' ? 'px-2.5 py-1.5 font-display text-[12px]' : 'px-3 py-2.5 font-body-md text-[13px]'}
         `}
       >
         <div className="flex items-center gap-1.5 overflow-hidden">

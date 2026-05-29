@@ -94,15 +94,15 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
   const handleUpdate = (patch: Partial<Task>, actionDesc?: string, detailDesc?: string) => {
     const actor = user?.name || "System";
     const timestamp = new Date().toLocaleString();
-    
+
     // Only log if there's a specific action to describe
     if (actionDesc) {
-      const newActivity = { 
-        id: `a${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, 
-        actor, 
-        action: actionDesc, 
-        detail: detailDesc, 
-        timestamp 
+      const newActivity = {
+        id: `a${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        actor,
+        action: actionDesc,
+        detail: detailDesc,
+        timestamp
       };
       patch.activity = [...task.activity, newActivity];
     }
@@ -140,23 +140,6 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
       onClose={onClose}
       title={task.id}
       size="md"
-      footer={(
-        <div className="flex items-center justify-between w-full">
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={Trash2}
-            className="text-red-500 hover:bg-red-50"
-            onClick={() => { if (confirm("Delete this task?")) { onDelete(task.id); onClose(); } }}
-          >
-            DELETE TASK
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose}>CLOSE</Button>
-            <Button variant="primary" size="sm" onClick={onClose}>SAVE CHANGES</Button>
-          </div>
-        </div>
-      )}
     >
       <div className="space-y-8">
         {/* Title */}
@@ -190,17 +173,46 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
         </div>
 
         {/* Quick Meta */}
-        <div className="grid grid-cols-2 gap-4 py-4 border-y border-black/[0.04]">
-          <div className="space-y-1">
-            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Assignees</span>
-            <MemberPicker selected={task.assignees} onChange={a => handleUpdate({ assignees: a }, "updated assignees")} />
+        <div className="flex flex-col gap-5 py-4 border-y border-black/[0.04] relative z-20">
+
+          <div className="flex items-center gap-2 relative z-30">
+            {/* Status dropdown */}
+            <div className="space-y-0.5 relative z-30">
+              <span className="block font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Status</span>
+              <div className="-ml-2 scale-[0.85] origin-left w-32">
+                <Dropdown
+                  value={task.status}
+                  onChange={(val) => handleUpdate({ status: val as any }, `changed status to ${val}`)}
+                  options={ALL_STATUSES.map(s => ({ label: s, value: s }))}
+                />
+              </div>
+            </div>
+
+            {/* Priority dropdown */}
+            <div className="space-y-0.5 relative z-20">
+              <span className="block font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Priority</span>
+              <div className="-ml-2 scale-[0.85] origin-left w-32">
+                <Dropdown
+                  value={task.priority}
+                  onChange={(val) => handleUpdate({ priority: val as any }, `changed priority to ${val}`)}
+                  options={ALL_PRIORITIES.map(p => ({ label: p, value: p }))}
+                />
+              </div>
+            </div>
           </div>
-          <div className="space-y-1">
-            <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Due Date</span>
-            <DatePicker
-              value={task.due}
-              onChange={date => handleUpdate({ due: date }, "changed due date to", date ? new Date(date).toLocaleDateString() : "None")}
-            />
+
+          <div className="grid grid-cols-2 gap-x-4 relative z-10 pt-4 border-t border-black/[0.02]">
+            <div className="space-y-1.5">
+              <span className="block font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Assignees</span>
+              <MemberPicker selected={task.assignees} onChange={a => handleUpdate({ assignees: a }, "updated assignees")} />
+            </div>
+            <div className="space-y-1.5">
+              <span className="block font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Due Date</span>
+              <DatePicker
+                value={task.due}
+                onChange={date => handleUpdate({ due: date }, "changed due date to", date ? new Date(date).toLocaleDateString() : "None")}
+              />
+            </div>
           </div>
         </div>
 
@@ -214,7 +226,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
             <span className="font-display text-[13px] font-medium text-on-surface">
               {campaignName || "Loading..."}
             </span>
-            <button 
+            <button
               onClick={() => {
                 if (confirm("Remove task from campaign?")) {
                   handleUpdate({ campaignId: null }, "removed from campaign");
@@ -276,7 +288,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                           {item.text}
                         </span>
                         <button
-                          onClick={(e) => { e.stopPropagation(); if(confirm("Delete item?")) handleUpdate({ checklist: task.checklist.filter(c => c.id !== item.id) }, "deleted checklist item", item.text); }}
+                          onClick={(e) => { e.stopPropagation(); if (confirm("Delete item?")) handleUpdate({ checklist: task.checklist.filter(c => c.id !== item.id) }, "deleted checklist item", item.text); }}
                           className="text-red-500 opacity-20 hover:opacity-100 p-1 rounded transition-all ml-auto"
                           title="Delete item"
                         >
@@ -364,6 +376,15 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                   </div>
                 </div>
               </Section>
+
+              <div className="pt-8 flex justify-center pb-4">
+                <button
+                  onClick={() => { if (confirm("Delete this task?")) { onDelete(task.id); onClose(); } }}
+                  className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
+                >
+                  Delete Task
+                </button>
+              </div>
             </div>
           )}
 
