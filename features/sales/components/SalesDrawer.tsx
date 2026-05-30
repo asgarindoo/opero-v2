@@ -14,6 +14,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import { useTenant } from "@/components/providers/TenantProvider";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function formatCurrency(val: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(val);
@@ -59,6 +60,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
   const { user } = useTenant();
   const sale = sales.find(s => s.id === saleId);
   const [newNote, setNewNote] = useState("");
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [tab, setTab] = useState<"details" | "activity">("details");
 
   if (!sale) return null;
@@ -320,6 +322,13 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                             </span>
                             <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
                           </div>
+                          <button
+                            onClick={() => setNoteToDelete(c.id)}
+                            className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
+                            title="Delete note"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
                         <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.description}</p>
                       </div>
@@ -398,6 +407,21 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
           )}
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={!!noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete) {
+            const updatedActivities = sale.activities.filter(a => a.id !== noteToDelete);
+            updateSale(sale.id, { activities: updatedActivities });
+            setNoteToDelete(null);
+          }
+        }}
+        title="Delete Note"
+        message="Are you sure you want to delete this note? This action cannot be undone."
+        confirmText="Delete"
+        isDanger={true}
+      />
     </Drawer>
   );
 }

@@ -8,6 +8,8 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { Trash2 } from "lucide-react";
 
 function Section({ label, count, children, defaultOpen = true }: { label: string; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -35,6 +37,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
   const [adjustQty, setAdjustQty] = useState("");
   const [tab, setTab] = useState<"details" | "activity">("details");
   const [newNote, setNewNote] = useState("");
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   if (!product) return null;
 
@@ -225,6 +228,13 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                               </span>
                               <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
                             </div>
+                            <button
+                              onClick={() => setNoteToDelete(c.id)}
+                              className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
+                              title="Delete note"
+                            >
+                              <Trash2 size={12} />
+                            </button>
                           </div>
                           <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.description}</p>
                         </div>
@@ -318,6 +328,21 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
           )}
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={!!noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete) {
+            const updatedActivities = product.activities.filter(a => a.id !== noteToDelete);
+            updateProduct(product.id, { activities: updatedActivities });
+            setNoteToDelete(null);
+          }
+        }}
+        title="Delete Note"
+        message="Are you sure you want to delete this note? This action cannot be undone."
+        confirmText="Delete"
+        isDanger={true}
+      />
     </Drawer>
   );
 }
