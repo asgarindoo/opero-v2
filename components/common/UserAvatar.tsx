@@ -65,7 +65,7 @@ export default function UserAvatar({
   return (
     <span
       className={[
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/6 bg-{--color-surface-container-highest} font-display font-bold leading-none text-on-surface",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-black/5 font-display font-bold leading-none text-on-surface",
         SIZE_CLASS[size],
         className,
       ].join(" ")}
