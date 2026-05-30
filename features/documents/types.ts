@@ -9,7 +9,7 @@ export interface DocumentEntry {
   updatedAt: string;      // From DB Model
   
   // From DB include
-  createdBy?: { id: string; name: string; image: string | null };
+  createdBy?: { id: string; name: string; email?: string | null; image: string | null };
   
   // From Payload
   description?: string;
@@ -30,7 +30,7 @@ export interface Folder {
   updatedAt: string;      // From DB Model
 
   // From DB include
-  createdBy?: { id: string; name: string; image: string | null };
+  createdBy?: { id: string; name: string; email?: string | null; image: string | null };
 
   // From Payload
   parentId?: string;

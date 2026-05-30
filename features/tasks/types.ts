@@ -11,6 +11,8 @@ export interface Member {
   id: string;
   name: string;
   initials: string;
+  email?: string;
+  image?: string | null;
   role?: string;
 }
 
@@ -56,7 +58,9 @@ export interface Reaction {
 
 export interface Comment {
   id: string;
+  userId?: string;
   author: string;
+  email?: string;
   initials: string;
   avatar?: string | null;
   body: string;
@@ -67,6 +71,7 @@ export interface Comment {
 
 export interface ActivityEntry {
   id: string;
+  actorId?: string;
   actor: string;
   action: string;
   detail?: string;

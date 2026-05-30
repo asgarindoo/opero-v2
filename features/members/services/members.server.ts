@@ -7,13 +7,13 @@ const ENTITY = "Role";
 
 export async function listRoles() {
   const ctx = await requireTenant();
-  const roles = await prisma.role.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const roles = await prisma.role.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return roles.map((role) => mapDomainRecord(role));
 }
 
 export async function getRoleById(id: string) {
   const ctx = await requireTenant();
-  const role = await prisma.role.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const role = await prisma.role.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return role ? mapDomainRecord(role) : null;
 }
 
@@ -31,7 +31,7 @@ export async function updateRole(id: string, patch: Record<string, unknown>) {
   if (!current) return null;
   const result = await prisma.role.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
   if (result.count === 0) return null;
-  const updated = await prisma.role.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.role.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
   return mapDomainRecord(updated);

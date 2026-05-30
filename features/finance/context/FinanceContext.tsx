@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Transaction, TransactionStatus, FinanceActivity, TransactionType, FinancialSummary, DateRange } from "@/features/finance";
 import { createTransaction, deleteTransaction, listTransactions, updateTransaction as saveTransaction } from "@/features/finance/services/finance.client";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface FinanceContextType {
   transactions: Transaction[];
@@ -24,7 +25,7 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
-  const userName = user?.name || "You";
+  const userName = getUserDisplayName(user, "You");
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,7 +95,11 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         type: "status_change",
         description: "Transaction recorded manually",
         timestamp: new Date().toISOString(),
-        author: userName || "System"
+        userId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       }],
       attachments: [],
       sourceType: "Manual",
@@ -108,7 +113,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     createTransaction<Transaction>(newTx)
       .then((created) => setTransactions(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create transaction:", err));
-  }, [userName]);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
     setTransactions(prev => prev.map(tx => {

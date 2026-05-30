@@ -11,7 +11,7 @@ export interface TaskItem {
   priority: string;
   status: string;
   assignee: string;          // kept for backward compat (first initials)
-  assignees: { id: string; name: string; initials: string }[];
+  assignees: { id: string; name: string; email?: string; image?: string | null; initials: string }[];
   due: string | null;
   labels: string[];
   checklist: { done: number; total: number };
@@ -21,7 +21,10 @@ export interface TaskItem {
 export interface ActivityItem {
   id: string;
   icon: string;
+  userId?: string;
   user: string;
+  userEmail?: string;
+  userImage?: string | null;
   action: string;
   target: string;
   time: string;
@@ -40,7 +43,10 @@ export interface ProductivityMetric {
 }
 
 export interface TeamMember {
+  id?: string;
   name: string;
+  email?: string;
+  image?: string | null;
   role: string;
   tasks: number;
   done: number;

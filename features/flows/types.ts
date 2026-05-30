@@ -1,5 +1,7 @@
 // ─── Primitive Types ──────────────────────────────────────────────────────────
 
+import type { UserIdentity } from "@/lib/user-identity";
+
 export type FlowCategory = 
   | "Onboarding" 
   | "Approvals" 
@@ -40,10 +42,7 @@ export type WorkflowStage = FlowStage & {
 
 export interface FlowNote {
   id: string;
-  user: {
-    name: string;
-    avatar?: string;
-  };
+  user: UserIdentity;
   text: string;
   timestamp: string;
 }
@@ -58,10 +57,9 @@ export interface Flow {
   stages: FlowStage[];
   dueDate?: string;
   updated: string;
-  owner: {
+  owner: UserIdentity & {
     id: string;
     name: string;
-    avatar?: string;
   };
   notes?: FlowNote[];
   relatedTasksCount?: number;
@@ -97,5 +95,4 @@ export const CATEGORY_COLORS: Record<FlowCategory, string> = {
   Finance: "text-indigo-500 bg-indigo-50",
   Production: "text-purple-500 bg-purple-50",
 };
-
 

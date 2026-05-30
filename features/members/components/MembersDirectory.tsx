@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useMembers } from "../context/MembersContext";
 import { EmptyState } from "@/components/common/DataState";
 import { usePresence } from "@/features/presence";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 export default function MembersDirectory({ searchQuery, onSelectMember }: { searchQuery: string, onSelectMember: (id: string) => void }) {
   const { members, loading } = useMembers();
@@ -99,28 +101,13 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
               className="group flex items-center gap-4 p-3 rounded-lg transition-all cursor-pointer border border-transparent hover:border-black/[0.04] hover:bg-black/[0.01]"
             >
             {/* Avatar */}
-            <div
-              className="relative w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[12px] shrink-0 overflow-hidden"
-              style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-            >
-              {member.image ? (
-                <img src={member.image} alt="" className="h-full w-full object-cover" />
-              ) : (
-                member.initials
-              )}
-              {isOnline && (
-                <span
-                  className="absolute right-0 bottom-0 w-2.5 h-2.5 rounded-full border-2"
-                  style={{ background: "#22c55e", borderColor: "var(--color-background)" }}
-                />
-              )}
-            </div>
+            <UserAvatar user={member} size="lg" className="h-10 w-10 text-[12px]" online={isOnline} />
 
             {/* Info */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="font-display font-semibold text-[13px] text-on-surface truncate group-hover:text-primary transition-colors">
-                  {member.name || "Unnamed User"}
+                  {getUserDisplayName(member, "Unnamed User")}
                 </span>
                 {member.status === "invited" && (
                   <span className="font-label-caps text-[8px] font-bold px-1.5 py-0.5 rounded bg-black/[0.05] text-on-surface-variant opacity-70">

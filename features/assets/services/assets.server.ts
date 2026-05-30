@@ -7,13 +7,13 @@ const ENTITY = "Asset";
 
 export async function listAssets() {
   const ctx = await requireTenant();
-  const assets = await prisma.asset.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const assets = await prisma.asset.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return assets.map((asset) => mapDomainRecord(asset));
 }
 
 export async function getAssetById(id: string) {
   const ctx = await requireTenant();
-  const asset = await prisma.asset.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const asset = await prisma.asset.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return asset ? mapDomainRecord(asset) : null;
 }
 
@@ -31,7 +31,7 @@ export async function updateAsset(id: string, patch: Record<string, unknown>) {
   if (!current) return null;
   const result = await prisma.asset.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
   if (result.count === 0) return null;
-  const updated = await prisma.asset.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.asset.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
   return mapDomainRecord(updated);

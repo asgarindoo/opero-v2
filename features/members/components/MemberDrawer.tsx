@@ -3,6 +3,8 @@ import { X, UserMinus, Shield, Building, Briefcase, Crown, User, Check, Edit2 } 
 import { useMembers } from "../context/MembersContext";
 import { RoleType } from "@/features/members";
 import { usePresence } from "@/features/presence";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 export default function MemberDrawer({ memberId, onClose }: { memberId: string, onClose: () => void }) {
   const { members, removeMember, updateMemberRole, updateMemberOrg, roles, permissions } = useMembers();
@@ -21,9 +23,10 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
   }, []);
 
   if (!member) return null;
+  const memberName = getUserDisplayName(member, "Unnamed User");
 
   const handleRemove = () => {
-    if (confirm(`Are you sure you want to remove ${member.name} from the workspace?`)) {
+    if (confirm(`Are you sure you want to remove ${memberName} from the workspace?`)) {
       removeMember(member.id);
       onClose();
     }
@@ -114,24 +117,15 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           {/* Identity (Soft, compact) */}
           <div className="flex items-center gap-4 mb-8">
-            <div
-              className="relative w-16 h-16 rounded-full flex items-center justify-center font-display font-bold text-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] shrink-0 overflow-hidden"
-              style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-            >
-              {member.image ? (
-                <img src={member.image} alt="" className="h-full w-full object-cover" />
-              ) : (
-                member.initials
-              )}
-              {isOnline && (
-                <span
-                  className="absolute right-1 bottom-1 w-3 h-3 rounded-full border-2"
-                  style={{ background: "#22c55e", borderColor: "var(--color-surface-container-lowest)" }}
-                />
-              )}
-            </div>
+            <UserAvatar
+              user={member}
+              size="xl"
+              className="shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
+              online={isOnline}
+              onlineClassName="border-[var(--color-surface-container-lowest)]"
+            />
             <div className="min-w-0 flex-1">
-              <h3 className="font-display font-bold text-[18px] text-on-surface truncate mb-0.5">{member.name}</h3>
+              <h3 className="font-display font-bold text-[18px] text-on-surface truncate mb-0.5">{memberName}</h3>
               <p className="font-body-md text-[13px] text-on-surface-variant opacity-80 truncate mb-1">{member.email}</p>
               <div className="flex items-center gap-2">
                 <span className="font-label-caps text-[9px] font-bold px-2 py-0.5 rounded-full bg-black/5 text-on-surface-variant opacity-70 flex items-center gap-1">

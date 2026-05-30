@@ -6,6 +6,7 @@ import { createSale, deleteSale, listSales, updateSale as saveSale } from "@/fea
 import { listProducts, updateProduct } from "@/features/products/services/products.client";
 import type { Product, StockActivity } from "@/features/products/types";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface SalesContextType {
   sales: SaleOpportunity[];
@@ -23,7 +24,7 @@ const SalesContext = createContext<SalesContextType | undefined>(undefined);
 
 export function SalesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
-  const userName = user?.name || "You";
+  const userName = getUserDisplayName(user, "You");
 
   const [sales, setSales] = useState<SaleOpportunity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +91,11 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
         type: "status_change",
         description: "Sale record created",
         timestamp: new Date().toISOString(),
-        author: userName
+        userId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       }],
       attachments: [],
       notes: partial.notes || "",
@@ -101,7 +106,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     createSale<SaleOpportunity>(newSale)
       .then((created) => setSales(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create sale:", err));
-  }, [sales.length, userName]);
+  }, [sales.length, user?.email, user?.id, user?.image, userName]);
 
   const updateSale = useCallback((id: string, updates: Partial<SaleOpportunity>) => {
     setSales(prev => prev.map(s => {
@@ -140,7 +145,11 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
                     quantity: -item.quantity,
                     description: `sold via sale ${updated.orderNumber}`,
                     timestamp: new Date().toISOString(),
-                    author: userName
+                    userId: user?.id,
+                    author: userName,
+                    email: user?.email ?? undefined,
+                    avatar: user?.image ?? null,
+                    initials: getUserInitials(user)
                   };
                   const recordId = (product as any).recordId ?? product.id;
                   await updateProduct<Product>(recordId, {
@@ -162,7 +171,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     }));
-  }, [onSalePaid]);
+  }, [onSalePaid, user?.email, user?.id, user?.image, userName]);
 
   const addActivity = useCallback((saleId: string, activity: Omit<SaleActivity, "id" | "timestamp" | "author"> & { author?: string }) => {
     setSales(prev => prev.map(s => {
@@ -171,7 +180,11 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       const newActivity: SaleActivity = {
         id: Math.random().toString(36).substring(7),
         timestamp: new Date().toISOString(),
+        userId: user?.id,
         author,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user),
         ...rest,
       };
       const updated = {
@@ -185,7 +198,7 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     }));
-  }, []);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const deleteSales = useCallback((ids: string[]) => {
     setSales(prev => prev.filter(s => !ids.includes(s.id)));

@@ -12,6 +12,7 @@ import TimelineView from "@/features/tasks/views/TimelineView";
 import TaskDrawer from "@/features/tasks/TaskDrawer";
 import CreateTaskModal from "@/features/tasks/CreateTaskModal";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 import ModuleHeader from "@/components/common/ModuleHeader";
 import SearchInput from "@/components/common/SearchInput";
@@ -74,10 +75,11 @@ export default function TasksPage() {
     
     const finalPatch = { ...patch };
     if (patch.status && patch.status !== taskToUpdate.status) {
-      const actor = user?.name || "System";
+      const actor = getUserDisplayName(user, "System");
       const timestamp = new Date().toLocaleString();
       const newActivity = {
         id: `a${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        actorId: user?.id,
         actor,
         action: `changed status to ${patch.status}`,
         timestamp

@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboardData } from "@/features/dashboard/context/DashboardDataContext";
+import UserAvatar from "@/components/common/UserAvatar";
 
 function SkeletonMember() {
   return (
@@ -51,12 +52,7 @@ export default function TeamPerformanceWidget() {
           team.map((member) => (
             <div key={member.name} className="flex items-center gap-3">
               {/* Avatar */}
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center font-display font-bold text-[10px] shrink-0"
-                style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-              >
-                {member.initials}
-              </div>
+              <UserAvatar user={member} size="md" />
 
               {/* Info */}
               <div className="flex-1 min-w-0">

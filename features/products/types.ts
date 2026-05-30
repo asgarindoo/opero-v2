@@ -7,7 +7,11 @@ export interface StockActivity {
   description: string;
   quantity?: number;
   timestamp: string;
+  userId?: string;
   author: string;
+  email?: string;
+  avatar?: string | null;
+  initials?: string;
 }
 
 export interface ProductVariant {

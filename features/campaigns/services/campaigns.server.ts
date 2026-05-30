@@ -7,13 +7,13 @@ const ENTITY = "Campaign";
 
 export async function listCampaigns() {
   const ctx = await requireTenant();
-  const campaigns = await prisma.campaign.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const campaigns = await prisma.campaign.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return campaigns.map((campaign: any) => mapDomainRecord(campaign));
 }
 
 export async function getCampaignById(id: string) {
   const ctx = await requireTenant();
-  const campaign = await prisma.campaign.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const campaign = await prisma.campaign.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return campaign ? mapDomainRecord(campaign) : null;
 }
 
@@ -31,7 +31,7 @@ export async function updateCampaign(id: string, patch: Record<string, unknown>)
   if (!current) return null;
   const result = await prisma.campaign.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
   if (result.count === 0) return null;
-  const updated = await prisma.campaign.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.campaign.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
   return mapDomainRecord(updated);

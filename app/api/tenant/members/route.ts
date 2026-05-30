@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 /**
  * GET /api/tenant/members
@@ -29,9 +31,9 @@ export async function GET() {
     const mappedMembers = members.map((m) => ({
       id: m.id,
       userId: m.userId,
-      name: m.user.name,
+      name: getUserDisplayName(m.user),
       email: m.user.email,
-      image: m.user.image,
+      image: normalizeUserAvatarImage(m.userId, m.user.image),
       role: m.role,
       department: m.department,
       position: m.position,

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Contact, ContactActivity, ContactStatus, RelationshipType } from "@/features/contacts";
 import { createContact, deleteContact, listContacts, updateContact as saveContact } from "@/features/contacts/services/contacts.client";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface ContactsContextType {
   contacts: Contact[];
@@ -20,7 +21,7 @@ const ContactsContext = createContext<ContactsContextType | undefined>(undefined
 
 export function ContactsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
-  const userName = user?.name || "You";
+  const userName = getUserDisplayName(user, "You");
 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +55,11 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
         type: "note",
         description: note,
         timestamp: new Date().toISOString(),
-        author: userName
+        userId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       };
       const updated = {
         ...c,
@@ -69,7 +74,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
 
       return updated;
     }));
-  }, []);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const updateStatus = useCallback((contactId: string, status: ContactStatus) => {
     setContacts(prev => prev.map(c => {
@@ -99,7 +104,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     const newContact: Contact = {
       id: "c" + Date.now(),
       name: partial.name || "New Contact",
-      initials: partial.name ? partial.name.substring(0, 2).toUpperCase() : "NC",
+      initials: getUserInitials({ name: partial.name }, "NC"),
       industry: partial.industry || "Unspecified",
       status: partial.status || "New",
       relationshipType: partial.relationshipType || "Lead",

@@ -21,6 +21,7 @@ import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import DatePicker from "@/components/ui/DatePicker";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 /* ── Reusable click dropdown ─────────────────────────────────────────────── */
 function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
@@ -118,7 +119,7 @@ export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStat
       externalLinks: links,
       comments: [],
       reactions: {},
-      activity: [{ id: "a1", actor: user?.name || "System", action: "created this task", timestamp: new Date().toLocaleString() }],
+      activity: [{ id: "a1", actorId: user?.id, actor: getUserDisplayName(user, "System"), action: "created this task", timestamp: new Date().toLocaleString() }],
       attachments,
       recurring: "none",
     };

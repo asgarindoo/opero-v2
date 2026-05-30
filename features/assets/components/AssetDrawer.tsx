@@ -6,6 +6,8 @@ import { AssetStatus, AssetComment } from "@/features/assets/types";
 import Button from "@/components/ui/Button";
 import Dropdown from "@/components/ui/Dropdown";
 import MemberPicker from "@/features/tasks/components/MemberPicker";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 function formatCurrency(val: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "code", maximumFractionDigits: 0 }).format(val);
@@ -39,7 +41,7 @@ function Section({ label, count, children, defaultOpen = true }: { label: string
         <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.15em] flex-1 text-left">
           {label} {count !== undefined && `(${count})`}
         </span>
-        <div className="h-px flex-1 bg-black/[0.03]" />
+        <div className="h-px flex-1 bg-black/3" />
       </button>
       {open && children}
     </div>
@@ -134,7 +136,11 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
       const newActivity = {
         id: `act${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         type,
-        author: user?.name || "System",
+        authorId: user?.id,
+        author: getUserDisplayName(user, "System"),
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user),
         description: actionDesc,
         detail,
         timestamp: new Date().toISOString()
@@ -146,12 +152,13 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
 
   function submitComment() {
     if (!comment.trim()) return;
-    const author = user?.name || "Current User";
-    const initials = author.substring(0, 2).toUpperCase();
+    const author = getUserDisplayName(user, "Current User");
     const c: AssetComment = {
       id: `c${Date.now()}`,
+      userId: user?.id,
       author,
-      initials,
+      email: user?.email ?? undefined,
+      initials: getUserInitials(user),
       avatar: user?.image,
       body: comment.trim(),
       timestamp: new Date().toLocaleString()
@@ -172,9 +179,9 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
       <div className="fixed inset-0 z-50 flex justify-end">
         <div className="absolute inset-0 bg-black/5 backdrop-blur-[1px] animate-fade-in" onClick={onClose} />
 
-        <div className="relative w-full max-w-[440px] h-full bg-surface-container-lowest shadow-2xl flex flex-col animate-slide-in-right border-l border-black/[0.05]">
+        <div className="relative w-full max-w-110 h-full bg-surface-container-lowest shadow-2xl flex flex-col animate-slide-in-right border-l border-black/5">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-surface-container-lowest z-10 sticky top-0 border-b border-black/[0.04]">
+          <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-surface-container-lowest z-10 sticky top-0 border-b border-black/4">
             <div className="flex items-center gap-2">
               <div className="px-2 py-1 rounded bg-black/5 font-mono text-[10px] font-bold text-on-surface-variant opacity-70">
                 {asset.assetCode}
@@ -190,7 +197,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
 
             {/* Title & Meta */}
             <div className="space-y-4">
-              <div className="w-full h-48 bg-black/5 rounded-xl border border-black/[0.03] flex items-center justify-center group relative overflow-hidden">
+              <div className="w-full h-48 bg-black/5 rounded-xl border border-black/3 flex items-center justify-center group relative overflow-hidden">
                 {asset.imageUrl ? (
                   <>
                     <img onClick={() => setIsImageExpanded(true)} src={asset.imageUrl} alt={asset.name} className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105" />
@@ -228,7 +235,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
             </div>
 
             {/* Quick Meta */}
-            <div className="flex flex-col gap-5 py-4 border-y border-black/[0.04] mb-2">
+            <div className="flex flex-col gap-5 py-4 border-y border-black/4 mb-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5 flex flex-col justify-center">
                   <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest flex items-center gap-1"><CheckCircle2 size={10} /> Status</span>
@@ -259,7 +266,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                   <MemberPicker
                     selected={(() => {
                       const arr = Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo as unknown as string] : []);
-                      return arr.map(name => ({ id: name, name, initials: name.charAt(0).toUpperCase(), role: "" }));
+                      return arr.map(name => ({ id: name, name, initials: getUserInitials({ name }), role: "" }));
                     })()}
                     onChange={members => handleUpdate({ assignedTo: members.map(m => m.name) }, "assigned to", members.map(m => m.name).join(", ") || "Unassigned", "assignment")}
                   />
@@ -283,7 +290,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
             </div>
 
             {/* Tabs for Details/Activity */}
-            <div className="flex gap-6 border-b border-black/[0.04]">
+            <div className="flex gap-6 border-b border-black/4">
               {(["details", "activity"] as const).map(t => (
                 <button
                   key={t}
@@ -338,7 +345,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                         </div>
                         {editingField === "purchaseValue" ? (
                           <div className="flex items-center gap-1.5 w-full mt-1">
-                            <div className="w-[85px] shrink-0"><Dropdown value={editCurrency} onChange={setEditCurrency} options={CURRENCY_OPTIONS} /></div>
+                            <div className="w-21.25 shrink-0"><Dropdown value={editCurrency} onChange={setEditCurrency} options={CURRENCY_OPTIONS} /></div>
                             <input autoFocus type="number" min={0} value={editValue} onChange={e => setEditValue(e.target.value)} onKeyDown={e => e.key === "Enter" && saveEdit()} className="flex-1 font-body-sm text-[12.5px] text-on-surface px-1.5 py-1 bg-black/5 border-none outline-none focus:ring-2 focus:ring-primary/20 rounded min-w-0 transition-all" placeholder="0.00" />
                             <button onClick={saveEdit} className="p-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 shrink-0 transition-all"><Check size={14} strokeWidth={3} /></button>
                           </div>
@@ -353,7 +360,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                       </div>
                       <div className="space-y-1.5 col-span-2">
                         <div className="font-label-caps text-[8.5px] text-on-surface-variant opacity-50 uppercase tracking-wider flex items-center gap-1">Supplier</div>
-                        <div className="font-body-sm text-[12.5px] text-on-surface opacity-90 break-words">{asset.supplierName || "N/A"}</div>
+                        <div className="font-body-sm text-[12.5px] text-on-surface opacity-90 wrap-break-words">{asset.supplierName || "N/A"}</div>
                       </div>
                     </div>
                   </Section>
@@ -362,17 +369,16 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                     <div className="space-y-6">
                       {(asset.comments || []).map(c => (
                         <div key={c.id} className="flex gap-4 group">
-                          {c.avatar ? (
-                            <img src={c.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                              {c.initials}
-                            </div>
-                          )}
+                          <UserAvatar
+                            user={c.userId === user?.id ? user : { name: c.author, email: c.email, image: c.avatar, initials: c.initials }}
+                            size="lg"
+                          />
                           <div className="flex-1 space-y-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-display text-[13px] font-bold">{c.author}</span>
+                                <span className="font-display text-[13px] font-bold">
+                                  {c.userId === user?.id ? getUserDisplayName(user, c.author) : getUserDisplayName({ name: c.author, email: c.email }, "User")}
+                                </span>
                                 <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
                               </div>
                               <button
@@ -383,19 +389,13 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                                 <Trash2 size={12} />
                               </button>
                             </div>
-                            <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.body}</p>
+                            <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed wrap-break-words break-all whitespace-pre-wrap">{c.body}</p>
                           </div>
                         </div>
                       ))}
-                      <div className="pt-4 border-t border-black/[0.04]">
+                      <div className="pt-4 border-t border-black/4">
                         <div className="flex gap-4">
-                          {user?.image ? (
-                            <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
-                              {(user?.name || "U").substring(0, 2).toUpperCase()}
-                            </div>
-                          )}
+                          <UserAvatar user={user} size="lg" className="bg-primary text-on-primary" />
                           <div className="flex-1 space-y-2">
                             <textarea
                               rows={2}
@@ -408,7 +408,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                                   submitComment();
                                 }
                               }}
-                              className="w-full bg-black/[0.02] border border-black/[0.06] rounded-[8px] p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all resize-none"
+                              className="w-full bg-black/2 border border-black/6 rounded-md p-3 font-display text-[13px] outline-none focus:bg-white focus:border-primary/30 transition-all resize-none"
                             />
                             <div className="flex items-center justify-end">
                               <Button
@@ -432,14 +432,16 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                 <div className="space-y-8">
                   <Section label="Timeline" defaultOpen={true}>
                     <div className="space-y-6 relative pl-4">
-                      <div className="absolute left-[3px] top-2 bottom-2 w-px bg-black/[0.04]" />
+                      <div className="absolute left-0.75 top-2 bottom-2 w-px bg-black/4" />
                       {asset.activities && asset.activities.length > 0 ? (
                         [...asset.activities].reverse().map(a => (
                           <div key={a.id} className="relative flex items-start gap-4">
-                            <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
+                            <div className="absolute -left-3.5 top-1.5 w-2 h-2 rounded-full bg-black/1 border-2 border-white" />
                             <div className="flex-1 space-y-0.5">
                               <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                                <span className="font-bold text-on-surface">{a.author}</span>
+                                <span className="font-bold text-on-surface">
+                                  {a.authorId === user?.id ? getUserDisplayName(user, a.author) : getUserDisplayName({ name: a.author, email: a.email }, "System")}
+                                </span>
                                 {' '}
                                 {a.description === 'added a note' ? (
                                   <>
@@ -478,7 +480,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
 
       {/* Fullscreen Image Overlay */}
       {isImageExpanded && asset.imageUrl && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-8 animate-fade-in">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 p-8 animate-fade-in">
           <button
             onClick={() => setIsImageExpanded(false)}
             className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Member, Role, Permission, ActivityLog, RoleType, InviteLink } from "@/features/members";
 import { listActivities } from "@/features/activity";
 import { listRoles, updateRole } from "@/features/members/services/members.client";
+import { getUserInitials } from "@/lib/user-identity";
 
 interface ApiMember {
   id: string;
@@ -166,7 +167,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
           department: m.department ?? undefined,
           jobTitle: m.position ?? undefined,
           lastActive: m.lastActive ?? undefined,
-          initials: (m.name || m.email).charAt(0).toUpperCase()
+          initials: getUserInitials(m)
         })));
       }
       if (membersData.currentRole) {

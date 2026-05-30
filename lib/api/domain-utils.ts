@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/prisma";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName, type UserIdentity } from "@/lib/user-identity";
 
 export type DomainAction = "Created" | "Updated" | "Deleted";
 
@@ -31,9 +33,27 @@ export function createPayload(data: Record<string, unknown>) {
   };
 }
 
-export function mapDomainRecord(record: any, fallbackUser?: { id: string; name: string; image?: string | null }) {
+function normalizeRecordUser(user: UserIdentity | null | undefined, fallback = "System") {
+  if (!user) return null;
+
+  const id = user.id ?? user.userId ?? "system";
+
+  return {
+    ...user,
+    id,
+    name: getUserDisplayName(user, fallback),
+    email: user.email ?? undefined,
+    image: id === "system" ? getUserImageLike(user) : normalizeUserAvatarImage(id, getUserImageLike(user)),
+  };
+}
+
+function getUserImageLike(user: UserIdentity | null | undefined) {
+  return user?.image ?? user?.avatar ?? null;
+}
+
+export function mapDomainRecord(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const payloadData = parsePayload(record.payload);
-  const ownerSource = record.createdBy ?? fallbackUser;
+  const ownerSource = normalizeRecordUser(record.createdBy ?? fallbackUser);
 
   return {
     ...record,
@@ -52,7 +72,8 @@ export function mapDomainRecord(record: any, fallbackUser?: { id: string; name: 
     owner: ownerSource
       ? {
           id: ownerSource.id ?? "system",
-          name: ownerSource.name ?? "System",
+          name: ownerSource.name,
+          email: ownerSource.email ?? undefined,
           avatar: ownerSource.image ?? undefined,
         }
       : payloadData.owner ?? { id: "system", name: "System", avatar: undefined },

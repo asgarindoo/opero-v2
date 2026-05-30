@@ -17,6 +17,7 @@ import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
+import UserAvatar from "@/components/common/UserAvatar";
 
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
    return (
@@ -636,6 +637,7 @@ export default function SocialChannelsPage() {
                               ))
                            ) : ACTIVITY.slice(0, 5).length > 0 ? ACTIVITY.slice(0, 5).map((act: any) => (
                               <div key={act.id} className="relative px-5 py-4 group hover:bg-black/[0.01] transition-colors flex items-start gap-3">
+                                 <UserAvatar user={{ name: act.user, email: act.userEmail, image: act.userImage }} size="md" />
                                  <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-3 mb-1">
                                        <h4 className="font-display text-[12px] font-medium text-on-surface tracking-tight leading-snug">{act.action}</h4>

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Plus } from "lucide-react";
 import type { Task, Status } from "@/features/tasks";
 import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "@/features/tasks";
+import UserAvatar from "@/components/common/UserAvatar";
 
 interface Props {
   tasks: Task[];
@@ -47,9 +48,7 @@ function KanbanCard({ task, onClick, onDragStart }: { task: Task; onClick: () =>
           {task.due && <span className="font-label-caps text-[8px] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.45 }}>{new Date(task.due).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
           <div className="flex -space-x-1">
             {task.assignees.slice(0, 2).map(a => (
-              <div key={a.id} title={a.name} className="w-4.5 h-4.5 rounded-full border border-white flex items-center justify-center font-display font-bold text-[6px]" style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)", width: 18, height: 18 }}>
-                {a.initials}
-              </div>
+              <UserAvatar key={a.id} user={a} size="sm" className="h-[18px] w-[18px] border-white" />
             ))}
           </div>
         </div>

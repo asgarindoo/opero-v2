@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Product, StockStatus, StockActivity } from "../types";
 import { createProduct, deleteProduct, listProducts, updateProduct as saveProduct } from "../services/products.client";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface ProductsContextType {
   products: Product[];
@@ -25,7 +26,7 @@ const ProductsContext = createContext<ProductsContextType | undefined>(undefined
 
 export function ProductsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
-  const userName = user?.name || "You";
+  const userName = getUserDisplayName(user, "You");
 
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,7 +80,11 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         type: "creation",
         description: "Product record created",
         timestamp: new Date().toISOString(),
-        author: userName || "You"
+        userId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       }],
       notes: partial.notes || "",
       createdAt: new Date().toISOString(),
@@ -89,7 +94,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     createProduct<Product>(newProduct)
       .then((created: Product) => setProducts(prev => [created, ...prev]))
       .catch((err: unknown) => console.error("Failed to create product:", err));
-  }, []);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
     setProducts(prev => prev.map(p => {
@@ -110,7 +115,11 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       const newActivity: StockActivity = {
         id: Math.random().toString(36).substring(7),
         timestamp: new Date().toISOString(),
+        userId: user?.id,
         author,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user),
         ...rest
       } as StockActivity;
       
@@ -126,7 +135,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     }));
-  }, [userName]);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const adjustStock = useCallback((id: string, quantity: number, type: StockActivity["type"], reason: string) => {
     setProducts(prev => prev.map(p => {
@@ -137,7 +146,11 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         description: reason,
         quantity,
         timestamp: new Date().toISOString(),
-        author: userName
+        userId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       };
       const newTotal = p.totalQuantity + quantity;
       let newStatus: StockStatus = "In Stock";
@@ -157,7 +170,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     }));
-  }, []);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const getProductById = useCallback((id: string) => {
     return products.find(p => p.id === id);

@@ -29,7 +29,7 @@ export async function listFlows() {
   const flows = await prisma.flow.findMany({
     where: { organizationId: ctx.tenantId },
     orderBy: { createdAt: "desc" },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
   return flows.map((flow) => mapDomainRecord(flow));
 }
@@ -38,7 +38,7 @@ export async function getFlowById(id: string) {
   const ctx = await requireTenant();
   const flow = await prisma.flow.findFirst({
     where: { id, organizationId: ctx.tenantId },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
   return flow ? mapDomainRecord(flow) : null;
 }
@@ -111,7 +111,7 @@ export async function updateFlow(id: string, patch: Record<string, unknown>) {
     data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: mergedPayload, ...flowColumns(patch, currentPayload), updatedById: ctx.userId },
   });
   if (result.count === 0) return null;
-  const updated = await prisma.flow.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.flow.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
   return mapDomainRecord(updated);

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Asset, AssetActivity } from "@/features/assets";
 import { createAsset, deleteAsset, listAssets, updateAsset as saveAsset } from "@/features/assets/services/assets.client";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface AssetsContextType {
   assets: Asset[];
@@ -18,7 +19,7 @@ const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
 
 export function AssetsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
-  const userName = user?.name || "You";
+  const userName = getUserDisplayName(user, "You");
 
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,11 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         type: "status_change",
         description: "Asset record created",
         timestamp: new Date().toISOString(),
-        author: userName || "You"
+        authorId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       }],
       comments: [],
       quantity: partial.quantity ?? 1,
@@ -67,7 +72,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
     createAsset<Asset>(newAsset)
       .then((created) => setAssets(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create asset:", err));
-  }, [userName]);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const updateAsset = useCallback((id: string, updates: Partial<Asset>) => {
     setAssets(prev => prev.map(a => {
@@ -90,7 +95,11 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
         type: "assignment",
         description: persons.length > 0 ? `Assigned to ${personList}` : "Unassigned",
         timestamp: new Date().toISOString(),
-        author: userName
+        authorId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       };
       const updated: Asset = {
         ...a,
@@ -105,7 +114,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     }));
-  }, [userName]);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const deleteAssets = useCallback((ids: string[]) => {
     const toDelete = assets.filter(a => ids.includes(a.id));

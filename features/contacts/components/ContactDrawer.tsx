@@ -9,6 +9,8 @@ import { ContactStatus, Contact } from "@/features/contacts";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
 import ReactionsBar, { toggleReaction } from "@/features/tasks/components/ReactionsBar";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 function Section({ label, icon, count, children, defaultOpen = true }: { label: string; icon?: React.ReactNode; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -46,7 +48,11 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
         type: "system" as const,
         description,
         timestamp: new Date().toISOString(),
-        author: user?.name || "System"
+        userId: user?.id,
+        author: getUserDisplayName(user, "System"),
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
       };
       patch.activities = [newActivity, ...(contact.activities || [])];
       patch.lastContacted = newActivity.timestamp;
@@ -56,16 +62,17 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
 
   const submitComment = () => {
     if (!newNote.trim()) return;
-    const author = user?.name || "Current User";
-    const initials = author.substring(0, 2).toUpperCase();
+    const author = getUserDisplayName(user, "Current User");
     const newActivity = {
       id: "a" + Date.now(),
       type: "note" as const,
       description: newNote.trim(),
       timestamp: new Date().toISOString(),
+      userId: user?.id,
       author,
+      email: user?.email ?? undefined,
       avatar: user?.image,
-      initials,
+      initials: getUserInitials(user),
     };
 
     updateContact(contact.id, {
@@ -305,17 +312,16 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                   {/* Display Notes (currently they are all activities) */}
                   {(contact.activities || []).filter(a => a.type === 'note' || !a.type).map(c => (
                     <div key={c.id} className="flex gap-4 group">
-                      {c.avatar ? (
-                        <img src={c.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                          {c.initials || c.author.substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <UserAvatar
+                        user={c.userId === user?.id ? user : { name: c.author, email: c.email, image: c.avatar, initials: c.initials }}
+                        size="lg"
+                      />
                       <div className="flex-1 space-y-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-display text-[13px] font-bold">{c.author}</span>
+                            <span className="font-display text-[13px] font-bold">
+                              {c.userId === user?.id ? getUserDisplayName(user, c.author) : getUserDisplayName({ name: c.author, email: c.email }, "User")}
+                            </span>
                             <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
                           </div>
                           <button
@@ -335,13 +341,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                   {/* Add Note Input */}
                   <div className="pt-4 border-t border-black/[0.04]">
                     <div className="flex gap-4">
-                      {user?.image ? (
-                        <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
-                          {(user?.name || "U").substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <UserAvatar user={user} size="lg" className="bg-primary text-on-primary" />
                       <div className="flex-1 space-y-2">
                         <textarea
                           rows={2}
@@ -382,7 +382,9 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                   <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                   <div className="flex-1 space-y-0.5">
                     <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                      <span className="font-bold text-on-surface">{a.author || "System"}</span>
+                      <span className="font-bold text-on-surface">
+                        {a.userId === user?.id ? getUserDisplayName(user, a.author) : getUserDisplayName({ name: a.author, email: a.email }, "System")}
+                      </span>
                       {' '}
                       {a.type === 'note' ? (
                         <>

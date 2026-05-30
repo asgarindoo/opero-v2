@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useDashboardData } from "@/features/dashboard/context/DashboardDataContext";
 import { useSession } from "@/lib/auth-client";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 export default function DashboardHero() {
   const { data } = useDashboardData();
@@ -36,7 +37,7 @@ export default function DashboardHero() {
   });
 
   const heroStats = data?.heroStats;
-  const userName = session?.user?.name ?? "User";
+  const userName = getUserDisplayName(session?.user);
 
   const chips = heroStats
     ? [
@@ -53,7 +54,7 @@ export default function DashboardHero() {
     ];
 
   return (
-    <div className="relative overflow-hidden rounded-[12px] mb-4" style={{ background: "var(--color-primary)" }}>
+    <div className="relative overflow-hidden rounded-full mb-4" style={{ background: "var(--color-primary)" }}>
       {/* Dot pattern */}
       <div
         className="absolute inset-0 pointer-events-none opacity-10"
@@ -70,7 +71,7 @@ export default function DashboardHero() {
         {/* Left: Greeting */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span suppressHydrationWarning className="font-label-caps text-[9px] uppercase tracking-[0.1em] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <span suppressHydrationWarning className="font-label-caps text-[9px] uppercase tracking-widest font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
               {today}
             </span>
           </div>
@@ -81,7 +82,7 @@ export default function DashboardHero() {
             {chips.map((chip) => (
               <span
                 key={chip.label}
-                className="font-label-caps text-[9px] uppercase tracking-[0.07em] font-semibold px-2 py-1 rounded-full"
+                className="font-label-caps text-[9px] uppercase tracking-widest font-semibold px-2 py-1 rounded-full"
                 style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
               >
                 {chip.label}

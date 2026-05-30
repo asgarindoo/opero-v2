@@ -1,8 +1,10 @@
 "use client";
 
-import { ChevronRight, ListChecks, Calendar, User, Clock } from "lucide-react";
+import { ChevronRight, ListChecks, Calendar, Clock } from "lucide-react";
 import type { Flow } from "@/features/flows";
 import { CATEGORY_COLORS } from "@/features/flows";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 interface FlowCardProps {
   flow: Flow;
@@ -70,8 +72,8 @@ export default function FlowCard({ flow, onClick }: FlowCardProps) {
 
           {/* Creator Profile */}
           <div className="flex items-center gap-1.5 text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
-            <User size={12} strokeWidth={2.5} />
-            <span className="font-display text-[10px] font-bold truncate max-w-[80px]">{flow.owner.name}</span>
+            <UserAvatar user={flow.owner} size="xs" />
+            <span className="font-display text-[10px] font-bold truncate max-w-[80px]">{getUserDisplayName(flow.owner)}</span>
           </div>
         </div>
       </div>

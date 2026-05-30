@@ -7,13 +7,13 @@ const MODULE = "DOCUMENTS";
 
 export async function listDocuments() {
   const ctx = await requireTenant();
-  const documents = await prisma.document.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const documents = await prisma.document.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return documents.map((document) => mapDomainRecord(document));
 }
 
 export async function getDocumentById(id: string) {
   const ctx = await requireTenant();
-  const document = await prisma.document.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const document = await prisma.document.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return document ? mapDomainRecord(document) : null;
 }
 
@@ -31,7 +31,7 @@ export async function updateDocument(id: string, patch: Record<string, unknown>)
   if (!current) return null;
   const result = await prisma.document.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
   if (result.count === 0) return null;
-  const updated = await prisma.document.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.document.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: "Document", entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
   return mapDomainRecord(updated);
@@ -59,13 +59,13 @@ export async function deleteDocument(id: string) {
 
 export async function listFolders() {
   const ctx = await requireTenant();
-  const folders = await prisma.folder.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const folders = await prisma.folder.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return folders.map((folder) => mapDomainRecord(folder));
 }
 
 export async function getFolderById(id: string) {
   const ctx = await requireTenant();
-  const folder = await prisma.folder.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const folder = await prisma.folder.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return folder ? mapDomainRecord(folder) : null;
 }
 
@@ -83,7 +83,7 @@ export async function updateFolder(id: string, patch: Record<string, unknown>) {
   if (!current) return null;
   const result = await prisma.folder.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
   if (result.count === 0) return null;
-  const updated = await prisma.folder.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.folder.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: "Folder", entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
   return mapDomainRecord(updated);

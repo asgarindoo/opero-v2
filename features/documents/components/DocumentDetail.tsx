@@ -10,6 +10,8 @@ import {
 import { useDocuments } from "../context/DocumentsContext";
 import { FileType } from "@/features/documents";
 import Dropdown from "@/components/ui/Dropdown";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 interface DocumentDetailProps {
   fileId: string;
@@ -230,7 +232,10 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
                        <User size={12} className="shrink-0" />
                        <span className="font-body-sm text-[11px] truncate">Uploaded by</span>
                      </div>
-                     <div className="font-display text-[11px] font-medium text-on-surface truncate text-right max-w-[120px]">{file.createdBy?.name || "System"}</div>
+                     <div className="flex min-w-0 max-w-[150px] items-center justify-end gap-1.5">
+                       {file.createdBy && <UserAvatar user={file.createdBy} size="sm" />}
+                       <div className="font-display text-[11px] font-medium text-on-surface truncate text-right">{getUserDisplayName(file.createdBy, "System")}</div>
+                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                      <div className="flex items-center gap-2 text-on-surface-variant opacity-60 min-w-0">

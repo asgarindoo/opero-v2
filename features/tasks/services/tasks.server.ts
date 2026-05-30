@@ -1,19 +1,97 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requireTenant, type TenantContext } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
 
 const MODULE = "TASKS";
 const ENTITY = "Task";
 // Trigger TS refresh
 
+async function getMemberIdentityMap(ctx: TenantContext) {
+  const members = await prisma.member.findMany({
+    where: { organizationId: ctx.tenantId, status: "active" },
+    include: {
+      user: { select: { id: true, name: true, email: true, image: true } },
+    },
+  });
+
+  return new Map(
+    members.map((member) => {
+      const user = {
+        id: member.userId,
+        name: getUserDisplayName(member.user, "Member"),
+        email: member.user.email,
+        image: normalizeUserAvatarImage(member.userId, member.user.image),
+      };
+
+      return [member.userId, user];
+    })
+  );
+}
+
+function resolveTaskMember(snapshot: UserIdentity, identities: Map<string, UserIdentity>) {
+  const userId = snapshot.id ?? snapshot.userId ?? "";
+  const current = userId ? identities.get(userId) : undefined;
+  const identity = current ?? {
+    id: userId,
+    name: getUserDisplayName(snapshot, "Member"),
+    email: snapshot.email ?? null,
+    image: userId ? normalizeUserAvatarImage(userId, snapshot.image ?? snapshot.avatar ?? null) : snapshot.image ?? snapshot.avatar ?? null,
+  };
+
+  return {
+    ...snapshot,
+    id: identity.id ?? userId,
+    name: getUserDisplayName(identity, "Member"),
+    email: identity.email ?? undefined,
+    image: identity.image ?? null,
+    initials: getUserInitials(identity),
+  };
+}
+
+function hydrateTaskIdentity(task: any, identities: Map<string, UserIdentity>) {
+  const assignees = Array.isArray(task.assignees)
+    ? task.assignees.map((assignee: UserIdentity) => resolveTaskMember(assignee, identities))
+    : [];
+
+  const comments = Array.isArray(task.comments)
+    ? task.comments.map((comment: any) => {
+        const userId = typeof comment.userId === "string" ? comment.userId : "";
+        const identity = userId ? identities.get(userId) : null;
+
+        if (!identity) return comment;
+
+        return {
+          ...comment,
+          author: getUserDisplayName(identity, comment.author ?? "Member"),
+          email: identity.email ?? comment.email,
+          avatar: identity.image ?? comment.avatar ?? null,
+          initials: getUserInitials(identity),
+        };
+      })
+    : [];
+
+  return {
+    ...task,
+    assignees,
+    comments,
+  };
+}
+
+async function mapTaskRecords(ctx: TenantContext, records: any[]) {
+  const identities = await getMemberIdentityMap(ctx);
+  return records.map((task) => hydrateTaskIdentity(mapDomainRecord(task), identities));
+}
+
 export async function listTasks() {
   const ctx = await requireTenant();
   const tasks = await prisma.task.findMany({
     where: { organizationId: ctx.tenantId },
     orderBy: { createdAt: "desc" },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
-  return tasks.map((task: any) => mapDomainRecord(task));
+  return mapTaskRecords(ctx, tasks);
 }
 
 export async function listCampaignTasks(campaignId: string) {
@@ -21,18 +99,20 @@ export async function listCampaignTasks(campaignId: string) {
   const tasks = await prisma.task.findMany({
     where: { organizationId: ctx.tenantId, campaignId },
     orderBy: { createdAt: "desc" },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
-  return tasks.map((task: any) => mapDomainRecord(task));
+  return mapTaskRecords(ctx, tasks);
 }
 
 export async function getTaskById(id: string) {
   const ctx = await requireTenant();
   const task = await prisma.task.findFirst({
     where: { id, organizationId: ctx.tenantId },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
-  return task ? mapDomainRecord(task) : null;
+  if (!task) return null;
+  const [mappedTask] = await mapTaskRecords(ctx, [task]);
+  return mappedTask;
 }
 
 export async function createTask(data: Record<string, unknown>) {
@@ -60,7 +140,8 @@ export async function createTask(data: Record<string, unknown>) {
     entityName: title,
     description: typeof data.description === "string" ? data.description : null,
   }).catch(console.error);
-  return mapDomainRecord(task, ctx.user);
+  const identities = await getMemberIdentityMap(ctx);
+  return hydrateTaskIdentity(mapDomainRecord(task, ctx.user), identities);
 }
 
 export async function updateTask(id: string, patch: Record<string, unknown>) {
@@ -80,7 +161,7 @@ export async function updateTask(id: string, patch: Record<string, unknown>) {
       payload: mergedPayload,
       updatedById: ctx.userId,
     },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
 
   logDomainActivity({
@@ -93,7 +174,8 @@ export async function updateTask(id: string, patch: Record<string, unknown>) {
     entityName: updated.title,
     description: typeof patch.description === "string" ? patch.description : null,
   }).catch(console.error);
-  return mapDomainRecord(updated);
+  const [mappedTask] = await mapTaskRecords(ctx, [updated]);
+  return mappedTask ?? mapDomainRecord(updated);
 }
 
 export async function deleteTask(id: string) {

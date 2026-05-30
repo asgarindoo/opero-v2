@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import { EmptyState } from "@/components/common/DataState";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { getUserDisplayName, type UserIdentity } from "@/lib/user-identity";
 
 interface Props {
   searchQuery: string;
@@ -18,10 +19,10 @@ interface Props {
   onSelectCampaign: (id: string) => void;
 }
 
-function getName(val: any): string {
+function getName(val: unknown): string {
   if (!val) return "";
   if (typeof val === "string") return val;
-  if (typeof val === "object" && val.name) return String(val.name);
+  if (typeof val === "object") return getUserDisplayName(val as UserIdentity, "");
   return String(val);
 }
 

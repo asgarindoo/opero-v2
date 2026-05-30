@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboardData } from "@/features/dashboard/context/DashboardDataContext";
+import UserAvatar from "@/components/common/UserAvatar";
 
 const PRIORITY_STYLE: Record<string, { bg: string; text: string; label: string }> = {
   high: { bg: "rgba(186,26,26,0.08)", text: "rgba(186,26,26,0.85)", label: "High" },
@@ -116,14 +117,7 @@ export default function ActiveTasksWidget() {
                     {(task.assignees ?? []).length > 0 ? (
                       <div className="flex items-center -space-x-1">
                         {(task.assignees ?? []).slice(0, 4).map((a, idx) => (
-                          <div
-                            key={a.id || idx}
-                            title={a.name}
-                            className="w-4 h-4 rounded-full border border-white flex items-center justify-center font-display font-bold text-[7px]"
-                            style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-                          >
-                            {a.initials}
-                          </div>
+                          <UserAvatar key={a.id || idx} user={a} size="xs" className="border-white" />
                         ))}
                         {(task.assignees ?? []).length > 4 && (
                           <div className="w-4 h-4 rounded-full border border-white flex items-center justify-center font-display font-bold text-[7px]" style={{ background: "rgba(0,0,0,0.08)", color: "var(--color-on-surface-variant)" }}>

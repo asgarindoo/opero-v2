@@ -6,10 +6,14 @@ import { usePathname } from "next/navigation";
 import { Plus, MessageSquare, Trash2 } from "lucide-react";
 import { useChat } from "../context/ChatContext";
 import CreateChannelModal from "./CreateChannelModal";
+import { usePresence } from "@/features/presence";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 export default function ChannelSidebar() {
   const pathname = usePathname();
   const { channels, unreadCounts, loadingChannels, error, deleteChannel } = useChat();
+  const { onlineUsers } = usePresence();
   const [showCreate, setShowCreate] = useState(false);
 
   return (
@@ -86,6 +90,24 @@ export default function ChannelSidebar() {
             })}
           </div>
         </div>
+
+        {onlineUsers.length > 0 && (
+          <div className="mb-6">
+            <div className="px-4 mb-2.5 text-on-surface-variant">
+              <span className="font-label-caps text-[8.5px] font-bold tracking-[0.15em] opacity-60">ONLINE</span>
+            </div>
+            <div className="space-y-[2px]">
+              {onlineUsers.slice(0, 8).map((user) => (
+                <div key={user.userId} className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-on-surface">
+                  <UserAvatar user={user} size="md" online />
+                  <span className="font-body-md text-[12.5px] font-medium min-w-0 truncate opacity-80">
+                    {getUserDisplayName(user)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {showCreate && <CreateChannelModal onClose={() => setShowCreate(false)} />}

@@ -12,6 +12,8 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Dropdown from "@/components/ui/Dropdown";
 import { useTenant } from "@/components/providers/TenantProvider";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 function formatCurrency(val: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(val);
@@ -65,7 +67,10 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
     if (!newNote.trim()) return;
     addActivity(sale.id, {
       type: "note",
-      description: newNote
+      description: newNote.trim(),
+      userId: user?.id,
+      email: user?.email ?? undefined,
+      avatar: user?.image ?? null
     });
     setNewNote("");
   };
@@ -303,13 +308,16 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                 <div className="space-y-6">
                   {sale.activities.filter(a => a.type === 'note').map(c => (
                     <div key={c.id} className="flex gap-4 group">
-                      <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                        {c.author ? c.author.substring(0, 2).toUpperCase() : "U"}
-                      </div>
+                      <UserAvatar
+                        user={c.userId === user?.id ? user : { name: c.author, email: c.email, image: c.avatar, initials: c.initials }}
+                        size="lg"
+                      />
                       <div className="flex-1 space-y-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-display text-[13px] font-bold">{c.author || "User"}</span>
+                            <span className="font-display text-[13px] font-bold">
+                              {c.userId === user?.id ? getUserDisplayName(user, c.author) : getUserDisplayName({ name: c.author, email: c.email }, "User")}
+                            </span>
                             <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
                           </div>
                         </div>
@@ -320,13 +328,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
                   <div className="pt-4 border-t border-black/[0.04]">
                     <div className="flex gap-4">
-                      {user?.image ? (
-                        <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
-                          {(user?.name || "U").substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <UserAvatar user={user} size="lg" className="bg-primary text-on-primary" />
                       <div className="flex-1 space-y-2">
                         <textarea
                           rows={2}
@@ -364,13 +366,14 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
             <div className="space-y-6 relative pl-4">
               <div className="absolute left-[3px] top-2 bottom-2 w-px bg-black/[0.04]" />
               {[...sale.activities].reverse().map(a => {
-                const Icon = a.type === "payment" ? DollarSign : a.type === "shipping" ? Truck : a.type === "status_change" ? TrendingUp : a.type === "note" ? MessageSquare : FileText;
                 return (
                   <div key={a.id} className="relative flex items-start gap-4">
                     <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                     <div className="flex-1 space-y-0.5">
                       <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                        <span className="font-bold text-on-surface">{a.author || "System"}</span>
+                        <span className="font-bold text-on-surface">
+                          {a.userId === user?.id ? getUserDisplayName(user, a.author) : getUserDisplayName({ name: a.author, email: a.email }, "System")}
+                        </span>
                         {' '}
                         {a.type === 'note' ? (
                           <>

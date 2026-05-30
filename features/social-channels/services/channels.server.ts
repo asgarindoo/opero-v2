@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 function mapChannel(c: any) {
   return {
@@ -137,7 +139,9 @@ export async function listChannelActivities() {
     id: act.id,
     action: act.action,
     channel: act.entityName || "Unknown",
-    user: act.user?.name || "System",
+    user: getUserDisplayName(act.user, "System"),
+    userEmail: act.user?.email ?? undefined,
+    userImage: act.user?.id ? normalizeUserAvatarImage(act.user.id, act.user.image) : undefined,
     time: act.createdAt.toISOString()
   }));
 }

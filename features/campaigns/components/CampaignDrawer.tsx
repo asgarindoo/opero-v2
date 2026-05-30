@@ -11,11 +11,13 @@ import Dropdown from "@/components/ui/Dropdown";
 import { CampaignChannelPicker } from "./CampaignChannelPicker";
 import { TaskSelector } from "./TaskSelector";
 import { listCampaignTasks, updateTask, type Task } from "@/features/tasks";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName, type UserIdentity } from "@/lib/user-identity";
 
-function getName(val: any): string {
+function getName(val: unknown): string {
   if (!val) return "";
   if (typeof val === "string") return val;
-  if (typeof val === "object" && val.name) return String(val.name);
+  if (typeof val === "object") return getUserDisplayName(val as UserIdentity, "");
   return String(val);
 }
 
@@ -47,6 +49,7 @@ function Section({ label, count, children }: { label: string; count?: number; ch
 
 export default function CampaignDrawer({ campaignId, onClose }: { campaignId: string; onClose: () => void }) {
   const { campaigns, deleteCampaigns, updateCampaign } = useCampaigns();
+  const { user } = useTenant();
   const [tab, setTab] = useState<"details" | "activity">("details");
   const [campaignTasks, setCampaignTasks] = useState<Task[]>([]);
   const campaign = campaigns.find(c => c.id === campaignId);
@@ -291,7 +294,9 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
                   <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                   <div className="flex-1 space-y-0.5">
                     <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                      <span className="font-bold text-on-surface">{act.author}</span>{" "}
+                      <span className="font-bold text-on-surface">
+                        {act.userId === user?.id ? getUserDisplayName(user, act.author) : getUserDisplayName({ name: act.author, email: act.email }, "System")}
+                      </span>{" "}
                       {act.description}
                     </p>
                     <div className="flex items-center gap-1.5">

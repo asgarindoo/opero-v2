@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant, type TenantContext } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName } from "@/lib/user-identity";
 import type { ChatBootstrap, ChatChannel, ChatMessage } from "../types";
 
 type ChannelRow = {
@@ -63,9 +65,9 @@ function mapMessage(row: MessageRow): ChatMessage {
     sender: row.senderId
       ? {
         id: row.senderId,
-        name: row.senderName ?? "Unknown user",
+        name: getUserDisplayName({ name: row.senderName, email: row.senderEmail }, "Unknown user"),
         email: row.senderEmail ?? undefined,
-        image: row.senderImage,
+        image: normalizeUserAvatarImage(row.senderId, row.senderImage),
       }
       : null,
   };

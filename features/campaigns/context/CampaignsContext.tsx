@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import type { Campaign } from "@/features/campaigns";
 import { createCampaign, deleteCampaign, listCampaigns, updateCampaign as saveCampaign } from "@/features/campaigns/services/campaigns.client";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface CampaignsContextType {
   campaigns: Campaign[];
@@ -17,7 +18,7 @@ const CampaignsContext = createContext<CampaignsContextType | undefined>(undefin
 
 export function CampaignsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
-  const userName = user?.name || "You";
+  const userName = getUserDisplayName(user, "You");
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
       description: partial.description || "",
       status: "Planning",
       priority: partial.priority || "Medium",
-      owner: partial.owner || "Unassigned",
+      owner: partial.owner || { id: user?.id, name: userName, email: user?.email, image: user?.image },
       startDate: partial.startDate || new Date().toISOString().split("T")[0],
       endDate: partial.endDate || new Date().toISOString().split("T")[0],
       assignedStaff: partial.assignedStaff || [],
@@ -61,7 +62,17 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
       currency: partial.currency || "USD",
       tags: partial.tags || [],
       goals: partial.goals || [],
-      activities: [{ id: "act" + Date.now(), type: "update", description: "Campaign created", timestamp: new Date().toISOString(), author: userName }],
+      activities: [{
+        id: "act" + Date.now(),
+        type: "update",
+        description: "Campaign created",
+        timestamp: new Date().toISOString(),
+        userId: user?.id,
+        author: userName,
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user)
+      }],
       attachments: partial.attachments || [],
       notes: partial.notes || "",
       createdAt: new Date().toISOString(),
@@ -71,7 +82,7 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
     createCampaign<Campaign>(newCampaign)
       .then((created) => setCampaigns(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create campaign:", err));
-  }, []);
+  }, [user?.email, user?.id, user?.image, userName]);
 
   const updateCampaign = useCallback((id: string, updates: Partial<Campaign>) => {
     setCampaigns(prev => prev.map(c => {

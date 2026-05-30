@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import type { Task, Status, Priority } from "@/features/tasks";
 import { STATUS_META, PRIORITY_META } from "@/features/tasks";
+import UserAvatar from "@/components/common/UserAvatar";
 
 type SortKey = "id" | "title" | "status" | "priority" | "due" | "created";
 type SortDir = "asc" | "desc";
@@ -104,9 +105,7 @@ export default function TableView({ tasks, onTaskClick, onStatusChange }: Props)
                   <td className="px-3 py-2.5">
                     <div className="flex -space-x-1">
                       {task.assignees.slice(0, 3).map(a => (
-                        <div key={a.id} title={a.name} className="rounded-full border border-white flex items-center justify-center font-display font-bold text-[7px]" style={{ width: 18, height: 18, background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}>
-                          {a.initials}
-                        </div>
+                        <UserAvatar key={a.id} user={a} size="sm" className="h-[18px] w-[18px] border-white" />
                       ))}
                       {task.assignees.length > 3 && <span className="font-label-caps text-[8px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>+{task.assignees.length - 3}</span>}
                     </div>

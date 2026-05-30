@@ -6,7 +6,9 @@ export interface ContactActivity {
   type: string;
   description: string;
   timestamp: string;
+  userId?: string;
   author: string;
+  email?: string;
   avatar?: string | null;
   initials?: string;
   reactions?: Record<string, import("@/features/tasks").Reaction>;

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -82,9 +84,9 @@ async function getPresencePayload(organizationId: string) {
     createdAt: row.createdAt,
     user: {
       id: row.userId,
-      name: row.userName,
+      name: getUserDisplayName({ name: row.userName, email: row.userEmail }),
       email: row.userEmail,
-      image: row.userImage,
+      image: normalizeUserAvatarImage(row.userId, row.userImage),
     },
   }));
   const onlineUsers = presenceRecords.filter((presence) => presence.isOnline && presence.lastSeenAt >= since);

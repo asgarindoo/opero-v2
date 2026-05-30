@@ -4,6 +4,8 @@ import React, { useMemo } from "react";
 import { Activity, CalendarDays } from "lucide-react";
 import { useCampaigns } from "../context/CampaignsContext";
 import type { Campaign } from "@/features/campaigns";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName, type UserIdentity } from "@/lib/user-identity";
 
 interface Props {
   searchQuery: string;
@@ -12,11 +14,20 @@ interface Props {
   onSelectCampaign: (id: string) => void;
 }
 
-function getName(val: any): string {
+function getName(val: unknown): string {
   if (!val) return "";
   if (typeof val === "string") return val;
-  if (typeof val === "object" && val.name) return String(val.name);
+  if (typeof val === "object") return getUserDisplayName(val as UserIdentity, "");
   return String(val);
+}
+
+function toIdentity(val: unknown): UserIdentity {
+  if (val && typeof val === "object") {
+    const user = val as UserIdentity;
+    return { ...user, image: user.image ?? user.avatar ?? null };
+  }
+
+  return { name: getName(val) || "User" };
 }
 
 const DAY_WIDTH = 28;
@@ -34,12 +45,6 @@ function dayOffset(from: string, base: string) {
 function progressFor(campaign: Campaign) {
   if (!campaign.goals.length) return 0;
   return Math.round((campaign.goals.filter(goal => goal.isCompleted).length / campaign.goals.length) * 100);
-}
-
-function initials(name: any) {
-  const n = getName(name);
-  if (!n) return "?";
-  return n.split(" ").filter(Boolean).map((part: string) => part[0]).join("").slice(0, 2).toUpperCase();
 }
 
 export default function CampaignTimeline({ searchQuery, filterMode, priorityFilter, onSelectCampaign }: Props) {
@@ -128,9 +133,7 @@ export default function CampaignTimeline({ searchQuery, filterMode, priorityFilt
                   style={{ width: LABEL_WIDTH }}
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="h-7 w-7 rounded-full bg-black/[0.03] border border-black/[0.04] flex items-center justify-center font-display font-bold text-[8px] text-on-surface-variant opacity-60">
-                      {initials(campaign.owner)}
-                    </div>
+                    <UserAvatar user={toIdentity(campaign.owner)} size="md" />
                     <div className="min-w-0">
                       <h4 className="font-display text-[13px] font-bold text-on-surface truncate tracking-tight">{getName(campaign.name)}</h4>
                       <div className="flex items-center gap-2 mt-1">

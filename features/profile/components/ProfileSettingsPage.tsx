@@ -5,6 +5,7 @@ import { Save, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import ModuleHeader from "@/components/common/ModuleHeader";
+import UserAvatar from "@/components/common/UserAvatar";
 import Button from "@/components/ui/Button";
 import {
   getProfileSettingsClient,
@@ -15,16 +16,6 @@ import type { ProfileUser } from "@/features/profile/services/profile.server";
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const FILE_ACCEPT = "image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp";
-
-function initialsFromName(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
-}
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
@@ -96,8 +87,6 @@ export default function ProfileSettingsPage() {
   );
 
   const canSave = hasChanges && !nameError && !saving;
-  const initials = initialsFromName(name || email);
-
   function clearObjectUrl() {
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
@@ -171,6 +160,7 @@ export default function ProfileSettingsPage() {
       }
 
       await refetch();
+      window.dispatchEvent(new CustomEvent("opero:profile-updated", { detail: updatedUser }));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save profile.");
@@ -237,19 +227,12 @@ export default function ProfileSettingsPage() {
 
               <div className="rounded-[8px] border border-black/[0.06] bg-[#fef8f8] p-6 sm:p-8">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                  <div
-                    className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/[0.08] bg-white font-display text-[26px] font-bold text-on-surface"
-                  >
-                    {avatarPreview ? (
-                      <img
-                        src={avatarPreview}
-                        alt={name ? `${name} profile photo` : "Profile photo"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span>{initials}</span>
-                    )}
-                  </div>
+                  <UserAvatar
+                    user={{ name, email, image: avatarPreview }}
+                    size="xl"
+                    className="h-24 w-24 bg-white text-[26px]"
+                    title={name ? `${name} profile photo` : "Profile photo"}
+                  />
 
                   <div className="flex flex-wrap items-center gap-2">
                     <input

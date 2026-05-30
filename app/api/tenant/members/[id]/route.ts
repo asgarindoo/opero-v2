@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 const UpdateMemberSchema = z.object({
   role: z.enum(["owner", "admin", "member"]).optional(),
@@ -75,9 +77,9 @@ export async function PATCH(
       member: {
         id: updated.id,
         userId: updated.userId,
-        name: updated.user.name,
+        name: getUserDisplayName(updated.user),
         email: updated.user.email,
-        image: updated.user.image,
+        image: normalizeUserAvatarImage(updated.userId, updated.user.image),
         role: updated.role,
         department: updated.department,
         position: updated.position,

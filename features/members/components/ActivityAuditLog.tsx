@@ -1,6 +1,8 @@
 import React from "react";
 import { Activity, Clock } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 export default function ActivityAuditLog() {
   const { activityLogs, members } = useMembers();
@@ -16,7 +18,7 @@ export default function ActivityAuditLog() {
 
       <div className="relative pl-6 border-l border-black/[0.06]">
         {activityLogs.map((log, idx) => {
-          const user = members.find(m => m.id === log.userId);
+          const user = members.find(m => m.userId === log.userId || m.id === log.userId);
           const date = new Date(log.timestamp);
 
           return (
@@ -29,8 +31,9 @@ export default function ActivityAuditLog() {
 
               <div className="ml-2">
                 <div className="flex items-center gap-2 mb-1">
+                  <UserAvatar user={user} size="sm" />
                   <span className="font-display font-semibold text-[13px] text-on-surface">
-                    {user?.name || "System"}
+                    {getUserDisplayName(user, "System")}
                   </span>
                   <span className="font-body-sm text-[13px] text-on-surface-variant opacity-70">
                     {log.action}

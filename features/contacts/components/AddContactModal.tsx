@@ -12,6 +12,7 @@ import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -74,7 +75,11 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
       contextData,
       activities: [{
         id: "a" + Date.now(),
-        author: user?.name || "System",
+        userId: user?.id,
+        author: getUserDisplayName(user, "System"),
+        email: user?.email ?? undefined,
+        avatar: user?.image ?? null,
+        initials: getUserInitials(user),
         type: "system",
         description: "Created contact record",
         timestamp: new Date().toISOString()

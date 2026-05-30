@@ -20,6 +20,8 @@ import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 interface Props {
   onSelectFile: (id: string) => void;
@@ -116,8 +118,8 @@ export default function DocumentList({ onSelectFile }: Props) {
   return (
     <div className="flex flex-col h-full bg-surface-container-lowest relative">
       <div className="flex-1 overflow-auto p-4">
-        <Table className="min-w-[800px]">
-          <TableHeader className="bg-black/[0.02]">
+        <Table className="min-w-200">
+          <TableHeader className="bg-black/2">
             <TableRow>
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
@@ -237,12 +239,8 @@ export default function DocumentList({ onSelectFile }: Props) {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell max-w-[0px]">
                       <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-70 w-full">
-                        {doc.createdBy && (
-                          <div className="w-5 h-5 shrink-0 rounded-full bg-black/5 flex items-center justify-center font-bold text-[8px] text-on-surface-variant">
-                            {doc.createdBy.name.charAt(0)}
-                          </div>
-                        )}
-                        <span className="truncate block w-full">{doc.createdBy?.name || "System"}</span>
+                        {doc.createdBy && <UserAvatar user={doc.createdBy} size="sm" />}
+                        <span className="truncate block w-full">{getUserDisplayName(doc.createdBy, "System")}</span>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 text-center">

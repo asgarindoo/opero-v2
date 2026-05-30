@@ -31,6 +31,8 @@ import Badge from "@/components/ui/Badge";
 import Input from "@/components/ui/Input";
 import DatePicker from "@/components/ui/DatePicker";
 import { useTenant } from "@/components/providers/TenantProvider";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface Props {
   task: Task;
@@ -92,13 +94,14 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
   }, [task.id, task.title, task.campaignId]);
 
   const handleUpdate = (patch: Partial<Task>, actionDesc?: string, detailDesc?: string) => {
-    const actor = user?.name || "System";
+    const actor = getUserDisplayName(user, "System");
     const timestamp = new Date().toLocaleString();
 
     // Only log if there's a specific action to describe
     if (actionDesc) {
       const newActivity = {
         id: `a${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        actorId: user?.id,
         actor,
         action: actionDesc,
         detail: detailDesc,
@@ -111,9 +114,17 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
 
   function submitComment() {
     if (!comment.trim()) return;
-    const author = user?.name || "Current User";
-    const initials = author.substring(0, 2).toUpperCase();
-    const c: Comment = { id: `c${Date.now()}`, author, initials, avatar: user?.image, body: comment.trim(), timestamp: new Date().toLocaleString() };
+    const author = getUserDisplayName(user, "Current User");
+    const c: Comment = {
+      id: `c${Date.now()}`,
+      userId: user?.id,
+      author,
+      email: user?.email,
+      initials: getUserInitials(user),
+      avatar: user?.image,
+      body: comment.trim(),
+      timestamp: new Date().toLocaleString(),
+    };
     handleUpdate({ comments: [...task.comments, c] }, "added a note", comment.trim());
     setComment("");
   }
@@ -312,17 +323,14 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 <div className="space-y-6">
                   {task.comments.map(c => (
                     <div key={c.id} className="flex gap-4 group">
-                      {c.avatar ? (
-                        <img src={c.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                          {c.initials}
-                        </div>
-                      )}
+                      <UserAvatar
+                        user={c.userId === user?.id ? user : { name: c.author, email: c.email, image: c.avatar, initials: c.initials }}
+                        size="lg"
+                      />
                       <div className="flex-1 space-y-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-display text-[13px] font-bold">{c.author}</span>
+                            <span className="font-display text-[13px] font-bold">{c.userId === user?.id ? getUserDisplayName(user) : c.author}</span>
                             <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
                           </div>
                           <button
@@ -340,13 +348,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                   ))}
                   <div className="pt-4 border-t border-black/[0.04]">
                     <div className="flex gap-4">
-                      {user?.image ? (
-                        <img src={user.image} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
-                          {(user?.name || "U").substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <UserAvatar user={user} size="lg" className="bg-primary text-on-primary" />
                       <div className="flex-1 space-y-2">
                         <textarea
                           rows={2}
@@ -396,7 +398,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                   <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                   <div className="flex-1 space-y-0.5">
                     <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                      <span className="font-bold text-on-surface">{a.actor}</span>
+                      <span className="font-bold text-on-surface">{a.actorId === user?.id ? getUserDisplayName(user) : a.actor}</span>
                       {' '}
                       {a.action === 'added a note' ? (
                         <>

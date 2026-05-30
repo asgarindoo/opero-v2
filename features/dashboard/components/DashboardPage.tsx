@@ -14,7 +14,7 @@ import PerformanceMetricsWidget from "@/features/dashboard/components/widgets/Pe
 export default function DashboardPage() {
   return (
     <DashboardDataProvider>
-      <div className="px-5 py-5 max-w-[1440px] mx-auto">
+      <div className="px-5 py-5 max-w-container-max mx-auto">
 
         {/* ── Hero ── */}
         <div className="animate-fade-in-up">

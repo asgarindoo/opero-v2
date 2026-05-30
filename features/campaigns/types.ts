@@ -1,3 +1,5 @@
+import type { UserIdentity } from "@/lib/user-identity";
+
 export type CampaignStatus = "Planning" | "Active" | "Paused" | "Completed" | "Cancelled" | "Archived";
 export type CampaignPriority = "Low" | "Medium" | "High" | "Critical";
 
@@ -6,7 +8,11 @@ export interface CampaignActivity {
   type: "update" | "goal" | "comment" | "staff_change" | "task" | "schedule";
   description: string;
   timestamp: string;
+  userId?: string;
   author: string;
+  email?: string;
+  avatar?: string | null;
+  initials?: string;
 }
 
 export interface CampaignGoal {
@@ -21,7 +27,7 @@ export interface Campaign {
   description: string;
   status: CampaignStatus;
   priority: CampaignPriority;
-  owner: string;
+  owner: string | UserIdentity;
   startDate: string;
   endDate: string;
   assignedStaff: string[]; // List of names

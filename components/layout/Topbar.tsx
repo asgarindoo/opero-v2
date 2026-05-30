@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { NAV_GROUPS } from "./navConfig";
 import { getRootAppUrl } from "@/lib/tenant-url";
 import { markPresenceOffline } from "@/features/presence";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 /* ─── Command palette items (searchable) ─── */
 interface CommandItem {
@@ -42,9 +44,8 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
   const router = useRouter();
 
   const tenantName = activeOrg?.name ?? "Workspace";
-  const userName = session?.user?.name ?? "User";
+  const userName = getUserDisplayName(session?.user);
   const userImage = session?.user?.image ?? null;
-  const userInitial = userName.charAt(0).toUpperCase();
 
   // Check if user belongs to more than one tenant to show selection link
   const hasMultipleOrgs = (orgs ?? []).length > 1;
@@ -163,7 +164,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
         <div className="flex items-center gap-2 shrink-0">
           {/* Mobile hamburger */}
           <button
-            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-[6px] hover:bg-black/[0.05] transition-colors"
+            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/5 transition-colors"
             onClick={onMobileMenuOpen}
             aria-label="Open menu"
           >
@@ -174,7 +175,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
 
           {/* Desktop collapse toggle */}
           <button
-            className="hidden lg:flex w-8 h-8 items-center justify-center rounded-[6px] hover:bg-black/[0.05] transition-colors"
+            className="hidden lg:flex w-8 h-8 items-center justify-center rounded-md hover:bg-black/5 transition-colors"
             onClick={onToggleCollapse}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -210,7 +211,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
         {/* ── Center: search ── */}
         <div ref={searchRef} className="flex-1 flex justify-center px-4 max-w-xl mx-auto relative">
           <div
-            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-[6px] transition-all duration-200 cursor-text"
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 cursor-text"
             style={{
               border: searchFocused || searchOpen ? "1px solid rgba(0,0,0,0.2)" : "1px solid rgba(0,0,0,0.08)",
               background: searchFocused || searchOpen ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.025)",
@@ -351,24 +352,14 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
           <div ref={profileRef} className="relative">
             <button
               id="topbar-profile-btn"
-              className="flex items-center gap-2 h-8 px-2 rounded-[6px] hover:bg-black/[0.05] transition-colors"
+              className="flex items-center gap-2 h-8 px-2 rounded-md hover:bg-black/5 transition-colors"
               onClick={() => setShowProfile((s) => !s)}
             >
               {/* Avatar */}
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center font-display font-bold text-[11px] shrink-0 overflow-hidden"
-                style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-                suppressHydrationWarning
-              >
-                {userImage ? (
-                  <img src={userImage} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  userInitial
-                )}
-              </div>
+              <UserAvatar user={session?.user} image={userImage} size="md" />
               {/* Name (hidden on small screens) */}
               <span
-                className="hidden md:inline font-body-sm text-[12.5px] font-medium max-w-[96px] truncate"
+                className="hidden md:inline font-body-sm text-[12.5px] font-medium max-w-24 truncate"
                 style={{ color: "var(--color-on-surface)" }}
                 suppressHydrationWarning
               >
@@ -385,7 +376,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
             {/* Profile dropdown */}
             {showProfile && (
               <div
-                className="absolute right-0 top-full mt-1.5 rounded-[8px] min-w-[200px] z-50 overflow-hidden"
+                className="absolute right-0 top-full mt-1.5 rounded-md min-w-50 z-50 overflow-hidden"
                 style={{
                   background: "#fff",
                   border: "1px solid rgba(0,0,0,0.09)",
@@ -395,16 +386,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
                 {/* User info header */}
                 <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
                   <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center font-display font-bold text-[11px] shrink-0 overflow-hidden"
-                      style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-                    >
-                      {userImage ? (
-                        <img src={userImage} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        userInitial
-                      )}
-                    </div>
+                    <UserAvatar user={session?.user} image={userImage} size="lg" />
                     <div className="min-w-0">
                       <div className="font-body-sm text-[13px] font-semibold truncate" style={{ color: "var(--color-on-surface)" }}>
                         {userName}
@@ -423,7 +405,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
                 {hasMultipleOrgs && (
                   <div className="py-1">
                     <button
-                      className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/[0.03] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/3 transition-colors"
                       onClick={() => {
                         setShowProfile(false);
                         window.location.assign(getRootAppUrl("/tenants"));
@@ -441,7 +423,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
                 {/* Profile Settings */}
                 <div className="py-1">
                   <button
-                    className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/[0.03] transition-colors"
+                    className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/3transition-colors"
                     onClick={() => { router.push("/dashboard/profile"); setShowProfile(false); }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 15, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>

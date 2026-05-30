@@ -6,12 +6,18 @@ export interface AssetActivity {
   description: string;
   detail?: string;
   timestamp: string;
+  authorId?: string;
   author: string;
+  email?: string;
+  avatar?: string | null;
+  initials?: string;
 }
 
 export interface AssetComment {
   id: string;
+  userId?: string;
   author: string;
+  email?: string;
   initials: string;
   avatar?: string | null;
   body: string;

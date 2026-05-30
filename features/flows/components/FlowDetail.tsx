@@ -17,6 +17,8 @@ import type { Flow, FlowStage } from "@/features/flows";
 import { CATEGORY_COLORS } from "@/features/flows";
 import Button from "@/components/ui/Button";
 import { useTenant } from "@/components/providers/TenantProvider";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 interface FlowDetailProps {
   flow: Flow;
@@ -100,7 +102,12 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
 
     const newNote = {
       id: `note-${Date.now()}`,
-      user: { id: user?.id || "u1", name: user?.name || "Current User", avatar: user?.image || "" },
+      user: {
+        id: user?.id || "u1",
+        name: getUserDisplayName(user, "Current User"),
+        email: user?.email,
+        image: user?.image,
+      },
       text: newNoteText.trim(),
       timestamp: new Date().toISOString()
     };
@@ -309,22 +316,14 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                 {flow.notes && flow.notes.length > 0 ? (
                   <div className="space-y-6">
                     {flow.notes.map(note => {
-                      const initials = note.user.name
-                        ? note.user.name.split(" ").map(n => n.charAt(0)).join("").substring(0, 2).toUpperCase()
-                        : "U";
+                      const noteUser = note.user.id === user?.id ? user : note.user;
                       return (
                         <div key={note.id} className="flex gap-4 group">
-                          {note.user.avatar ? (
-                            <img src={note.user.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.04] flex items-center justify-center font-bold text-[10px] text-on-surface-variant shrink-0">
-                              {initials}
-                            </div>
-                          )}
+                          <UserAvatar user={noteUser} size="lg" />
                           <div className="flex-1 space-y-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-display text-[13px] font-bold">{note.user.name}</span>
+                                <span className="font-display text-[13px] font-bold">{getUserDisplayName(noteUser, "User")}</span>
                                 <span className="text-[10px] text-on-surface-variant opacity-30">
                                   {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
@@ -349,9 +348,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
 
                 {/* Input Area */}
                 <div className="flex gap-4 pt-4 border-t border-black/[0.04]">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-[10px] text-on-primary shrink-0">
-                    ME
-                  </div>
+                  <UserAvatar user={user} size="lg" className="bg-primary text-on-primary" />
                   <div className="flex-1 space-y-2">
                     <textarea
                       rows={2}
@@ -411,7 +408,10 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                   <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0 flex items-center gap-1.5">
                     <User size={12} /> Created by
                   </span>
-                  <span className="font-display text-[12px] font-medium text-zinc-900 truncate">{flow.owner.name}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <UserAvatar user={flow.owner} size="sm" />
+                    <span className="font-display text-[12px] font-medium text-zinc-900 truncate">{getUserDisplayName(flow.owner)}</span>
+                  </span>
                 </div>
               </div>
             </section>

@@ -7,13 +7,13 @@ const ENTITY = "Transaction";
 
 export async function listTransactions() {
   const ctx = await requireTenant();
-  const transactions = await prisma.transaction.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const transactions = await prisma.transaction.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return transactions.map((transaction) => mapDomainRecord(transaction));
 }
 
 export async function getTransactionById(id: string) {
   const ctx = await requireTenant();
-  const transaction = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const transaction = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return transaction ? mapDomainRecord(transaction) : null;
 }
 
@@ -31,7 +31,7 @@ export async function updateTransaction(id: string, patch: Record<string, unknow
   if (!current) return null;
   const result = await prisma.transaction.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
   if (result.count === 0) return null;
-  const updated = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
   return mapDomainRecord(updated);

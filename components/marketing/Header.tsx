@@ -5,6 +5,8 @@ import Link from "next/link";
 import { LayoutDashboard, LogOut, Users } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { getRootAppUrl } from "@/lib/tenant-url";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -19,8 +21,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
 
   const user = session?.user;
-  const userName = user?.name ?? "User";
-  const userInitial = userName.charAt(0).toUpperCase();
+  const userName = getUserDisplayName(user);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -66,9 +67,7 @@ export default function Header() {
                 onClick={() => setProfileOpen((current) => !current)}
                 className="flex items-center gap-2 rounded-full border border-outline/15 bg-surface-container-lowest/85 px-2 py-1.5 pr-3 hover:border-outline/35 hover:bg-surface-container transition-all duration-200"
               >
-                <span className="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center font-display font-bold text-[11px]">
-                  {userInitial}
-                </span>
+                <UserAvatar user={user} size="md" className="border-outline/10" />
                 <span className="hidden sm:inline max-w-30 truncate font-body-sm text-[12px] font-semibold text-primary">
                   {userName}
                 </span>

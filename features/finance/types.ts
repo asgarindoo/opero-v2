@@ -8,7 +8,11 @@ export interface FinanceActivity {
   type: "approval" | "payment" | "note" | "status_change";
   description: string;
   timestamp: string;
+  userId?: string;
   author: string;
+  email?: string;
+  avatar?: string | null;
+  initials?: string;
 }
 
 export interface Transaction {

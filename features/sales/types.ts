@@ -7,7 +7,11 @@ export interface SaleActivity {
   type: "note" | "email" | "call" | "status_change" | "payment" | "shipping";
   description: string;
   timestamp: string;
+  userId?: string;
   author: string;
+  email?: string;
+  avatar?: string | null;
+  initials?: string;
 }
 
 export type DiscountType = "percentage" | "fixed";

@@ -7,13 +7,13 @@ const ENTITY = "Contact";
 
 export async function listContacts() {
   const ctx = await requireTenant();
-  const contacts = await prisma.contact.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const contacts = await prisma.contact.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return contacts.map((contact) => mapDomainRecord(contact));
 }
 
 export async function getContactById(id: string) {
   const ctx = await requireTenant();
-  const contact = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const contact = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return contact ? mapDomainRecord(contact) : null;
 }
 
@@ -44,7 +44,7 @@ export async function updateContact(id: string, patch: Record<string, unknown>) 
 
   const result = await prisma.contact.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(parsed, current.title ?? "Untitled"), status: getStatus(parsed) || current.status, payload: createPayload(parsed), updatedById: ctx.userId } });
   if (result.count === 0) return null;
-  const updated = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof parsed.description === "string" ? parsed.description : null });
   return mapDomainRecord(updated);

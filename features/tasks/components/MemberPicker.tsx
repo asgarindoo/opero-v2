@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { Search, Check, X } from "lucide-react";
 import { type Member } from "@/features/tasks";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface Props {
   selected: Member[];
@@ -36,8 +38,10 @@ export default function MemberPicker({ selected, onChange, max }: Props) {
           setMembers(
             (data.members as ApiMember[]).map((m) => ({
               id: m.userId,          // use userId so assignments reference the user
-              name: m.name || m.email,
-              initials: (m.name || m.email).charAt(0).toUpperCase(),
+              name: getUserDisplayName(m, "Member"),
+              email: m.email,
+              image: m.image,
+              initials: getUserInitials(m),
               role: m.role,
             }))
           );
@@ -73,9 +77,7 @@ export default function MemberPicker({ selected, onChange, max }: Props) {
         <div className="flex items-center gap-1.5 flex-wrap">
           {selected.map((m) => (
             <div key={m.id} className="group/av relative flex items-center gap-1.5 px-2 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.08)" }}>
-              <div className="w-4 h-4 rounded-full flex items-center justify-center font-display font-bold text-[7px]" style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
-                {m.initials}
-              </div>
+              <UserAvatar user={m} size="xs" />
               <span className="font-body-sm text-[11px] font-medium" style={{ color: "var(--color-on-surface)" }}>{m.name}</span>
               <button onClick={() => remove(m.id)} className="ml-0.5 opacity-50 hover:opacity-100 transition-opacity">
                 <X size={9} strokeWidth={2.5} style={{ color: "var(--color-on-surface)" }} />
@@ -126,9 +128,7 @@ export default function MemberPicker({ selected, onChange, max }: Props) {
                   onClick={() => toggle(m)}
                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-black/[0.03] transition-colors text-left"
                 >
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[9px] shrink-0" style={{ background: isSelected ? "var(--color-primary)" : "rgba(0,0,0,0.08)", color: isSelected ? "var(--color-on-primary)" : "var(--color-on-surface)" }}>
-                    {m.initials}
-                  </div>
+                  <UserAvatar user={m} size="md" className={isSelected ? "ring-1 ring-black/20" : ""} />
                   <div className="flex-1 min-w-0">
                     <div className="font-body-md text-[12px] font-medium" style={{ color: "var(--color-on-surface)" }}>{m.name}</div>
                     {m.role && <div className="font-body-sm text-[10px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}>{m.role}</div>}

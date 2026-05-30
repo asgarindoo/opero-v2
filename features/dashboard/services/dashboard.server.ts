@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 
 function getChecklistProgress(checklist?: Array<{ done: boolean }>) {
   if (!checklist || checklist.length === 0) return { done: 0, total: 0, progress: 0 };
@@ -7,12 +9,6 @@ function getChecklistProgress(checklist?: Array<{ done: boolean }>) {
   const total = checklist.length;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
   return { done, total, progress };
-}
-
-function toShortName(name: string) {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
 }
 
 const ICON_MAP: Record<string, string> = {
@@ -37,11 +33,11 @@ export async function getDashboardSummary() {
       where: { organizationId: ctx.tenantId },
       orderBy: { createdAt: "desc" },
       take: 5,
-      include: { user: { select: { id: true, name: true, email: true } } },
+      include: { user: { select: { id: true, name: true, email: true, image: true } } },
     }),
     prisma.member.findMany({
       where: { organizationId: ctx.tenantId },
-      include: { user: { select: { id: true, name: true, email: true } } },
+      include: { user: { select: { id: true, name: true, email: true, image: true } } },
     }),
     prisma.contentPost.findMany({
       where: { organizationId: ctx.tenantId },
@@ -52,23 +48,51 @@ export async function getDashboardSummary() {
   const tasks = taskRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
   const flows = flowRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
   const sales = saleRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
+  const memberIdentityByUserId = new Map(
+    members.map((m: any) => {
+      const user = {
+        id: m.user.id,
+        name: getUserDisplayName(m.user),
+        email: m.user.email,
+        image: normalizeUserAvatarImage(m.user.id, m.user.image),
+      };
+
+      return [m.userId, user];
+    })
+  );
+
+  function resolveMemberIdentity(snapshot: UserIdentity) {
+    const id = snapshot.id ?? snapshot.userId ?? "";
+    const memberUser = memberIdentityByUserId.get(id);
+    const identity = memberUser ?? {
+      id,
+      name: getUserDisplayName(snapshot, "Member"),
+      email: snapshot.email ?? null,
+      image: id ? normalizeUserAvatarImage(id, snapshot.image ?? snapshot.avatar ?? null) : snapshot.image ?? snapshot.avatar ?? null,
+    };
+
+    return {
+      id: identity.id ?? id,
+      name: getUserDisplayName(identity, "Member"),
+      email: identity.email ?? undefined,
+      image: identity.image ?? null,
+      initials: getUserInitials(identity),
+    };
+  }
 
   // ── Active tasks (top 5) ────────────────────────────────────────────────
   const activeTasks = tasks.slice(0, 5).map((task: any) => {
     const checklist = getChecklistProgress(task.checklist as Array<{ done: boolean }> | undefined);
     const allAssignees = Array.isArray(task.assignees) ? task.assignees : [];
     const firstAssignee = allAssignees[0] ?? null;
+    const resolvedAssignees = allAssignees.map((a: any) => resolveMemberIdentity(a));
     return {
       id: task.id ?? task.recordId,
       title: task.title ?? "Untitled",
       priority: task.priority ?? "medium",
       status: task.status ?? "Todo",
-      assignee: firstAssignee?.initials ?? (firstAssignee?.name ? toShortName(firstAssignee.name) : "--"),
-      assignees: allAssignees.map((a: any) => ({
-        id: a.id ?? "",
-        name: a.name ?? "",
-        initials: a.initials ?? toShortName(a.name ?? "?"),
-      })),
+      assignee: firstAssignee ? resolvedAssignees[0]?.initials ?? "--" : "--",
+      assignees: resolvedAssignees,
       due: task.due ?? null,
       labels: Array.isArray(task.labels) ? task.labels : [],
       checklist: { done: checklist.done, total: checklist.total },
@@ -89,7 +113,10 @@ export async function getDashboardSummary() {
   const recentActivity = activityRecords.map((log: any) => ({
     id: log.id,
     icon: ICON_MAP[log.action] ?? "timeline",
-    user: log.user?.name ?? log.user?.email ?? "System",
+    userId: log.user?.id ?? log.userId ?? "system",
+    user: getUserDisplayName(log.user, "System"),
+    userEmail: log.user?.email ?? undefined,
+    userImage: log.user?.id ? normalizeUserAvatarImage(log.user.id, log.user.image) : null,
     action: log.action.toLowerCase(),
     target: log.entityName ?? log.entityType ?? "Record",
     time: log.createdAt.toISOString(),
@@ -129,16 +156,19 @@ export async function getDashboardSummary() {
 
   // ── Team performance ────────────────────────────────────────────────────
   const teamMembers = members.map((m: any) => {
-    const name = m.user.name ?? m.user.email ?? "Member";
+    const name = getUserDisplayName(m.user, "Member");
     const assigned = tasks.filter((t: any) => Array.isArray(t.assignees) && t.assignees.some((a: any) => a.id === m.userId));
     const doneCount = assigned.filter((t: any) => t.status === "Done").length;
     const load = assigned.length ? Math.round((doneCount / assigned.length) * 100) : 0;
     return {
+      id: m.userId,
       name,
+      email: m.user.email,
+      image: normalizeUserAvatarImage(m.userId, m.user.image),
       role: m.role === "owner" ? "Owner" : m.role === "admin" ? "Admin" : "Staff",
       tasks: assigned.length,
       done: doneCount,
-      initials: toShortName(name),
+      initials: getUserInitials({ name, email: m.user.email }),
       load,
     };
   });

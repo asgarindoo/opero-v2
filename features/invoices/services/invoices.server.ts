@@ -10,7 +10,7 @@ export async function listInvoices() {
   const invoices = await prisma.invoice.findMany({
     where: { organizationId: ctx.tenantId },
     orderBy: { createdAt: "desc" },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
   return invoices.map((invoice) => mapDomainRecord(invoice));
 }
@@ -19,7 +19,7 @@ export async function getInvoiceById(id: string) {
   const ctx = await requireTenant();
   const invoice = await prisma.invoice.findFirst({
     where: { id, organizationId: ctx.tenantId },
-    include: { createdBy: { select: { id: true, name: true, image: true } } },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
   return invoice ? mapDomainRecord(invoice) : null;
 }
@@ -140,7 +140,7 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
     data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: mergedPayload, updatedById: ctx.userId },
   });
   if (result.count === 0) return null;
-  const updated = await prisma.invoice.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, image: true } } } });
+  const updated = await prisma.invoice.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
 

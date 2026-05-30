@@ -11,6 +11,8 @@ import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 /* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
@@ -30,6 +32,7 @@ interface CreateFlowModalProps {
 }
 
 export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalProps) {
+  const { user } = useTenant();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<FlowCategory>("Operations");
@@ -88,7 +91,12 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
       status: "Active",
       progress: 0,
       updated: new Date().toISOString(),
-      owner: { id: "me", name: "Current User" },
+      owner: {
+        id: user?.id ?? "me",
+        name: getUserDisplayName(user, "Current User"),
+        email: user?.email,
+        image: user?.image,
+      },
       stages: stages.map((s, i) => ({
         id: s.id || `s${i}`,
         name: (s.name || `Stage ${i + 1}`).trim(),

@@ -13,6 +13,7 @@ import DatePicker from "@/components/ui/DatePicker";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { useSocialChannels } from "@/features/social-channels";
 import { CampaignChannelPicker } from "./CampaignChannelPicker";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 /* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
@@ -143,7 +144,7 @@ export default function AddCampaignModal({ onClose }: { onClose: () => void }) {
       endDate,
       priority,
       status,
-      owner: user?.name || "System",
+      owner: { id: user?.id, name: getUserDisplayName(user, "System"), email: user?.email, image: user?.image },
       linkedTasks: [],
       campaignAccounts,
       budget: budgetNum || 0,

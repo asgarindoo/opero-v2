@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import type { Task, Status } from "@/features/tasks";
 import { STATUS_META, PRIORITY_META, ALL_STATUSES } from "@/features/tasks";
 import { EmptyState, RowSkeleton } from "@/components/common/DataState";
+import UserAvatar from "@/components/common/UserAvatar";
 
 interface Props {
   tasks: Task[];
@@ -60,14 +61,7 @@ function TaskRow({ task, onClick }: { task: Task; onClick: () => void }) {
       {/* Assignee avatars */}
       <div className="flex items-center -space-x-1 shrink-0">
         {task.assignees.slice(0, 3).map(a => (
-          <div
-            key={a.id}
-            title={a.name}
-            className="w-5 h-5 rounded-full border border-white flex items-center justify-center font-display font-bold text-[7px]"
-            style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
-          >
-            {a.initials}
-          </div>
+          <UserAvatar key={a.id} user={a} size="sm" className="border-white" />
         ))}
       </div>
 

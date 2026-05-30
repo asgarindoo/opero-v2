@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { getUserDisplayName } from "@/lib/user-identity";
 import type { ChatChannel, ChatMessage, ChatMessageType } from "@/features/chat";
 import {
   createChannel as createChannelRequest,
@@ -196,7 +197,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const sessionUserId = session?.user?.id ?? null;
-  const sessionUserName = session?.user?.name ?? "You";
+  const sessionUserName = getUserDisplayName(session?.user, "You");
   const sessionUserImage = session?.user?.image ?? null;
   const sessionUserEmail = session?.user?.email ?? undefined;
   const routeChannelId = activeChannelIdFromPath(pathname);

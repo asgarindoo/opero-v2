@@ -15,6 +15,8 @@ import { FileType } from "@/features/documents";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 interface Props {
   onSelectFile: (id: string) => void;
@@ -171,9 +173,7 @@ export default function DocumentGrid({ onSelectFile }: Props) {
                       </span>
                    </div>
                    {doc.createdBy && (
-                    <div className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center font-bold text-[7px] text-on-surface-variant opacity-60 border border-black/[0.02] shadow-sm" title={doc.createdBy.name}>
-                        {doc.createdBy.name.charAt(0)}
-                    </div>
+                    <UserAvatar user={doc.createdBy} size="sm" className="opacity-80 shadow-sm" title={getUserDisplayName(doc.createdBy, "System")} />
                    )}
                  </div>
               </div>

@@ -39,15 +39,15 @@ export default function RecentActivityWidget() {
             {[...Array(5)].map((_, i) => (
               <div key={i} className="relative pl-6 pb-7 last:pb-0">
                 {i < 4 && (
-                  <div className="absolute left-[4.5px] top-[12px] bottom-0 w-[1px]" style={{ background: "rgba(0,0,0,0.06)" }} />
+                  <div className="absolute left-[4.5px] top-[12px] bottom-0 w-1px" style={{ background: "rgba(0,0,0,0.06)" }} />
                 )}
-                <div className="absolute left-0 w-2.5 h-2.5 rounded-full bg-black/[0.08] animate-pulse ring-4 ring-white" style={{ top: 3.5 }} />
+                <div className="absolute left-0 w-2.5 h-2.5 rounded-full bg-black/8 animate-pulse ring-4 ring-white" style={{ top: 3.5 }} />
                 <div className="space-y-1.5 ml-2">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-20 rounded bg-black/[0.07] animate-pulse" />
-                    <div className="h-3 w-28 rounded bg-black/[0.05] animate-pulse" />
+                    <div className="h-3 w-20 rounded bg-black/7 animate-pulse" />
+                    <div className="h-3 w-28 rounded bg-black/5 animate-pulse" />
                   </div>
-                  <div className="h-2 w-24 rounded bg-black/[0.04] animate-pulse" />
+                  <div className="h-2 w-24 rounded bg-black/4 animate-pulse" />
                 </div>
               </div>
             ))}
@@ -63,7 +63,7 @@ export default function RecentActivityWidget() {
               <div key={item.id} className="relative pl-6 pb-7 last:pb-0">
                 {/* Vertical connecting line - hidden for the last item */}
                 {idx < feed.length - 1 && (
-                  <div className="absolute left-[4.5px] top-[14px] bottom-0 w-[1px]" style={{ background: "rgba(0,0,0,0.06)" }} />
+                  <div className="absolute left-[4.5px] top-3.5 bottom-0 w-1px" style={{ background: "rgba(0,0,0,0.06)" }} />
                 )}
 
                 {/* Timeline Dot — same as ActivityAuditLog */}
@@ -105,7 +105,7 @@ export default function RecentActivityWidget() {
       {!loading && (
         <div className="px-4 py-2.5 border-t shrink-0" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
           <button
-            className="w-full font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold flex items-center justify-center gap-1 hover:opacity-70 transition-opacity"
+            className="w-full font-label-caps text-[10px] uppercase tracking-wider font-semibold flex items-center justify-center gap-1 hover:opacity-70 transition-opacity"
             style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}
             onClick={() => window.location.href = "/dashboard/activity"}
           >

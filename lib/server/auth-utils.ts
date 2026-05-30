@@ -17,6 +17,8 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -78,9 +80,9 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Cur
 
   return {
     id: session.user.id,
-    name: session.user.name,
+    name: getUserDisplayName(session.user),
     email: session.user.email,
-    image: session.user.image ?? null,
+    image: normalizeUserAvatarImage(session.user.id, session.user.image ?? null),
   };
 });
 
@@ -259,9 +261,9 @@ export const getTenantContext = cache(async function getTenantContext(): Promise
     tenant: membership.organization,
     user: {
       id: session.user.id,
-      name: session.user.name,
+      name: getUserDisplayName(session.user),
       email: session.user.email,
-      image: session.user.image ?? null,
+      image: normalizeUserAvatarImage(session.user.id, session.user.image ?? null),
     },
     role: membership.role as OrgRole,
     tenantId: membership.organization.id,

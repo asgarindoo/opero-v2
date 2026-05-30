@@ -50,7 +50,7 @@ export default function AutomationStatusWidget() {
             {AUTOMATIONS.filter(a => a.status === "active").length} active
           </span>
         </div>
-        <button className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold hover:text-primary transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}>
+        <button className="font-label-caps text-[10px] uppercase tracking-wider font-semibold hover:text-primary transition-colors" style={{ color: "var(--color-on-surface-variant)", opacity: 0.55 }}>
           Manage →
         </button>
       </div>
@@ -59,7 +59,7 @@ export default function AutomationStatusWidget() {
         {AUTOMATIONS.map((auto) => (
           <div
             key={auto.name}
-            className="flex items-center gap-3 p-2.5 rounded-[6px] hover:bg-black/[0.02] transition-colors cursor-pointer"
+            className="flex items-center gap-3 p-2.5 rounded-md hover:bg-black/2 transition-colors cursor-pointer"
             style={{ border: "1px solid rgba(0,0,0,0.04)" }}
           >
             {/* Status dot */}

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
+import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 const ACTION_CATEGORY: Record<string, string> = {
   Created: "INFO",
@@ -42,9 +44,10 @@ export async function listActivities(moduleFilter?: string) {
     entityId: log.entityId ?? log.id,
     user: {
       id: log.user?.id ?? log.userId ?? "system",
-      name: log.user?.name ?? log.user?.email ?? "System",
+      name: getUserDisplayName(log.user, "System"),
+      email: log.user?.email ?? undefined,
       role: roleMap.get(log.userId ?? "") ?? "System",
-      avatar: log.user?.image ?? undefined,
+      avatar: log.user?.id ? normalizeUserAvatarImage(log.user.id, log.user.image) ?? undefined : undefined,
     },
     timestamp: log.createdAt.toISOString(),
     description: log.description ?? undefined,

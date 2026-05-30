@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, MessageSquarePlus } from "lucide-react";
 import { useChat } from "../context/ChatContext";
 import type { ChatMessage } from "@/features/chat";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 function messageDebugShape(message: ChatMessage) {
   const diagnosticFields = message as ChatMessage & {
@@ -89,15 +91,6 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const getInitials = (name: string | null | undefined) => {
-    return (name || "Team member")
-      .split(" ")
-      .map((n) => n.charAt(0))
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <div className="flex-1 overflow-y-auto px-6 py-6 scroll-smooth bg-[#faf8f6]">
       {error && (
@@ -158,9 +151,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
         <div className="space-y-3.5">
           {visibleMessages.map((msg) => {
             const isMe = msg.senderId === currentUserId;
-            const senderName = msg.sender?.name ?? (isMe ? "You" : "Unknown User");
-            const senderImage = msg.sender?.image ?? null;
-            const initials = getInitials(senderName);
+            const senderName = getUserDisplayName(msg.sender, isMe ? "You" : "Unknown User");
             const messageKey = msg.clientId ?? msg.id;
             const messageIndex = visibleMessages.findIndex((item) => (item.clientId ?? item.id) === messageKey);
             
@@ -176,19 +167,16 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
               >
                 <div className={`flex items-end gap-2 max-w-[85%] ${isMe ? "flex-row-reverse" : "flex-row"}`}>
                   {/* User avatar */}
-                  <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center font-aspekta font-semibold text-[9px] shrink-0 select-none overflow-hidden ${
+                  <UserAvatar
+                    user={msg.sender}
+                    name={senderName}
+                    size="md"
+                    className={`h-6 w-6 text-[9px] select-none ${
                       isMe
                         ? "bg-[#18181b] text-white"
-                        : "bg-[#f8f3f2] text-black/75 border border-black/10 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                        : "bg-[#f8f3f2] text-black/75 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                     }`}
-                  >
-                    {senderImage ? (
-                      <img src={senderImage} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      initials
-                    )}
-                  </div>
+                  />
                   
                   <div className={`flex flex-col gap-0.5 ${isMe ? "items-end" : "items-start"}`}>
                     <span className="font-aspekta text-[9px] text-black/35 px-1 select-none">

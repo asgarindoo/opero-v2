@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ActivityLog, ActivityGroup, ActivityModule } from "@/features/activity";
 import { listActivities } from "@/features/activity";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 interface ActivityContextType {
   activities: ActivityLog[];
@@ -50,7 +51,7 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     return allActivities.filter(a => {
       const matchesSearch = a.entityName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             a.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            a.user.name.toLowerCase().includes(searchQuery.toLowerCase());
+                            getUserDisplayName(a.user).toLowerCase().includes(searchQuery.toLowerCase());
       const matchesModule = selectedCategory === "All" || a.module === selectedCategory;
       return matchesSearch && matchesModule;
     });
