@@ -8,6 +8,7 @@ import { ChevronRight, Trash2 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { useContentPlanner } from "@/features/content-planner/context/ContentPlannerContext";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface ContentQueueProps {
   posts: ContentPost[];
@@ -29,10 +30,13 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { channels } = useSocialChannels();
   const { deletePosts, loading } = useContentPlanner();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    deletePosts([id]);
+    setPostToDelete(id);
+    setIsDeleteModalOpen(true);
   };
 
   const toggleAll = () => {
@@ -71,12 +75,12 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
                   />
                 </div>
               </TableHead>
-              <TableHead className="w-[30%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Content Piece</TableHead>
-              <TableHead className="w-[20%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Target Account</TableHead>
-              <TableHead className="w-[10%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Status</TableHead>
-              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Type</TableHead>
-              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Schedule</TableHead>
-              <TableHead className="w-[10%] px-4"><div className="w-full text-center font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</div></TableHead>
+              <TableHead className="w-[30%] px-4">Content Piece</TableHead>
+              <TableHead className="w-[20%] px-4">Target Account</TableHead>
+              <TableHead className="w-[10%] px-4">Status</TableHead>
+              <TableHead className="w-[15%] px-4">Type</TableHead>
+              <TableHead className="w-[15%] px-4">Schedule</TableHead>
+              <TableHead className="w-[10%] px-4 text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
         <TableBody>
@@ -202,6 +206,24 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
         </TableBody>
       </Table>
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setPostToDelete(null);
+        }}
+        onConfirm={() => {
+          if (postToDelete) {
+            deletePosts([postToDelete]);
+            setIsDeleteModalOpen(false);
+            setPostToDelete(null);
+          }
+        }}
+        title="Delete content post?"
+        description="This action permanently removes this post from your content calendar and queue. This action cannot be undone."
+        confirmLabel="Delete Post"
+      />
     </div>
   );
 }

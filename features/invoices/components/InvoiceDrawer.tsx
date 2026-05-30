@@ -182,10 +182,10 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
               <table className="w-full text-left border-collapse">
                 <thead className="bg-surface-container-low/50 border-b border-black/[0.03]">
                   <tr>
-                    <th className="px-4 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest">Description</th>
-                    <th className="px-3 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest text-center">Qty</th>
-                    <th className="px-3 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest text-right">Price</th>
-                    <th className="px-4 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest text-right">Total</th>
+                    <th className="px-4 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-50 uppercase tracking-widest">Description</th>
+                    <th className="px-3 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-50 uppercase tracking-widest text-center">Qty</th>
+                    <th className="px-3 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-50 uppercase tracking-widest text-right">Price</th>
+                    <th className="px-4 py-2.5 font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-50 uppercase tracking-widest text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/[0.02]">

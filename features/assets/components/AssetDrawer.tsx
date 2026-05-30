@@ -8,6 +8,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import MemberPicker from "@/features/tasks/components/MemberPicker";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function formatCurrency(val: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "code", maximumFractionDigits: 0 }).format(val);
@@ -61,6 +62,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editCurrency, setEditCurrency] = useState("USD");
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   if (!asset) return null;
 
@@ -170,7 +172,6 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
 
   function deleteComment(id: string) {
     if (!asset) return;
-    if (!confirm("Delete this note?")) return;
     handleUpdate({ comments: (asset.comments || []).filter(c => c.id !== id) }, "deleted a note");
   }
 
@@ -382,7 +383,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                                 <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
                               </div>
                               <button
-                                onClick={() => deleteComment(c.id)}
+                                onClick={() => setCommentToDelete(c.id)}
                                 className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
                                 title="Delete note"
                               >
@@ -495,6 +496,20 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
           />
         </div>
       )}
+      
+      <ConfirmationModal
+        isOpen={!!commentToDelete}
+        onClose={() => setCommentToDelete(null)}
+        onConfirm={() => {
+          if (commentToDelete) {
+            deleteComment(commentToDelete);
+            setCommentToDelete(null);
+          }
+        }}
+        title="Delete note?"
+        description="This action permanently removes this note. This action cannot be undone."
+        confirmLabel="Delete Note"
+      />
     </>
   );
 }

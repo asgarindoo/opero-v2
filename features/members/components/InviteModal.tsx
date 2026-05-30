@@ -9,6 +9,7 @@ import { ModalHeader }   from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent }  from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter }   from "@/components/ui/global/modal/ModalFooter";
 import Dropdown          from "@/components/ui/Dropdown";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 /* ── Section label — same as CreateFlowModal ───────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
@@ -59,6 +60,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
   const [copiedId, setCopiedId]     = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkToRevoke, setLinkToRevoke] = useState<string | null>(null);
 
   /* ── copy helper ── */
   const copyText = async (text: string) => {
@@ -252,7 +254,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
                         }
                       </button>
                       <button
-                        onClick={() => revokeInviteLink(link.id)}
+                        onClick={() => setLinkToRevoke(link.id)}
                         className="p-1.5 rounded-[5px] hover:bg-red-50 transition-colors"
                         title="Revoke link"
                       >
@@ -284,6 +286,18 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
           Close
         </button>
       </ModalFooter>
+      
+      <ConfirmationModal
+        isOpen={!!linkToRevoke}
+        onClose={() => setLinkToRevoke(null)}
+        onConfirm={() => {
+          if (linkToRevoke) revokeInviteLink(linkToRevoke);
+          setLinkToRevoke(null);
+        }}
+        title="Revoke invite link?"
+        description="This will permanently disable the invite link. Anyone who tries to use it will be denied access."
+        confirmLabel="Revoke Link"
+      />
     </ModalShell>
   );
 }

@@ -26,6 +26,7 @@ import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
 import Button from "@/components/ui/Button";
 import UserAvatar from "@/components/common/UserAvatar";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 type SettingsTab = "tenant" | "billing" | "security";
 
@@ -88,6 +89,9 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -217,8 +221,6 @@ export default function SettingsPage() {
 
   const handleLeaveTenant = async () => {
     if (!data) return;
-    const confirmed = window.confirm(`Leave "${data.tenant.name}"? You will lose access until someone invites you again.`);
-    if (!confirmed) return;
 
     setIsLeaving(true);
     setError(null);
@@ -237,6 +239,7 @@ export default function SettingsPage() {
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to leave tenant.");
+      setIsLeaveModalOpen(false);
     } finally {
       setIsLeaving(false);
     }
@@ -244,11 +247,6 @@ export default function SettingsPage() {
 
   const handleDeleteTenant = async () => {
     if (!data || !isOwner) return;
-    const typed = window.prompt(`Type ${data.tenant.slug} to permanently delete this tenant.`);
-    if (typed !== data.tenant.slug) {
-      if (typed !== null) setError("Tenant deletion cancelled: slug did not match.");
-      return;
-    }
 
     setIsDeleting(true);
     setError(null);
@@ -267,6 +265,7 @@ export default function SettingsPage() {
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete tenant.");
+      setIsDeleteModalOpen(false);
     } finally {
       setIsDeleting(false);
     }
@@ -637,7 +636,7 @@ export default function SettingsPage() {
                           <p className="text-[13px] font-semibold text-on-surface">Leave Workspace</p>
                           <p className="text-[12px] text-on-surface-variant mt-0.5">Remove your membership. Owners can leave only if another owner remains.</p>
                         </div>
-                        <Button variant="danger" size="sm" icon={LogOut} isLoading={isLeaving} onClick={handleLeaveTenant}>
+                        <Button variant="danger" size="sm" icon={LogOut} isLoading={isLeaving} onClick={() => setIsLeaveModalOpen(true)}>
                           Leave
                         </Button>
                       </div>
@@ -648,7 +647,7 @@ export default function SettingsPage() {
                             <p className="text-[13px] font-semibold text-on-surface">Delete Workspace</p>
                             <p className="text-[12px] text-on-surface-variant mt-0.5">Permanently delete this workspace and all associated records.</p>
                           </div>
-                          <Button variant="danger" size="sm" icon={Trash2} isLoading={isDeleting} onClick={handleDeleteTenant}>
+                          <Button variant="danger" size="sm" icon={Trash2} isLoading={isDeleting} onClick={() => setIsDeleteModalOpen(true)}>
                             Delete
                           </Button>
                         </div>
@@ -661,6 +660,26 @@ export default function SettingsPage() {
           ) : null}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+        onConfirm={handleLeaveTenant}
+        title="Leave workspace?"
+        description={`This action removes your access to "${data?.tenant.name}". You will need a new invitation to rejoin.`}
+        confirmLabel="Leave Workspace"
+        isLoading={isLeaving}
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteTenant}
+        title="Delete workspace?"
+        description="This action permanently deletes the workspace, its settings, and all associated records. This action cannot be undone."
+        confirmLabel="Delete Workspace"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

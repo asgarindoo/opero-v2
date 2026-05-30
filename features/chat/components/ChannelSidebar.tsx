@@ -9,12 +9,16 @@ import CreateChannelModal from "./CreateChannelModal";
 import { usePresence } from "@/features/presence";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import type { ChatChannel } from "@/features/chat";
 
 export default function ChannelSidebar() {
   const pathname = usePathname();
   const { channels, unreadCounts, loadingChannels, error, deleteChannel } = useChat();
   const { onlineUsers } = usePresence();
   const [showCreate, setShowCreate] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [channelToDelete, setChannelToDelete] = useState<ChatChannel | null>(null);
 
   return (
     <div className="flex flex-col h-full py-3">
@@ -79,8 +83,8 @@ export default function ChannelSidebar() {
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      const confirmed = window.confirm(`Delete #${channel.name}? Messages in this channel will also be removed.`);
-                      if (confirmed) void deleteChannel(channel.id);
+                      setChannelToDelete(channel);
+                      setIsDeleteModalOpen(true);
                     }}
                   >
                     <Trash2 size={13} />
@@ -111,6 +115,23 @@ export default function ChannelSidebar() {
       </div>
 
       {showCreate && <CreateChannelModal onClose={() => setShowCreate(false)} />}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setChannelToDelete(null);
+        }}
+        onConfirm={() => {
+          if (channelToDelete) {
+            void deleteChannel(channelToDelete.id);
+            setIsDeleteModalOpen(false);
+            setChannelToDelete(null);
+          }
+        }}
+        title="Delete channel?"
+        description={`This action permanently removes #${channelToDelete?.name} and all its messages. This action cannot be undone.`}
+        confirmLabel="Delete Channel"
+      />
     </div>
   );
 }

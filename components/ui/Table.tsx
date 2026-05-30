@@ -9,7 +9,7 @@ interface TableProps {
 
 export function Table({ children, className = "" }: TableProps) {
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full">
       <table className={`w-full border-collapse ${className}`}>
         {children}
       </table>
@@ -19,7 +19,7 @@ export function Table({ children, className = "" }: TableProps) {
 
 export function TableHeader({ children, className = "" }: TableProps) {
   return (
-    <thead className={`border-b border-black/[0.03] bg-black/[0.01] ${className}`}>
+    <thead className={`border-b border-black/[0.03] bg-[#fbf5f5] sticky top-0 z-10 ${className}`}>
       {children}
     </thead>
   );
@@ -52,7 +52,7 @@ export function TableHead({ children, className = "" }: TableProps) {
   return (
     <th className={`
       px-6 py-2 text-left font-label-caps text-[9px] font-bold 
-      text-on-surface-variant opacity-30 uppercase tracking-[0.15em]
+      text-on-surface-variant opacity-50 uppercase tracking-[0.15em]
       ${className}
     `}>
       {children}

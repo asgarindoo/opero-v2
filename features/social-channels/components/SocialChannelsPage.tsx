@@ -7,7 +7,7 @@ import useSWR, { useSWRConfig } from "swr";
 import ModuleHeader from "@/components/common/ModuleHeader";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
-import { Plus, Globe, Edit2, X, Check, ArrowUpRight, Calendar, Activity, Users, Eye, ChevronDown, Trash2 } from "lucide-react";
+import { Plus, Globe, Edit2, X, ArrowUpRight } from "lucide-react";
 import { useSocialChannels, Channel, ChannelStatus } from "../context/SocialChannelsContext";
 import { ModalShell } from "@/components/ui/global/modal/ModalShell";
 import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
@@ -16,8 +16,8 @@ import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import Dropdown from "@/components/ui/Dropdown";
-import DatePicker from "@/components/ui/DatePicker";
 import UserAvatar from "@/components/common/UserAvatar";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
    return (
@@ -73,6 +73,8 @@ export default function SocialChannelsPage() {
    const [form, setForm] = useState<AddForm>({});
    const [activeChannel, setActiveChannel] = useState<string | null>(null);
    const [isStatusOpen, setIsStatusOpen] = useState(false);
+   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+   const [channelToDelete, setChannelToDelete] = useState<Channel | null>(null);
 
    const router = useRouter();
    const { tenant } = useTenant();
@@ -167,6 +169,16 @@ export default function SocialChannelsPage() {
       }
 
       setShowAdd(false); setForm({}); setEditId(null);
+   };
+
+   const confirmDelete = async () => {
+      if (!channelToDelete) return;
+      await removeChannel(channelToDelete.id);
+      if (slug) {
+         setTimeout(() => globalMutate(`/api/tenant/${slug}/social-channels/activity`), 300);
+      }
+      setIsDeleteModalOpen(false);
+      setChannelToDelete(null);
    };
 
    const ic = "w-full bg-[#fcfafa] border border-black/[0.06] rounded-[4px] px-4 py-2.5 font-display text-[12.5px] text-on-surface outline-none focus:border-black/[0.15] focus:bg-white transition-all duration-300 placeholder:text-black/100 appearance-none cursor-pointer";
@@ -481,7 +493,7 @@ export default function SocialChannelsPage() {
                                  <div className="flex items-center gap-4 shrink-0 ml-4">
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                        <button onClick={(e) => { e.stopPropagation(); openEdit(ch); }} className="p-1.5 text-black/100 hover:text-black transition-colors rounded-[4px] hover:bg-black/[0.04]"><Edit2 size={12} /></button>
-                                       <button onClick={async (e) => { e.stopPropagation(); await removeChannel(ch.id); if (slug) { setTimeout(() => globalMutate(`/api/tenant/${slug}/social-channels/activity`), 300); } }} className="p-1.5 text-black/60 hover:text-red-500 transition-colors rounded-[4px] hover:bg-red-50"><X size={12} /></button>
+                                       <button onClick={(e) => { e.stopPropagation(); setChannelToDelete(ch); setIsDeleteModalOpen(true); }} className="p-1.5 text-black/60 hover:text-red-500 transition-colors rounded-[4px] hover:bg-red-50"><X size={12} /></button>
                                     </div>
                                  </div>
                               </div>
@@ -662,6 +674,18 @@ export default function SocialChannelsPage() {
                </div>
             </div>
          </main>
+
+         <ConfirmationModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => {
+               setIsDeleteModalOpen(false);
+               setChannelToDelete(null);
+            }}
+            onConfirm={confirmDelete}
+            title="Disconnect channel?"
+            description={`This action permanently disconnects the ${channelToDelete?.platform} account and removes its analytics history.`}
+            confirmLabel="Disconnect"
+         />
       </div>
    );
 }

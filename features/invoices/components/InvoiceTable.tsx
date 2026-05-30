@@ -122,7 +122,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
               <TableHead>Issue Date</TableHead>
               <TableHead>Due Date</TableHead>
               <TableHead className="text-right">Total Amount</TableHead>
-              <TableHead className="px-6 py-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -272,8 +272,9 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
           setInvoiceToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={invoiceToDelete ? "Delete Invoice" : "Delete Selected Invoices"}
-        description={invoiceToDelete ? "Are you sure you want to delete this invoice? This action will permanently remove it from your ledger and cannot be undone." : `Are you sure you want to delete ${selectedIds.size} selected invoices? This action cannot be undone.`}
+        title={invoiceToDelete ? "Delete invoice?" : "Delete selected invoices?"}
+        description={invoiceToDelete ? "This action permanently removes the invoice from your ledger." : `This action permanently removes ${selectedIds.size} invoices. This action cannot be undone.`}
+        confirmLabel={invoiceToDelete ? "Delete Invoice" : "Delete Invoices"}
       />
     </div>
   );

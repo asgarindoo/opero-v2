@@ -3,11 +3,14 @@
 import React, { useState } from "react";
 import { Folder, Plus, Search, Grid, List, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
 import { useDocuments } from "../context/DocumentsContext";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 export default function DocumentsSidebar() {
   const { folders, activeFolderId, setActiveFolderId, addFolder, removeFolder } = useDocuments();
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState<{id: string, title: string} | null>(null);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,9 +85,8 @@ export default function DocumentsSidebar() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm(`Delete folder "${folder.title}"?`)) {
-                  removeFolder(folder.id);
-                }
+                setFolderToDelete(folder);
+                setIsDeleteModalOpen(true);
               }}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-0 group-hover/folder:opacity-100 hover:bg-black/5 transition-all"
             >
@@ -93,6 +95,24 @@ export default function DocumentsSidebar() {
           </div>
         ))}
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setFolderToDelete(null);
+        }}
+        onConfirm={() => {
+          if (folderToDelete) {
+            removeFolder(folderToDelete.id);
+            setIsDeleteModalOpen(false);
+            setFolderToDelete(null);
+          }
+        }}
+        title="Delete folder?"
+        description={`This action permanently removes the "${folderToDelete?.title}" folder. All documents inside will be moved to the root workspace.`}
+        confirmLabel="Delete Folder"
+      />
     </div>
   );
 }

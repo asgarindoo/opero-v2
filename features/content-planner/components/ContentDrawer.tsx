@@ -11,6 +11,7 @@ import DatePicker from "@/components/ui/DatePicker";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Input from "@/components/ui/Input";
 import { ContentTagsInput } from "@/features/content-planner/components/ContentTagsInput";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function getName(val: any): string {
   if (!val) return "";
@@ -46,6 +47,7 @@ export default function ContentDrawer({ postId, onClose }: { postId: string; onC
   const { channels } = useSocialChannels();
   const [tab, setTab] = useState<"details" | "activity">("details");
   const [editTitle, setEditTitle] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   const post = posts.find(p => p.id === postId);
   
@@ -58,10 +60,9 @@ export default function ContentDrawer({ postId, onClose }: { postId: string; onC
   if (!post) return null;
 
   const handleDelete = () => {
-    if (confirm("Delete this content entry? This action cannot be undone.")) {
-      deletePosts([post.id]);
-      onClose();
-    }
+    deletePosts([post.id]);
+    setIsDeleteModalOpen(false);
+    onClose();
   };
 
   const getStatusColor = (status: string) => {
@@ -79,12 +80,13 @@ export default function ContentDrawer({ postId, onClose }: { postId: string; onC
   };
 
   return (
-    <Drawer
-      isOpen={true}
-      onClose={onClose}
-      size="sm"
-    >
-      <div className="space-y-8">
+    <>
+      <Drawer
+        isOpen={true}
+        onClose={onClose}
+        size="sm"
+      >
+        <div className="space-y-8">
 
         {/* Title */}
         <div className="space-y-2">
@@ -213,10 +215,10 @@ export default function ContentDrawer({ postId, onClose }: { postId: string; onC
 
             <div className="pt-8 flex justify-center pb-4">
               <button
-                onClick={handleDelete}
+                onClick={() => setIsDeleteModalOpen(true)}
                 className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
               >
-                Delete Entry
+                Delete Post
               </button>
             </div>
           </div>
@@ -246,5 +248,15 @@ export default function ContentDrawer({ postId, onClose }: { postId: string; onC
 
       </div>
     </Drawer>
+    
+    <ConfirmationModal
+      isOpen={isDeleteModalOpen}
+      onClose={() => setIsDeleteModalOpen(false)}
+      onConfirm={handleDelete}
+      title="Delete content post?"
+      description="This action permanently removes this post from your content calendar. This action cannot be undone."
+      confirmLabel="Delete Post"
+    />
+  </>
   );
 }

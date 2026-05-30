@@ -5,6 +5,7 @@ import { X, Target, CheckCircle2, Circle, Clock, MoreHorizontal, Trash2, Edit3, 
 import type { Goal, Milestone, GoalStatus, Priority } from "@/features/goals";
 import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface GoalDetailProps {
   goal: Goal;
@@ -16,6 +17,7 @@ interface GoalDetailProps {
 export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDelete }: GoalDetailProps) {
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [goal, setFlow] = useState<Goal>(initialGoal);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -74,7 +76,7 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
   return (
     <div className="flex-1 flex flex-col h-full bg-white animate-fade-in overflow-hidden selection:bg-black/10">
       {/* Header */}
-      <header className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between bg-white shrink-0">
+      <header className="px-6 h-[60px] border-b border-black/[0.06] flex items-center justify-between bg-white shrink-0">
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
@@ -104,7 +106,7 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onDelete(goal.id)}
+            onClick={() => setIsDeleteModalOpen(true)}
             className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
           >
             <Trash2 size={16} />
@@ -309,6 +311,18 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
           </div>
         </aside>
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => {
+          onDelete(goal.id);
+          setIsDeleteModalOpen(false);
+        }}
+        title="Delete goal?"
+        description="This action permanently removes this operational goal and its associated milestones. This action cannot be undone."
+        confirmLabel="Delete Goal"
+      />
     </div>
   );
 }

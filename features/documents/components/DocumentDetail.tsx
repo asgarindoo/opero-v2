@@ -12,6 +12,7 @@ import { FileType } from "@/features/documents";
 import Dropdown from "@/components/ui/Dropdown";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface DocumentDetailProps {
   fileId: string;
@@ -26,6 +27,7 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
   const [editedTitle, setEditedTitle] = useState("");
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   if (!file) return null;
 
@@ -57,7 +59,7 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
   return (
     <div className="flex-1 flex flex-col h-full bg-[#faf8f6] animate-fade-in overflow-hidden relative">
       {/* HEADER */}
-      <header className="px-5 py-3.5 flex items-center justify-between bg-transparent border-b border-black/[0.04] z-10 shrink-0">
+      <header className="px-5 h-[60px] flex items-center justify-between bg-transparent border-b border-black/[0.04] z-10 shrink-0">
         <div className="flex items-center gap-4 min-w-0">
           <button 
             onClick={onClose}
@@ -118,10 +120,7 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
              </button>
            )}
            <button 
-             onClick={() => {
-               deleteDocuments([file.id]);
-               onClose();
-             }}
+             onClick={() => setIsDeleteModalOpen(true)}
              className="flex items-center justify-center w-8 h-8 rounded-[6px] hover:bg-red-50 text-red-600 transition-all ml-1"
              title="Delete"
            >
@@ -290,6 +289,19 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
           </div>
         </aside>
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => {
+          deleteDocuments([file.id]);
+          setIsDeleteModalOpen(false);
+          onClose();
+        }}
+        title="Delete document?"
+        description={`This action permanently removes "${file.title}" and its associated files. This action cannot be undone.`}
+        confirmLabel="Delete Document"
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   updateProfileSettingsClient,
 } from "@/features/profile/services/profile.client";
 import type { ProfileUser } from "@/features/profile/services/profile.server";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -33,6 +34,7 @@ export default function ProfileSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +132,7 @@ export default function ProfileSettingsPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    setIsDeleteModalOpen(false);
   }
 
   async function handleSave() {
@@ -250,7 +253,7 @@ export default function ProfileSettingsPage() {
                         size="sm"
                         icon={Trash2}
                         disabled={!avatarPreview && !avatarFile}
-                        onClick={handleRemovePhoto}
+                        onClick={() => setIsDeleteModalOpen(true)}
                         className="text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
                         Remove
@@ -350,6 +353,15 @@ export default function ProfileSettingsPage() {
 
         </div>
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleRemovePhoto}
+        title="Remove profile photo?"
+        description="This will remove your custom avatar. A default placeholder will be shown instead."
+        confirmLabel="Remove Photo"
+      />
     </div>
   );
 }

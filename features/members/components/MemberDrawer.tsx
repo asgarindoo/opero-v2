@@ -5,12 +5,14 @@ import { RoleType } from "@/features/members";
 import { usePresence } from "@/features/presence";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 export default function MemberDrawer({ memberId, onClose }: { memberId: string, onClose: () => void }) {
   const { members, removeMember, updateMemberRole, updateMemberOrg, roles, permissions } = useMembers();
   const { presence } = usePresence();
   const member = members.find(m => m.id === memberId);
   const [isEditingRole, setIsEditingRole] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [isEditingOrg, setIsEditingOrg] = useState(false);
   const [editDept, setEditDept] = useState("");
@@ -26,10 +28,9 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
   const memberName = getUserDisplayName(member, "Unnamed User");
 
   const handleRemove = () => {
-    if (confirm(`Are you sure you want to remove ${memberName} from the workspace?`)) {
-      removeMember(member.id);
-      onClose();
-    }
+    removeMember(member.id);
+    setShowDeleteConfirm(false);
+    onClose();
   };
 
   const handleEditOrgClick = () => {
@@ -282,7 +283,7 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
         {member.role !== "Owner" && (
           <div className="px-6 py-4 shrink-0 bg-surface-container-lowest border-t" style={{ borderColor: "rgba(0,0,0,0.05)" }}>
             <button
-              onClick={handleRemove}
+              onClick={() => setShowDeleteConfirm(true)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors font-body-sm font-semibold text-[13px]"
             >
               <UserMinus size={14} /> Remove Member
@@ -290,6 +291,16 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleRemove}
+        title="Remove Member"
+        description={`Are you sure you want to remove ${memberName} from the workspace? They will lose access to all projects and data.`}
+        confirmLabel="Remove Member"
+        variant="danger"
+      />
     </div>
   );
 }

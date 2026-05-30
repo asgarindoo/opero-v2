@@ -52,13 +52,13 @@ export default function FlowListView({ flows, onFlowClick, onBulkDelete }: FlowL
     <div className="w-full animate-fade-in relative">
       <div className="w-full">
         <table className="w-full border-collapse">
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr className="border-b bg-[#fcf5f5] border-black/[0.04]">
-              <th className="px-8 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[40%]">Process Name</th>
-              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[20%]">Completion</th>
-              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[15%]">Stages</th>
-              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[15%]">Updated</th>
-              <th className="px-8 py-2.5 text-right font-display text-[9px] font-bold text-zinc-400 uppercase tracking-[0.15em] w-[10%]">Action</th>
+              <th className="px-8 py-2.5 text-left font-display text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.15em] w-[40%]">Process Name</th>
+              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.15em] w-[20%]">Completion</th>
+              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.15em] w-[15%]">Stages</th>
+              <th className="px-6 py-2.5 text-left font-display text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.15em] w-[15%]">Updated</th>
+              <th className="px-8 py-2.5 text-right font-display text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.15em] w-[10%]">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/[0.03]">
@@ -142,8 +142,9 @@ export default function FlowListView({ flows, onFlowClick, onBulkDelete }: FlowL
           setFlowToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={flowToDelete ? "Delete Flow" : "Delete Selected Flows"}
-        description={flowToDelete ? "Are you sure you want to delete this operational flow? All associated stages and history data will be permanently removed." : `Are you sure you want to delete ${selectedIds.size} selected flows? This action cannot be undone.`}
+        title={flowToDelete ? "Delete flow?" : "Delete selected flows?"}
+        description={flowToDelete ? "This action permanently removes the operational flow, associated stages, and history data." : `This action permanently removes ${selectedIds.size} flows. This action cannot be undone.`}
+        confirmLabel={flowToDelete ? "Delete Flow" : "Delete Flows"}
       />
     </div>
   );

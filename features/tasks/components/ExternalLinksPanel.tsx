@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link, ExternalLink as ExternalLinkIcon, Trash2, Plus } from "lucide-react";
 import type { ExternalLink } from "@/features/tasks";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface Props {
   links: ExternalLink[];
@@ -21,6 +22,7 @@ export default function ExternalLinksPanel({ links, onChange }: Props) {
   const [adding,    setAdding]   = useState(false);
   const [newUrl,    setNewUrl]   = useState("");
   const [newTitle,  setNewTitle] = useState("");
+  const [linkToDelete, setLinkToDelete] = useState<string | null>(null);
 
   function addLink() {
     const url = newUrl.trim();
@@ -47,7 +49,7 @@ export default function ExternalLinksPanel({ links, onChange }: Props) {
             <a href={l.url} target="_blank" rel="noopener noreferrer" className="p-1 rounded-[4px] hover:bg-black/[0.06]">
               <ExternalLinkIcon size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 } as React.CSSProperties} />
             </a>
-            <button onClick={() => onChange(links.filter(x => x.id !== l.id))} className="p-1 rounded-[4px] hover:bg-red-50">
+            <button onClick={() => setLinkToDelete(l.id)} className="p-1 rounded-[4px] hover:bg-red-50">
               <Trash2 size={11} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.55)" }} />
             </button>
           </div>
@@ -71,6 +73,18 @@ export default function ExternalLinksPanel({ links, onChange }: Props) {
           <Plus size={9} strokeWidth={2.5} /> Add Link
         </button>
       )}
+      
+      <ConfirmationModal
+        isOpen={!!linkToDelete}
+        onClose={() => setLinkToDelete(null)}
+        onConfirm={() => {
+          if (linkToDelete) onChange(links.filter(x => x.id !== linkToDelete));
+          setLinkToDelete(null);
+        }}
+        title="Remove external link?"
+        description="This will permanently remove the link. This action cannot be undone."
+        confirmLabel="Remove Link"
+      />
     </div>
   );
 }

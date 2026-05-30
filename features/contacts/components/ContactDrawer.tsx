@@ -11,6 +11,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import ReactionsBar, { toggleReaction } from "@/features/tasks/components/ReactionsBar";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 function Section({ label, icon, count, children, defaultOpen = true }: { label: string; icon?: React.ReactNode; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -38,6 +39,8 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
   const [newPersonName, setNewPersonName] = useState("");
   const [newPersonEmail, setNewPersonEmail] = useState("");
   const [newPersonRole, setNewPersonRole] = useState("");
+  const [personToRemove, setPersonToRemove] = useState<{id: string, name: string} | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   if (!contact) return null;
 
@@ -236,14 +239,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                             <p className="font-body-sm text-[11px] text-on-surface-variant opacity-70 truncate">{p.role || "No role"}</p>
                           </div>
                           <button
-                            onClick={() => {
-                              if (confirm(`Remove ${p.name}?`)) {
-                                handleUpdate(
-                                  { persons: contact.persons.filter(person => person.id !== p.id) },
-                                  `removed contact person ${p.name}`
-                                );
-                              }
-                            }}
+                            onClick={() => setPersonToRemove(p)}
                             className="p-1.5 text-red-200 rounded-md transition-all ml-2"
                             title="Remove person"
                           >
@@ -325,7 +321,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                             <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(c.timestamp).toLocaleString()}</span>
                           </div>
                           <button
-                            onClick={() => { if (confirm("Delete this note?")) updateContact(contact.id, { activities: (contact.activities || []).filter(a => a.id !== c.id) }) }}
+                            onClick={() => setNoteToDelete(c.id)}
                             className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
                             title="Delete note"
                           >
@@ -411,6 +407,37 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
           )}
         </div>
       </div>
+      
+      <ConfirmationModal
+        isOpen={!!personToRemove}
+        onClose={() => setPersonToRemove(null)}
+        onConfirm={() => {
+          if (personToRemove) {
+            handleUpdate(
+              { persons: contact.persons?.filter(person => person.id !== personToRemove.id) },
+              `removed contact person ${personToRemove.name}`
+            );
+            setPersonToRemove(null);
+          }
+        }}
+        title="Remove person?"
+        description={`This action removes ${personToRemove?.name} from this contact. This action cannot be undone.`}
+        confirmLabel="Remove Person"
+      />
+      
+      <ConfirmationModal
+        isOpen={!!noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete) {
+            updateContact(contact.id, { activities: (contact.activities || []).filter(a => a.id !== noteToDelete) });
+            setNoteToDelete(null);
+          }
+        }}
+        title="Delete note?"
+        description="This action permanently removes this note. This action cannot be undone."
+        confirmLabel="Delete Note"
+      />
     </Drawer>
   );
 }

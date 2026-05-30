@@ -242,8 +242,9 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
           setTxToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={txToDelete ? "Delete Transaction" : "Delete Selected Transactions"}
-        description={txToDelete ? "Are you sure you want to delete this transaction record? This will permanently remove it from the ledger." : `Are you sure you want to delete ${selectedIds.size} selected transactions? This action cannot be undone.`}
+        title={txToDelete ? "Delete transaction?" : "Delete selected transactions?"}
+        description={txToDelete ? "This action permanently removes the transaction record from the ledger." : `This action permanently removes ${selectedIds.size} transactions. This action cannot be undone.`}
+        confirmLabel={txToDelete ? "Delete Transaction" : "Delete Transactions"}
       />
     </div>
   );

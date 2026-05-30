@@ -33,6 +33,7 @@ import DatePicker from "@/components/ui/DatePicker";
 import { useTenant } from "@/components/providers/TenantProvider";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface Props {
   task: Task;
@@ -64,6 +65,10 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
   const [editTitle, setEditTitle] = useState(false);
   const [titleVal, setTitleVal] = useState(task.title);
   const [campaignName, setCampaignName] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isDetachModalOpen, setIsDetachModalOpen] = useState(false);
 
   const done = task.checklist.filter(c => c.done).length;
   const total = task.checklist.length;
@@ -238,11 +243,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
               {campaignName || "Loading..."}
             </span>
             <button
-              onClick={() => {
-                if (confirm("Remove task from campaign?")) {
-                  handleUpdate({ campaignId: null }, "removed from campaign");
-                }
-              }}
+              onClick={() => setIsDetachModalOpen(true)}
               className="opacity-0 group-hover:opacity-100 font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 transition-opacity ml-auto"
             >
               Detach
@@ -299,7 +300,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                           {item.text}
                         </span>
                         <button
-                          onClick={(e) => { e.stopPropagation(); if (confirm("Delete item?")) handleUpdate({ checklist: task.checklist.filter(c => c.id !== item.id) }, "deleted checklist item", item.text); }}
+                          onClick={(e) => { e.stopPropagation(); setItemToDelete(item.id); }}
                           className="text-red-500 opacity-20 hover:opacity-100 p-1 rounded transition-all ml-auto"
                           title="Delete item"
                         >
@@ -334,7 +335,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                             <span className="text-[10px] text-on-surface-variant opacity-30">{c.timestamp}</span>
                           </div>
                           <button
-                            onClick={() => { if (confirm("Delete this note?")) handleUpdate({ comments: task.comments.filter(comment => comment.id !== c.id) }, "deleted a note") }}
+                            onClick={() => setNoteToDelete(c.id)}
                             className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
                             title="Delete note"
                           >
@@ -379,14 +380,6 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 </div>
               </Section>
 
-              <div className="pt-8 flex justify-center pb-4">
-                <button
-                  onClick={() => { if (confirm("Delete this task?")) { onDelete(task.id); onClose(); } }}
-                  className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
-                >
-                  Delete Task
-                </button>
-              </div>
             </div>
           )}
 
@@ -426,6 +419,60 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
           )}
         </div>
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => {
+          onDelete(task.id);
+          setIsDeleteModalOpen(false);
+          onClose();
+        }}
+        title="Delete task?"
+        description={`This action permanently removes "${task.title}". This action cannot be undone.`}
+        confirmLabel="Delete Task"
+      />
+      
+      <ConfirmationModal
+        isOpen={!!noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete) {
+            handleUpdate({ comments: task.comments.filter(comment => comment.id !== noteToDelete) }, "deleted a note");
+            setNoteToDelete(null);
+          }
+        }}
+        title="Delete note?"
+        description="This action permanently removes this note. This action cannot be undone."
+        confirmLabel="Delete Note"
+      />
+      
+      <ConfirmationModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={() => {
+          if (itemToDelete) {
+            const item = task.checklist.find(c => c.id === itemToDelete);
+            handleUpdate({ checklist: task.checklist.filter(c => c.id !== itemToDelete) }, "deleted checklist item", item?.text);
+            setItemToDelete(null);
+          }
+        }}
+        title="Delete checklist item?"
+        description="This action permanently removes this item from the task checklist. This action cannot be undone."
+        confirmLabel="Delete Item"
+      />
+      
+      <ConfirmationModal
+        isOpen={isDetachModalOpen}
+        onClose={() => setIsDetachModalOpen(false)}
+        onConfirm={() => {
+          handleUpdate({ campaignId: null }, "removed from campaign");
+          setIsDetachModalOpen(false);
+        }}
+        title="Remove from campaign?"
+        description={`This will detach this task from "${campaignName}".`}
+        confirmLabel="Remove"
+      />
     </Drawer>
   );
 }

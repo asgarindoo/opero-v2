@@ -114,11 +114,11 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                   />
                 </div>
               </TableHead>
-              <TableHead className="w-[35%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Contact / Company</TableHead>
-              <TableHead className="w-[25%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Primary Contact</TableHead>
-              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Relationship</TableHead>
-              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Status</TableHead>
-              <TableHead className="w-[10%] px-4"><div className="w-full text-center font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</div></TableHead>
+              <TableHead className="w-[35%] px-4">Contact / Company</TableHead>
+              <TableHead className="w-[25%] px-4">Primary Contact</TableHead>
+              <TableHead className="w-[15%] px-4">Relationship</TableHead>
+              <TableHead className="w-[15%] px-4">Status</TableHead>
+              <TableHead className="w-[10%] px-4 text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -252,8 +252,9 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
           setContactToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={contactToDelete ? "Delete Contact" : "Delete Selected Contacts"}
-        description={contactToDelete ? "Are you sure you want to delete this contact? All communication history and associated data will be permanently removed." : `Are you sure you want to delete ${selectedIds.size} selected contacts? This action cannot be undone.`}
+        title={contactToDelete ? "Delete contact?" : "Delete selected contacts?"}
+        description={contactToDelete ? "This action permanently removes the contact and all associated communication history." : `This action permanently removes ${selectedIds.size} contacts. This action cannot be undone.`}
+        confirmLabel={contactToDelete ? "Delete Contact" : "Delete Contacts"}
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import { useState, KeyboardEvent } from "react";
 import { CheckSquare, Square, Plus, Trash2, ChevronRight } from "lucide-react";
 import type { Subtask, SubSubtask } from "@/features/tasks";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface Props {
   subtasks: Subtask[];
@@ -13,6 +14,8 @@ export default function SubtaskList({ subtasks, onChange }: Props) {
   const [newTitle,    setNewTitle]    = useState("");
   const [expandedId,  setExpandedId]  = useState<string | null>(null);
   const [newSubTitle, setNewSubTitle] = useState("");
+  const [subToDelete, setSubToDelete] = useState<string | null>(null);
+  const [nestedToDelete, setNestedToDelete] = useState<{parentId: string, subId: string} | null>(null);
 
   const done  = subtasks.filter(s => s.done).length;
   const total = subtasks.length;
@@ -95,7 +98,7 @@ export default function SubtaskList({ subtasks, onChange }: Props) {
               >
                 <ChevronRight size={10} strokeWidth={2} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5, transform: expandedId === s.id ? "rotate(90deg)" : "none", transition: "transform 0.15s" } as React.CSSProperties} />
               </button>
-              <button onClick={() => removeSubtask(s.id)} className="p-1 rounded-[4px] hover:bg-red-50 transition-colors">
+              <button onClick={() => setSubToDelete(s.id)} className="p-1 rounded-[4px] hover:bg-red-50 transition-colors">
                 <Trash2 size={10} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.55)" }} />
               </button>
             </div>
@@ -113,7 +116,7 @@ export default function SubtaskList({ subtasks, onChange }: Props) {
                     }
                   </button>
                   <span className="flex-1 font-body-sm text-[11.5px]" style={{ color: ss.done ? "var(--color-on-surface-variant)" : "var(--color-on-surface)", opacity: ss.done ? 0.4 : 0.85, textDecoration: ss.done ? "line-through" : "none" }}>{ss.title}</span>
-                  <button onClick={() => removeNestedSub(s.id, ss.id)} className="opacity-0 group-hover/ss:opacity-100 p-0.5 rounded hover:bg-red-50 transition-all">
+                  <button onClick={() => setNestedToDelete({ parentId: s.id, subId: ss.id })} className="opacity-0 group-hover/ss:opacity-100 p-0.5 rounded hover:bg-red-50 transition-all">
                     <Trash2 size={9} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.5)" }} />
                   </button>
                 </div>
@@ -154,6 +157,30 @@ export default function SubtaskList({ subtasks, onChange }: Props) {
           <button onClick={addSubtask} className="font-label-caps text-[9px] font-semibold px-2 py-0.5 rounded shrink-0" style={{ background: "rgba(0,0,0,0.07)", color: "var(--color-on-surface-variant)" }}>Add</button>
         )}
       </div>
+      
+      <ConfirmationModal
+        isOpen={!!subToDelete}
+        onClose={() => setSubToDelete(null)}
+        onConfirm={() => {
+          if (subToDelete) removeSubtask(subToDelete);
+          setSubToDelete(null);
+        }}
+        title="Delete subtask?"
+        description="This action permanently removes this subtask. This action cannot be undone."
+        confirmLabel="Delete Subtask"
+      />
+      
+      <ConfirmationModal
+        isOpen={!!nestedToDelete}
+        onClose={() => setNestedToDelete(null)}
+        onConfirm={() => {
+          if (nestedToDelete) removeNestedSub(nestedToDelete.parentId, nestedToDelete.subId);
+          setNestedToDelete(null);
+        }}
+        title="Delete nested subtask?"
+        description="This action permanently removes this nested subtask. This action cannot be undone."
+        confirmLabel="Delete"
+      />
     </div>
   );
 }

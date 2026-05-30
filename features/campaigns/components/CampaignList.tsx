@@ -124,13 +124,13 @@ export default function CampaignList({ searchQuery, filterMode, priorityFilter, 
                   />
                 </div>
               </TableHead>
-              <TableHead className="w-[30%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Campaign Unit</TableHead>
-              <TableHead className="w-[20%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Accounts</TableHead>
-              <TableHead className="w-[10%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Tasks</TableHead>
-              <TableHead className="w-[15%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Owner</TableHead>
-              <TableHead className="w-[10%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Schedule</TableHead>
-              <TableHead className="w-[10%] px-4 text-left font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Status</TableHead>
-              <TableHead className="w-[5%] px-4"><div className="w-full text-center font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</div></TableHead>
+              <TableHead className="w-[30%] px-4">Campaign Unit</TableHead>
+              <TableHead className="w-[20%] px-4">Accounts</TableHead>
+              <TableHead className="w-[10%] px-4">Tasks</TableHead>
+              <TableHead className="w-[15%] px-4">Owner</TableHead>
+              <TableHead className="w-[10%] px-4">Schedule</TableHead>
+              <TableHead className="w-[10%] px-4">Status</TableHead>
+              <TableHead className="w-[5%] px-4 text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -281,8 +281,9 @@ export default function CampaignList({ searchQuery, filterMode, priorityFilter, 
           setCampaignToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={campaignToDelete ? "Delete Campaign" : "Delete Selected Campaigns"}
-        description={campaignToDelete ? "Are you sure you want to delete this campaign? All tasks and activity will be permanently removed." : `Are you sure you want to delete ${selectedIds.size} selected campaigns? This action cannot be undone.`}
+        title={campaignToDelete ? "Delete campaign?" : "Delete selected campaigns?"}
+        description={campaignToDelete ? "This action permanently removes the campaign, its tasks, and activity data." : `This action permanently removes ${selectedIds.size} campaigns. This action cannot be undone.`}
+        confirmLabel={campaignToDelete ? "Delete Campaign" : "Delete Campaigns"}
       />
     </div>
   );

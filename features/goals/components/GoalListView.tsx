@@ -64,14 +64,14 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
       <div className="min-w-full inline-block align-middle">
         <div className="border-b border-black/[0.05]">
           <table className="min-w-full border-separate border-spacing-0">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-[#fbf5f5] border-b border-black/[0.05]">
-                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.2em]">Operational Goal</th>
-                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.2em]">Status</th>
-                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.2em]">Progress</th>
-                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.2em]">Milestones</th>
-                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.2em]">Deadline</th>
-                <th className="px-6 py-4 text-right font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.2em]">Actions</th>
+                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.2em]">Operational Goal</th>
+                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.2em]">Status</th>
+                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.2em]">Progress</th>
+                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.2em]">Milestones</th>
+                <th className="px-6 py-4 text-left font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.2em]">Deadline</th>
+                <th className="px-6 py-4 text-right font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.2em]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
@@ -162,8 +162,9 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
           setGoalToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={goalToDelete ? "Delete Goal" : "Delete Selected Goals"}
-        description={goalToDelete ? "Are you sure you want to delete this operational goal? This will remove all associated key results and milestone tracking." : `Are you sure you want to delete ${selectedIds.size} selected goals? This action cannot be undone.`}
+        title={goalToDelete ? "Delete goal?" : "Delete selected goals?"}
+        description={goalToDelete ? "This action permanently removes the goal, associated key results, and milestone tracking." : `This action permanently removes ${selectedIds.size} goals. This action cannot be undone.`}
+        confirmLabel={goalToDelete ? "Delete Goal" : "Delete Goals"}
       />
     </div>
   );

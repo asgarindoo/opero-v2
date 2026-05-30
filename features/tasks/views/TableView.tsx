@@ -64,7 +64,7 @@ export default function TableView({ tasks, onTaskClick, onStatusChange }: Props)
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-auto">
         <table className="w-full border-collapse" style={{ minWidth: 700 }}>
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr style={{ background: "rgba(0,0,0,0.025)", borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
               <SortHeader label="ID"       sortKey="id"       active={sortKey} dir={sortDir} onSort={handleSort} />
               <SortHeader label="Title"    sortKey="title"    active={sortKey} dir={sortDir} onSort={handleSort} />

@@ -2,6 +2,8 @@
 
 import { X, Trash2, ArrowUpRight, ArrowDownLeft, RotateCcw } from "lucide-react";
 import type { Transaction } from "@/features/finance";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useState } from "react";
 
 interface FinanceDetailProps {
   transaction: Transaction;
@@ -15,11 +17,13 @@ export default function FinanceDetail({ transaction, onClose, onDelete }: Financ
   
   const createdDateStr = transaction.createdAt ? new Date(transaction.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-";
   const updatedDateStr = transaction.updatedAt ? new Date(transaction.updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-";
+  
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white animate-fade-in overflow-hidden selection:bg-black/10">
       {/* Header */}
-      <header className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between bg-white shrink-0">
+      <header className="px-6 h-[60px] border-b border-black/[0.06] flex items-center justify-between bg-white shrink-0">
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
@@ -53,7 +57,7 @@ export default function FinanceDetail({ transaction, onClose, onDelete }: Financ
 
         <div className="flex items-center gap-3">
           <button
-            onClick={onDelete}
+            onClick={() => setIsDeleteModalOpen(true)}
             className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
             title="Delete Transaction"
           >
@@ -174,6 +178,18 @@ export default function FinanceDetail({ transaction, onClose, onDelete }: Financ
           </div>
         </aside>
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => {
+          onDelete();
+          setIsDeleteModalOpen(false);
+        }}
+        title="Delete transaction?"
+        description="This action permanently removes this transaction from your financial records. This action cannot be undone."
+        confirmLabel="Delete Transaction"
+      />
     </div>
   );
 }

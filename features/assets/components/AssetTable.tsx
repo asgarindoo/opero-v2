@@ -126,7 +126,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
               <TableHead>Assigned To</TableHead>
               <TableHead>Location</TableHead>
               <TableHead className="text-right">Purchased</TableHead>
-              <TableHead className="px-6 py-4 text-right font-label-caps text-[8.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -286,8 +286,9 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
           setAssetToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={assetToDelete ? "Delete Asset" : "Delete Selected Assets"}
-        description={assetToDelete ? "Are you sure you want to delete this asset? This will permanently remove it from your inventory and assignment history." : `Are you sure you want to delete ${selectedIds.size} selected assets? This action cannot be undone.`}
+        title={assetToDelete ? "Delete asset?" : "Delete selected assets?"}
+        description={assetToDelete ? "This action permanently removes the asset from your inventory and assignment history." : `This action permanently removes ${selectedIds.size} assets. This action cannot be undone.`}
+        confirmLabel={assetToDelete ? "Delete Asset" : "Delete Assets"}
       />
     </div>
   );

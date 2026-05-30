@@ -281,8 +281,9 @@ export default function SalesList({ searchQuery, filterMode, onSelectSale }: Pro
           setSaleToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={saleToDelete ? "Delete Sale" : "Delete Selected Sales"}
-        description={saleToDelete ? "Are you sure you want to delete this sale? This will permanently remove all item associations and transaction history." : `Are you sure you want to delete ${selectedIds.size} selected sales? This action cannot be undone.`}
+        title={saleToDelete ? "Delete sale?" : "Delete selected sales?"}
+        description={saleToDelete ? "This action permanently removes the sale and its transaction history." : `This action permanently removes ${selectedIds.size} selected sales. This action cannot be undone.`}
+        confirmLabel={saleToDelete ? "Delete Sale" : "Delete Sales"}
       />
     </div>
   );

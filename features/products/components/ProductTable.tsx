@@ -347,8 +347,9 @@ export default function ProductTable({ onSelectProduct }: Props) {
           setProductToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={productToDelete ? "Delete Product" : "Delete Selected Products"}
-        description={productToDelete ? "Are you sure you want to delete this product? All stock history and variant data will be permanently removed." : `Are you sure you want to delete ${selectedIds.size} products? This action cannot be undone.`}
+        title={productToDelete ? "Delete product?" : "Delete selected products?"}
+        description={productToDelete ? "This action permanently removes the product, its stock history, and variant data." : `This action permanently removes ${selectedIds.size} products. This action cannot be undone.`}
+        confirmLabel={productToDelete ? "Delete Product" : "Delete Products"}
       />
     </div>
   );

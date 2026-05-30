@@ -307,8 +307,9 @@ export default function DocumentList({ onSelectFile }: Props) {
           setFileToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title={fileToDelete ? "Delete Document" : "Delete Selected Documents"}
-        description={fileToDelete ? "Are you sure you want to delete this document? This action will permanently remove it from your storage." : `Are you sure you want to delete ${selectedIds.size} selected documents? This action cannot be undone.`}
+        title={fileToDelete ? "Delete document?" : "Delete selected documents?"}
+        description={fileToDelete ? "This action permanently removes the document from your storage." : `This action permanently removes ${selectedIds.size} documents. This action cannot be undone.`}
+        confirmLabel={fileToDelete ? "Delete Document" : "Delete Documents"}
       />
     </div>
   );

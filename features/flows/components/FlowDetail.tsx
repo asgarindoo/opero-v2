@@ -19,6 +19,7 @@ import Button from "@/components/ui/Button";
 import { useTenant } from "@/components/providers/TenantProvider";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 interface FlowDetailProps {
   flow: Flow;
@@ -35,6 +36,9 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
   const [newItemText, setNewItemText] = useState("");
   const [newNoteText, setNewNoteText] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{stageId: string, itemId: string} | null>(null);
 
   const activeStage = flow.stages.find(s => s.id === activeStageId) || flow.stages[0];
 
@@ -126,7 +130,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
   return (
     <div className="flex-1 flex flex-col bg-white h-full overflow-hidden animate-fade-in selection:bg-black/10">
       {/* ── Detail Navbar ── */}
-      <header className="px-6 py-4 border-b border-black/[0.06] bg-white flex items-center justify-between shrink-0">
+      <header className="px-6 h-[60px] border-b border-black/[0.06] bg-white flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-black/5 transition-all text-zinc-500 hover:text-zinc-900">
             <X size={18} />
@@ -145,7 +149,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onDelete(flow.id)}
+            onClick={() => setIsDeleteModalOpen(true)}
             className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
           >
             <Trash2 size={16} />
@@ -263,7 +267,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                       {item.text}
                     </span>
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (confirm("Delete item?")) handleUpdateStage(activeStage.id, { checklist: activeStage.checklist.filter(c => c.id !== item.id) }); }}
+                      onClick={(e) => { e.stopPropagation(); setItemToDelete({ stageId: activeStage.id, itemId: item.id }); }}
                       className="text-red-500 opacity-20 hover:opacity-100 p-1 rounded transition-all ml-auto"
                       title="Delete item"
                     >
@@ -329,7 +333,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                                 </span>
                               </div>
                               <button
-                                onClick={() => { if (confirm("Delete this note?")) onUpdate({ ...flow, notes: (flow.notes || []).filter(n => n.id !== note.id) }) }}
+                                onClick={() => setNoteToDelete(note.id)}
                                 className="text-red-500 opacity-20 hover:opacity-100 hover:bg-red-50 p-1 rounded transition-all"
                                 title="Delete note"
                               >
@@ -418,6 +422,49 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
           </div>
         </aside>
       </div>
+      
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => {
+          onDelete(flow.id);
+          setIsDeleteModalOpen(false);
+        }}
+        title="Delete flow?"
+        description="This action permanently removes this flow and all its stages, checklist items, and notes. This action cannot be undone."
+        confirmLabel="Delete Flow"
+      />
+      
+      <ConfirmationModal
+        isOpen={!!noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete) {
+            onUpdate({ ...flow, notes: (flow.notes || []).filter(n => n.id !== noteToDelete) });
+            setNoteToDelete(null);
+          }
+        }}
+        title="Delete note?"
+        description="This action permanently removes this note. This action cannot be undone."
+        confirmLabel="Delete Note"
+      />
+      
+      <ConfirmationModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={() => {
+          if (itemToDelete) {
+            const stage = flow.stages.find(s => s.id === itemToDelete.stageId);
+            if (stage) {
+              handleUpdateStage(itemToDelete.stageId, { checklist: stage.checklist.filter(c => c.id !== itemToDelete.itemId) });
+            }
+            setItemToDelete(null);
+          }
+        }}
+        title="Delete checklist item?"
+        description="This action permanently removes this item from the stage checklist. This action cannot be undone."
+        confirmLabel="Delete Item"
+      />
     </div>
   );
 }
