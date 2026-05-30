@@ -51,7 +51,7 @@ export default function ModuleHeader({
       </div>
 
       {/* Right: Controls */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap shrink-0 pl-4 h-full">
+      <div className="flex items-center gap-2 overflow-visible flex-nowrap shrink-0 pl-4 h-full">
         {rightContent}
       </div>
     </div>

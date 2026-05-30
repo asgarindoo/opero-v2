@@ -20,8 +20,8 @@ import Button from "@/components/ui/Button";
 type Tab = "directory" | "roles" | "activity";
 
 export default function MembersPage() {
-  const { members, currentUserRole, tenantCode } = useMembers();
-  const canInvite = currentUserRole === "Owner" || currentUserRole === "Admin";
+  const { members, currentUserRole, tenantCode, loading } = useMembers();
+  const canInvite = loading || currentUserRole === "Owner" || currentUserRole === "Admin";
 
   const [activeTab, setActiveTab] = useState<Tab>("directory");
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,6 +85,7 @@ export default function MembersPage() {
                   size="sm"
                   icon={Plus}
                   onClick={() => setShowInviteModal(true)}
+                  disabled={loading && !currentUserRole}
                 >
                   INVITE MEMBER
                 </Button>

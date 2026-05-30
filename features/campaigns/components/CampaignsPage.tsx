@@ -93,6 +93,7 @@ function CampaignsPageContent() {
                    { value: "Critical", label: "Critical" },
                  ]}
                  align="right"
+                 size="sm"
                />
             </div>
 
