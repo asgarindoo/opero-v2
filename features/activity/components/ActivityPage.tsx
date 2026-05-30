@@ -39,12 +39,12 @@ function ActivityContent() {
   ];
 
   return (
-    <div className="flex-1 flex flex-col bg-[#fef8f8] overflow-hidden">
+    <div className="flex flex-col h-full bg-[#fef8f8] overflow-hidden">
 
       <ModuleHeader
         title="Activity Log"
         count={activities.length}
-        className="!bg-[#f9f5f5] border-black/[0.06]"
+        className="border-black/[0.06]"
         rightContent={(
           <SearchInput
             value={searchQuery}
@@ -59,7 +59,7 @@ function ActivityContent() {
         tabs={modules}
         activeTab={selectedCategory}
         onTabChange={(id) => setSelectedCategory(id as any)}
-        background="bg-[#f9f5f5]"
+        background="bg-transparent"
         className="border-black/[0.06]"
         rightContent={(
           <div className="flex items-center gap-3 px-6">

@@ -109,11 +109,11 @@ export default function FlowsPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#fef8f8] overflow-hidden">
+    <div className="flex flex-col h-full bg-[#fef8f8] overflow-hidden">
       <ModuleHeader
         title="Flows"
         count={filtered.length}
-        className="!bg-[#f9f5f5] border-black/[0.06]"
+        className="border-black/[0.06]"
         rightContent={(
           <div className="flex items-center gap-3">
             {/* View Toggle */}
@@ -154,7 +154,7 @@ export default function FlowsPage() {
         tabs={categories}
         activeTab={selectedCategory}
         onTabChange={(id) => setSelectedCategory(id as "All" | FlowCategory)}
-        background="bg-[#fbf5f5]"
+        background="bg-transparent"
         className="border-black/[0.03]"
         rightContent={(
           <div className="flex items-center gap-6 px-6">

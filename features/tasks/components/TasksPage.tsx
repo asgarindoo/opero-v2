@@ -146,7 +146,7 @@ export default function TasksPage() {
   }, [tasks, search]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-surface-container-low">
+    <div className="flex flex-col h-full overflow-hidden bg-[#fef8f8]">
 
       <ModuleHeader 
         title="Tasks"
@@ -186,7 +186,7 @@ export default function TasksPage() {
         )}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-surface-container-lowest relative">
+      <div className="flex-1 flex flex-col overflow-hidden bg-transparent relative">
 
         {view === "list" && (
           <ListView tasks={filtered} groupBy={groupBy} onTaskClick={setActiveTask} onAddTask={openCreate} search={search} loading={loading} />
