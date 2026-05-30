@@ -8,6 +8,8 @@ import {
   USER_AVATAR_FOLDER,
 } from "@/lib/server/supabase-storage";
 
+const USER_AVATAR_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
+
 function imagePathFromRequest(req: NextRequest, storedImage: string | null) {
   const queryPath = req.nextUrl.searchParams.get("v");
   if (queryPath) return queryPath;
@@ -55,6 +57,11 @@ function dataImageResponse(dataUrl: string) {
   });
 }
 
+function isAllowedAvatarPath(userId: string, avatarPath: string) {
+  const legacyPathPattern = new RegExp(`^${USER_AVATAR_FOLDER}/${userId}\\.(?:${USER_AVATAR_EXTENSIONS.join("|")})$`);
+  return legacyPathPattern.test(avatarPath) || avatarPath.startsWith(`${USER_AVATAR_FOLDER}/${userId}/`);
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -95,7 +102,7 @@ export async function GET(
     if (
       avatarPath.includes("..") ||
       avatarPath.includes("\\") ||
-      !avatarPath.startsWith(`${USER_AVATAR_FOLDER}/${userId}/`)
+      !isAllowedAvatarPath(userId, avatarPath)
     ) {
       return NextResponse.json({ error: "Avatar not found" }, { status: 404 });
     }

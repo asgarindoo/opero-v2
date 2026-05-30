@@ -70,6 +70,7 @@ export default function ActivityTimeline({ onSelect }: Props) {
           <div className="flex flex-col divide-y divide-black/[0.02]">
              {group.activities.map(activity => {
                 const config = CATEGORY_COLORS[activity.category] || CATEGORY_COLORS.INFO;
+                const userInitial = activity.user.name.charAt(0).toUpperCase() || "U";
                 
                 return (
                   <div 
@@ -89,6 +90,16 @@ export default function ActivityTimeline({ onSelect }: Props) {
 
                     {/* Status Indicator */}
                     <div className={`w-1 h-1 rounded-full ${config.dot} opacity-60 shrink-0 group-hover:opacity-100 transition-opacity`} />
+
+                    <div
+                      className="h-6 w-6 rounded-full bg-white border border-black/[0.06] flex items-center justify-center overflow-hidden shrink-0 font-display text-[9px] font-bold text-on-surface"
+                    >
+                      {activity.user.avatar ? (
+                        <img src={activity.user.avatar} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        userInitial
+                      )}
+                    </div>
 
                     {/* Action Message */}
                     <div className="flex-1 flex items-center gap-2 overflow-hidden">

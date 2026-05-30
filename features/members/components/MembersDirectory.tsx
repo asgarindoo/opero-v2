@@ -100,10 +100,14 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
             >
             {/* Avatar */}
             <div
-              className="relative w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[12px] shrink-0"
+              className="relative w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[12px] shrink-0 overflow-hidden"
               style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
             >
-              {member.initials}
+              {member.image ? (
+                <img src={member.image} alt="" className="h-full w-full object-cover" />
+              ) : (
+                member.initials
+              )}
               {isOnline && (
                 <span
                   className="absolute right-0 bottom-0 w-2.5 h-2.5 rounded-full border-2"
@@ -188,4 +192,3 @@ export default function MembersDirectory({ searchQuery, onSelectMember }: { sear
     </div>
   );
 }
-

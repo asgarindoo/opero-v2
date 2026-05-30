@@ -9,7 +9,7 @@ import DocumentsSidebar from "@/features/documents/components/DocumentsSidebar";
 import DocumentsToolbar from "@/features/documents/components/DocumentsToolbar";
 
 function DocumentsPageContent() {
-  const { viewMode, documents, filterMode, searchQuery, setSelectedDocId } = useDocuments();
+  const { viewMode, documents } = useDocuments();
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
   const selectedFile = useMemo(() => 
@@ -34,9 +34,9 @@ function DocumentsPageContent() {
         <DocumentsSidebar />
         <div className="flex-1 overflow-hidden bg-background">
           {viewMode === "grid" ? (
-            <DocumentGrid filterMode={filterMode} searchQuery={searchQuery} onSelectDocument={setSelectedDocId} />
+            <DocumentGrid onSelectFile={setSelectedFileId} />
           ) : (
-            <DocumentList filterMode={filterMode} searchQuery={searchQuery} onSelectDocument={setSelectedDocId} />
+            <DocumentList onSelectFile={setSelectedFileId} />
           )}
         </div>
       </div>

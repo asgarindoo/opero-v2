@@ -20,6 +20,7 @@ export interface Member {
   userId: string;
   name: string;
   email: string;
+  image?: string | null;
   role: RoleType;
   status: MemberStatus;
   department?: string;
@@ -47,4 +48,3 @@ export interface InviteLink {
   expiresAt: string | null;
   uses: number;
 }
-

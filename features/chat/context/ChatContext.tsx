@@ -197,6 +197,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const sessionUserId = session?.user?.id ?? null;
   const sessionUserName = session?.user?.name ?? "You";
+  const sessionUserImage = session?.user?.image ?? null;
+  const sessionUserEmail = session?.user?.email ?? undefined;
   const routeChannelId = activeChannelIdFromPath(pathname);
 
   const [channels, setChannels] = useState<ChatChannel[]>([]);
@@ -255,6 +257,45 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     hasLoadedChannelsRef.current = hasLoadedChannels;
   }, [hasLoadedChannels]);
+
+  useEffect(() => {
+    if (!sessionUserId) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setMessages((current) => {
+        let changed = false;
+        const next: Record<string, ChatMessage[]> = {};
+
+        for (const [channelId, channelMessages] of Object.entries(current)) {
+          next[channelId] = channelMessages.map((message) => {
+            if (message.senderId !== sessionUserId) return message;
+
+            const currentName = message.sender?.name ?? null;
+            const currentImage = message.sender?.image ?? null;
+            if (currentName === sessionUserName && currentImage === sessionUserImage) {
+              return message;
+            }
+
+            changed = true;
+            return {
+              ...message,
+              sender: {
+                ...(message.sender ?? { id: sessionUserId }),
+                id: sessionUserId,
+                name: sessionUserName,
+                email: message.sender?.email ?? sessionUserEmail,
+                image: sessionUserImage,
+              },
+            };
+          });
+        }
+
+        return changed ? next : current;
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [sessionUserEmail, sessionUserId, sessionUserImage, sessionUserName]);
 
   const resetChatState = useCallback((nextUserId: string | null) => {
     setChannels([]);
@@ -665,7 +706,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       createdAt: timestamp,
       updatedAt: timestamp,
       sender: currentUserIdRef.current
-        ? { id: currentUserIdRef.current, name: sessionUserName, image: session?.user?.image ?? null }
+        ? { id: currentUserIdRef.current, name: sessionUserName, image: sessionUserImage }
         : null,
       isPending: true,
     };
@@ -694,7 +735,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : "Failed to send message.");
       throw err;
     }
-  }, [channels, markChannelAsRead, organizationId, session?.user?.image, sessionUserName]);
+  }, [channels, markChannelAsRead, organizationId, sessionUserImage, sessionUserName]);
 
   const createChannel = useCallback(async (name: string, description: string) => {
     const payload = await createChannelRequest({ name, description });

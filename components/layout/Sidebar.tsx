@@ -23,6 +23,7 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
   const { data: session } = useSession();
   const { data: activeOrg, isPending: isOrgLoading } = useActiveOrganization();
   const userName = mounted ? session?.user?.name ?? "User" : "User";
+  const userImage = mounted ? session?.user?.image ?? null : null;
   const userInitial = userName.charAt(0).toUpperCase();
   const userRole = mounted ? (session?.user as { role?: string })?.role ?? "member" : "member";
   const tenantName = mounted ? activeOrg?.name ?? "OPERO" : "OPERO";
@@ -244,10 +245,14 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
         {!collapsed && (
           <div className="flex items-center gap-2 mt-1 px-2.5 py-[6px] rounded-[6px] cursor-pointer hover:bg-black/[0.035] transition-colors duration-150">
             <div
-              className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[10px] shrink-0"
+              className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[10px] shrink-0 overflow-hidden"
               style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
             >
-              {userInitial}
+              {userImage ? (
+                <img src={userImage} alt="" className="h-full w-full object-cover" />
+              ) : (
+                userInitial
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-body-sm text-[12px] font-semibold text-on-surface truncate">

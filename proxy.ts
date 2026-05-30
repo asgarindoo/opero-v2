@@ -135,9 +135,13 @@ function isTenantRoute(pathname: string): boolean {
   );
 }
 
+function isTenantAwareApiRoute(pathname: string): boolean {
+  return pathname.startsWith("/api/profile");
+}
+
 /** Rewrite short tenant paths to /dashboard/<path>. */
 function normalizeToTenantPath(pathname: string): string {
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/api/tenant"))
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/api/tenant") || pathname.startsWith("/api/profile"))
     return pathname;
   const match = Array.from(TENANT_SHORTPATHS).find(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
@@ -380,7 +384,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   }
 
   // ── 5. Tenant subdomain + unknown route → redirect to root ───────────────
-  if (tenantSlug && !isTenantRoute(pathname)) {
+  if (tenantSlug && !isTenantRoute(pathname) && !isTenantAwareApiRoute(pathname)) {
     const target = buildRootUrl(pathname, request.nextUrl.search);
     console.log(`[PROXY] tenant unknown → ${target.href}`);
     return NextResponse.redirect(target);

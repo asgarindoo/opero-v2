@@ -115,10 +115,14 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
           {/* Identity (Soft, compact) */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="relative w-16 h-16 rounded-full flex items-center justify-center font-display font-bold text-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] shrink-0"
+              className="relative w-16 h-16 rounded-full flex items-center justify-center font-display font-bold text-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] shrink-0 overflow-hidden"
               style={{ background: "var(--color-surface-container-highest)", color: "var(--color-on-surface)" }}
             >
-              {member.initials}
+              {member.image ? (
+                <img src={member.image} alt="" className="h-full w-full object-cover" />
+              ) : (
+                member.initials
+              )}
               {isOnline && (
                 <span
                   className="absolute right-1 bottom-1 w-3 h-3 rounded-full border-2"

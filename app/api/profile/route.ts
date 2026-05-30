@@ -1,54 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser, getTenantContext, requireAuth } from "@/lib/server/auth-utils";
+import { getTenantContext } from "@/lib/server/auth-utils";
 import {
-  isExternalImageUrl,
-  removePrivateObject,
-  TENANT_ASSETS_BUCKET,
-  uploadUserAvatarFromDataUrl,
-  USER_AVATAR_FOLDER,
-} from "@/lib/server/supabase-storage";
+  getProfileSettings,
+  ProfileServiceError,
+  updateProfileSettings,
+} from "@/features/profile/services/profile.server";
 
-const ProfileSchema = z.object({
-  name: z.string().trim().min(1).max(80).optional(),
-  image: z
-    .union([z.string(), z.null()])
-    .optional(),
-});
+export const dynamic = "force-dynamic";
 
-function userAvatarUrl(userId: string, objectPath: string) {
-  return `/api/profile/avatar/${userId}?v=${encodeURIComponent(objectPath)}`;
+function isUploadFile(value: FormDataEntryValue | null): value is File {
+  return typeof File !== "undefined" && value instanceof File && value.size > 0;
 }
 
-function storedAvatarPath(userId: string, image: string | null | undefined) {
-  if (!image) return null;
+async function profileInputFromRequest(req: NextRequest) {
+  const contentType = req.headers.get("content-type") ?? "";
 
-  if (image.startsWith(`${USER_AVATAR_FOLDER}/${userId}/`)) {
-    return image;
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await req.formData();
+    const avatar = formData.get("avatar");
+
+    return {
+      name: formData.get("name"),
+      avatarFile: isUploadFile(avatar) ? avatar : null,
+      removeAvatar: formData.get("removeAvatar") === "true",
+    };
   }
 
-  if (image.startsWith("/api/profile/avatar/")) {
-    return new URL(image, "http://opero.local").searchParams.get("v");
-  }
+  const body = await req.json().catch(() => null);
 
-  return null;
+  return {
+    name: body?.name,
+    avatarFile: null,
+    removeAvatar: body?.removeAvatar === true || body?.image === null || body?.image === "",
+  };
 }
 
-function isSupportedAvatarValue(userId: string, image: string) {
-  return (
-    image === "" ||
-    image.startsWith("data:image/") ||
-    image.startsWith("/api/profile/avatar/") ||
-    image.startsWith(`${USER_AVATAR_FOLDER}/${userId}/`) ||
-    isExternalImageUrl(image)
-  );
+function handleProfileError(err: unknown, route: string) {
+  if (err instanceof Response) return err;
+
+  if (err instanceof ProfileServiceError) {
+    return NextResponse.json(
+      { error: err.message, details: err.details },
+      { status: err.status }
+    );
+  }
+
+  console.error(route, err);
+  return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
 
 export async function GET() {
   try {
     const [user, tenantContext] = await Promise.all([
-      getCurrentUser(),
+      getProfileSettings(),
       getTenantContext(),
     ]);
 
@@ -58,84 +62,17 @@ export async function GET() {
       role: tenantContext?.role ?? null,
     });
   } catch (err) {
-    if (err instanceof Response) return err;
-    console.error("[GET /api/profile]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return handleProfileError(err, "[GET /api/profile]");
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireAuth();
-    const body = await req.json().catch(() => null);
-    const parsed = ProfileSchema.safeParse(body);
+    const input = await profileInputFromRequest(req);
+    const user = await updateProfileSettings(input);
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
-    }
-
-    const { name, image } = parsed.data;
-
-    if (image !== undefined && image !== null && !isSupportedAvatarValue(user.id, image)) {
-      return NextResponse.json(
-        { error: "Avatar must be an image data URL, existing avatar route, or URL." },
-        { status: 400 }
-      );
-    }
-
-    const current = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { image: true },
-    });
-
-    let normalizedImage: string | null | undefined;
-    try {
-      normalizedImage = image === undefined
-        ? undefined
-        : image === null || image === ""
-          ? null
-          : image.startsWith("data:image/")
-            ? userAvatarUrl(user.id, await uploadUserAvatarFromDataUrl({ userId: user.id, dataUrl: image }))
-            : image.startsWith(`${USER_AVATAR_FOLDER}/${user.id}/`)
-              ? userAvatarUrl(user.id, image)
-              : image;
-    } catch (err) {
-      if (err instanceof Error && err.message.startsWith("Avatar must")) {
-        return NextResponse.json({ error: err.message }, { status: 400 });
-      }
-      throw err;
-    }
-
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        ...(name !== undefined ? { name } : {}),
-        ...(normalizedImage !== undefined ? { image: normalizedImage } : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-      },
-    });
-
-    const previousAvatarPath = storedAvatarPath(user.id, current?.image);
-    const nextAvatarPath = storedAvatarPath(user.id, updated.image);
-
-    if (normalizedImage !== undefined && previousAvatarPath && previousAvatarPath !== nextAvatarPath) {
-      removePrivateObject(TENANT_ASSETS_BUCKET, previousAvatarPath).catch((err) => {
-        console.error("[PATCH /api/profile] Failed to remove old avatar:", err);
-      });
-    }
-
-    return NextResponse.json({ user: updated });
+    return NextResponse.json({ user });
   } catch (err) {
-    if (err instanceof Response) return err;
-    console.error("[PATCH /api/profile]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return handleProfileError(err, "[PATCH /api/profile]");
   }
 }

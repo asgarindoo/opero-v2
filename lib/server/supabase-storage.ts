@@ -6,6 +6,13 @@ export const TENANT_LOGO_FOLDER = "AvatarTenant";
 export const USER_AVATAR_FOLDER = "AvatarUser";
 
 const DATA_URL_PATTERN = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/;
+const USER_AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const USER_AVATAR_EXTENSIONS = ["png", "jpg", "jpeg", "webp"] as const;
+const USER_AVATAR_ALLOWED_TYPES = new Map<string, typeof USER_AVATAR_EXTENSIONS[number]>([
+  ["image/png", "png"],
+  ["image/jpeg", "jpg"],
+  ["image/webp", "webp"],
+]);
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -40,12 +47,92 @@ function extensionFromMime(mimeType: string) {
   }
 }
 
+function extensionFromAvatarFile(file: File) {
+  const extension = file.name.includes(".")
+    ? file.name.split(".").pop()?.toLowerCase()
+    : undefined;
+  const mimeExtension = USER_AVATAR_ALLOWED_TYPES.get(file.type);
+
+  if (!mimeExtension) {
+    throw new Error("Profile photo must be a PNG, JPG, JPEG, or WEBP image.");
+  }
+
+  if (extension && !USER_AVATAR_EXTENSIONS.includes(extension as typeof USER_AVATAR_EXTENSIONS[number])) {
+    throw new Error("Profile photo must be a PNG, JPG, JPEG, or WEBP image.");
+  }
+
+  if (file.type === "image/jpeg" && extension === "jpeg") return "jpeg";
+  return mimeExtension;
+}
+
 export function isDataImage(value: string | null | undefined) {
   return !!value && DATA_URL_PATTERN.test(value);
 }
 
 export function isExternalImageUrl(value: string | null | undefined) {
   return !!value && /^https?:\/\//i.test(value);
+}
+
+export function userAvatarObjectPath(userId: string, extension: string) {
+  return `${USER_AVATAR_FOLDER}/${userId}/avatar.${extension}`;
+}
+
+export function userAvatarRouteUrl(userId: string, objectPath: string, cacheToken = Date.now().toString()) {
+  const params = new URLSearchParams({ v: objectPath });
+
+  if (cacheToken) {
+    params.set("t", cacheToken);
+  }
+
+  return `/api/profile/avatar/${userId}?${params.toString()}`;
+}
+
+function legacyUserAvatarObjectPath(userId: string, extension: string) {
+  return `${USER_AVATAR_FOLDER}/${userId}.${extension}`;
+}
+
+export function storageObjectPathFromUrl(bucket: string, value: string | null | undefined) {
+  if (!value) return null;
+
+  const directValue = value.split("?")[0];
+  if (directValue.startsWith(`${USER_AVATAR_FOLDER}/`) || directValue.startsWith(`${TENANT_LOGO_FOLDER}/`)) {
+    return directValue;
+  }
+
+  if (value.startsWith("/api/profile/avatar/") || value.startsWith("/api/tenant/logo/")) {
+    return new URL(value, "http://opero.local").searchParams.get("v");
+  }
+
+  try {
+    const url = new URL(value);
+    const publicMarker = `/storage/v1/object/public/${bucket}/`;
+    const markerIndex = url.pathname.indexOf(publicMarker);
+    if (markerIndex < 0) return null;
+    return decodeURIComponent(url.pathname.slice(markerIndex + publicMarker.length));
+  } catch {
+    return null;
+  }
+}
+
+export function storedUserAvatarPath(userId: string, image: string | null | undefined) {
+  const path = storageObjectPathFromUrl(TENANT_ASSETS_BUCKET, image);
+  if (!path) return null;
+
+  const legacyPathPattern = new RegExp(`^${USER_AVATAR_FOLDER}/${userId}\\.(?:${USER_AVATAR_EXTENSIONS.join("|")})$`);
+  if (legacyPathPattern.test(path) || path.startsWith(`${USER_AVATAR_FOLDER}/${userId}/`)) {
+    return path;
+  }
+
+  return null;
+}
+
+export function normalizeUserAvatarImage(userId: string, image: string | null | undefined) {
+  if (!image || image.startsWith("/api/profile/avatar/") || image.startsWith("data:image/")) {
+    return image ?? null;
+  }
+
+  const avatarPath = storedUserAvatarPath(userId, image);
+  return avatarPath ? userAvatarRouteUrl(userId, avatarPath) : image;
 }
 
 async function uploadImageFromDataUrl(params: {
@@ -103,13 +190,73 @@ export async function uploadUserAvatarFromDataUrl(params: {
 }) {
   const match = params.dataUrl.match(DATA_URL_PATTERN);
   const ext = extensionFromMime(match?.[1] ?? "");
-  const objectPath = `${USER_AVATAR_FOLDER}/${params.userId}/avatar-${Date.now()}.${ext}`;
+  const objectPath = userAvatarObjectPath(params.userId, ext);
 
   return uploadImageFromDataUrl({
     dataUrl: params.dataUrl,
     label: "Avatar",
     objectPath,
   });
+}
+
+export async function uploadUserAvatarFile(params: {
+  userId: string;
+  file: File;
+}) {
+  if (params.file.size > USER_AVATAR_MAX_BYTES) {
+    throw new Error("Profile photo must be smaller than 2MB.");
+  }
+
+  const ext = extensionFromAvatarFile(params.file);
+  const objectPath = userAvatarObjectPath(params.userId, ext);
+  const buffer = Buffer.from(await params.file.arrayBuffer());
+  const supabase = getSupabaseAdmin();
+
+  const { error } = await supabase.storage
+    .from(TENANT_ASSETS_BUCKET)
+    .upload(objectPath, buffer, {
+      contentType: params.file.type,
+      upsert: true,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    objectPath,
+  };
+}
+
+export async function removeUserAvatarFiles(params: {
+  userId: string;
+  excludePath?: string | null;
+  extraPaths?: Array<string | null | undefined>;
+}) {
+  const supabase = getSupabaseAdmin();
+  const legacyFolder = `${USER_AVATAR_FOLDER}/${params.userId}`;
+  const { data: legacyFiles, error: listError } = await supabase.storage
+    .from(TENANT_ASSETS_BUCKET)
+    .list(legacyFolder, { limit: 100 });
+
+  if (listError) {
+    throw listError;
+  }
+
+  const avatarPaths = USER_AVATAR_EXTENSIONS.map((extension) => userAvatarObjectPath(params.userId, extension));
+  const legacyRootPaths = USER_AVATAR_EXTENSIONS.map((extension) => legacyUserAvatarObjectPath(params.userId, extension));
+  const legacyPaths = (legacyFiles ?? []).map((file) => `${legacyFolder}/${file.name}`);
+  const extraPaths = (params.extraPaths ?? []).filter(Boolean) as string[];
+  const paths = Array.from(new Set([...avatarPaths, ...legacyRootPaths, ...legacyPaths, ...extraPaths]))
+    .filter((path) => path && path !== params.excludePath);
+
+  if (paths.length === 0) return;
+
+  const { error } = await supabase.storage.from(TENANT_ASSETS_BUCKET).remove(paths);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function removePrivateObject(bucket: string, path: string | null | undefined) {

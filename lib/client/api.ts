@@ -36,7 +36,7 @@ export async function apiRequest<T>(url: string, options?: RequestInit): Promise
 }
 
 type ProfileResponse = {
-  user: { id: string; name?: string | null; email?: string | null } | null;
+  user: { id: string; name?: string | null; email?: string | null; image?: string | null } | null;
   tenant?: unknown;
   role?: unknown;
 };

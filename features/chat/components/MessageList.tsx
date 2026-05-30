@@ -159,6 +159,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
           {visibleMessages.map((msg) => {
             const isMe = msg.senderId === currentUserId;
             const senderName = msg.sender?.name ?? (isMe ? "You" : "Unknown User");
+            const senderImage = msg.sender?.image ?? null;
             const initials = getInitials(senderName);
             const messageKey = msg.clientId ?? msg.id;
             const messageIndex = visibleMessages.findIndex((item) => (item.clientId ?? item.id) === messageKey);
@@ -174,15 +175,19 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
                 }`}
               >
                 <div className={`flex items-end gap-2 max-w-[85%] ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-                  {/* User initials circle avatar */}
+                  {/* User avatar */}
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center font-aspekta font-semibold text-[9px] shrink-0 select-none ${
+                    className={`w-6 h-6 rounded-full flex items-center justify-center font-aspekta font-semibold text-[9px] shrink-0 select-none overflow-hidden ${
                       isMe
                         ? "bg-[#18181b] text-white"
                         : "bg-[#f8f3f2] text-black/75 border border-black/10 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                     }`}
                   >
-                    {initials}
+                    {senderImage ? (
+                      <img src={senderImage} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      initials
+                    )}
                   </div>
                   
                   <div className={`flex flex-col gap-0.5 ${isMe ? "items-end" : "items-start"}`}>

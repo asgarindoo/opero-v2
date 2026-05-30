@@ -34,7 +34,7 @@ function formatBytes(bytes?: number, decimals = 1) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
-export default function DocumentList({ onSelectDocument }: Props) {
+export default function DocumentList({ onSelectFile }: Props) {
   const { documents, deleteDocuments, activeFolderId, searchQuery, loading } = useDocuments();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -186,7 +186,7 @@ export default function DocumentList({ onSelectDocument }: Props) {
                 return (
                   <TableRow
                     key={doc.id}
-                    onClick={() => onSelectDocument(doc.id)}
+                    onClick={() => onSelectFile(doc.id)}
                     className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
                   >
                     <TableCell onClick={e => e.stopPropagation()}>

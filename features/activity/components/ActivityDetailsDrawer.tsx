@@ -1,6 +1,6 @@
 import React from "react";
 import { useActivity } from "../context/ActivityContext";
-import { X, User, Hash, Box, Calendar, History, ArrowRight } from "lucide-react";
+import { X, User, Hash, Box, Calendar, ArrowRight } from "lucide-react";
 
 export default function ActivityDetailsDrawer({ activityId, onClose }: { activityId: string, onClose: () => void }) {
   const { activities } = useActivity();
@@ -27,8 +27,12 @@ export default function ActivityDetailsDrawer({ activityId, onClose }: { activit
            
            {/* Actor Hero */}
            <section className="text-center pb-8 border-b border-black/[0.03]">
-              <div className="w-16 h-16 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
-                 <User size={24} />
+              <div className="w-16 h-16 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center text-primary mx-auto mb-4 overflow-hidden">
+                 {activity.user.avatar ? (
+                   <img src={activity.user.avatar} alt="" className="h-full w-full object-cover" />
+                 ) : (
+                   <User size={24} />
+                 )}
               </div>
               <h3 className="font-display font-semibold text-[18px] text-on-surface mb-1">{activity.user.name}</h3>
               <p className="font-body-sm text-[12px] text-on-surface-variant opacity-50 uppercase tracking-widest">{activity.user.role}</p>

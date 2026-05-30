@@ -179,7 +179,7 @@ export async function getDashboardSummary() {
   // ── Calendar (Content Planner) ──────────────────────────────────────────
   const contents = contentRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
 
-  let calendarEvents = contents
+  const calendarEvents = contents
     .filter((c: any) => {
       const dateStr = c.date || c.postDate || c.publishDate || (c.createdAt ? String(c.createdAt) : "");
       return dateStr && String(dateStr).slice(0, 10) === todayStr;
