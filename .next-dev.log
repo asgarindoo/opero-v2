@@ -7,6 +7,692 @@
 - Local:         http://localhost:3000
 - Network:       http://192.168.100.168:3000
 - Environments: .env
-✓ Ready in 780ms
+✓ Ready in 908ms
 Creating turbopack project { dir: 'E:\\Project\\opero', testMode: true }
 
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fcampaigns 200 in 3.3s (next.js: 793ms, proxy.ts: 1653ms, application-code: 822ms)
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 3.3s (next.js: 1288ms, proxy.ts: 1644ms, application-code: 358ms)
+ GET /login? 200 in 3.3s (next.js: 1341ms, proxy.ts: 1572ms, application-code: 415ms)
+[tenant-proxy] {
+  host: 'mavus.localhost:3000',
+  tenantSlug: 'mavus',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://mavus.lvh.me:3000/dashboard'
+}
+[tenant-proxy] {
+  host: 'localhost:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: 'http://lvh.me:3000/login'
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://lvh.me:3000/login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard'
+}
+[tenant-proxy] {
+  host: 'mavus.lvh.me:3000',
+  tenantSlug: 'mavus',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'mavus.lvh.me:3000',
+  tenantSlug: 'mavus',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://lvh.me:3000/login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard'
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+✓ Compiled in 1477ms
+ GET /login 200 in 766ms (next.js: 346ms, proxy.ts: 290ms, application-code: 130ms)
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fcampaigns 200 in 765ms (next.js: 422ms, proxy.ts: 292ms, application-code: 52ms)
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 780ms (next.js: 396ms, proxy.ts: 292ms, application-code: 92ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'mavus.localhost:3000',
+  tenantSlug: 'mavus',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://mavus.lvh.me:3000/dashboard'
+}
+[tenant-proxy] {
+  host: 'zz-not-real.lvh.me:3000',
+  tenantSlug: 'zz-not-real',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://lvh.me:3000/login?callbackUrl=http%3A%2F%2Fmyotic.lvh.me%3A3000%2Fdashboard'
+}
+[tenant-proxy] {
+  host: 'zz-not-real.lvh.me:3000',
+  tenantSlug: 'zz-not-real',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://lvh.me:3000/tenant-not-found?tenant=zz-not-real'
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+ HEAD /login 200 in 228ms (next.js: 12ms, proxy.ts: 10ms, application-code: 206ms)
+[tenant-proxy] {
+  host: 'mavus.localhost:3000',
+  tenantSlug: 'mavus',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://mavus.lvh.me:3000/dashboard'
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/login',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/login',
+  redirectTarget: 'http://lvh.me:3000/login?callbackUrl=http%3A%2F%2Fmyotic.lvh.me%3A3000%2Fdashboard'
+}
+[tenant-proxy] {
+  host: 'mavus.lvh.me:3000',
+  tenantSlug: 'mavus',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'mavus.lvh.me:3000',
+  tenantSlug: 'mavus',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: 'http://lvh.me:3000/login?callbackUrl=http%3A%2F%2Fmavus.lvh.me%3A3000%2Fdashboard'
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+ HEAD /login?callbackUrl=http%3A%2F%2Fmavus.lvh.me%3A3000%2Fdashboard 200 in 57ms (next.js: 8ms, proxy.ts: 8ms, application-code: 42ms)
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+ GET /login 200 in 176ms (next.js: 12ms, proxy.ts: 10ms, application-code: 154ms)
+ POST /api/auth/sign-in/email 200 in 3.1s (next.js: 2.1s, application-code: 1010ms)
+ GET /api/auth/organization/list 200 in 426ms (next.js: 20ms, application-code: 406ms)
+ POST /api/auth/organization/set-active 200 in 502ms (next.js: 4ms, application-code: 498ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard',
+  redirectTarget: null
+}
+ GET /dashboard 200 in 2.3s (next.js: 296ms, proxy.ts: 313ms, application-code: 1671ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+ GET /api/auth/get-session 200 in 275ms (next.js: 29ms, application-code: 246ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/dashboard/summary',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/dashboard/social-channels',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/profile/avatar/A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+  redirectTarget: null
+}
+ GET /api/auth/organization/list 200 in 1118ms (next.js: 6ms, application-code: 1112ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/chat/channels',
+  redirectTarget: null
+}
+ GET /api/auth/organization/get-full-organization 200 in 1596ms (next.js: 48ms, application-code: 1548ms)
+[presence api] heartbeat {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+  currentPage: '/dashboard',
+  now: '2026-05-30T11:25:12.104Z'
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/logo/IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  redirectTarget: null
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:23:32.203Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:25:12.104Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ POST /api/tenant/presence 200 in 1964ms (next.js: 75ms, proxy.ts: 1016ms, application-code: 873ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+ GET /api/tenant/dashboard/summary 200 in 2.2s (next.js: 345ms, proxy.ts: 330ms, application-code: 1478ms)
+ GET /api/tenant/chat/channels 200 in 1342ms (next.js: 152ms, proxy.ts: 575ms, application-code: 615ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/profile/avatar/0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+  redirectTarget: null
+}
+[presence api] get {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:23:33.311Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:25:12.104Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ GET /api/tenant/presence 200 in 1303ms (next.js: 20ms, proxy.ts: 441ms, application-code: 841ms)
+ GET /api/tenant/dashboard/social-channels 200 in 4.1s (next.js: 2.5s, proxy.ts: 1010ms, application-code: 532ms)
+ GET /api/profile/avatar/A5FPqRzaLNWNt32de0dnBaKV0pksdJUs?v=AvatarUser%2FA5FPqRzaLNWNt32de0dnBaKV0pksdJUs%2Favatar.webp&t=1780115286738 200 in 4.8s (next.js: 2.4s, proxy.ts: 1195ms, application-code: 1261ms)
+ GET /api/profile/avatar/0uVGxmRee2IhglQgbwo895dfOCQG0eLh?v=AvatarUser%2F0uVGxmRee2IhglQgbwo895dfOCQG0eLh%2Favatar.png&t=1780122356378 200 in 2.8s (next.js: 1110ms, proxy.ts: 357ms, application-code: 1356ms)
+ GET /api/tenant/logo/IX3iq5xiujwJrqUKysxFarBdbF9p0dT4?v=AvatarTenant%2FIX3iq5xiujwJrqUKysxFarBdbF9p0dT4%2Flogo-1778924054935.png 200 in 4.1s (next.js: 2.3s, proxy.ts: 301ms, application-code: 1510ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard/goals',
+  redirectTarget: null
+}
+ GET /dashboard/goals 200 in 389ms (next.js: 56ms, proxy.ts: 296ms, application-code: 38ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/goals',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/chat/channels',
+  redirectTarget: null
+}
+[presence api] heartbeat {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+  currentPage: '/dashboard/goals',
+  now: '2026-05-30T11:25:22.764Z'
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/dashboard/social-channels',
+  redirectTarget: null
+}
+ GET /api/tenant/chat/channels 200 in 901ms (next.js: 98ms, proxy.ts: 304ms, application-code: 498ms)
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:23:42.861Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:25:22.764Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ POST /api/tenant/presence 200 in 985ms (next.js: 10ms, proxy.ts: 305ms, application-code: 670ms)
+ GET /api/tenant/goals 200 in 997ms (next.js: 95ms, proxy.ts: 306ms, application-code: 596ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/goals',
+  redirectTarget: null
+}
+ GET /api/tenant/dashboard/social-channels 200 in 793ms (next.js: 20ms, proxy.ts: 295ms, application-code: 479ms)
+ GET /api/tenant/goals 200 in 875ms (next.js: 7ms, proxy.ts: 301ms, application-code: 568ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+ GET /api/auth/get-session 200 in 223ms (next.js: 20ms, application-code: 204ms)
+ GET /api/auth/get-session 200 in 215ms (next.js: 5ms, application-code: 210ms)
+[presence api] heartbeat {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+  currentPage: '/dashboard/goals',
+  now: '2026-05-30T11:25:24.647Z'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:23:44.779Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:25:24.647Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ POST /api/tenant/presence 200 in 983ms (next.js: 6ms, proxy.ts: 331ms, application-code: 646ms)
+✓ Compiled in 712ms
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'lvh.me:3000',
+  tenantSlug: null,
+  isRootDomain: true,
+  isTenantSubdomain: false,
+  pathname: '/login',
+  redirectTarget: null
+}
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/dashboard/goals',
+  redirectTarget: null
+}
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 751ms (next.js: 200ms, proxy.ts: 500ms, application-code: 51ms)
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard%2Fcampaigns 200 in 757ms (next.js: 149ms, proxy.ts: 499ms, application-code: 110ms)
+ GET /dashboard/goals 200 in 1559ms (next.js: 100ms, proxy.ts: 931ms, application-code: 529ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+[presence api] get {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:24:03.371Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:25:24.647Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ GET /api/tenant/presence 200 in 986ms (next.js: 199ms, proxy.ts: 289ms, application-code: 497ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+[presence api] heartbeat {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+  currentPage: '/dashboard/goals',
+  now: '2026-05-30T11:25:53.166Z'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:24:13.262Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:25:53.166Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ POST /api/tenant/presence 200 in 876ms (next.js: 3ms, proxy.ts: 290ms, application-code: 582ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+[presence api] get {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:24:33.172Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:25:53.166Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ GET /api/tenant/presence 200 in 781ms (next.js: 5ms, proxy.ts: 294ms, application-code: 482ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+[presence api] heartbeat {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+  currentPage: '/dashboard/goals',
+  now: '2026-05-30T11:26:23.157Z'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:24:43.253Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:26:23.157Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ POST /api/tenant/presence 200 in 872ms (next.js: 4ms, proxy.ts: 291ms, application-code: 578ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+[presence api] get {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:25:03.170Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:26:23.157Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ GET /api/tenant/presence 200 in 780ms (next.js: 6ms, proxy.ts: 291ms, application-code: 484ms)
+[tenant-proxy] {
+  host: 'myotic.lvh.me:3000',
+  tenantSlug: 'myotic',
+  isRootDomain: false,
+  isTenantSubdomain: true,
+  pathname: '/api/tenant/presence',
+  redirectTarget: null
+}
+[presence api] heartbeat {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+  currentPage: '/dashboard/goals',
+  now: '2026-05-30T11:26:53.160Z'
+}
+[presence api] payload {
+  tenantId: 'IX3iq5xiujwJrqUKysxFarBdbF9p0dT4',
+  onlineCount: 1,
+  threshold: '2026-05-30T11:25:13.255Z',
+  users: [
+    {
+      userId: 'A5FPqRzaLNWNt32de0dnBaKV0pksdJUs',
+      lastSeenAt: '2026-05-30T11:26:53.160Z',
+      isOnline: true,
+      explicitOnline: true
+    },
+    {
+      userId: '0uVGxmRee2IhglQgbwo895dfOCQG0eLh',
+      lastSeenAt: '2026-05-30T11:07:19.201Z',
+      isOnline: false,
+      explicitOnline: true
+    }
+  ]
+}
+ POST /api/tenant/presence 200 in 867ms (next.js: 4ms, proxy.ts: 291ms, application-code: 572ms)

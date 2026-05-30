@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Client-side tenant URL helpers.
  *
  * NEXT_PUBLIC_ROOT_URL is the single source of truth — matches the proxy's ROOT_URL.
@@ -7,7 +7,7 @@
 
 const ROOT_URL =
   process.env.NEXT_PUBLIC_ROOT_URL ||
-  (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}` : "http://localhost:3000");
+  (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}` : "http://lvh.me:3000");
 
 function getRootParsed() {
   return new URL(ROOT_URL);
@@ -16,7 +16,7 @@ function getRootParsed() {
 /**
  * Build the root app URL for a given path.
  *
- *   getRootAppUrl("/login") → "http://localhost:3000/login"
+ *   getRootAppUrl("/login") → "http://lvh.me:3000/login"
  */
 export function getRootAppUrl(path = "/") {
   const root = getRootParsed();
@@ -28,12 +28,13 @@ export function getRootAppUrl(path = "/") {
  * Build the tenant dashboard URL for a given slug.
  * Port is always taken from NEXT_PUBLIC_ROOT_URL — never lost.
  *
- *   getTenantDashboardUrl("myotic")           → "http://myotic.localhost:3000/dashboard"
- *   getTenantDashboardUrl("myotic", "/tasks") → "http://myotic.localhost:3000/tasks"
+ *   getTenantDashboardUrl("myotic")           → "http://myotic.lvh.me:3000/dashboard"
+ *   getTenantDashboardUrl("myotic", "/tasks") → "http://myotic.lvh.me:3000/tasks"
  */
 export function getTenantDashboardUrl(slug: string, path = "/dashboard"): string {
   const root = getRootParsed();
-  const tenantHostname = `${slug}.${root.hostname}`;
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || root.hostname;
+  const tenantHostname = `${slug}.${rootDomain}`;
   const portSuffix     = root.port ? `:${root.port}` : "";
   return `${root.protocol}//${tenantHostname}${portSuffix}${path}`;
 }
@@ -57,3 +58,4 @@ export function getRememberedTenant(): { id: string; slug: string } | null {
     return null;
   }
 }
+

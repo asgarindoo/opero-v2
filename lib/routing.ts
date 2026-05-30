@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OPERO — Multi-tenant Routing Helpers
  *
  * Pure utility functions for subdomain detection and URL building.
@@ -7,8 +7,8 @@
  * Single source of truth: NEXT_PUBLIC_ROOT_URL / ROOT_URL env var.
  *
  * Local:
- *   ROOT_URL = "http://localhost:3000"
- *   Tenant   = "http://myotic.localhost:3000"
+ *   ROOT_URL = "http://lvh.me:3000"
+ *   Tenant   = "http://myotic.lvh.me:3000"
  *
  * Production:
  *   ROOT_URL = "https://opero.my.id"
@@ -19,23 +19,23 @@
 
 /**
  * Returns the root app URL from env — single source of truth.
- *   getRootUrl() → "http://localhost:3000"
+ *   getRootUrl() → "http://lvh.me:3000"
  */
 export function getRootUrl(): string {
   return (
     process.env.NEXT_PUBLIC_ROOT_URL ||
     process.env.ROOT_URL ||
-    "http://localhost:3000"
+    "http://lvh.me:3000"
   );
 }
 
 /**
  * Returns the root domain hostname only (no protocol, no port).
- *   getAppDomain() → "localhost"     (dev)
+ *   getAppDomain() → "lvh.me"       (dev)
  *   getAppDomain() → "opero.my.id"  (prod)
  */
 export function getAppDomain(): string {
-  return new URL(getRootUrl()).hostname;
+  return process.env.NEXT_PUBLIC_ROOT_DOMAIN || new URL(getRootUrl()).hostname;
 }
 
 // ─── Host parsing ─────────────────────────────────────────────────────────────
@@ -43,8 +43,8 @@ export function getAppDomain(): string {
 /**
  * Split a host string into hostname and port.
  *
- *   splitHostPort("myotic.localhost:3000") → { hostname: "myotic.localhost", port: "3000" }
- *   splitHostPort("localhost")             → { hostname: "localhost",         port: "" }
+ *   splitHostPort("myotic.lvh.me:3000") → { hostname: "myotic.lvh.me", port: "3000" }
+ *   splitHostPort("lvh.me")             → { hostname: "lvh.me",            port: "" }
  *   splitHostPort("opero.my.id")           → { hostname: "opero.my.id",       port: "" }
  */
 export function splitHostPort(host: string): { hostname: string; port: string } {
@@ -76,10 +76,10 @@ export function isReservedSubdomain(slug: string): boolean {
  * Extract the tenant slug from a host string.
  * Returns null for root hosts (no tenant subdomain).
  *
- * Local dev (appDomain = "localhost"):
- *   "localhost:3000"        → null
- *   "myotic.localhost:3000" → "myotic"
- *   "www.localhost:3000"    → null  (reserved)
+ * Local dev (appDomain = "lvh.me"):
+ *   "lvh.me:3000"        → null
+ *   "myotic.lvh.me:3000" → "myotic"
+ *   "www.lvh.me:3000"    → null  (reserved)
  *
  * Production (appDomain = "opero.my.id"):
  *   "opero.my.id"           → null
@@ -92,15 +92,8 @@ export function extractTenantSlugFromHost(host: string): string | null {
   // Exact root host match
   if (hostname === appDomain) return null;
 
-  // Local dev: *.localhost
-  if (appDomain === "localhost" && hostname.endsWith(".localhost")) {
-    const slug = hostname.slice(0, -(".localhost".length));
-    if (!slug || slug.includes(".") || isReservedSubdomain(slug)) return null;
-    return slug;
-  }
-
-  // Production: *.appDomain
-  if (appDomain !== "localhost" && hostname.endsWith(`.${appDomain}`)) {
+  // Tenant subdomain: *.appDomain
+  if (hostname.endsWith(`.${appDomain}`)) {
     const slug = hostname.slice(0, -(`.${appDomain}`.length));
     if (!slug || slug.includes(".") || isReservedSubdomain(slug)) return null;
     return slug;
@@ -122,8 +115,8 @@ export function isRootHost(host: string): boolean {
  * Build an absolute URL on the root domain.
  * NEVER uses request.url — always uses ROOT_URL from env.
  *
- *   buildRootUrl("/login")           → URL { href: "http://localhost:3000/login" }
- *   buildRootUrl("/404", "?x=1")     → URL { href: "http://localhost:3000/404?x=1" }
+ *   buildRootUrl("/login")           → URL { href: "http://lvh.me:3000/login" }
+ *   buildRootUrl("/404", "?x=1")     → URL { href: "http://lvh.me:3000/404?x=1" }
  */
 export function buildRootUrl(path: string, search?: string): URL {
   const url = new URL(path, getRootUrl());
@@ -135,13 +128,15 @@ export function buildRootUrl(path: string, search?: string): URL {
  * Build an absolute URL on a tenant subdomain.
  * Port is always taken from ROOT_URL — never lost in local dev.
  *
- *   buildTenantUrl("myotic", "/dashboard")  → URL { href: "http://myotic.localhost:3000/dashboard" }
- *   buildTenantUrl("myotic", "/tasks")      → URL { href: "http://myotic.localhost:3000/tasks" }
+ *   buildTenantUrl("myotic", "/dashboard")  → URL { href: "http://myotic.lvh.me:3000/dashboard" }
+ *   buildTenantUrl("myotic", "/tasks")      → URL { href: "http://myotic.lvh.me:3000/tasks" }
  */
 export function buildTenantUrl(slug: string, path: string, search?: string): URL {
   const root   = new URL(getRootUrl());
   const port   = root.port ? `:${root.port}` : "";
-  const url    = new URL(`${root.protocol}//${slug}.${root.hostname}${port}${path}`);
+  const appDomain = getAppDomain();
+  const url    = new URL(`${root.protocol}//${slug}.${appDomain}${port}${path}`);
   if (search !== undefined) url.search = search;
   return url;
 }
+

@@ -12,17 +12,20 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma"; // Force TS re-evaluation
 import { generateInviteCode } from "@/lib/utils/invite-code";
 
-const rootAuthUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-const rootDomain  = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-const isLocalhost = rootAuthUrl.includes("localhost") || rootAuthUrl.includes("127.0.0.1");
+const rootAuthUrl =
+  process.env.BETTER_AUTH_URL ??
+  process.env.NEXT_PUBLIC_ROOT_URL ??
+  "http://lvh.me:3000";
+const rootHostname = new URL(rootAuthUrl).hostname;
+const rootDomain  = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? rootHostname;
+const isLoopbackHost = rootHostname === "localhost" || rootHostname === "127.0.0.1";
 
 // Cookie domain strategy:
-//   localhost:  omit domain entirely (host-only cookie).
-//               Domain=localhost and Domain=.localhost are REJECTED by browsers per RFC 6265.
-//               Cross-subdomain auth in local dev uses the handoff token mechanism.
-//   production: set domain to ".rootDomain" so subdomains share the cookie.
-const cookieDomain = !isLocalhost
-  ? (process.env.BETTER_AUTH_COOKIE_DOMAIN ?? rootDomain ?? undefined)
+//   lvh.me/prod: set a shared root domain so subdomains share the cookie.
+//   localhost:   omit domain entirely; localhost cannot reliably share cookies
+//                with *.localhost in browsers.
+const cookieDomain = !isLoopbackHost
+  ? (process.env.BETTER_AUTH_COOKIE_DOMAIN ?? rootDomain)
   : undefined;
 
 async function assignUniqueInviteCode(organizationId: string) {

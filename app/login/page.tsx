@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { getRememberedTenant, getTenantDashboardUrl, rememberTenant, getRootAppUrl } from "@/lib/tenant-url";
+import { getTenantDashboardUrl, rememberTenant, getRootAppUrl } from "@/lib/tenant-url";
 
 const AUTH_TIMEOUT_MS = 15000;
 
@@ -38,13 +38,16 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const { hostname } = window.location;
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_URL || "http://localhost:3000";
-    const rootHostname = new URL(rootUrl).hostname; // e.g. "localhost"
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_URL || "http://lvh.me:3000";
+    const rootHostname = new URL(rootUrl).hostname; // e.g. "lvh.me"
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || rootHostname;
 
-    // We're on a tenant subdomain if the hostname has a "." prefix before the root hostname
+    // We're on a tenant subdomain if the hostname has a "." prefix before the root domain
     const isTenantSubdomain =
-      hostname.endsWith(`.${rootHostname}`) &&   // e.g. "myotic.localhost"
-      hostname !== rootHostname;                  // not the root itself
+      (hostname.endsWith(`.${rootDomain}`) &&
+        hostname !== rootHostname &&
+        hostname !== rootDomain) ||
+      hostname.endsWith(".localhost");
 
     if (isTenantSubdomain) {
       const target = getRootAppUrl("/login");
@@ -88,31 +91,36 @@ export default function LoginPage() {
         return;
       }
 
-      const pendingTenantSlug = getCookieValue("pendingTenantSlug");
-      const rememberedTenant = getRememberedTenant();
-      console.log(`[LOGIN] pendingTenantSlug=${pendingTenantSlug ?? "(none)"}`);
-      console.log(`[LOGIN] rememberedTenant=${rememberedTenant ? JSON.stringify(rememberedTenant) : "(none)"}`);
-
-      // ── Routing decision ───────────────────────────────────────────────────
-      // 1. pendingTenantSlug → user was trying to reach a specific tenant, go directly.
-      // 2. Only 1 org → go directly (no choice needed).
-      // 3. Multiple orgs + no pending → show /tenants picker so the user can choose.
-      //    (The /tenants page also handles the single-org fast-path internally.)
-
-      const pendingOrg = pendingTenantSlug
-        ? orgs.find((org) => org.slug === pendingTenantSlug) ?? null
+      const callbackUrl = getSafeCallbackUrl();
+      const callbackTenantSlug = callbackUrl ? getTenantSlugFromUrl(callbackUrl) : null;
+      const callbackOrg = callbackTenantSlug
+        ? orgs.find((org) => org.slug === callbackTenantSlug) ?? null
         : null;
 
-      if (!pendingOrg && orgs.length > 1) {
+      console.log(`[LOGIN] callbackUrl=${callbackUrl ?? "(none)"}`);
+      console.log(`[LOGIN] callbackTenantSlug=${callbackTenantSlug ?? "(none)"}`);
+
+      // ── Routing decision ───────────────────────────────────────────────────
+      // 1. callbackUrl -> user was trying to reach a specific tenant, go directly.
+      // 2. Only 1 org -> go directly (no choice needed).
+      // 3. Multiple orgs + no callback -> show /tenants picker so the user can choose.
+      //    (The /tenants page also handles the single-org fast-path internally.)
+
+      if (callbackTenantSlug && !callbackOrg) {
+        console.log("[LOGIN] callback tenant not in user's org list -> /unauthorized");
+        window.location.assign(getRootAppUrl("/unauthorized"));
+        return;
+      }
+
+      if (!callbackOrg && orgs.length > 1) {
         // Multiple tenants, no specific destination — show the picker
-        console.log(`[LOGIN] multiple orgs (${orgs.length}), no pending slug → /tenants`);
-        clearCookie("pendingTenantSlug");
+        console.log(`[LOGIN] multiple orgs (${orgs.length}), no callback tenant -> /tenants`);
         window.location.assign(getRootAppUrl("/tenants"));
         return;
       }
 
-      // Single org OR a pending tenant slug matched → go directly
-      const targetOrg = pendingOrg ?? orgs[0];
+      // Single org OR a callback tenant matched -> go directly
+      const targetOrg = callbackOrg ?? orgs[0];
       console.log(`[LOGIN] targetOrg=${targetOrg ? JSON.stringify({ id: targetOrg.id, slug: targetOrg.slug }) : "(none)"}`);
 
       if (targetOrg) {
@@ -122,39 +130,15 @@ export default function LoginPage() {
         );
         console.log(`[LOGIN] setActive(${targetOrg.id}) done`);
 
-        clearCookie("pendingTenantSlug");
         rememberTenant({ id: targetOrg.id, slug: targetOrg.slug });
 
         const dashboardUrl = getTenantDashboardUrl(targetOrg.slug);
         console.log(`[LOGIN] dashboardUrl=${dashboardUrl}`);
 
-        // Session handoff: session cookie is HttpOnly on localhost:3000,
-        // so the browser won't send it to myotic.localhost:3000 automatically.
-        // Fetch a signed 30-second token and pass it as ?__handoff= so
-        // the proxy can set the cookie directly on the tenant subdomain.
-        try {
-          console.log("[LOGIN] fetching /api/auth/handoff …");
-          const res = await fetch("/api/auth/handoff", { credentials: "include" });
-          console.log(`[LOGIN] /api/auth/handoff status=${res.status}`);
-          if (res.ok) {
-            const { token } = await res.json() as { token: string };
-            const url = new URL(dashboardUrl);
-            url.searchParams.set("__handoff", token);
-            console.log(`[LOGIN] ✓ handoff token obtained — navigating to ${url.toString()}`);
-            window.location.assign(url.toString());
-            return;
-          }
-          const errBody = await res.text().catch(() => "(unreadable)");
-          console.warn(`[LOGIN] ✗ /api/auth/handoff failed (${res.status}): ${errBody}`);
-          // Fall through to direct navigation
-        } catch (err) {
-          console.warn("[LOGIN] ✗ handoff fetch threw:", err);
-          // Fall through to direct navigation
-        }
 
-        console.warn(`[LOGIN] ⚠ falling back to direct nav (no handoff) → ${dashboardUrl}`);
-        console.warn("[LOGIN] ⚠ dashboard will likely redirect to /login because cookie is not shared");
-        window.location.assign(dashboardUrl);
+        const targetUrl = callbackUrl ?? dashboardUrl;
+        console.log(`[LOGIN] redirecting to ${targetUrl}`);
+        window.location.assign(targetUrl);
       }
 
     } catch (err) {
@@ -387,18 +371,47 @@ export default function LoginPage() {
   );
 }
 
-function getCookieValue(name: string) {
-  const prefix = `${name}=`;
-  return document.cookie
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith(prefix))
-    ?.slice(prefix.length) ?? null;
+function getRootDomainParts() {
+  const root = new URL(process.env.NEXT_PUBLIC_ROOT_URL || "http://lvh.me:3000");
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || root.hostname;
+  return { root, rootDomain };
 }
 
-function clearCookie(name: string) {
-  // Clear all possible domain variants the cookie may have been set with
-  document.cookie = `${name}=; Max-Age=0; path=/`;
-  document.cookie = `${name}=; Max-Age=0; path=/; domain=localhost`;
-  document.cookie = `${name}=; Max-Age=0; path=/; domain=.localhost`;
+function getSafeCallbackUrl() {
+  if (typeof window === "undefined") return null;
+
+  const raw = new URLSearchParams(window.location.search).get("callbackUrl");
+  if (!raw) return null;
+
+  try {
+    const callback = new URL(raw);
+    const { root, rootDomain } = getRootDomainParts();
+    const isAllowedHost =
+      callback.hostname === root.hostname ||
+      callback.hostname === rootDomain ||
+      callback.hostname.endsWith(`.${rootDomain}`);
+
+    if (callback.protocol !== root.protocol || !isAllowedHost) return null;
+    if (callback.pathname === "/login" || callback.pathname.startsWith("/api/auth")) return null;
+
+    return callback.toString();
+  } catch {
+    return null;
+  }
 }
+
+function getTenantSlugFromUrl(value: string) {
+  try {
+    const callback = new URL(value);
+    const { root, rootDomain } = getRootDomainParts();
+    if (callback.hostname === root.hostname || callback.hostname === rootDomain) return null;
+    if (!callback.hostname.endsWith(`.${rootDomain}`)) return null;
+
+    const slug = callback.hostname.slice(0, -(`.${rootDomain}`.length));
+    if (!slug || slug.includes(".")) return null;
+    return slug;
+  } catch {
+    return null;
+  }
+}
+

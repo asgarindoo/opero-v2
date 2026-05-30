@@ -21,22 +21,8 @@ export default function TenantSelectionPage() {
     role: string; logo?: string | null; color: string;
   }>>([]);
 
-  // Navigate to a tenant dashboard using the session handoff mechanism.
-  // This passes a signed short-lived token so the proxy can set the session
-  // cookie on the tenant subdomain (cross-subdomain cookie sharing is unreliable).
-  async function navigateToTenant(slug: string) {
-    const dashboardUrl = getTenantDashboardUrl(slug);
-    try {
-      const res = await fetch("/api/auth/handoff", { credentials: "include" });
-      if (res.ok) {
-        const { token } = await res.json() as { token: string };
-        const url = new URL(dashboardUrl);
-        url.searchParams.set("__handoff", token);
-        window.location.assign(url.toString());
-        return;
-      }
-    } catch { /* fall through */ }
-    window.location.assign(dashboardUrl);
+  function navigateToTenant(slug: string) {
+    window.location.assign(getTenantDashboardUrl(slug));
   }
 
   useEffect(() => {
@@ -78,7 +64,7 @@ export default function TenantSelectionPage() {
     setSelecting(org.id);
     await authClient.organization.setActive({ organizationId: org.id });
     rememberTenant({ id: org.id, slug: org.slug });
-    await navigateToTenant(org.slug);
+    navigateToTenant(org.slug);
   };
 
   return (

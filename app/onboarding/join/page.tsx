@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Key, Link as LinkIcon, ArrowRight, ArrowLeft, Clipboard, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { authClient } from "@/lib/auth-client";
 import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
 
 export default function JoinTenantPage() {
@@ -54,6 +55,7 @@ function JoinTenantContent() {
       }
 
       if (json.organizationId && json.organizationSlug) {
+        await authClient.organization.setActive({ organizationId: json.organizationId });
         rememberTenant({ id: json.organizationId, slug: json.organizationSlug });
         window.location.assign(getTenantDashboardUrl(json.organizationSlug));
         return;

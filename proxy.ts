@@ -1,78 +1,40 @@
 /**
- * OPERO — Next.js 16 Proxy
+ * OPERO - Next.js Proxy
  *
- * Multi-tenant subdomain routing.
- * Auth/RBAC logic is untouched — only routing and tenant resolution live here.
- *
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │  Local:       localhost:3000        → root app                      │
- * │               myotic.localhost:3000 → tenant "myotic"               │
- * │  Production:  opero.my.id           → root app                      │
- * │               myotic.opero.my.id    → tenant "myotic"               │
- * └─────────────────────────────────────────────────────────────────────┘
- *
- * Cross-subdomain auth:
- *   Browser cookies cannot reliably cross localhost ↔ *.localhost.
- *   We use a signed handoff token (?__handoff) instead.
- *   Flow:
- *     1. Login on localhost:3000
- *     2. GET /api/auth/handoff → signed 30s token
- *     3. Navigate to myotic.localhost:3000/dashboard?__handoff=<token>
- *     4. Proxy verifies token → sets session cookie → clean redirect
+ * Simple multi-tenant routing:
+ * - Root app:      lvh.me:3000 locally, production root domain later.
+ * - Tenant app:    <slug>.lvh.me:3000 locally, <slug>.<root-domain> later.
+ * - Login lives only on the root app.
+ * - Tenant auth is handled by shared Better Auth cookies, not handoff tokens.
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import {
-  extractTenantSlugFromHost,
   buildRootUrl,
   buildTenantUrl,
+  extractTenantSlugFromHost,
   getRootUrl,
+  splitHostPort,
 } from "@/lib/routing";
-import { verifyHandoffToken, createHandoffToken } from "@/lib/handoff";
 
-// ─── Route classification ─────────────────────────────────────────────────────
+const SESSION_COOKIE_NAMES = [
+  "better-auth.session_token",
+  "__Secure-better-auth.session_token",
+];
 
-const SESSION_COOKIE = "better-auth.session_token";
 const SESSION_DATA_COOKIE = "better-auth.session_data";
 const SESSION_DATA_COOKIE_CLEAR_LIMIT = 32;
 
-// ─── Cookie signing ───────────────────────────────────────────────────────────
+const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
 
-/**
- * Sign a session token the same way Better Auth does internally.
- * Better Auth's setSignedCookie stores: `rawToken.base64(HMAC-SHA256(rawToken, secret))`
- * and verifySignedCookie strips the signature back to rawToken before DB lookup.
- *
- * We must replicate this so `auth.api.getSession()` can read the cookie we set.
- */
-async function signSessionToken(rawToken: string): Promise<string> {
-  const secret = process.env.BETTER_AUTH_SECRET ?? "fallback-secret-change-me";
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawToken));
-  // Better Auth uses plain btoa (not URL-safe) for the signature
-  const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
-  return `${rawToken}.${b64}`;
-}
-
-/**
- * Routes that belong to the root domain only.
- * Tenant subdomains must redirect these to root.
- */
 const ROOT_ONLY_ROUTES = [
-  "/",
   "/login",
   "/register",
-  "/logout",
   "/forgot-password",
+  "/logout",
   "/onboarding",
   "/join",
   "/create-tenant",
@@ -82,116 +44,83 @@ const ROOT_ONLY_ROUTES = [
   "/tenant-inactive",
 ];
 
-/** Auth routes — login/register only exist on root domain. Authenticated users are redirected away from these. */
-const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
-
-/** Short dashboard paths that map to /dashboard/<path>. */
 const TENANT_SHORTPATHS = new Set([
-  "/activity", "/assets", "/campaigns", "/chat",
-  "/contacts", "/content-planner", "/documents", "/finance",
-  "/flows", "/goals", "/invoices",
-  "/members", "/sales", "/settings",
-  "/social-channels", "/tasks",
+  "/activity",
+  "/assets",
+  "/campaigns",
+  "/chat",
+  "/contacts",
+  "/content-planner",
+  "/documents",
+  "/finance",
+  "/flows",
+  "/goals",
+  "/invoices",
+  "/members",
+  "/products",
+  "/profile",
+  "/sales",
+  "/settings",
+  "/social-channels",
+  "/tasks",
 ]);
 
-// ─── Route helpers ────────────────────────────────────────────────────────────
+const STATIC_ASSET_PATTERN =
+  /\.(?:avif|css|gif|ico|jpeg|jpg|js|json|map|mp3|mp4|otf|pdf|png|svg|ttf|txt|webmanifest|webp|woff|woff2)$/i;
+
+function getHost(request: NextRequest): string {
+  return request.headers.get("host") ?? request.nextUrl.host;
+}
+
+function isDevelopment() {
+  return process.env.NODE_ENV !== "production";
+}
+
+function getRootParts() {
+  const root = new URL(getRootUrl());
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || root.hostname;
+  return { root, rootDomain };
+}
 
 function isStaticOrInternal(pathname: string) {
   return (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") ||   // Better Auth + handoff endpoint
-    pathname.startsWith("/favicon") ||
-    pathname.startsWith("/public")
+    pathname.startsWith("/api/auth") ||
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/public") ||
+    STATIC_ASSET_PATTERN.test(pathname)
   );
 }
 
-/**
- * "/" matches ONLY the exact root.
- * Other routes match exact or with a "/" prefix.
- * This prevents "/" from accidentally matching every path.
- */
-function isRootOnlyRoute(pathname: string): boolean {
-  if (pathname === "/") return true;
-  return ROOT_ONLY_ROUTES
-    .filter((r) => r !== "/")
-    .some((r) => pathname === r || pathname.startsWith(`${r}/`));
+function isRootOnlyRoute(pathname: string) {
+  return ROOT_ONLY_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
-function isAuthRoute(pathname: string): boolean {
-  return AUTH_ROUTES.has(pathname);
-}
-
-/** /logout must always reach the logout page — never be intercepted by auth checks. */
-function isLogoutRoute(pathname: string): boolean {
-  return pathname === "/logout" || pathname.startsWith("/logout/");
-}
-
-function isTenantRoute(pathname: string): boolean {
+function isTenantRoute(pathname: string) {
   return (
+    pathname === "/" ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/api/tenant") ||
+    pathname.startsWith("/api/profile") ||
     TENANT_SHORTPATHS.has(pathname) ||
-    Array.from(TENANT_SHORTPATHS).some((p) => pathname.startsWith(`${p}/`))
+    Array.from(TENANT_SHORTPATHS).some((route) => pathname.startsWith(`${route}/`))
   );
 }
 
-function isTenantAwareApiRoute(pathname: string): boolean {
-  return pathname.startsWith("/api/profile");
-}
-
-/** Rewrite short tenant paths to /dashboard/<path>. */
-function normalizeToTenantPath(pathname: string): string {
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/api/tenant") || pathname.startsWith("/api/profile"))
+function normalizeTenantPath(pathname: string) {
+  if (pathname === "/") return "/dashboard";
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/api/tenant") ||
+    pathname.startsWith("/api/profile")
+  ) {
     return pathname;
-  const match = Array.from(TENANT_SHORTPATHS).find(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  }
+
+  const shortPath = Array.from(TENANT_SHORTPATHS).find(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
-  return match ? `/dashboard${pathname}` : pathname;
-}
-
-// ─── Cookie helpers ───────────────────────────────────────────────────────────
-
-/**
- * Cookie domain strategy:
- *   localhost → omit domain (host-only cookie, RFC 6265 compliant).
- *               Domain=localhost and Domain=.localhost are browser-rejected.
- *   production → use root domain (e.g. ".opero.my.id") for subdomain sharing.
- *
- * In local dev, cross-subdomain auth is handled by the handoff token.
- */
-function isLocalDev(): boolean {
-  const url = new URL(getRootUrl());
-  return url.hostname === "localhost" || url.hostname === "127.0.0.1";
-}
-
-function pendingSlugCookieOpts() {
-  const local = isLocalDev();
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-  return {
-    path: "/",
-    httpOnly: false,        // login page reads this with getCookieValue()
-    sameSite: "lax" as const,
-    secure: !local,
-    maxAge: 600,          // 10 minutes
-    ...(!local && rootDomain ? { domain: `.${rootDomain}` } : {}),
-  };
-}
-
-function authCookieExpireOpts() {
-  const local = isLocalDev();
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-  return {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: !local,
-    maxAge: 0,
-    ...(!local && rootDomain ? { domain: `.${rootDomain}` } : {}),
-  };
-}
-
-function expireAuthCookie(response: NextResponse, name: string) {
-  response.cookies.set(name, "", authCookieExpireOpts());
+  return shortPath ? `/dashboard${pathname}` : pathname;
 }
 
 function isSessionDataCookieName(name: string) {
@@ -202,34 +131,6 @@ function isSessionDataCookieName(name: string) {
     name.startsWith(`__Secure-${SESSION_DATA_COOKIE}.`)
   );
 }
-
-function sessionDataCookieSortKey(name: string) {
-  const normalized = name.startsWith("__Secure-") ? name.slice("__Secure-".length) : name;
-  if (normalized === SESSION_DATA_COOKIE) return -1;
-  const index = Number(normalized.slice(`${SESSION_DATA_COOKIE}.`.length));
-  return Number.isFinite(index) ? index : Number.MAX_SAFE_INTEGER;
-}
-
-function cleanupSessionDataCookies(request: NextRequest, response: NextResponse) {
-  const cookieNames = Array.from(
-    new Set(
-      request.cookies
-        .getAll()
-        .map((cookie) => cookie.name)
-        .filter(isSessionDataCookieName)
-    )
-  )
-    .sort((a, b) => sessionDataCookieSortKey(a) - sessionDataCookieSortKey(b) || a.localeCompare(b))
-    .slice(0, SESSION_DATA_COOKIE_CLEAR_LIMIT);
-
-  for (const cookieName of cookieNames) {
-    expireAuthCookie(response, cookieName);
-  }
-
-  return response;
-}
-
-// ─── Request helpers ──────────────────────────────────────────────────────────
 
 function stripSessionDataCookies(cookieHeader: string | null) {
   if (!cookieHeader) return null;
@@ -246,53 +147,113 @@ function stripSessionDataCookies(cookieHeader: string | null) {
   return cookies.length > 0 ? cookies.join("; ") : null;
 }
 
-function getHost(request: NextRequest): string {
-  return request.headers.get("host") ?? request.nextUrl.host;
+function sessionDataCookieSortKey(name: string) {
+  const normalized = name.startsWith("__Secure-") ? name.slice("__Secure-".length) : name;
+  if (normalized === SESSION_DATA_COOKIE) return -1;
+  const index = Number(normalized.slice(`${SESSION_DATA_COOKIE}.`.length));
+  return Number.isFinite(index) ? index : Number.MAX_SAFE_INTEGER;
 }
 
 function sanitizeHeaders(headers: Headers): Headers {
-  const h = new Headers(headers);
-  ["x-tenant-id", "x-tenant-slug", "x-user-id", "x-user-role"].forEach((k) =>
-    h.delete(k)
+  const sanitized = new Headers(headers);
+  sanitized.delete("x-tenant-id");
+  sanitized.delete("x-tenant-slug");
+  sanitized.delete("x-user-id");
+  sanitized.delete("x-user-role");
+
+  const cookieHeader = stripSessionDataCookies(sanitized.get("cookie"));
+  if (cookieHeader) sanitized.set("cookie", cookieHeader);
+  else sanitized.delete("cookie");
+
+  return sanitized;
+}
+
+function cleanupSessionDataCookies(request: NextRequest, response: NextResponse) {
+  const cookieNames = Array.from(
+    new Set(
+      request.cookies
+        .getAll()
+        .map((cookie) => cookie.name)
+        .filter(isSessionDataCookieName)
+    )
+  )
+    .sort((a, b) => sessionDataCookieSortKey(a) - sessionDataCookieSortKey(b) || a.localeCompare(b))
+    .slice(0, SESSION_DATA_COOKIE_CLEAR_LIMIT);
+
+  for (const name of cookieNames) {
+    response.cookies.set(name, "", {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 0,
+    });
+  }
+
+  return response;
+}
+
+function passThrough(request: NextRequest) {
+  return cleanupSessionDataCookies(
+    request,
+    NextResponse.next({ request: { headers: sanitizeHeaders(request.headers) } })
   );
-  const cookieHeader = stripSessionDataCookies(h.get("cookie"));
-  if (cookieHeader) h.set("cookie", cookieHeader);
-  else h.delete("cookie");
-  return h;
 }
 
-function passThrough(request: NextRequest): NextResponse {
-  const response = NextResponse.next({
-    request: { headers: sanitizeHeaders(request.headers) },
-  });
-  return cleanupSessionDataCookies(request, response);
+function hasSessionCookie(request: NextRequest) {
+  return SESSION_COOKIE_NAMES.some((name) => Boolean(request.cookies.get(name)?.value));
 }
-
-// ─── Session ──────────────────────────────────────────────────────────────────
 
 async function getSession(request: NextRequest) {
+  if (!hasSessionCookie(request)) return null;
   return auth.api.getSession({ headers: sanitizeHeaders(request.headers) }).catch(() => null);
 }
 
-// ─── Tenant resolution ────────────────────────────────────────────────────────
+function buildCurrentUrl(request: NextRequest) {
+  const { root } = getRootParts();
+  const url = new URL(`${root.protocol}//${getHost(request)}`);
+  url.pathname = request.nextUrl.pathname;
+  url.search = request.nextUrl.search;
+  return url;
+}
 
-async function resolveTenant(
-  request: NextRequest,
-  tenantSlug: string,
-  userId: string
-): Promise<NextResponse> {
-  // Inject trusted tenant context headers — read in Server Components via headers()
-  // Note: We no longer run heavy Prisma queries here. Next.js Server Components
-  // (via requireTenant/getTenantContext) will validate tenant existence and membership.
+function isSafeCallbackUrl(value: string | null) {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    const { root, rootDomain } = getRootParts();
+    return (
+      url.protocol === root.protocol &&
+      (url.hostname === root.hostname ||
+        url.hostname === rootDomain ||
+        url.hostname.endsWith(`.${rootDomain}`))
+    );
+  } catch {
+    return false;
+  }
+}
+
+function buildLoginRedirect(request: NextRequest) {
+  const loginUrl = buildRootUrl("/login");
+  loginUrl.searchParams.set("callbackUrl", buildCurrentUrl(request).toString());
+  return loginUrl;
+}
+
+function redirect(request: NextRequest, target: URL) {
+  const response = NextResponse.redirect(target);
+  debugTenantProxy(request, { redirectTarget: target.toString() });
+  return cleanupSessionDataCookies(request, response);
+}
+
+function rewriteWithTenantHeaders(request: NextRequest, tenantSlug: string, userId: string) {
   const requestHeaders = sanitizeHeaders(request.headers);
   requestHeaders.set("x-tenant-slug", tenantSlug);
   requestHeaders.set("x-user-id", userId);
 
-  // Rewrite short paths to /dashboard/<path>
-  const normalPath = normalizeToTenantPath(request.nextUrl.pathname);
-  if (normalPath !== request.nextUrl.pathname) {
+  const normalizedPath = normalizeTenantPath(request.nextUrl.pathname);
+  if (normalizedPath !== request.nextUrl.pathname) {
     const rewriteUrl = request.nextUrl.clone();
-    rewriteUrl.pathname = normalPath;
+    rewriteUrl.pathname = normalizedPath;
     return cleanupSessionDataCookies(
       request,
       NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
@@ -305,184 +266,155 @@ async function resolveTenant(
   );
 }
 
-// ─── Main proxy ───────────────────────────────────────────────────────────────
+function canonicalizeLocalhost(request: NextRequest) {
+  if (!isDevelopment()) return null;
 
-export default async function proxy(request: NextRequest): Promise<NextResponse> {
+  const { root } = getRootParts();
+  if (root.hostname === "localhost" || root.hostname === "127.0.0.1") return null;
+
+  const { hostname } = splitHostPort(getHost(request));
+  if (hostname !== "localhost" && !hostname.endsWith(".localhost")) return null;
+
+  const slug = getLocalhostTenantSlug(hostname);
+  if (slug && slug.includes(".")) return null;
+
+  const target = new URL(request.nextUrl.pathname + request.nextUrl.search, root);
+  target.hostname = slug ? `${slug}.${root.hostname}` : root.hostname;
+  target.port = root.port;
+
+  return target;
+}
+
+function getLocalhostTenantSlug(hostname: string) {
+  if (hostname === "localhost") return null;
+  if (!hostname.endsWith(".localhost")) return null;
+  const slug = hostname.slice(0, -".localhost".length);
+  return slug || null;
+}
+
+function debugTenantProxy(request: NextRequest, extra: { redirectTarget?: string } = {}) {
+  if (!isDevelopment()) return;
+
+  const host = getHost(request);
+  const { root, rootDomain } = getRootParts();
+  const { hostname } = splitHostPort(host);
+  const tenantSlug = extractTenantSlugFromHost(host) ?? getLocalhostTenantSlug(hostname);
+  const isRootDomain =
+    hostname === root.hostname ||
+    hostname === rootDomain ||
+    hostname === "localhost";
+  const isTenantSubdomain = Boolean(tenantSlug);
+
+  console.log("[tenant-proxy]", {
+    host,
+    tenantSlug,
+    isRootDomain,
+    isTenantSubdomain,
+    pathname: request.nextUrl.pathname,
+    redirectTarget: extra.redirectTarget ?? null,
+  });
+}
+
+async function resolveTenantState(tenantSlug: string) {
+  return prisma.organization.findUnique({
+    where: { slug: tenantSlug },
+    select: { id: true, status: true },
+  });
+}
+
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (isStaticOrInternal(pathname)) {
+    return passThrough(request);
+  }
+
+  const canonicalTarget = canonicalizeLocalhost(request);
+  if (canonicalTarget) {
+    return redirect(request, canonicalTarget);
+  }
+
+  debugTenantProxy(request);
+
   const host = getHost(request);
   const tenantSlug = extractTenantSlugFromHost(host);
-  const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
-  const handoff = request.nextUrl.searchParams.get("__handoff");
+  const isTenantSubdomain = Boolean(tenantSlug);
 
-  // ── Debug ─────────────────────────────────────────────────────────────────
-  // We only log handoffs or important redirects to keep the terminal clean
-  // console.log(`\n[PROXY] ${request.method} ${pathname}`);
-  // console.log(`[PROXY] host=${host}  tenant=${tenantSlug ?? "(root)"}  session=${hasSession}`);
-
-  // ── 1. Static / internal — always pass through ────────────────────────────
-  if (isStaticOrInternal(pathname)) return passThrough(request);
-
-  // ── 2. Session handoff — cross-subdomain cookie injection ─────────────────
-  //    myotic.localhost:3000/dashboard?__handoff=<token>
-  //    Verify HMAC token → sign session token → set cookie → redirect to clean URL
-  if (tenantSlug && handoff) {
-    console.log(`[PROXY] ▶ handoff received for tenant="${tenantSlug}" on ${pathname}`);
-    const rawSessionToken = await verifyHandoffToken(handoff);
-    console.log(`[PROXY]   handoff verify result: ${rawSessionToken ? "✓ valid" : "✗ invalid/expired"}`);
-    if (rawSessionToken) {
-      const signedToken = await signSessionToken(rawSessionToken);
-      const cleanSearch = new URLSearchParams(request.nextUrl.searchParams);
-      cleanSearch.delete("__handoff");
-      const cleanUrl = buildTenantUrl(tenantSlug, pathname);
-      cleanUrl.search = cleanSearch.toString();
-      const response = NextResponse.redirect(cleanUrl);
-
-      // Set the new session token (properly signed so Better Auth can verify it)
-      response.cookies.set(SESSION_COOKIE, signedToken, {
-        httpOnly: true,
-        secure: false,   // localhost is HTTP
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 30,
-      });
-
-      // CRITICAL: Bust the session_data cache cookie.
-      // Better Auth caches the full session (user + org) in `better-auth.session_data`
-      // for up to 5 minutes. If a different user was previously logged in on this
-      // subdomain, that stale cache will be returned by getSession() even though
-      // we just set a new session_token — causing the wrong account to appear.
-      // Expiring it forces a fresh DB lookup on the next request.
-      expireAuthCookie(response, SESSION_DATA_COOKIE);
-      // Also bust any chunked variants (better-auth.session_data.0, .1, .2 …)
-      for (let i = 0; i < 5; i++) {
-        expireAuthCookie(response, `${SESSION_DATA_COOKIE}.${i}`);
-      }
-      cleanupSessionDataCookies(request, response);
-
-      console.log(`[PROXY]   ✓ handoff → signed cookie set + session_data cache busted, redirect → ${cleanUrl.href}`);
-      return response;
-    }
-    console.log(`[PROXY]   ✗ handoff invalid/expired — falling through to auth check`);
-    // Fall through to normal auth check
-  }
-
-  // ── 3. Tenant subdomain + auth/logout route → redirect to root ────────────
-  //    myotic.localhost:3000/login   → http://localhost:3000/login  (ABSOLUTE)
-  //    myotic.localhost:3000/logout  → http://localhost:3000/logout (ABSOLUTE)
-  //    CRITICAL: buildRootUrl(), never relative — relative inherits subdomain host.
-  if (tenantSlug && (isAuthRoute(pathname) || isLogoutRoute(pathname))) {
-    const target = buildRootUrl(pathname);
-    console.log(`[PROXY] tenant auth route → ${target.href}`);
-    return NextResponse.redirect(target);
-  }
-
-  // ── 4. Tenant subdomain + root-only route → redirect to root ─────────────
-  if (tenantSlug && isRootOnlyRoute(pathname)) {
-    const target = buildRootUrl(pathname, request.nextUrl.search);
-    console.log(`[PROXY] tenant root-only → ${target.href}`);
-    return NextResponse.redirect(target);
-  }
-
-  // ── 5. Tenant subdomain + unknown route → redirect to root ───────────────
-  if (tenantSlug && !isTenantRoute(pathname) && !isTenantAwareApiRoute(pathname)) {
-    const target = buildRootUrl(pathname, request.nextUrl.search);
-    console.log(`[PROXY] tenant unknown → ${target.href}`);
-    return NextResponse.redirect(target);
-  }
-
-  // ── 6. Root domain + public routes ───────────────────────────────────────
-  if (!tenantSlug && isRootOnlyRoute(pathname)) {
-    // /logout always passes through — never redirect authenticated users away from it
-    if (isLogoutRoute(pathname)) {
-      console.log(`[PROXY] /logout → pass through (clears session)`);
-      const res = passThrough(request);
-      return res;
+  if (isTenantSubdomain && tenantSlug) {
+    if (isRootOnlyRoute(pathname)) {
+      const target = buildRootUrl(pathname, request.nextUrl.search);
+      return redirect(request, target);
     }
 
-    // /login and /register: redirect already-authenticated users
-    if (hasSession && isAuthRoute(pathname)) {
-      const session = await getSession(request);
-      if (session?.user?.id) {
-        const pending = request.cookies.get("pendingTenantSlug")?.value;
-        if (pending && session.session?.token) {
-          // Pending tenant: skip /tenants, go directly with handoff
-          const token = await createHandoffToken(session.session.token);
-          const target = buildTenantUrl(pending, "/dashboard");
-          target.searchParams.set("__handoff", token);
-          console.log(`[PROXY] auth + pending="${pending}" → handoff ${target.href}`);
-          const res = NextResponse.redirect(target);
-          res.cookies.set("pendingTenantSlug", "", { ...pendingSlugCookieOpts(), maxAge: 0 });
-          return res;
-        }
-        const target = buildRootUrl("/tenants");
-        console.log(`[PROXY] auth on /login → /tenants`);
-        return NextResponse.redirect(target);
+    if (!isTenantRoute(pathname)) {
+      const target = buildRootUrl("/tenant-not-found");
+      target.searchParams.set("tenant", tenantSlug);
+      return redirect(request, target);
+    }
+
+    const tenant = await resolveTenantState(tenantSlug);
+    if (!tenant) {
+      const target = buildRootUrl("/tenant-not-found");
+      target.searchParams.set("tenant", tenantSlug);
+      return redirect(request, target);
+    }
+
+    if (tenant.status !== "active") {
+      const target = buildRootUrl("/tenant-inactive");
+      target.searchParams.set("tenant", tenantSlug);
+      return redirect(request, target);
+    }
+
+    const session = await getSession(request);
+    if (!session?.user?.id) {
+      return redirect(request, buildLoginRedirect(request));
+    }
+
+    return rewriteWithTenantHeaders(request, tenantSlug, session.user.id);
+  }
+
+  if (AUTH_ROUTES.has(pathname)) {
+    const session = await getSession(request);
+    if (session?.user?.id) {
+      const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+      if (callbackUrl && isSafeCallbackUrl(callbackUrl)) {
+        return redirect(request, new URL(callbackUrl));
       }
+      return redirect(request, buildRootUrl("/tenants"));
     }
     return passThrough(request);
   }
 
-  // ── 7. Unauthenticated ────────────────────────────────────────────────────
-  if (!hasSession) {
-    const loginUrl = buildRootUrl("/login");
-    console.log(`[PROXY] ✗ unauthenticated (no session cookie) → ${loginUrl.href}`);
-    const res = NextResponse.redirect(loginUrl);
-    const slug = tenantSlug;
-    if (slug) {
-      res.cookies.set("pendingTenantSlug", slug, pendingSlugCookieOpts());
-      console.log(`[PROXY]   saved pendingTenantSlug="${slug}"`);
-    }
-    return res;
+  if (isRootOnlyRoute(pathname) || pathname === "/") {
+    return passThrough(request);
   }
 
-  // ── 8. Load full session ──────────────────────────────────────────────────
-  const session = await getSession(request);
-  if (!session?.user?.id) {
-    const res = NextResponse.redirect(buildRootUrl("/login"));
-    if (tenantSlug) res.cookies.set("pendingTenantSlug", tenantSlug, pendingSlugCookieOpts());
-    return res;
-  }
-
-  const userId = session.user.id;
-
-  // ── 9. Tenant subdomain — resolve tenant + check membership ──────────────
-  if (tenantSlug) {
-    return resolveTenant(request, tenantSlug, userId);
-  }
-
-  // ── 10. Root domain + tenant route (e.g. /dashboard) ─────────────────────
-  //    Look up the active org and redirect to its subdomain with handoff
   if (isTenantRoute(pathname)) {
+    const session = await getSession(request);
+    if (!session?.user?.id) {
+      return redirect(request, buildLoginRedirect(request));
+    }
+
     const activeOrgId = session.session?.activeOrganizationId;
-    if (pathname.startsWith("/dashboard") && activeOrgId) {
+    if (activeOrgId) {
       const org = await prisma.organization.findUnique({
         where: { id: activeOrgId },
         select: { slug: true },
       });
-      if (org) {
-        if (session.session?.token) {
-          const token = await createHandoffToken(session.session.token);
-          const target = buildTenantUrl(org.slug, pathname);
-          target.searchParams.set("__handoff", token);
-          console.log(`[PROXY] /dashboard → handoff ${target.href}`);
-          return NextResponse.redirect(target);
-        }
-        const target = buildTenantUrl(org.slug, pathname);
-        console.log(`[PROXY] /dashboard → tenant ${target.href}`);
-        return NextResponse.redirect(target);
+
+      if (org?.slug) {
+        return redirect(request, buildTenantUrl(org.slug, pathname, request.nextUrl.search));
       }
     }
-    console.log(`[PROXY] tenant route, no active org → /tenants`);
-    return NextResponse.redirect(buildRootUrl("/tenants"));
+
+    return redirect(request, buildRootUrl("/tenants"));
   }
 
   return passThrough(request);
 }
 
-// ─── Matcher ──────────────────────────────────────────────────────────────────
-
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|api/auth|favicon.ico|.*\\.(?:avif|css|gif|ico|jpeg|jpg|js|json|map|mp3|mp4|otf|pdf|png|svg|ttf|txt|webmanifest|webp|woff|woff2)$).*)",
   ],
 };
