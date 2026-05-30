@@ -116,7 +116,7 @@ export default function DocumentList({ onSelectFile }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-surface-container-lowest relative">
+    <div className="flex flex-col h-full bg-[#faf8f6] relative">
       <div className="flex-1 overflow-auto p-4">
         <Table className="min-w-200">
           <TableHeader className="bg-black/2">

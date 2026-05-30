@@ -19,7 +19,7 @@ export default function DocumentsSidebar() {
   };
 
   return (
-    <div className="w-[240px] shrink-0 border-r border-black/[0.06] bg-surface-container-lowest h-full flex flex-col">
+    <div className="w-[240px] shrink-0 border-r border-black/[0.06] bg-[#faf8f6] h-full flex flex-col">
       <div className="p-4 flex items-center justify-between border-b border-black/[0.04]">
         <span className="font-label-caps text-[10px] font-bold text-on-surface-variant opacity-50 uppercase tracking-[0.1em]">
           Workspace
