@@ -83,10 +83,10 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
       </div>
 
       {/* ── Tenant Identity ── */}
-      <div className="shrink-0 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+      <div className="shrink-0 border-b h-[60px] flex flex-col justify-center" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
         {showTenantLoading ? (
           /* Loading State: Soft Skeletons */
-          <div className="px-4 py-3.5 flex items-center gap-3">
+          <div className="px-4 flex items-center gap-3">
             <div className="w-9 h-9 rounded-[6px] bg-black/[0.04] animate-pulse shrink-0" />
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="h-3 w-24 bg-black/[0.05] rounded-[4px] animate-pulse" />
@@ -94,11 +94,11 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
             </div>
           </div>
         ) : collapsed ? (
-          <div className="flex justify-center items-center py-3.5" title={tenantName}>
+          <div className="flex justify-center items-center" title={tenantName}>
             <TenantLogo name={tenantName} logo={tenantLogo} size="sm" />
           </div>
         ) : (
-          <div className="px-4 py-3 flex items-center gap-3 select-none">
+          <div className="px-4 flex items-center gap-3 select-none">
             <TenantLogo name={tenantName} logo={tenantLogo} size="md" className="opacity-95" />
             <div className="min-w-0 flex-1 flex flex-col justify-center">
               <div
