@@ -171,50 +171,36 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background text-on-surface font-aspekta">
-      <ModuleHeader
-        title="Profile Settings"
-        rightContent={hasChanges ? (
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            icon={Save}
-            isLoading={saving}
-            disabled={!canSave}
-            onClick={handleSave}
-          >
-            SAVE CHANGES
-          </Button>
-        ) : null}
-      />
+      <ModuleHeader title="Profile Settings" />
 
-      <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-10 sm:py-10">
-        <div className="mx-auto max-w-[720px]">
+      <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-10">
+        <div className="mx-auto max-w-[800px] pb-20">
+          
           {loading ? (
-            <div className="rounded-[8px] border border-black/[0.06] bg-[#fef8f8] p-6 sm:p-8">
-              <div className="flex items-center gap-5 animate-pulse">
-                <div className="h-24 w-24 rounded-full bg-black/[0.05]" />
-                <div className="space-y-3">
-                  <div className="h-8 w-28 rounded-[6px] bg-black/[0.04]" />
-                  <div className="h-8 w-24 rounded-[6px] bg-black/[0.03]" />
-                </div>
-              </div>
-              <div className="mt-8 space-y-5 animate-pulse">
-                <div className="space-y-2">
-                  <div className="h-3 w-20 rounded bg-black/[0.04]" />
-                  <div className="h-11 w-full rounded-[6px] bg-black/[0.03]" />
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 w-16 rounded bg-black/[0.04]" />
-                  <div className="h-11 w-full rounded-[6px] bg-black/[0.03]" />
-                </div>
-              </div>
-            </div>
+             <div className="space-y-12 animate-pulse">
+               <div className="space-y-6">
+                 <div className="h-5 w-32 rounded bg-black/[0.04]" />
+                 <div className="flex gap-6 items-center">
+                   <div className="h-24 w-24 rounded-full bg-black/[0.05]" />
+                   <div className="space-y-3">
+                     <div className="h-8 w-32 rounded-[6px] bg-black/[0.04]" />
+                     <div className="h-4 w-48 rounded-[4px] bg-black/[0.03]" />
+                   </div>
+                 </div>
+               </div>
+               <div className="space-y-6">
+                 <div className="h-5 w-40 rounded bg-black/[0.04]" />
+                 <div className="grid gap-6 sm:grid-cols-2">
+                   <div className="h-10 w-full rounded-[6px] bg-black/[0.03]" />
+                   <div className="h-10 w-full rounded-[6px] bg-black/[0.03]" />
+                 </div>
+               </div>
+             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-12">
               {(message || error) && (
                 <div
-                  className="rounded-[6px] border px-4 py-3 text-[12px]"
+                  className="rounded-[8px] border px-4 py-3 text-[13px] font-medium"
                   style={{
                     borderColor: error ? "rgba(220,38,38,0.18)" : "rgba(22,163,74,0.2)",
                     background: error ? "rgba(220,38,38,0.035)" : "rgba(22,163,74,0.04)",
@@ -225,53 +211,66 @@ export default function ProfileSettingsPage() {
                 </div>
               )}
 
-              <div className="rounded-[8px] border border-black/[0.06] bg-[#fef8f8] p-6 sm:p-8">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              {/* Profile Photo Section */}
+              <section>
+                <div className="border-b border-black/[0.06] pb-4 mb-6">
+                  <h2 className="text-[14px] font-semibold text-on-surface">Profile Photo</h2>
+                </div>
+                <div className="flex items-center gap-6">
                   <UserAvatar
-                    user={{ name, email, image: avatarPreview }}
+                    user={{ name: initialUser?.name || name, email: initialUser?.email || email, image: avatarPreview }}
                     size="xl"
-                    className="h-24 w-24 bg-white text-[26px]"
+                    className="h-24 w-24 flex-shrink-0 rounded-full text-[24px] shadow-sm ring-1 ring-black/5"
                     title={name ? `${name} profile photo` : "Profile photo"}
                   />
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept={FILE_ACCEPT}
-                      className="sr-only"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) handleFile(file);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      icon={Upload}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {avatarPreview ? "REPLACE" : "UPLOAD"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      icon={Trash2}
-                      disabled={!avatarPreview && !avatarFile}
-                      onClick={handleRemovePhoto}
-                    >
-                      REMOVE PHOTO
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={FILE_ACCEPT}
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) handleFile(file);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        icon={Upload}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {avatarPreview ? "Replace" : "Upload"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        icon={Trash2}
+                        disabled={!avatarPreview && !avatarFile}
+                        onClick={handleRemovePhoto}
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <p className="text-[12px] text-on-surface-variant opacity-80">
+                      PNG, JPG, JPEG, or WEBP up to 2MB.
+                    </p>
                   </div>
                 </div>
+              </section>
 
-                <div className="mt-8 grid gap-5">
-                  <label className="block space-y-2">
-                    <span className="font-label-caps text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
-                      Full Name
-                    </span>
+              {/* Personal Information Section */}
+              <section>
+                <div className="border-b border-black/[0.06] pb-4 mb-6">
+                  <h2 className="text-[14px] font-semibold text-on-surface">Personal Information</h2>
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block font-medium text-[13px] text-on-surface">Full Name</label>
                     <input
                       type="text"
                       value={name}
@@ -280,26 +279,72 @@ export default function ProfileSettingsPage() {
                         setName(event.target.value);
                         setMessage(null);
                       }}
-                      className="w-full rounded-[6px] border border-black/[0.08] bg-white px-3.5 py-3 font-aspekta text-[13px] text-on-surface outline-none transition-colors focus:border-black/30"
+                      className="h-10 w-full rounded-[6px] border border-black/[0.12] bg-white px-3 text-[13px] outline-none transition-colors focus:border-black/30 focus:ring-2 focus:ring-black/5"
                     />
                     {nameError && (
-                      <span className="block text-[11px] text-red-600">{nameError}</span>
+                      <span className="mt-1.5 block font-medium text-[12px] text-red-600">{nameError}</span>
                     )}
-                  </label>
+                  </div>
 
-                  <label className="block space-y-2">
-                    <span className="font-label-caps text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
-                      Email
-                    </span>
+                  <div>
+                    <label className="mb-2 block font-medium text-[13px] text-on-surface">Email Address</label>
                     <input
                       type="email"
                       value={email}
                       readOnly
-                      className="w-full cursor-default rounded-[6px] border border-black/[0.06] bg-black/[0.025] px-3.5 py-3 font-aspekta text-[13px] text-on-surface-variant outline-none"
+                      className="h-10 w-full cursor-not-allowed rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 text-[13px] text-on-surface-variant outline-none"
                     />
-                  </label>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block font-medium text-[13px] text-on-surface">
+                      Phone Number <span className="font-normal text-on-surface-variant opacity-70">(Optional)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      className="h-10 w-full sm:max-w-xs rounded-[6px] border border-black/[0.12] bg-white px-3 text-[13px] outline-none transition-colors focus:border-black/30 focus:ring-2 focus:ring-black/5"
+                    />
+                  </div>
                 </div>
-              </div>
+              </section>
+            </div>
+          )}
+
+          {/* Bottom Action Bar */}
+          {!loading && (
+            <div className="mt-12 flex items-center justify-end gap-3 border-t border-black/[0.06] pt-6">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={saving}
+                onClick={() => {
+                  if (initialUser) {
+                    setName(initialUser.name);
+                    setEmail(initialUser.email);
+                    setAvatarPreview(initialUser.image);
+                    setAvatarFile(null);
+                    setRemoveAvatar(false);
+                    setMessage(null);
+                    setError(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                icon={Save}
+                isLoading={saving}
+                disabled={!canSave}
+                onClick={handleSave}
+              >
+                Save Changes
+              </Button>
             </div>
           )}
 
