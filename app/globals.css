@@ -432,17 +432,6 @@ html {
   color: var(--color-on-surface);
 }
 
-.db-nav-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 2px;
-  background: var(--color-primary);
-  border-radius: 0 2px 2px 0;
-}
-
 /* ── Progress bar shimmer ── */
 @keyframes progressShimmer {
   0% {
