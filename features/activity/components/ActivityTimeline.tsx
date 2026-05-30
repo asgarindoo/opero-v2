@@ -61,7 +61,7 @@ export default function ActivityTimeline({ onSelect }: Props) {
       {groupedActivities.map(group => (
         <div key={group.date} className="flex flex-col mb-8">
           {/* Minimal Date Header */}
-          <div className="px-8 py-2.5 bg-black/1 border-y border-black/3 flex items-center gap-4">
+          <div className="px-8 py-2.5 bg-[#fef8f8] border-y border-black/3 flex items-center gap-4 sticky top-0 z-10">
              <span className="font-label-caps text-[9.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-[0.2em]">
                 {group.date}
              </span>
