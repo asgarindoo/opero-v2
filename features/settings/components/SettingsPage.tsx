@@ -298,25 +298,25 @@ export default function SettingsPage() {
       <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-10">
         <div className="mx-auto max-w-[800px] pb-20">
           {loading ? (
-             <div className="space-y-12 animate-pulse">
-               <div className="space-y-6">
-                 <div className="h-5 w-32 rounded bg-black/[0.04]" />
-                 <div className="flex gap-6 items-center">
-                   <div className="h-24 w-24 rounded-xl bg-black/[0.05]" />
-                   <div className="space-y-3">
-                     <div className="h-8 w-32 rounded-[6px] bg-black/[0.04]" />
-                     <div className="h-4 w-48 rounded-[4px] bg-black/[0.03]" />
-                   </div>
-                 </div>
-               </div>
-               <div className="space-y-6">
-                 <div className="h-5 w-40 rounded bg-black/[0.04]" />
-                 <div className="grid gap-6 sm:grid-cols-2">
-                   <div className="h-10 w-full rounded-[6px] bg-black/[0.03]" />
-                   <div className="h-10 w-full rounded-[6px] bg-black/[0.03]" />
-                 </div>
-               </div>
-             </div>
+            <div className="space-y-12 animate-pulse">
+              <div className="space-y-6">
+                <div className="h-5 w-32 rounded bg-black/[0.04]" />
+                <div className="flex gap-6 items-center">
+                  <div className="h-24 w-24 rounded-xl bg-black/[0.05]" />
+                  <div className="space-y-3">
+                    <div className="h-8 w-32 rounded-[6px] bg-black/[0.04]" />
+                    <div className="h-4 w-48 rounded-[4px] bg-black/[0.03]" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="h-5 w-40 rounded bg-black/[0.04]" />
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="h-10 w-full rounded-[6px] bg-black/[0.03]" />
+                  <div className="h-10 w-full rounded-[6px] bg-black/[0.03]" />
+                </div>
+              </div>
+            </div>
           ) : error && !data ? (
             <div className="rounded-xl border border-red-500/15 bg-red-500/[0.03] p-8 text-[13px] text-red-600">
               {error}
@@ -347,7 +347,7 @@ export default function SettingsPage() {
                   {/* Workspace Identity Section */}
                   <section>
                     <div className="border-b border-black/[0.06] pb-4 mb-6">
-                      <h2 className="text-[14px] font-semibold text-on-surface">Workspace Logo</h2>
+                      <h2 className="text-[14px] font-semibold text-on-surface">Logo</h2>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="w-24 h-24 rounded-xl bg-white border border-black/[0.08] flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative text-on-surface-variant">
@@ -417,7 +417,7 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block font-medium text-[13px] text-on-surface">Workspace URL</label>
+                        <label className="mb-2 block font-medium text-[13px] text-on-surface">Subdomain</label>
                         <input
                           type="text"
                           value={`${data.tenant.slug}.opero.app`}
@@ -435,7 +435,7 @@ export default function SettingsPage() {
                           className="h-10 w-full cursor-not-allowed rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 text-[13px] text-on-surface-variant outline-none"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="mb-2 block font-medium text-[13px] text-on-surface">Total Members</label>
                         <input
@@ -487,37 +487,37 @@ export default function SettingsPage() {
                       <h2 className="text-[14px] font-semibold text-on-surface">Current Plan Overview</h2>
                     </div>
                     <div className="grid gap-6 sm:grid-cols-2">
-                       <div>
-                         <label className="mb-2 block font-medium text-[13px] text-on-surface">Active Plan</label>
-                         <div className="h-10 w-full rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 flex items-center gap-2">
-                           <div className="w-2 h-2 rounded-full bg-green-500" />
-                           <span className="text-[13px] font-semibold">{plan?.plan.displayName ?? "Free"}</span>
-                         </div>
-                       </div>
-                       <div>
-                         <label className="mb-2 block font-medium text-[13px] text-on-surface">Period End</label>
-                         <input
-                           type="text"
-                           value={plan?.currentPeriodEnd ? new Date(plan.currentPeriodEnd).toLocaleDateString() : "Lifetime"}
-                           readOnly
-                           className="h-10 w-full cursor-not-allowed rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 text-[13px] text-on-surface-variant outline-none"
-                         />
-                       </div>
-                       
-                       <div className="sm:col-span-2">
-                         <label className="mb-2 block font-medium text-[13px] text-on-surface">Member Usage</label>
-                         <div className="rounded-[6px] border border-black/[0.06] bg-black/[0.02] p-4">
-                            <div className="flex justify-between font-medium text-[13px] mb-2">
-                              <span className="text-on-surface-variant">Active Members</span>
-                              <span className="text-on-surface">
-                                {membersCount}{membersMax > 0 ? ` / ${membersMax}` : ""}
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full bg-black/[0.06] rounded-full overflow-hidden">
-                              <div className="h-full bg-primary" style={{ width: `${membersPct}%` }} />
-                            </div>
-                         </div>
-                       </div>
+                      <div>
+                        <label className="mb-2 block font-medium text-[13px] text-on-surface">Active Plan</label>
+                        <div className="h-10 w-full rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-[13px] font-semibold">{plan?.plan.displayName ?? "Free"}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-2 block font-medium text-[13px] text-on-surface">Period End</label>
+                        <input
+                          type="text"
+                          value={plan?.currentPeriodEnd ? new Date(plan.currentPeriodEnd).toLocaleDateString() : "Lifetime"}
+                          readOnly
+                          className="h-10 w-full cursor-not-allowed rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 text-[13px] text-on-surface-variant outline-none"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="mb-2 block font-medium text-[13px] text-on-surface">Member Usage</label>
+                        <div className="rounded-[6px] border border-black/[0.06] bg-black/[0.02] p-4">
+                          <div className="flex justify-between font-medium text-[13px] mb-2">
+                            <span className="text-on-surface-variant">Active Members</span>
+                            <span className="text-on-surface">
+                              {membersCount}{membersMax > 0 ? ` / ${membersMax}` : ""}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full bg-black/[0.06] rounded-full overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${membersPct}%` }} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
@@ -526,65 +526,65 @@ export default function SettingsPage() {
                       <h2 className="text-[14px] font-semibold text-on-surface">Available Plans</h2>
                     </div>
                     <div className="grid gap-6 sm:grid-cols-2">
-                        {/* Free Plan */}
-                        <div className="rounded-[8px] border border-black/[0.12] bg-white p-6 flex flex-col relative overflow-hidden">
-                           <div className="mb-4">
-                              <span className="text-[11px] uppercase tracking-[0.1em] font-bold text-on-surface-variant">Free</span>
-                              <div className="flex items-end gap-1.5 mt-1 mb-2">
-                                 <span className="text-[32px] leading-none font-bold tracking-tight text-primary">$0</span>
-                                 <span className="text-[12px] mb-1 text-on-surface-variant">/forever</span>
-                              </div>
-                              <p className="text-[12px] leading-relaxed text-on-surface-variant">For solo founders trying out the system.</p>
-                           </div>
-                           <div className="w-full h-px mb-4 bg-black/[0.06]" />
-                           <ul className="flex flex-col gap-2.5 flex-1 mb-6">
-                             {[
-                               { text: "1 user", included: true },
-                               { text: "Work management", included: true },
-                               { text: "1 bot (WA or Telegram)", included: true },
-                               { text: "Invite team members", included: false },
-                               { text: "Automation hub", included: false },
-                             ].map(f => (
-                               <li key={f.text} className={`flex items-center gap-2.5 text-[12px] font-medium ${f.included ? 'text-on-surface' : 'text-on-surface-variant opacity-40'}`}>
-                                 <Check size={14} className={f.included ? 'text-primary' : 'opacity-0'} />
-                                 {f.text}
-                               </li>
-                             ))}
-                           </ul>
-                           <button className="w-full text-[12px] font-semibold py-2.5 rounded-[6px] border border-black/[0.06] bg-black/[0.02] text-on-surface-variant cursor-not-allowed">
-                             Current Plan
-                           </button>
+                      {/* Free Plan */}
+                      <div className="rounded-[8px] border border-black/[0.12] bg-white p-6 flex flex-col relative overflow-hidden">
+                        <div className="mb-4">
+                          <span className="text-[11px] uppercase tracking-[0.1em] font-bold text-on-surface-variant">Free</span>
+                          <div className="flex items-end gap-1.5 mt-1 mb-2">
+                            <span className="text-[32px] leading-none font-bold tracking-tight text-primary">$0</span>
+                            <span className="text-[12px] mb-1 text-on-surface-variant">/forever</span>
+                          </div>
+                          <p className="text-[12px] leading-relaxed text-on-surface-variant">For solo founders trying out the system.</p>
                         </div>
+                        <div className="w-full h-px mb-4 bg-black/[0.06]" />
+                        <ul className="flex flex-col gap-2.5 flex-1 mb-6">
+                          {[
+                            { text: "1 user", included: true },
+                            { text: "Work management", included: true },
+                            { text: "1 bot (WA or Telegram)", included: true },
+                            { text: "Invite team members", included: false },
+                            { text: "Automation hub", included: false },
+                          ].map(f => (
+                            <li key={f.text} className={`flex items-center gap-2.5 text-[12px] font-medium ${f.included ? 'text-on-surface' : 'text-on-surface-variant opacity-40'}`}>
+                              <Check size={14} className={f.included ? 'text-primary' : 'opacity-0'} />
+                              {f.text}
+                            </li>
+                          ))}
+                        </ul>
+                        <button className="w-full text-[12px] font-semibold py-2.5 rounded-[6px] border border-black/[0.06] bg-black/[0.02] text-on-surface-variant cursor-not-allowed">
+                          Current Plan
+                        </button>
+                      </div>
 
-                        {/* Pro Plan */}
-                        <div className="rounded-[8px] border border-primary/20 bg-primary/[0.02] p-6 flex flex-col relative overflow-hidden shadow-sm">
-                           <div className="mb-4">
-                              <span className="text-[11px] uppercase tracking-[0.1em] font-bold text-primary">Pro</span>
-                              <div className="flex items-end gap-1.5 mt-1 mb-2">
-                                 <span className="text-[32px] leading-none font-bold tracking-tight text-primary">$29</span>
-                                 <span className="text-[12px] mb-1 text-primary/60">/per month</span>
-                              </div>
-                              <p className="text-[12px] leading-relaxed text-on-surface-variant">For teams that need full collaboration and automation.</p>
-                           </div>
-                           <div className="w-full h-px mb-4 bg-primary/10" />
-                           <ul className="flex flex-col gap-2.5 flex-1 mb-6">
-                             {[
-                               { text: "Multi-user (invite team)", included: true },
-                               { text: "Multiple bots (WA + Telegram)", included: true },
-                               { text: "Team chat & discussion", included: true },
-                               { text: "Automation hub", included: true },
-                               { text: "Full activity timeline", included: true },
-                             ].map(f => (
-                               <li key={f.text} className={`flex items-center gap-2.5 text-[12px] font-medium text-on-surface`}>
-                                 <Check size={14} className="text-primary" />
-                                 {f.text}
-                               </li>
-                             ))}
-                           </ul>
-                           <button className="w-full text-[12px] font-semibold py-2.5 rounded-[6px] bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm active:scale-95">
-                             Upgrade to Pro
-                           </button>
+                      {/* Pro Plan */}
+                      <div className="rounded-[8px] border border-primary/20 bg-primary/[0.02] p-6 flex flex-col relative overflow-hidden shadow-sm">
+                        <div className="mb-4">
+                          <span className="text-[11px] uppercase tracking-[0.1em] font-bold text-primary">Pro</span>
+                          <div className="flex items-end gap-1.5 mt-1 mb-2">
+                            <span className="text-[32px] leading-none font-bold tracking-tight text-primary">$29</span>
+                            <span className="text-[12px] mb-1 text-primary/60">/per month</span>
+                          </div>
+                          <p className="text-[12px] leading-relaxed text-on-surface-variant">For teams that need full collaboration and automation.</p>
                         </div>
+                        <div className="w-full h-px mb-4 bg-primary/10" />
+                        <ul className="flex flex-col gap-2.5 flex-1 mb-6">
+                          {[
+                            { text: "Multi-user (invite team)", included: true },
+                            { text: "Multiple bots (WA + Telegram)", included: true },
+                            { text: "Team chat & discussion", included: true },
+                            { text: "Automation hub", included: true },
+                            { text: "Full activity timeline", included: true },
+                          ].map(f => (
+                            <li key={f.text} className={`flex items-center gap-2.5 text-[12px] font-medium text-on-surface`}>
+                              <Check size={14} className="text-primary" />
+                              {f.text}
+                            </li>
+                          ))}
+                        </ul>
+                        <button className="w-full text-[12px] font-semibold py-2.5 rounded-[6px] bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm active:scale-95">
+                          Upgrade to Pro
+                        </button>
+                      </div>
                     </div>
                   </section>
                 </>
@@ -604,8 +604,8 @@ export default function SettingsPage() {
                           className="w-12 h-12 flex-shrink-0 border-transparent shadow-sm"
                         />
                         <div className="min-w-0">
-                           <p className="text-[14px] font-semibold text-on-surface truncate">{data.user?.name}</p>
-                           <p className="text-[12px] text-on-surface-variant truncate">{data.user?.email}</p>
+                          <p className="text-[14px] font-semibold text-on-surface truncate">{data.user?.name}</p>
+                          <p className="text-[12px] text-on-surface-variant truncate">{data.user?.email}</p>
                         </div>
                       </div>
                       <Button variant="secondary" size="sm" icon={LogOut} onClick={handleSignOut}>
@@ -632,27 +632,27 @@ export default function SettingsPage() {
                       <h2 className="text-[14px] font-semibold text-red-700">Danger Zone</h2>
                     </div>
                     <div className="space-y-4">
-                       <div className="flex items-center justify-between rounded-[8px] border border-red-500/20 bg-red-500/[0.02] p-4">
-                          <div>
-                            <p className="text-[13px] font-semibold text-on-surface">Leave Workspace</p>
-                            <p className="text-[12px] text-on-surface-variant mt-0.5">Remove your membership. Owners can leave only if another owner remains.</p>
-                          </div>
-                          <Button variant="danger" size="sm" icon={LogOut} isLoading={isLeaving} onClick={handleLeaveTenant}>
-                            Leave
-                          </Button>
-                       </div>
+                      <div className="flex items-center justify-between rounded-[8px] border border-red-500/20 bg-red-500/[0.02] p-4">
+                        <div>
+                          <p className="text-[13px] font-semibold text-on-surface">Leave Workspace</p>
+                          <p className="text-[12px] text-on-surface-variant mt-0.5">Remove your membership. Owners can leave only if another owner remains.</p>
+                        </div>
+                        <Button variant="danger" size="sm" icon={LogOut} isLoading={isLeaving} onClick={handleLeaveTenant}>
+                          Leave
+                        </Button>
+                      </div>
 
-                       {isOwner && (
-                         <div className="flex items-center justify-between rounded-[8px] border border-red-500/20 bg-red-500/[0.02] p-4">
-                            <div>
-                              <p className="text-[13px] font-semibold text-on-surface">Delete Workspace</p>
-                              <p className="text-[12px] text-on-surface-variant mt-0.5">Permanently delete this workspace and all associated records.</p>
-                            </div>
-                            <Button variant="danger" size="sm" icon={Trash2} isLoading={isDeleting} onClick={handleDeleteTenant}>
-                              Delete
-                            </Button>
-                         </div>
-                       )}
+                      {isOwner && (
+                        <div className="flex items-center justify-between rounded-[8px] border border-red-500/20 bg-red-500/[0.02] p-4">
+                          <div>
+                            <p className="text-[13px] font-semibold text-on-surface">Delete Workspace</p>
+                            <p className="text-[12px] text-on-surface-variant mt-0.5">Permanently delete this workspace and all associated records.</p>
+                          </div>
+                          <Button variant="danger" size="sm" icon={Trash2} isLoading={isDeleting} onClick={handleDeleteTenant}>
+                            Delete
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </section>
                 </>
