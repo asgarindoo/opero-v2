@@ -170,7 +170,7 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background text-on-surface font-aspekta">
+    <div className="flex h-full flex-col overflow-hidden bg-background text-on-surface">
       <ModuleHeader title="Profile Settings" />
 
       <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-10">
