@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         : "Message cannot be empty";
       return NextResponse.json({ error: msg }, { status: 400 });
     }
-    const message = await createTenantMessage(channelId, parsed.data.content);
+    const message = await createTenantMessage(channelId, parsed.data.content, parsed.data.replyToId);
     if (!message) return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     return NextResponse.json({ message }, { status: 201 });
   } catch (err) {

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Hash, Search, X } from "lucide-react";
 import { useChat } from "@/features/chat";
+import type { ChatMessage } from "@/features/chat";
 import MessageList from "@/features/chat/components/MessageList";
 import MessageComposer from "@/features/chat/components/MessageComposer";
 import ModuleHeader from "@/components/common/ModuleHeader";
@@ -10,6 +11,7 @@ import ModuleHeader from "@/components/common/ModuleHeader";
 export default function ChannelPage({ channelId }: { channelId: string }) {
   const { channels, loadingChannels, setActiveChannel } = useChat();
   const [searchQuery, setSearchQuery] = useState("");
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
 
   const channel = channels.find(c => c.id === channelId);
 
@@ -85,10 +87,10 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
         />
 
         {/* Messages */}
-        <MessageList channelId={channelId} searchQuery={searchQuery} />
+        <MessageList channelId={channelId} searchQuery={searchQuery} onReply={setReplyTo} />
 
         {/* Composer */}
-        <MessageComposer channelId={channelId} />
+        <MessageComposer channelId={channelId} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
       </div>
     </div>
   );

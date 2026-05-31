@@ -9,6 +9,7 @@ import type { ChatChannel, ChatMessage, ChatMessageType } from "@/features/chat"
 import {
   createChannel as createChannelRequest,
   deleteChannel as deleteChannelRequest,
+  deleteMessage as deleteMessageRequest,
   getSupabaseBrowserClient,
   listChannels,
   listMessages,
@@ -33,7 +34,8 @@ interface ChatContextType {
   setActiveChannel: (channelId: string | null) => void;
   loadMessages: (channelId: string, options?: { silent?: boolean }) => Promise<void>;
   markChannelAsRead: (channelId: string) => Promise<void>;
-  sendMessage: (channelId: string, content: string) => Promise<void>;
+  sendMessage: (channelId: string, content: string, replyTo?: ChatMessage | null) => Promise<void>;
+  deleteMessage: (channelId: string, messageId: string) => Promise<void>;
   createChannel: (name: string, description: string) => Promise<string>;
   deleteChannel: (channelId: string) => Promise<void>;
 }
@@ -162,6 +164,13 @@ function mapRealtimeMessage(record: Record<string, unknown>): ChatMessage | null
   const senderImage = realtimePayloadValue(record, "senderImage");
   const createdAt = normalizedTimestamp(coalesce(record, "createdAt", "created_at"));
   const updatedAt = normalizedTimestamp(coalesce(record, "updatedAt", "updated_at"));
+  const payload = coalesce(record, "payload");
+  const replyRecord = payload && typeof payload === "object" && !Array.isArray(payload)
+    ? (payload as Record<string, unknown>).replyTo
+    : null;
+  const replyTo = replyRecord && typeof replyRecord === "object" && !Array.isArray(replyRecord)
+    ? replyRecord as Record<string, unknown>
+    : null;
 
   return {
     id,
@@ -173,6 +182,13 @@ function mapRealtimeMessage(record: Record<string, unknown>): ChatMessage | null
     createdAt,
     updatedAt,
     sender: senderId ? { id: senderId, name: senderName, email: senderEmail, image: senderImage } : null,
+    replyTo: replyTo && typeof replyTo.id === "string"
+      ? {
+        id: replyTo.id,
+        senderName: typeof replyTo.senderName === "string" ? replyTo.senderName : "Message",
+        content: typeof replyTo.content === "string" ? replyTo.content : "",
+      }
+      : null,
   };
 }
 
@@ -691,7 +707,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     };
   }, [markChannelAsRead, organizationId]);
 
-  const sendMessage = useCallback(async (channelId: string, content: string) => {
+  const sendMessage = useCallback(async (channelId: string, content: string, replyTo?: ChatMessage | null) => {
     const trimmed = content.trim();
     if (!trimmed) return;
 
@@ -710,6 +726,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       sender: currentUserIdRef.current
         ? { id: currentUserIdRef.current, name: sessionUserName, image: sessionUserImage }
         : null,
+      replyTo: replyTo
+        ? {
+          id: replyTo.id,
+          senderName: replyTo.senderId === currentUserIdRef.current ? "You" : getUserDisplayName(replyTo.sender, "Unknown user"),
+          content: replyTo.content.slice(0, 160),
+        }
+        : null,
       isPending: true,
     };
 
@@ -720,7 +743,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setUnreadCounts((current) => ({ ...current, [channelId]: 0 }));
 
     try {
-      const payload = await sendChannelMessage(channelId, trimmed);
+      const payload = await sendChannelMessage(channelId, trimmed, replyTo?.id);
       setCurrentUserId(payload.message.senderId);
       setMessages((current) => {
         const currentMessages = current[channelId] ?? [];
@@ -745,6 +768,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages((current) => ({ ...current, [payload.channel.id]: [] }));
     setUnreadCounts((current) => ({ ...current, [payload.channel.id]: 0 }));
     return payload.channel.id;
+  }, []);
+
+  const deleteMessage = useCallback(async (channelId: string, messageId: string) => {
+    const previousMessages = messagesRef.current[channelId] ?? [];
+
+    setMessages((current) => ({
+      ...current,
+      [channelId]: (current[channelId] ?? []).filter((message) => message.id !== messageId),
+    }));
+
+    try {
+      await deleteMessageRequest(messageId);
+    } catch (err) {
+      setMessages((current) => ({ ...current, [channelId]: previousMessages }));
+      setError(err instanceof Error ? err.message : "Failed to delete message.");
+      throw err;
+    }
   }, []);
 
   const deleteChannel = useCallback(async (channelId: string) => {
@@ -805,6 +845,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     loadMessages,
     markChannelAsRead,
     sendMessage,
+    deleteMessage,
     createChannel,
     deleteChannel,
   }), [
@@ -825,6 +866,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     loadMessages,
     markChannelAsRead,
     sendMessage,
+    deleteMessage,
     createChannel,
     deleteChannel,
   ]);

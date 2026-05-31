@@ -30,6 +30,11 @@ export interface ChatMessage {
   createdAt: string;
   updatedAt: string;
   sender: ChatUser | null;
+  replyTo?: {
+    id: string;
+    senderName: string;
+    content: string;
+  } | null;
   isPending?: boolean;
 }
 

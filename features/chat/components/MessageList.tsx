@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, MessageSquarePlus } from "lucide-react";
+import { CornerUpLeft, Search, MessageSquarePlus, Trash2 } from "lucide-react";
 import { useChat } from "../context/ChatContext";
 import type { ChatMessage } from "@/features/chat";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useTenant } from "@/components/providers/TenantProvider";
 
 function messageDebugShape(message: ChatMessage) {
   const diagnosticFields = message as ChatMessage & {
@@ -26,7 +28,8 @@ function messageDebugShape(message: ChatMessage) {
   };
 }
 
-export default function MessageList({ channelId, searchQuery = "" }: { channelId: string; searchQuery?: string }) {
+export default function MessageList({ channelId, searchQuery = "", onReply }: { channelId: string; searchQuery?: string; onReply?: (message: ChatMessage) => void }) {
+  const { role } = useTenant();
   const {
     messages,
     initialLoadingChannels,
@@ -34,6 +37,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
     error,
     currentUserId,
     loadMessages,
+    deleteMessage,
   } = useChat();
 
   const rawMessages = useMemo(() => messages[channelId] ?? [], [messages, channelId]);
@@ -66,6 +70,8 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const [previousMessageCount, setPreviousMessageCount] = useState(0);
+  const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ message: ChatMessage; x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (hasCachedMessages && hasLoaded) return;
@@ -93,6 +99,40 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-6 scroll-smooth bg-[#faf8f6]">
+      {contextMenu && (
+        <>
+          <button className="fixed inset-0 z-40 cursor-default" type="button" onClick={() => setContextMenu(null)} />
+          <div
+            className="fixed z-50 min-w-[150px] rounded-[8px] border border-black/[0.08] bg-white p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                onReply?.(contextMenu.message);
+                setContextMenu(null);
+              }}
+              className="w-full flex items-center gap-2 rounded-[6px] px-2.5 py-2 text-left font-aspekta text-[12px] text-black/75 hover:bg-black/[0.04]"
+            >
+              <CornerUpLeft size={13} />
+              Reply
+            </button>
+            {(contextMenu.message.senderId === currentUserId || role === "owner" || role === "admin") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMessageToDelete(contextMenu.message);
+                  setContextMenu(null);
+                }}
+                className="w-full flex items-center gap-2 rounded-[6px] px-2.5 py-2 text-left font-aspekta text-[12px] text-black/75 hover:bg-black/[0.04]"
+              >
+                <Trash2 size={13} />
+                {contextMenu.message.senderId === currentUserId ? "Tarik pesan" : "Hapus pesan"}
+              </button>
+            )}
+          </div>
+        </>
+      )}
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/10 bg-red-500/5 px-4 py-3 font-aspekta text-[12px] text-red-600">
           {error}
@@ -151,6 +191,7 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
         <div className="space-y-3.5">
           {visibleMessages.map((msg) => {
             const isMe = msg.senderId === currentUserId;
+            const canDeleteMessage = isMe || role === "owner" || role === "admin";
             const senderName = getUserDisplayName(msg.sender, isMe ? "You" : "Unknown User");
             const messageKey = msg.clientId ?? msg.id;
             const messageIndex = visibleMessages.findIndex((item) => (item.clientId ?? item.id) === messageKey);
@@ -161,6 +202,14 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
             return (
               <div
                 key={msg.clientId ?? msg.id}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  setContextMenu({
+                    message: msg,
+                    x: Math.min(event.clientX, window.innerWidth - 170),
+                    y: Math.min(event.clientY, window.innerHeight - 96),
+                  });
+                }}
                 className={`group flex w-full ${isMe ? "justify-end" : "justify-start"} ${
                   isNew ? "animate-slide-up-fade" : ""
                 }`}
@@ -192,6 +241,21 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
                           : "bg-[#f8f3f2] text-[#1c1b1b] rounded-full rounded-bl-xs border border-black/3 hover:bg-[#f2eceb]"
                       }`}
                     >
+                      {msg.replyTo && (
+                        <div className={`mb-1.5 rounded-[10px] px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] ${
+                          isMe ? "bg-white/[0.12]" : "bg-white/70 border border-black/[0.04]"
+                        }`}>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-aspekta text-[10px] ${isMe ? "text-white/55" : "text-black/35"}`}>↩</span>
+                            <p className={`font-label-caps text-[8px] font-bold uppercase tracking-[0.14em] ${isMe ? "text-white/60" : "text-black/35"}`}>
+                              {msg.replyTo.senderName}
+                            </p>
+                          </div>
+                          <p className={`mt-0.5 font-aspekta text-[10.5px] truncate ${isMe ? "text-white/55" : "text-black/45"}`}>
+                            {msg.replyTo.content}
+                          </p>
+                        </div>
+                      )}
                       {msg.content ?? ""}
                       
                       {msg.isPending && (
@@ -202,6 +266,18 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
                         </div>
                       )}
                     </div>
+                    {!msg.isPending && canDeleteMessage && (
+                      <button
+                        type="button"
+                        onClick={() => setMessageToDelete(msg)}
+                        className={`opacity-0 group-hover:opacity-100 transition-all h-6 w-6 flex items-center justify-center rounded-full text-black/35 hover:text-black/70 hover:bg-black/[0.05] ${
+                          isMe ? "mr-1" : "ml-1"
+                        }`}
+                        title={isMe ? "Recall message" : "Delete message"}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -210,6 +286,19 @@ export default function MessageList({ channelId, searchQuery = "" }: { channelId
           <div ref={bottomRef} />
         </div>
       )}
+      <ConfirmationModal
+        isOpen={!!messageToDelete}
+        onClose={() => setMessageToDelete(null)}
+        onConfirm={() => {
+          if (!messageToDelete) return;
+          void deleteMessage(channelId, messageToDelete.id);
+          setMessageToDelete(null);
+        }}
+        title={messageToDelete?.senderId === currentUserId ? "Recall message?" : "Delete message?"}
+        description="This message will be permanently deleted from the database. This action cannot be undone."
+        confirmLabel={messageToDelete?.senderId === currentUserId ? "Recall Message" : "Delete Message"}
+        variant="info"
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ export const CreateChannelSchema = z.object({
 
 export const CreateMessageSchema = z.object({
   content: z.string().trim().min(1).max(4000),
+  replyToId: z.string().trim().min(1).max(128).optional(),
 });
 
 export const UpdateMessageSchema = z.object({

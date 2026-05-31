@@ -68,11 +68,11 @@ export async function listMessages(channelId: string) {
   return parseResponse<{ messages: ChatMessage[] }>(response);
 }
 
-export async function sendChannelMessage(channelId: string, content: string) {
+export async function sendChannelMessage(channelId: string, content: string, replyToId?: string) {
   const response = await fetch(`/api/tenant/chat/channels/${channelId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, ...(replyToId ? { replyToId } : {}) }),
     cache: "no-store",
     credentials: "include",
   });
@@ -95,6 +95,15 @@ export async function markChannelRead(channelId: string) {
 
 export async function deleteChannel(channelId: string) {
   const response = await fetch(`/api/tenant/chat/channels/${channelId}`, {
+    method: "DELETE",
+    cache: "no-store",
+    credentials: "include",
+  });
+  return parseResponse<{ success: true }>(response);
+}
+
+export async function deleteMessage(messageId: string) {
+  const response = await fetch(`/api/tenant/chat/messages/${messageId}`, {
     method: "DELETE",
     cache: "no-store",
     credentials: "include",

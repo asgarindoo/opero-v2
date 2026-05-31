@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Send, AlertTriangle } from "lucide-react";
+import { Send, AlertTriangle, X } from "lucide-react";
 import { useChat } from "../context/ChatContext";
+import type { ChatMessage } from "@/features/chat";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 const MAX_CHARS = 4000;
 const WARN_THRESHOLD = 3600; // 90% — start showing counter
 
-export default function MessageComposer({ channelId }: { channelId: string }) {
-  const { sendMessage } = useChat();
+export default function MessageComposer({ channelId, replyTo, onCancelReply }: { channelId: string; replyTo?: ChatMessage | null; onCancelReply?: () => void }) {
+  const { sendMessage, currentUserId } = useChat();
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -23,12 +25,14 @@ export default function MessageComposer({ channelId }: { channelId: string }) {
   const handleSend = async () => {
     if (!content.trim() || isSending || isOverLimit) return;
     const nextContent = content.trim();
+    const nextReplyTo = replyTo;
     setIsSending(true);
     setErrorMsg(null);
     setContent("");
+    onCancelReply?.();
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     try {
-      await sendMessage(channelId, nextContent);
+      await sendMessage(channelId, nextContent, nextReplyTo);
     } catch (err) {
       setContent(nextContent);
       setErrorMsg(err instanceof Error ? err.message : "Failed to send message.");
@@ -58,9 +62,35 @@ export default function MessageComposer({ channelId }: { channelId: string }) {
     }
   }, [content]);
 
+  useEffect(() => {
+    if (!replyTo) return;
+    textareaRef.current?.focus();
+  }, [replyTo]);
+
   return (
     <div className="px-4 pb-4 pt-2 bg-white shrink-0">
       <div className="bg-white border border-black/[0.06] rounded-xl transition-all overflow-hidden shadow-sm focus-within:border-black/25 focus-within:shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+        {replyTo && (
+          <div className="mx-3 mt-3 rounded-[10px] border border-black/[0.05] bg-[#f7f2ef] px-3 py-2.5 flex items-start gap-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white border border-black/[0.05] font-aspekta text-[10px] font-bold text-black/45">
+              ↩
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-label-caps text-[8.5px] font-bold uppercase tracking-[0.16em] text-black/35">
+                Threading {replyTo.senderId === currentUserId ? "your message" : getUserDisplayName(replyTo.sender, "Unknown user")}
+              </p>
+              <p className="mt-0.5 font-aspekta text-[11.5px] text-black/60 truncate">{replyTo.content}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onCancelReply}
+              className="p-1 rounded-md text-black/35 hover:text-black/70 hover:bg-black/[0.04] transition-colors"
+              title="Cancel reply"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
         <textarea
           ref={textareaRef}
           value={content}

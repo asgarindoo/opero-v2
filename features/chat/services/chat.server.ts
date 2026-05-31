@@ -26,6 +26,7 @@ type MessageRow = {
   senderId: string | null;
   content: string | null;
   type: string | null;
+  payload: unknown;
   createdAt: Date;
   updatedAt: Date;
   senderName: string | null;
@@ -53,6 +54,13 @@ function mapChannel(row: ChannelRow): ChatChannel {
 }
 
 function mapMessage(row: MessageRow): ChatMessage {
+  const payload = row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+    ? row.payload as Record<string, unknown>
+    : {};
+  const replyTo = payload.replyTo && typeof payload.replyTo === "object" && !Array.isArray(payload.replyTo)
+    ? payload.replyTo as Record<string, unknown>
+    : null;
+
   return {
     id: row.id,
     organizationId: row.organizationId,
@@ -68,6 +76,13 @@ function mapMessage(row: MessageRow): ChatMessage {
         name: getUserDisplayName({ name: row.senderName, email: row.senderEmail }, "Unknown user"),
         email: row.senderEmail ?? undefined,
         image: normalizeUserAvatarImage(row.senderId, row.senderImage),
+      }
+      : null,
+    replyTo: replyTo && typeof replyTo.id === "string"
+      ? {
+        id: replyTo.id,
+        senderName: typeof replyTo.senderName === "string" ? replyTo.senderName : "Message",
+        content: typeof replyTo.content === "string" ? replyTo.content : "",
       }
       : null,
   };
@@ -168,7 +183,7 @@ export async function listTenantMessages(channelId: string) {
 
   const rows = await prisma.$queryRaw<MessageRow[]>`
     SELECT
-      cm.id, cm."organizationId", cm."channelId", cm."senderId", cm.content, cm.type,
+      cm.id, cm."organizationId", cm."channelId", cm."senderId", cm.content, cm.type, cm.payload,
       cm."createdAt", cm."updatedAt",
       u.name AS "senderName", u.email AS "senderEmail", u.image AS "senderImage"
     FROM chat_message cm
@@ -182,10 +197,34 @@ export async function listTenantMessages(channelId: string) {
   return rows.map(mapMessage);
 }
 
-export async function createTenantMessage(channelId: string, content: string) {
+export async function createTenantMessage(channelId: string, content: string, replyToId?: string) {
   const ctx = await requireTenant();
   const channel = await getTenantChannel(ctx, channelId);
   if (!channel) return null;
+  let replyTo: { id: string; senderName: string; content: string } | null = null;
+
+  if (replyToId) {
+    const replyRows = await prisma.$queryRaw<MessageRow[]>`
+      SELECT
+        cm.id, cm."organizationId", cm."channelId", cm."senderId", cm.content, cm.type, cm.payload,
+        cm."createdAt", cm."updatedAt",
+        u.name AS "senderName", u.email AS "senderEmail", u.image AS "senderImage"
+      FROM chat_message cm
+      LEFT JOIN "user" u ON u.id = cm."senderId"
+      WHERE cm.id = ${replyToId}
+        AND cm."organizationId" = ${ctx.tenantId}
+        AND cm."channelId" = ${channelId}
+      LIMIT 1
+    `;
+    const row = replyRows[0];
+    if (row) {
+      replyTo = {
+        id: row.id,
+        senderName: row.senderId === ctx.userId ? "You" : getUserDisplayName({ name: row.senderName, email: row.senderEmail }, "Unknown user"),
+        content: (row.content ?? "").slice(0, 160),
+      };
+    }
+  }
 
   const rows = await prisma.$queryRaw<MessageRow[]>`
     INSERT INTO chat_message (
@@ -198,12 +237,13 @@ export async function createTenantMessage(channelId: string, content: string) {
       jsonb_build_object(
         'senderName', ${ctx.user.name}::text,
         'senderEmail', ${ctx.user.email}::text,
-        'senderImage', ${ctx.user.image}::text
+        'senderImage', ${ctx.user.image}::text,
+        'replyTo', ${replyTo ? JSON.stringify(replyTo) : null}::jsonb
       ),
       ${ctx.userId}, ${ctx.userId}, now(), now()
     )
     RETURNING
-      id, "organizationId", "channelId", "senderId", content, type, "createdAt", "updatedAt",
+      id, "organizationId", "channelId", "senderId", content, type, payload, "createdAt", "updatedAt",
       (SELECT name FROM "user" WHERE id = ${ctx.userId}) AS "senderName",
       (SELECT email FROM "user" WHERE id = ${ctx.userId}) AS "senderEmail",
       (SELECT image FROM "user" WHERE id = ${ctx.userId}) AS "senderImage"
@@ -261,7 +301,7 @@ export async function updateTenantMessage(messageId: string, content: string) {
       AND cm."organizationId" = ${ctx.tenantId}
       AND (${allowed} OR cm."senderId" = ${ctx.userId})
     RETURNING
-      cm.id, cm."organizationId", cm."channelId", cm."senderId", cm.content, cm.type, cm."createdAt", cm."updatedAt",
+      cm.id, cm."organizationId", cm."channelId", cm."senderId", cm.content, cm.type, cm.payload, cm."createdAt", cm."updatedAt",
       (SELECT name FROM "user" WHERE id = cm."senderId") AS "senderName",
       (SELECT email FROM "user" WHERE id = cm."senderId") AS "senderEmail",
       (SELECT image FROM "user" WHERE id = cm."senderId") AS "senderImage"
@@ -291,12 +331,26 @@ export async function deleteTenantChannel(channelId: string) {
 
   if (!allowed) return null;
 
-  const rows = await prisma.$queryRaw<{ id: string }[]>`
-    DELETE FROM chat_channel
-    WHERE id = ${channelId}
-      AND "organizationId" = ${ctx.tenantId}
-    RETURNING id
-  `;
+  const rows = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      DELETE FROM chat_message
+      WHERE "channelId" = ${channelId}
+        AND "organizationId" = ${ctx.tenantId}
+    `;
+
+    await tx.$executeRaw`
+      DELETE FROM chat_reads
+      WHERE "channelId" = ${channelId}
+        AND "organizationId" = ${ctx.tenantId}
+    `;
+
+    return tx.$queryRaw<{ id: string }[]>`
+      DELETE FROM chat_channel
+      WHERE id = ${channelId}
+        AND "organizationId" = ${ctx.tenantId}
+      RETURNING id
+    `;
+  });
 
   return rows[0] ?? null;
 }
