@@ -225,6 +225,7 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
                   <div className="w-36 shrink-0">
                     <DatePicker
                       align="right"
+                      position="top"
                       value={m.date}
                       onChange={val => updateMilestone(m.id, { date: val || "" })}
                       placeholder="Date..."

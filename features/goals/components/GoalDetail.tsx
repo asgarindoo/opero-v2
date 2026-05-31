@@ -18,6 +18,7 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [goal, setFlow] = useState<Goal>(initialGoal);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [milestoneToDelete, setMilestoneToDelete] = useState<Milestone | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -59,6 +60,12 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
     const progress = nextMilestones.length === 0 ? 0 : Math.round((completedCount / nextMilestones.length) * 100);
     
     handleUpdate({ milestones: nextMilestones, progress });
+  }
+
+  function confirmRemoveMilestone() {
+    if (!milestoneToDelete) return;
+    removeMilestone(milestoneToDelete.id);
+    setMilestoneToDelete(null);
   }
 
   function addMilestone() {
@@ -217,7 +224,7 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
                     </div>
                     
                     <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity mt-1">
-                      <button onClick={() => removeMilestone(m.id)} className="p-1.5 rounded hover:bg-black/5 text-red-500">
+                      <button onClick={() => setMilestoneToDelete(m)} className="p-1.5 rounded hover:bg-black/5 text-red-500">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -322,6 +329,15 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
         title="Delete goal?"
         description="This action permanently removes this operational goal and its associated milestones. This action cannot be undone."
         confirmLabel="Delete Goal"
+      />
+      <ConfirmationModal
+        isOpen={!!milestoneToDelete}
+        onClose={() => setMilestoneToDelete(null)}
+        onConfirm={confirmRemoveMilestone}
+        title="Delete milestone?"
+        description={`This action permanently removes "${milestoneToDelete?.title || "Untitled Milestone"}" from this goal. This action cannot be undone.`}
+        confirmLabel="Delete Milestone"
+        variant="danger"
       />
     </div>
   );

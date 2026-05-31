@@ -1,0 +1,60 @@
+[browser] [presence] heartbeat error TypeError: Failed to fetch
+    at sendPresenceHeartbeat (features/presence/services/presence.client.ts:7:26)
+    at syncPresence (features/presence/context/PresenceProvider.tsx:45:49)
+   5 | export async function sendPresenceHeartbeat(currentPage?: string): Promise<PresenceRespons...
+   6 |   console.log("[presence] sending heartbeat", { currentPage, url: PRESENCE_ENDPOINT });
+>  7 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+   8 |     method: "POST",
+   9 |     headers: { "Content-Type": "application/json" },
+  10 |     body: JSON.stringify({ currentPage }), (features/presence/context/PresenceProvider.tsx:66:17)
+[browser] [presence] heartbeat error TypeError: Failed to fetch
+    at sendPresenceHeartbeat (features/presence/services/presence.client.ts:7:26)
+    at syncPresence (features/presence/context/PresenceProvider.tsx:45:49)
+   5 | export async function sendPresenceHeartbeat(currentPage?: string): Promise<PresenceRespons...
+   6 |   console.log("[presence] sending heartbeat", { currentPage, url: PRESENCE_ENDPOINT });
+>  7 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+   8 |     method: "POST",
+   9 |     headers: { "Content-Type": "application/json" },
+  10 |     body: JSON.stringify({ currentPage }), (features/presence/context/PresenceProvider.tsx:66:17)
+[browser] [presence] heartbeat error TypeError: Failed to fetch
+    at sendPresenceHeartbeat (features/presence/services/presence.client.ts:7:26)
+    at syncPresence (features/presence/context/PresenceProvider.tsx:45:49)
+   5 | export async function sendPresenceHeartbeat(currentPage?: string): Promise<PresenceRespons...
+   6 |   console.log("[presence] sending heartbeat", { currentPage, url: PRESENCE_ENDPOINT });
+>  7 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+   8 |     method: "POST",
+   9 |     headers: { "Content-Type": "application/json" },
+  10 |     body: JSON.stringify({ currentPage }), (features/presence/context/PresenceProvider.tsx:66:17)
+[browser] [presence] poll error TypeError: Failed to fetch
+    at fetchPresence (features/presence/services/presence.client.ts:28:26)
+    at loadPresence (features/presence/context/PresenceProvider.tsx:103:41)
+  26 | export async function fetchPresence(): Promise<PresenceResponse> {
+  27 |   console.log("[presence] fetching presence", { url: PRESENCE_ENDPOINT });
+> 28 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+  29 |     method: "GET",
+  30 |     cache: "no-store",
+  31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)
+[browser] [presence] poll error TypeError: Failed to fetch
+    at fetchPresence (features/presence/services/presence.client.ts:28:26)
+    at loadPresence (features/presence/context/PresenceProvider.tsx:103:41)
+  26 | export async function fetchPresence(): Promise<PresenceResponse> {
+  27 |   console.log("[presence] fetching presence", { url: PRESENCE_ENDPOINT });
+> 28 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+  29 |     method: "GET",
+  30 |     cache: "no-store",
+  31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)
+[browser] [presence] poll error TypeError: Failed to fetch
+    at fetchPresence (features/presence/services/presence.client.ts:28:26)
+    at loadPresence (features/presence/context/PresenceProvider.tsx:103:41)
+  26 | export async function fetchPresence(): Promise<PresenceResponse> {
+  27 |   console.log("[presence] fetching presence", { url: PRESENCE_ENDPOINT });
+> 28 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+  29 |     method: "GET",
+  30 |     cache: "no-store",
+  31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)

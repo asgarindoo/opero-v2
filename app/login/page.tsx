@@ -50,7 +50,7 @@ export default function LoginPage() {
       hostname.endsWith(".localhost");
 
     if (isTenantSubdomain) {
-      const target = getRootAppUrl("/login");
+      const target = getRootAppUrl(`/login${window.location.search}`);
       console.log(`[LOGIN] client-side subdomain guard: ${hostname} → ${target}`);
       window.location.replace(target);
     }

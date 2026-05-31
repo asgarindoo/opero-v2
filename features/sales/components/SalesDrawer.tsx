@@ -6,6 +6,7 @@ import { X, Clock, User, DollarSign, Euro, PoundSterling, JapaneseYen, TrendingU
 import { SaleStatus, SaleType } from "@/features/sales";
 import { createInvoice } from "@/features/invoices/services/invoices.client";
 import type { Invoice, InvoiceItem } from "@/features/invoices/types";
+import { createClientId } from "@/lib/client-id";
 
 import Drawer from "@/components/ui/Drawer";
 import Button from "@/components/ui/Button";
@@ -100,7 +101,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
 
     const totalAmount = sale.items.reduce((acc, curr) => acc + curr.subtotal, 0);
     const invoiceItems: InvoiceItem[] = sale.items.map(it => ({
-      id: crypto.randomUUID(),
+      id: createClientId(),
       description: it.name,
       quantity: it.quantity,
       unitPrice: it.price,
@@ -109,8 +110,8 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
     }));
 
     const newInvoice: Invoice = {
-      id: `inv-${crypto.randomUUID()}`,
-      invoiceNumber: `INV-${issuedAt.getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+      id: `inv-${createClientId()}`,
+      invoiceNumber: `INV-${issuedAt.getFullYear()}-${createClientId().slice(0, 8).toUpperCase()}`,
       contactName: sale.contactName,
       contactId: sale.contactId,
       saleId: sale.id,
@@ -418,9 +419,9 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
           }
         }}
         title="Delete Note"
-        message="Are you sure you want to delete this note? This action cannot be undone."
-        confirmText="Delete"
-        isDanger={true}
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
       />
     </Drawer>
   );

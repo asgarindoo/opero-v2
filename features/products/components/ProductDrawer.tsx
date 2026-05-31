@@ -31,7 +31,7 @@ function formatPrice(price: number, currency: string = "USD") {
 }
 
 export default function ProductDrawer({ productId, onClose }: { productId: string; onClose: () => void }) {
-  const { allProducts, adjustStock, addActivity } = useProducts();
+  const { allProducts, adjustStock, addActivity, updateProduct } = useProducts();
   const product = allProducts.find(p => p.id === productId);
   const { user } = useTenant();
   const [adjustQty, setAdjustQty] = useState("");
@@ -339,9 +339,9 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
           }
         }}
         title="Delete Note"
-        message="Are you sure you want to delete this note? This action cannot be undone."
-        confirmText="Delete"
-        isDanger={true}
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
       />
     </Drawer>
   );

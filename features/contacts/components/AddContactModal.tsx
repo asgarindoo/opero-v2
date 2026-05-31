@@ -111,10 +111,9 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
               placeholder="Company or Contact Name…"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="font-display font-semibold pr-4"
+              className="font-display font-semibold"
               style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
             />
-            {name.length === 0 && <span className="absolute left-[200px] top-1 text-red-500 font-display">*</span>}
           </div>
 
           <div className="grid grid-cols-2 gap-4 items-start">
@@ -206,7 +205,7 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
         <div className="space-y-4">
-          <SL>Primary Contact <span className="text-red-500">*</span></SL>
+          <SL>Primary Contact</SL>
 
           <div className="grid grid-cols-2 gap-4 items-start">
             <GlobalInput

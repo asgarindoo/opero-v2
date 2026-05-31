@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import { getRootAppUrl } from "@/lib/tenant-url";
 
 const AUTH_TIMEOUT_MS = 15000;
 
@@ -35,9 +36,9 @@ export default function RegisterPage() {
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   useEffect(() => {
-    const { protocol, hostname, port, pathname, search } = window.location;
+    const { hostname, pathname, search } = window.location;
     if (hostname.endsWith(".localhost")) {
-      window.location.replace(`${protocol}//localhost${port ? `:${port}` : ""}${pathname}${search}`);
+      window.location.replace(getRootAppUrl(`${pathname}${search}`));
     }
   }, []);
 

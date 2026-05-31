@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { createClientId } from "@/lib/client-id";
 import { getUserDisplayName } from "@/lib/user-identity";
 import type { ChatChannel, ChatMessage, ChatMessageType } from "@/features/chat";
 import {
@@ -694,7 +695,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    const clientId = `pending-${crypto.randomUUID()}`;
+    const clientId = `pending-${createClientId()}`;
     const timestamp = new Date().toISOString();
     const optimisticMessage: ChatMessage = {
       id: clientId,

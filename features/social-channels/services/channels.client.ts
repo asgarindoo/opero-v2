@@ -1,10 +1,21 @@
 import { Channel } from "../context/SocialChannelsContext";
 
 function getTenantSlug() {
-  if (typeof window === 'undefined') return '';
+  if (typeof window === "undefined") return "";
+
+  const rootUrl = process.env.NEXT_PUBLIC_ROOT_URL || "http://lvh.me:3000";
+  const rootHostname = new URL(rootUrl).hostname;
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || rootHostname;
+  const { hostname } = window.location;
+
+  if (hostname.endsWith(`.${rootDomain}`)) {
+    const slug = hostname.slice(0, -(`.${rootDomain}`.length));
+    if (slug && !slug.includes(".")) return slug;
+  }
+
   const path = window.location.pathname;
   const match = path.match(/^\/([^\/]+)/);
-  return match ? match[1] : '';
+  return match ? match[1] : "";
 }
 
 function getBaseUrl() {
