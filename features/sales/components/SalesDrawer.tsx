@@ -12,10 +12,15 @@ import Drawer from "@/components/ui/Drawer";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Dropdown from "@/components/ui/Dropdown";
+import DatePicker from "@/components/ui/DatePicker";
 import { useTenant } from "@/components/providers/TenantProvider";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 
 function formatCurrency(val: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(val);
@@ -56,6 +61,12 @@ function Section({ label, count, children, defaultOpen = true }: { label: string
   );
 }
 
+function getDefaultInvoiceDueDate() {
+  const defaultDue = new Date();
+  defaultDue.setDate(defaultDue.getDate() + 14);
+  return defaultDue.toISOString().split("T")[0];
+}
+
 export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClose: () => void }) {
   const { sales, addActivity, updateSale } = useSales();
   const { user } = useTenant();
@@ -63,6 +74,11 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
   const [newNote, setNewNote] = useState("");
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [tab, setTab] = useState<"details" | "activity">("details");
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [invoiceDueDate, setInvoiceDueDate] = useState(getDefaultInvoiceDueDate);
+  const [invoiceModalError, setInvoiceModalError] = useState<string | null>(null);
+  const [generatedInvoiceNumber, setGeneratedInvoiceNumber] = useState<string | null>(null);
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
 
   if (!sale) return null;
 
@@ -83,20 +99,19 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
     addActivity(sale.id, { type: "payment", description: "marked sale as Paid and Completed" });
   };
 
+  const handleOpenInvoiceModal = () => {
+    setInvoiceDueDate(getDefaultInvoiceDueDate());
+    setInvoiceModalError(null);
+    setGeneratedInvoiceNumber(null);
+    setIsInvoiceModalOpen(true);
+  };
+
   const handleGenerateInvoice = async () => {
     const issuedAt = new Date();
-    const defaultDue = new Date(issuedAt);
-    defaultDue.setDate(defaultDue.getDate() + 14);
-    const defaultDueStr = defaultDue.toISOString().split("T")[0];
-
-    // Prompt user for due date
-    const dueDateInput = window.prompt("Set invoice due date (YYYY-MM-DD):", defaultDueStr);
-    if (dueDateInput === null) return; // User cancelled
-
-    let dueAt = new Date(dueDateInput);
+    const dueAt = new Date(invoiceDueDate);
     if (isNaN(dueAt.getTime())) {
-      alert("Invalid date format. Using default +14 days.");
-      dueAt = defaultDue;
+      setInvoiceModalError("Please choose a valid due date.");
+      return;
     }
 
     const totalAmount = sale.items.reduce((acc, curr) => acc + curr.subtotal, 0);
@@ -135,12 +150,16 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
     };
 
     try {
+      setIsGeneratingInvoice(true);
+      setInvoiceModalError(null);
       await createInvoice<Invoice>(newInvoice);
       addActivity(sale.id, { type: "status_change", description: `generated invoice ${newInvoice.invoiceNumber}` });
-      alert(`Invoice ${newInvoice.invoiceNumber} generated successfully!`);
+      setGeneratedInvoiceNumber(newInvoice.invoiceNumber);
     } catch (err) {
       console.error("Failed to generate invoice", err);
-      alert("Failed to generate invoice");
+      setInvoiceModalError("Failed to generate invoice. Please try again.");
+    } finally {
+      setIsGeneratingInvoice(false);
     }
   };
 
@@ -270,7 +289,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                         <span className="font-label-caps text-[10px] tracking-widest mt-[1px]">PAID</span>
                       </div>
                     )}
-                    <Button variant="secondary" className="flex-1" icon={FileText} onClick={handleGenerateInvoice}>
+                    <Button variant="secondary" className="flex-1" icon={FileText} onClick={handleOpenInvoiceModal}>
                       INVOICE
                     </Button>
                   </div>
@@ -423,6 +442,59 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
         confirmLabel="Delete"
         variant="danger"
       />
+      {isInvoiceModalOpen && (
+        <ModalShell onClose={() => setIsInvoiceModalOpen(false)} maxWidth={420}>
+          <ModalHeader title={generatedInvoiceNumber ? "Invoice Generated" : "Generate Invoice"} onClose={() => setIsInvoiceModalOpen(false)} />
+          <ModalContent className="db-sidebar space-y-4">
+            {generatedInvoiceNumber ? (
+              <div className="rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 py-3">
+                <p className="font-body-sm text-[13px] text-on-surface-variant opacity-80">
+                  Invoice <span className="font-display font-semibold text-on-surface">{generatedInvoiceNumber}</span> generated successfully.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">
+                  Due Date
+                </span>
+                <DatePicker
+                  value={invoiceDueDate}
+                  onChange={(value) => {
+                    setInvoiceDueDate(value || "");
+                    setInvoiceModalError(null);
+                  }}
+                  className="w-full"
+                />
+              </div>
+            )}
+          </ModalContent>
+          <ModalFooter summary={invoiceModalError}>
+            <button
+              type="button"
+              onClick={() => setIsInvoiceModalOpen(false)}
+              className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors"
+              style={{ color: "var(--color-on-surface-variant)", opacity: 0.65 }}
+            >
+              {generatedInvoiceNumber ? "Close" : "Cancel"}
+            </button>
+            {!generatedInvoiceNumber && (
+              <button
+                type="button"
+                onClick={handleGenerateInvoice}
+                disabled={isGeneratingInvoice}
+                className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all min-w-[96px] flex items-center justify-center"
+                style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
+              >
+                {isGeneratingInvoice ? (
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-current/30 border-t-current animate-spin" />
+                ) : (
+                  "Generate"
+                )}
+              </button>
+            )}
+          </ModalFooter>
+        </ModalShell>
+      )}
     </Drawer>
   );
 }

@@ -72,6 +72,12 @@ export default function ProfileSettingsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
   const trimmedName = name.trim();
   const nameError = useMemo(() => {
     if (!trimmedName) return "Full name is required.";

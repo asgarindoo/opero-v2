@@ -17,11 +17,25 @@ export async function listInvoices() {
 
 export async function getInvoiceById(id: string) {
   const ctx = await requireTenant();
-  const invoice = await prisma.invoice.findFirst({
-    where: { id, organizationId: ctx.tenantId },
-    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
-  });
+  const invoice = await findInvoiceRecord(ctx.tenantId, id, true);
   return invoice ? mapDomainRecord(invoice) : null;
+}
+
+async function findInvoiceRecord(tenantId: string, id: string, includeCreator = false) {
+  const include = includeCreator
+    ? { createdBy: { select: { id: true, name: true, email: true, image: true } } }
+    : undefined;
+  const current = await prisma.invoice.findFirst({
+    where: { id, organizationId: tenantId },
+    include,
+  });
+  if (current) return current;
+
+  const invoices = await prisma.invoice.findMany({
+    where: { organizationId: tenantId },
+    include,
+  });
+  return invoices.find((invoice) => parsePayload(invoice.payload).id === id) ?? null;
 }
 
 async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus: string, mergedPayload: any, updatedTitle: string) {
@@ -132,21 +146,21 @@ export async function createInvoice(data: Record<string, unknown>) {
 
 export async function updateInvoice(id: string, patch: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const current = await prisma.invoice.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await findInvoiceRecord(ctx.tenantId, id);
   if (!current) return null;
   const mergedPayload = { ...parsePayload(current.payload), ...patch };
   const result = await prisma.invoice.updateMany({
-    where: { id, organizationId: ctx.tenantId },
+    where: { id: current.id, organizationId: ctx.tenantId },
     data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: mergedPayload, updatedById: ctx.userId },
   });
   if (result.count === 0) return null;
-  const updated = await prisma.invoice.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
+  const updated = await prisma.invoice.findFirst({ where: { id: current.id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: current.id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
 
   // Post-update hook: Manage Finance Cashflow for Invoices
   if (typeof patch.status === "string" && patch.status !== current.status) {
-    await syncFinanceTransaction(ctx, id, patch.status, mergedPayload, updated.title ?? "Untitled");
+    await syncFinanceTransaction(ctx, current.id, patch.status, mergedPayload, updated.title ?? "Untitled");
   }
 
   return mapDomainRecord(updated);
@@ -154,10 +168,10 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
 
 export async function deleteInvoice(id: string) {
   const ctx = await requireTenant();
-  const current = await prisma.invoice.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await findInvoiceRecord(ctx.tenantId, id);
   if (!current) return null;
-  const result = await prisma.invoice.deleteMany({ where: { id, organizationId: ctx.tenantId } });
+  const result = await prisma.invoice.deleteMany({ where: { id: current.id, organizationId: ctx.tenantId } });
   if (result.count === 0) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Deleted", entityType: ENTITY, entityId: id, entityName: current.title });
-  return { id };
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Deleted", entityType: ENTITY, entityId: current.id, entityName: current.title });
+  return { id: current.id };
 }

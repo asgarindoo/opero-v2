@@ -491,9 +491,21 @@ export default function SocialChannelsPage() {
 
                                  {/* actions */}
                                  <div className="flex items-center gap-4 shrink-0 ml-4">
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                       <button onClick={(e) => { e.stopPropagation(); openEdit(ch); }} className="p-1.5 text-black/100 hover:text-black transition-colors rounded-[4px] hover:bg-black/[0.04]"><Edit2 size={12} /></button>
-                                       <button onClick={(e) => { e.stopPropagation(); setChannelToDelete(ch); setIsDeleteModalOpen(true); }} className="p-1.5 text-black/60 hover:text-red-500 transition-colors rounded-[4px] hover:bg-red-50"><X size={12} /></button>
+                                    <div className="flex items-center gap-1">
+                                       <button
+                                          onClick={(e) => { e.stopPropagation(); openEdit(ch); }}
+                                          className="h-7 w-7 flex items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 hover:text-on-surface transition-colors rounded-[5px] bg-black/[0.025] hover:bg-black/[0.06]"
+                                          title="Edit channel"
+                                       >
+                                          <Edit2 size={12} />
+                                       </button>
+                                       <button
+                                          onClick={(e) => { e.stopPropagation(); setChannelToDelete(ch); setIsDeleteModalOpen(true); }}
+                                          className="h-7 w-7 flex items-center justify-center text-red-500/70 hover:text-red-600 transition-colors rounded-[5px] bg-red-50/60 hover:bg-red-50"
+                                          title="Delete channel"
+                                       >
+                                          <X size={12} />
+                                       </button>
                                     </div>
                                  </div>
                               </div>

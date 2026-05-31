@@ -58,3 +58,13 @@
   29 |     method: "GET",
   30 |     cache: "no-store",
   31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)
+[browser] Failed to mark invoice as paid: Error: Record not found
+    at apiRequest (lib/client/api.ts:32:11)
+    at async updateInvoice (features/invoices/services/invoices.client.ts:19:19)
+  30 |   if (!res.ok) {
+  31 |     const message = (payload && (payload.error as string)) || "Request failed";
+> 32 |     throw new Error(message);
+     |           ^
+  33 |   }
+  34 |
+  35 |   return payload as T; (features/invoices/context/InvoicesContext.tsx:127:17)

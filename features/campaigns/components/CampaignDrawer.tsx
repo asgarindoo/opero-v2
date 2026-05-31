@@ -52,12 +52,30 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
   const { user } = useTenant();
   const [tab, setTab] = useState<"details" | "activity">("details");
   const [campaignTasks, setCampaignTasks] = useState<Task[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const campaign = campaigns.find(c => c.id === campaignId);
 
   React.useEffect(() => {
+    let cancelled = false;
+
     if (campaignId) {
-      listCampaignTasks<Task>(campaignId).then(setCampaignTasks).catch(console.error);
+      setIsLoadingTasks(true);
+      listCampaignTasks<Task>(campaignId)
+        .then((tasks) => {
+          if (!cancelled) setCampaignTasks(tasks);
+        })
+        .catch((err) => {
+          console.error("Failed to load campaign tasks", err);
+          if (!cancelled) setCampaignTasks([]);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoadingTasks(false);
+        });
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [campaignId]);
 
   if (!campaign) return null;
@@ -222,14 +240,35 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
             </Section>
 
             {/* Campaign Tasks */}
-            <Section label="Campaign Tasks" count={campaignTasks.length}>
+            <Section label="Campaign Tasks" count={isLoadingTasks ? undefined : campaignTasks.length}>
               <div className="flex justify-start -mt-1 mb-2">
                 <TaskSelector
                   selectedTasks={campaignTasks}
                   onSelect={handleAttachTask}
                 />
               </div>
-              {campaignTasks.length > 0 ? (
+              {isLoadingTasks ? (
+                <div className="flex flex-col">
+                  {[0, 1, 2].map((item) => (
+                    <div
+                      key={item}
+                      className={`flex items-start gap-3 py-3 px-2 -mx-2 ${item !== 2 ? "border-b border-black/[0.04]" : ""}`}
+                    >
+                      <div className="mt-0.5 w-4 h-4 rounded-full bg-black/[0.04] animate-pulse" />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="h-3 w-2/3 rounded bg-black/[0.04] animate-pulse" />
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-12 rounded bg-black/[0.035] animate-pulse" />
+                          <div className="h-1 w-1 rounded-full bg-black/[0.06]" />
+                          <div className="h-2 w-16 rounded bg-black/[0.035] animate-pulse" />
+                          <div className="h-1 w-1 rounded-full bg-black/[0.06]" />
+                          <div className="h-2 w-8 rounded bg-black/[0.035] animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : campaignTasks.length > 0 ? (
                 <div className="flex flex-col">
                   {campaignTasks.map((task, idx) => {
                     const totalCheck = task.checklist?.length || 0;

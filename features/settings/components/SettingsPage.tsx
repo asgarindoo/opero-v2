@@ -29,6 +29,14 @@ import UserAvatar from "@/components/common/UserAvatar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 
 type SettingsTab = "tenant" | "billing" | "security";
+type SettingsForm = {
+  name: string;
+  logo: string | null;
+  websiteUrl: string;
+  brandColor: string;
+  timezone: string;
+  locale: string;
+};
 
 interface TenantSettingsResponse {
   tenant: {
@@ -74,14 +82,15 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("tenant");
   const [data, setData] = useState<TenantSettingsResponse | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<SettingsForm>({
     name: "",
-    logo: "" as string | null,
+    logo: "",
     websiteUrl: "",
     brandColor: "",
     timezone: "UTC",
     locale: "en",
   });
+  const [initialForm, setInitialForm] = useState<SettingsForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -92,6 +101,7 @@ export default function SettingsPage() {
 
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRemoveLogoModalOpen, setIsRemoveLogoModalOpen] = useState(false);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -135,14 +145,16 @@ export default function SettingsPage() {
         if (cancelled) return;
         setData(payload);
         const logo = payload.tenant.logo ?? payload.tenant.tenantSettings?.logoUrl ?? null;
-        setForm({
+        const nextForm = {
           name: payload.tenant.name,
           logo: getTenantLogoSrc(payload.tenant.id, logo),
           websiteUrl: payload.tenant.tenantSettings?.websiteUrl ?? "",
           brandColor: payload.tenant.tenantSettings?.brandColor ?? "",
           timezone: payload.tenant.tenantSettings?.timezone ?? "UTC",
           locale: payload.tenant.tenantSettings?.locale ?? "en",
-        });
+        };
+        setForm(nextForm);
+        setInitialForm(nextForm);
 
         if (inviteRes.ok) {
           const invitePayload = await inviteRes.json();
@@ -161,6 +173,21 @@ export default function SettingsPage() {
     };
   }, []);
 
+  const hasTenantChanges = Boolean(initialForm && (
+    form.name !== initialForm.name ||
+    form.logo !== initialForm.logo ||
+    form.websiteUrl !== initialForm.websiteUrl ||
+    form.brandColor !== initialForm.brandColor ||
+    form.timezone !== initialForm.timezone ||
+    form.locale !== initialForm.locale
+  ));
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
     const reader = new FileReader();
@@ -168,15 +195,27 @@ export default function SettingsPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleCancelTenantChanges = () => {
+    if (!initialForm) return;
+    setForm(initialForm);
+    setMessage(null);
+    setError(null);
+    setIsRemoveLogoModalOpen(false);
+
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
-    if (!canManage) return;
+    if (!canManage || !hasTenantChanges) return;
 
     setIsSaving(true);
     setMessage(null);
     setError(null);
 
     try {
-      const logoWasChanged = !form.logo || !form.logo.startsWith("/api/tenant/logo/");
+      const logoWasChanged = form.logo !== initialForm?.logo;
       const res = await fetch("/api/tenant/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -204,6 +243,16 @@ export default function SettingsPage() {
           tenantSettings: payload.tenant.tenantSettings,
         },
       } : current);
+      const savedForm = {
+        name: payload.tenant.name,
+        logo: getTenantLogoSrc(payload.tenant.id, payload.tenant.logo),
+        websiteUrl: payload.tenant.tenantSettings?.websiteUrl ?? "",
+        brandColor: payload.tenant.tenantSettings?.brandColor ?? "",
+        timezone: payload.tenant.tenantSettings?.timezone ?? "UTC",
+        locale: payload.tenant.tenantSettings?.locale ?? "en",
+      };
+      setForm(savedForm);
+      setInitialForm(savedForm);
       await authClient.organization.setActive({ organizationId: data?.tenant.id });
       setMessage("Settings saved.");
       router.refresh();
@@ -280,11 +329,6 @@ export default function SettingsPage() {
     <div className="flex flex-col h-full overflow-hidden bg-background text-on-surface">
       <ModuleHeader
         title="Settings"
-        rightContent={activeTab === "tenant" && canManage ? (
-          <Button variant="primary" size="sm" icon={Save} isLoading={isSaving} onClick={handleSave}>
-            SAVE CHANGES
-          </Button>
-        ) : null}
       />
 
       <ModuleTabs
@@ -384,7 +428,7 @@ export default function SettingsPage() {
                               variant="ghost"
                               size="sm"
                               icon={Trash2}
-                              onClick={() => setForm({ ...form, logo: "" })}
+                              onClick={() => setIsRemoveLogoModalOpen(true)}
                               className="text-red-600 hover:bg-red-50 hover:text-red-700"
                             >
                               Remove
@@ -476,6 +520,33 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </section>
+
+                  {canManage && (
+                    <div className="border-t border-black/[0.06] pt-5">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={!hasTenantChanges || isSaving}
+                          onClick={handleCancelTenantChanges}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          icon={Save}
+                          isLoading={isSaving}
+                          disabled={!hasTenantChanges}
+                          onClick={handleSave}
+                        >
+                          Save Changes
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -660,6 +731,18 @@ export default function SettingsPage() {
           ) : null}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isRemoveLogoModalOpen}
+        onClose={() => setIsRemoveLogoModalOpen(false)}
+        onConfirm={() => {
+          setForm((current) => ({ ...current, logo: "" }));
+          setIsRemoveLogoModalOpen(false);
+        }}
+        title="Remove logo?"
+        description="This will remove your workspace logo. A default placeholder will be shown instead."
+        confirmLabel="Remove Logo"
+      />
 
       <ConfirmationModal
         isOpen={isLeaveModalOpen}

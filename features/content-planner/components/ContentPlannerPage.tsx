@@ -65,7 +65,9 @@ function ContentPlannerPage() {
   // new entry fields
   const [nTitle, setNTitle] = useState("");
   const [nTargetAccount, setNTargetAccount] = useState("");
-  const [nTime, setNTime] = useState("09:00 AM");
+  const [nHour, setNHour] = useState("");
+  const [nMinute, setNMinute] = useState("");
+  const [nMeridiem, setNMeridiem] = useState<"AM" | "PM">("AM");
   const [nType, setNType] = useState("Post");
   const [nTags, setNTags] = useState<string[]>([]);
 
@@ -81,20 +83,28 @@ function ContentPlannerPage() {
   const monthLabel = currentDate.toLocaleString("default", { month: "long", year: "numeric" });
 
   const handleUpdate = (up: ContentPost) => updatePost(up.id, up);
+  const normalizedHour = nHour.trim().replace(/[^\d]/g, "");
+  const normalizedMinute = nMinute.trim().replace(/[^\d]/g, "");
+  const parsedHour = Number(normalizedHour);
+  const parsedMinute = Number(normalizedMinute);
+  const isHourValid = normalizedHour !== "" && Number.isInteger(parsedHour) && parsedHour >= 1 && parsedHour <= 12;
+  const isMinuteValid = normalizedMinute !== "" && Number.isInteger(parsedMinute) && parsedMinute >= 0 && parsedMinute <= 59;
+  const isTimeValid = isHourValid && isMinuteValid;
+  const isAddValid = nTitle.trim() !== "" && isTimeValid;
 
   const handleAdd = () => {
-    if (!nTitle.trim()) return;
+    if (!isAddValid) return;
     addPost({
       title: nTitle,
       targetAccountId: nTargetAccount || undefined,
       status: "Planned",
       type: (nType as ContentType) || "Post",
-      time: nTime,
+      time: `${parsedHour}:${String(parsedMinute).padStart(2, "0")} ${nMeridiem}`,
       date: targetDate.toISOString(),
       tags: nTags,
     });
     setIsAddOpen(false);
-    setNTitle(""); setNTargetAccount(""); setNTime("09:00 AM"); setNType("Post"); setNTags([]);
+    setNTitle(""); setNTargetAccount(""); setNHour(""); setNMinute(""); setNMeridiem("AM"); setNType("Post"); setNTags([]);
   };
 
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
@@ -154,7 +164,45 @@ function ContentPlannerPage() {
               </div>
               <div className="space-y-1.5">
                 <span className="font-label-caps text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }}>Time</span>
-                <GlobalInput value={nTime} onChange={e => setNTime(e.target.value)} />
+                <div className="flex items-center gap-2">
+                  <div className="h-[39px] flex-1 min-w-0 flex items-center rounded-[6px] bg-black/[0.02] border border-black/[0.06] focus-within:bg-white focus-within:border-primary/30 transition-all px-2.5">
+                    <input
+                      required
+                      inputMode="numeric"
+                      maxLength={2}
+                      placeholder="HH"
+                      value={nHour}
+                      onChange={e => setNHour(e.target.value.replace(/[^\d]/g, "").slice(0, 2))}
+                      className="w-9 bg-transparent outline-none font-display text-[13px] text-center text-on-surface placeholder:text-on-surface-variant placeholder:opacity-35"
+                    />
+                    <span className="font-display text-[13px] font-semibold text-on-surface-variant opacity-35 px-1">:</span>
+                    <input
+                      required
+                      inputMode="numeric"
+                      maxLength={2}
+                      placeholder="MM"
+                      value={nMinute}
+                      onChange={e => setNMinute(e.target.value.replace(/[^\d]/g, "").slice(0, 2))}
+                      className="w-9 bg-transparent outline-none font-display text-[13px] text-center text-on-surface placeholder:text-on-surface-variant placeholder:opacity-35"
+                    />
+                  </div>
+                  <div className="h-[39px] shrink-0 flex items-center rounded-[6px] bg-black/[0.03] p-0.5">
+                    {(["AM", "PM"] as const).map(period => (
+                      <button
+                        key={period}
+                        type="button"
+                        onClick={() => setNMeridiem(period)}
+                        className={`h-8 w-10 rounded-[5px] font-label-caps text-[9px] font-bold transition-all ${
+                          nMeridiem === period
+                            ? "bg-white text-on-surface shadow-sm"
+                            : "text-on-surface-variant opacity-55 hover:opacity-90"
+                        }`}
+                      >
+                        {period}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -184,7 +232,11 @@ function ContentPlannerPage() {
             </div>
           </ModalContent>
 
-          <ModalFooter>
+          <ModalFooter summary={(nHour.trim() || nMinute.trim()) && !isTimeValid ? (
+            <span className="font-body-sm text-[11px] text-on-surface-variant opacity-55">
+              Use HH:MM, then choose AM or PM.
+            </span>
+          ) : null}>
             <button
               onClick={() => setIsAddOpen(false)}
               className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-3.5 py-2 rounded-[6px] hover:bg-black/[0.05] transition-colors"
@@ -194,7 +246,7 @@ function ContentPlannerPage() {
             </button>
             <button
               onClick={handleAdd}
-              disabled={!nTitle.trim()}
+              disabled={!isAddValid}
               className="font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold px-4 py-2 rounded-[6px] disabled:opacity-30 hover:-translate-y-px transition-all"
               style={{ background: "var(--color-primary)", color: "var(--color-on-primary)" }}
             >
@@ -286,51 +338,52 @@ function ContentPlannerPage() {
             {/* Calendar specific nav */}
             {viewMode === "calendar" && (
               <>
-                <div className="flex items-center gap-0">
-                  <button onClick={() => navigate(-1)} className="p-1 text-black/60 hover:text-black transition-colors">
+                <div className="flex items-center gap-1">
+                  <button onClick={() => navigate(-1)} className="w-7 h-7 flex items-center justify-center text-black/60 hover:text-black hover:bg-black/[0.04] rounded-[6px] transition-colors">
                     <ChevronLeft size={14} />
                   </button>
-                  <button onClick={() => navigate(1)} className="p-1 text-black/60 hover:text-black transition-colors">
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
+                      className="h-7 min-w-[132px] flex items-center justify-center gap-1.5 px-2 hover:bg-black/[0.04] rounded-[6px] transition-all group"
+                    >
+                      <span className="font-display text-[12px] font-bold text-black/70 group-hover:text-black transition-colors">
+                        {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
+                      </span>
+                      <ChevronDown size={14} className={`text-black/60 group-hover:text-black/80 transition-all ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isDateDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsDateDropdownOpen(false)} />
+                        <div className="absolute top-full left-0 mt-1 w-[160px] max-h-[280px] overflow-y-auto bg-white border border-black/[0.06] shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-[6px] z-50 p-1 no-scrollbar animate-in fade-in zoom-in-95 duration-150">
+                          {CALENDAR_OPTIONS.map(opt => (
+                            <button
+                              key={`${opt.month}-${opt.year}`}
+                              onClick={() => {
+                                const d = new Date(currentDate);
+                                d.setFullYear(opt.year);
+                                d.setMonth(opt.month);
+                                setCurrentDate(d);
+                                setIsDateDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-[4px] font-display text-[11px] transition-all ${currentDate.getMonth() === opt.month && currentDate.getFullYear() === opt.year
+                                ? 'bg-black text-white font-bold'
+                                : 'text-black/60 hover:bg-black/[0.03] hover:text-black'
+                                }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <button onClick={() => navigate(1)} className="w-7 h-7 flex items-center justify-center text-black/60 hover:text-black hover:bg-black/[0.04] rounded-[6px] transition-colors">
                     <ChevronRight size={14} />
                   </button>
-                </div>
-
-                <div className="relative">
-                  <button
-                    onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-                    className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-black/[0.04] rounded-[6px] transition-all group"
-                  >
-                    <span className="font-display text-[12px] font-bold text-black/70 group-hover:text-black transition-colors">
-                      {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-                    </span>
-                    <ChevronDown size={14} className={`text-black/60 group-hover:text-black/80 transition-all ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {isDateDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setIsDateDropdownOpen(false)} />
-                      <div className="absolute top-full left-0 mt-1 w-[160px] max-h-[280px] overflow-y-auto bg-white border border-black/[0.06] shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-[6px] z-50 p-1 no-scrollbar animate-in fade-in zoom-in-95 duration-150">
-                        {CALENDAR_OPTIONS.map(opt => (
-                          <button
-                            key={`${opt.month}-${opt.year}`}
-                            onClick={() => {
-                              const d = new Date(currentDate);
-                              d.setFullYear(opt.year);
-                              d.setMonth(opt.month);
-                              setCurrentDate(d);
-                              setIsDateDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-[4px] font-display text-[11px] transition-all ${currentDate.getMonth() === opt.month && currentDate.getFullYear() === opt.year
-                              ? 'bg-black text-white font-bold'
-                              : 'text-black/60 hover:bg-black/[0.03] hover:text-black'
-                              }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
                 </div>
 
                 <button onClick={() => setCurrentDate(new Date())}
