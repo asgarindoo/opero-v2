@@ -65,7 +65,7 @@ export default function UserAvatar({
   return (
     <span
       className={[
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-black/5 font-display font-bold leading-none text-on-surface",
+        "relative inline-flex shrink-0 items-center justify-center rounded-full bg-black/5 font-display font-bold leading-none text-on-surface",
         SIZE_CLASS[size],
         className,
       ].join(" ")}
@@ -75,18 +75,20 @@ export default function UserAvatar({
         <img
           src={src ?? ""}
           alt=""
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover rounded-full"
           onError={() => setFailedSrc(src)}
         />
       ) : (
-        getUserInitials(identity)
+        <span className="flex items-center justify-center w-full h-full rounded-full">
+          {getUserInitials(identity)}
+        </span>
       )}
       {online && (
         <span
           className={[
-            "absolute bottom-0 right-0 rounded-full border-2 bg-[#22c55e]",
-            size === "xl" ? "h-3 w-3" : "h-2.5 w-2.5",
-            onlineClassName || "border-{--color-background}",
+            "absolute -bottom-0.5 -right-0.5 rounded-full bg-[#22c55e]",
+            size === "xl" ? "h-3.5 w-3.5" : "h-2.5 w-2.5",
+            onlineClassName || "border-2 border-white",
           ].join(" ")}
         />
       )}
