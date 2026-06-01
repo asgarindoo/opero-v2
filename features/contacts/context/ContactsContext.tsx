@@ -19,12 +19,39 @@ interface ContactsContextType {
 
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
 
+function contactPatchForApi(updates: Partial<Contact>): Partial<Contact> {
+  const patch: Partial<Contact> = {};
+  if (updates.name !== undefined) patch.name = updates.name;
+  if (updates.industry !== undefined) patch.industry = updates.industry;
+  if (updates.status !== undefined) patch.status = updates.status;
+  if (updates.relationshipType !== undefined) patch.relationshipType = updates.relationshipType;
+  if (updates.persons !== undefined) patch.persons = updates.persons;
+  if (updates.tags !== undefined) patch.tags = updates.tags;
+  if (updates.assignedStaff !== undefined) patch.assignedStaff = updates.assignedStaff;
+  return patch;
+}
+
 export function ContactsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
   const userName = getUserDisplayName(user, "You");
 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const normalizeContact = useCallback((contact: Contact): Contact => ({
+    ...contact,
+    relationshipType: contact.relationshipType || "Lead",
+    status: contact.status || "New",
+    industry: contact.industry || "Unspecified",
+    contextData: contact.contextData && typeof contact.contextData === "object" && !Array.isArray(contact.contextData) ? contact.contextData : {},
+    persons: Array.isArray(contact.persons) ? contact.persons : [],
+    activities: Array.isArray(contact.activities) ? contact.activities : [],
+    tags: Array.isArray(contact.tags) ? contact.tags : [],
+    assignedStaff: Array.isArray(contact.assignedStaff) ? contact.assignedStaff : [],
+    isArchived: Boolean(contact.isArchived),
+    createdAt: contact.createdAt || new Date().toISOString(),
+    lastContacted: contact.lastContacted || contact.createdAt || new Date().toISOString(),
+  }), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,7 +60,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       try {
         setLoading(true);
         const items = await listContacts<Contact>();
-        if (!cancelled) setContacts(items);
+        if (!cancelled) setContacts(items.map(normalizeContact));
       } catch (err) {
         console.error("Failed to load contacts:", err);
       } finally {
@@ -68,7 +95,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       };
 
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      saveContact<Contact>(recordId, updated).catch((err) => {
+      saveContact<Contact>(recordId, contactPatchForApi(updated)).catch((err) => {
         console.error("Failed to save contact note:", err);
       });
 
@@ -81,7 +108,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       if (c.id !== contactId) return c;
       const updated = { ...c, status };
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      saveContact<Contact>(recordId, updated).catch((err) => {
+      saveContact<Contact>(recordId, contactPatchForApi(updated)).catch((err) => {
         console.error("Failed to update contact status:", err);
       });
       return updated;
@@ -93,7 +120,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       if (c.id !== contactId) return c;
       const updated = { ...c, relationshipType: type };
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      saveContact<Contact>(recordId, updated).catch((err) => {
+      saveContact<Contact>(recordId, contactPatchForApi(updated)).catch((err) => {
         console.error("Failed to update relationship type:", err);
       });
       return updated;
@@ -119,21 +146,21 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       ...partial
     };
     createContact<Contact>(newContact)
-      .then((created) => setContacts(prev => [created, ...prev]))
+      .then((created) => setContacts(prev => [normalizeContact(created), ...prev]))
       .catch((err) => console.error("Failed to create contact:", err));
   }, []);
 
   const updateContact = useCallback((contactId: string, updates: Partial<Contact>) => {
     setContacts(prev => prev.map(c => {
       if (c.id !== contactId) return c;
-      const updated = { ...c, ...updates };
+      const updated = normalizeContact({ ...c, ...updates });
       const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      saveContact<Contact>(recordId, updated).catch((err) => {
+      saveContact<Contact>(recordId, contactPatchForApi(updates)).catch((err) => {
         console.error("Failed to update contact:", err);
       });
       return updated;
     }));
-  }, []);
+  }, [normalizeContact]);
 
   const deleteContacts = useCallback((ids: string[]) => {
     setContacts(prev => prev.filter(c => !ids.includes(c.id)));

@@ -17,6 +17,7 @@ import SearchInput from "@/components/common/SearchInput";
 import DateRangePicker from "@/components/common/DateRangePicker";
 import Button from "@/components/ui/Button";
 import ExportButton from "@/components/common/ExportButton";
+import { ContactsProvider } from "@/features/contacts/context/ContactsContext";
 
 function FinanceContent() {
   const { 
@@ -142,8 +143,10 @@ function FinanceContent() {
 
 export default function FinancePage() {
   return (
-    <FinanceProvider>
-      <FinanceContent />
-    </FinanceProvider>
+    <ContactsProvider>
+      <FinanceProvider>
+        <FinanceContent />
+      </FinanceProvider>
+    </ContactsProvider>
   );
 }

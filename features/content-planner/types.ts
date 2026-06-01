@@ -6,6 +6,9 @@ export interface ContentPost {
   title: string;
   targetAccountId?: string; // Reference to Channel.id
   status: ContentStatus;
+  contentType?: ContentType;
+  plannedDate?: string;
+  plannedTime?: string;
   type: ContentType;
   date: string;
   time: string;

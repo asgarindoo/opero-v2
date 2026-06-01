@@ -31,8 +31,10 @@ export interface Product {
   price: number; // Base selling price
   currency: string;
   status: StockStatus;
+  stock?: number;
   totalQuantity: number;
   minThreshold: number; // Low stock alert
+  description?: string;
   variants: ProductVariant[];
   activities: StockActivity[];
   notes: string;

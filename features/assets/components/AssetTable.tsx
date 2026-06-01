@@ -32,10 +32,12 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
   const itemsPerPage = 20;
 
   const filteredAssets = assets.filter(a => {
+    const assigneesForSearch = (Array.isArray(a.assignedTo) ? a.assignedTo : (a.assignedTo ? [a.assignedTo] : []))
+      .map((owner) => typeof owner === "string" ? owner : ((owner as { name?: string })?.name || ""));
     const matchesSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.assetCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (Array.isArray(a.assignedTo) ? a.assignedTo : (a.assignedTo ? [a.assignedTo] : [])).join(" ").toLowerCase().includes(searchQuery.toLowerCase());
+      assigneesForSearch.join(" ").toLowerCase().includes(searchQuery.toLowerCase());
 
     if (filterMode === "all") return matchesSearch;
     if (filterMode === "available") return matchesSearch && a.status === "Available";
@@ -212,7 +214,9 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                     </TableCell>
                     <TableCell className="hidden lg:table-cell max-w-[0px]">
                       {(() => {
-                        const assignees = Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo as unknown as string] : []);
+                        const assignees = (Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo] : []))
+                          .map((owner) => typeof owner === "string" ? owner : ((owner as { name?: string })?.name || ""))
+                          .filter(Boolean);
                         return assignees.length > 0 ? (
                           <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-80 w-full">
                             <div className="flex -space-x-1.5 shrink-0">

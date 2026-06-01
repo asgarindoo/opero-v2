@@ -162,12 +162,12 @@ export async function createTenantChannel(input: { name: string; description?: s
 
   const rows = await prisma.$queryRaw<ChannelRow[]>`
     INSERT INTO chat_channel (
-      id, "organizationId", name, title, description, type, status, payload,
+      id, "organizationId", name, description, type, payload,
       "createdById", "updatedById", "createdAt", "updatedAt"
     )
     VALUES (
-      gen_random_uuid()::text, ${ctx.tenantId}, ${name}, ${name}, ${description},
-      'public', 'Active', '{}'::jsonb, ${ctx.userId}, ${ctx.userId}, now(), now()
+      gen_random_uuid()::text, ${ctx.tenantId}, ${name}, ${description},
+      'public', '{}'::jsonb, ${ctx.userId}, ${ctx.userId}, now(), now()
     )
     RETURNING id, "organizationId", name, description, type, "createdById", "createdAt", "updatedAt"
   `;
@@ -229,11 +229,11 @@ export async function createTenantMessage(channelId: string, content: string, re
   const rows = await prisma.$queryRaw<MessageRow[]>`
     INSERT INTO chat_message (
       id, "organizationId", "channelId", "senderId", content, type,
-      title, status, payload, "createdById", "updatedById", "createdAt", "updatedAt"
+      status, payload, "createdById", "updatedById", "createdAt", "updatedAt"
     )
     VALUES (
       gen_random_uuid()::text, ${ctx.tenantId}, ${channelId}, ${ctx.userId}, ${content}, 'text',
-      left(${content}, 80), 'Active',
+      'Active',
       jsonb_build_object(
         'senderName', ${ctx.user.name}::text,
         'senderEmail', ${ctx.user.email}::text,
@@ -296,7 +296,7 @@ export async function updateTenantMessage(messageId: string, content: string) {
 
   const rows = await prisma.$queryRaw<MessageRow[]>`
     UPDATE chat_message cm
-    SET content = ${content}, title = left(${content}, 80), "updatedAt" = now(), "updatedById" = ${ctx.userId}
+    SET content = ${content}, "updatedAt" = now(), "updatedById" = ${ctx.userId}
     WHERE cm.id = ${messageId}
       AND cm."organizationId" = ${ctx.tenantId}
       AND (${allowed} OR cm."senderId" = ${ctx.userId})

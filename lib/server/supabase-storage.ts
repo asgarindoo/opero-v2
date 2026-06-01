@@ -273,6 +273,8 @@ export async function removePrivateObject(bucket: string, path: string | null | 
 function safeFileName(name: string) {
   const cleaned = name
     .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x00-\x7F]+/g, "-")
     .replace(/[^\w.-]+/g, "-")
     .replace(/[/\\?%*:|"<>]/g, "-")
     .replace(/\s+/g, "-")

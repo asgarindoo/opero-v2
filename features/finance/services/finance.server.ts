@@ -1,9 +1,31 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
-import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
+import { dateValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "FINANCE";
 const ENTITY = "Transaction";
+
+function buildTransactionCreateData(data: Record<string, unknown>) {
+  return {
+    type: textValue(data.type) ?? "Expense",
+    title: getTitle(data),
+    amount: numberValue(data.amount) ?? 0,
+    currency: textValue(data.currency) ?? "USD",
+    category: textValue(data.category) ?? "General",
+    transactionDate: dateValue(data.transactionDate),
+    paymentMethod: textValue(data.paymentMethod),
+    reference: textValue(data.reference),
+    sourceType: textValue(data.sourceType) ?? "Manual",
+    sourceId: textValue(data.sourceId),
+    status: getStatus(data, "Pending"),
+    contactName: textValue(data.contactName),
+    contactId: textValue(data.contactId),
+    notes: textValue(data.notes),
+    activities: jsonArray(data.activities),
+    attachments: jsonArray(data.attachments),
+  };
+}
 
 export async function listTransactions() {
   const ctx = await requireTenant();
@@ -19,9 +41,17 @@ export async function getTransactionById(id: string) {
 
 export async function createTransaction(data: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const title = getTitle(data);
-  const transaction = await prisma.transaction.create({ data: { id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(), organizationId: ctx.tenantId, title, status: getStatus(data, "Pending"), payload: createPayload(data), createdById: ctx.userId, updatedById: ctx.userId } });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: transaction.id, entityName: title, description: typeof data.description === "string" ? data.description : null });
+  const transactionData = buildTransactionCreateData(data);
+  const transaction = await prisma.transaction.create({
+    data: {
+      id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
+      organizationId: ctx.tenantId,
+      ...transactionData,
+      createdById: ctx.userId,
+      updatedById: ctx.userId,
+    },
+  });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: transaction.id, entityName: transaction.title, description: transaction.notes });
   return mapDomainRecord(transaction, ctx.user);
 }
 
@@ -29,11 +59,30 @@ export async function updateTransaction(id: string, patch: Record<string, unknow
   const ctx = await requireTenant();
   const current = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
-  const result = await prisma.transaction.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
-  if (result.count === 0) return null;
-  const updated = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
-  if (!updated) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
+  const updated = await prisma.transaction.update({
+    where: { id },
+    data: {
+      type: patch.type !== undefined ? textValue(patch.type) : current.type,
+      title: getTitle(patch, current.title ?? "Untitled"),
+      amount: patch.amount !== undefined ? numberValue(patch.amount) ?? current.amount : current.amount,
+      currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
+      category: patch.category !== undefined ? textValue(patch.category) : current.category,
+      transactionDate: patch.transactionDate !== undefined ? dateValue(patch.transactionDate) : current.transactionDate,
+      paymentMethod: patch.paymentMethod !== undefined ? textValue(patch.paymentMethod) : current.paymentMethod,
+      reference: patch.reference !== undefined ? textValue(patch.reference) : current.reference,
+      sourceType: patch.sourceType !== undefined ? textValue(patch.sourceType) : current.sourceType,
+      sourceId: patch.sourceId !== undefined ? textValue(patch.sourceId) : current.sourceId,
+      status: typeof patch.status === "string" ? patch.status : current.status,
+      contactName: patch.contactName !== undefined ? textValue(patch.contactName) : current.contactName,
+      contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
+      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
+      activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
+      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
+      updatedById: ctx.userId,
+    },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+  });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: updated.notes });
   return mapDomainRecord(updated);
 }
 

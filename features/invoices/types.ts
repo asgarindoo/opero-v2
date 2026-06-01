@@ -21,6 +21,9 @@ export interface InvoiceActivity {
 export interface Invoice {
   id: string;
   invoiceNumber: string;
+  title?: string;
+  recipientName?: string;
+  recipientEmail?: string;
   contactName?: string; // Optional — not required
   contactId?: string;
   saleId?: string; // Optional link to a Sale
@@ -30,12 +33,19 @@ export interface Invoice {
   status: InvoiceStatus;
   items: InvoiceItem[];
   subtotal: number;
+  discountAmount?: number;
   taxRate?: number;
+  taxAmount?: number;
   taxTotal: number;
   discountRate?: number;
   discountTotal: number;
+  grandTotal?: number;
   totalAmount: number;
   currency: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paidAt?: string;
+  paymentReference?: string;
   notes: string;
   activities: InvoiceActivity[];
   attachments: string[];

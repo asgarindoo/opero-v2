@@ -11,15 +11,17 @@ export interface DocumentEntry {
   // From DB include
   createdBy?: { id: string; name: string; email?: string | null; image: string | null };
   
-  // From Payload
+  // Explicit document columns
   description?: string;
   folderId?: string;
   storagePath?: string;
+  fileUrl?: string;
   downloadUrl?: string;
   fileName?: string;
   fileType?: FileType | string;
   fileSize?: number;
   tags?: string[];
+  uploadedById?: string;
 }
 
 export interface Folder {
@@ -32,7 +34,7 @@ export interface Folder {
   // From DB include
   createdBy?: { id: string; name: string; email?: string | null; image: string | null };
 
-  // From Payload
+  // Folder metadata
   parentId?: string;
   description?: string;
 }

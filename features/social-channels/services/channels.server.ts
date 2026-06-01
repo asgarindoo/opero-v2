@@ -2,15 +2,55 @@ import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/server/auth-utils";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
+import { dateValue, intValue, textValue } from "@/lib/api/feature-records";
 
 function mapChannel(c: any) {
+  const accountName = c.accountName || c.title || "";
+  const handle = c.handle || "";
+  const profileUrl = c.profileUrl || "";
+
   return {
-    name: c.title || "",
+    name: accountName,
+    accountName,
+    title: c.title || accountName,
+    platform: c.platform || "",
+    username: handle, // alias for backward compat
+    handle,
+    profileLink: profileUrl, // alias for backward compat
+    profileUrl,
     status: c.status || "Active",
-    ...(typeof c.payload === 'object' && c.payload !== null ? c.payload : {}),
+    followers: c.followers ?? 0,
+    postsThisMonth: c.postsThisMonth ?? 0,
+    interactions: c.interactions ?? 0,
+    monthlyReach: c.monthlyReach,
+    averageViews: c.averageViews,
+    lastActiveDate: c.lastActiveDate?.toISOString?.() ?? "",
+    notes: c.notes ?? "",
     id: c.id,
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString()
+  };
+}
+
+function buildChannelCreateData(data: Record<string, unknown>) {
+  const accountName = textValue(data.accountName) ?? textValue(data.name) ?? textValue(data.title) ?? "New Channel";
+  const handle = textValue(data.handle) ?? textValue(data.username);
+  const profileUrl = textValue(data.profileUrl) ?? textValue(data.profileLink);
+
+  return {
+    title: accountName,
+    accountName,
+    platform: textValue(data.platform),
+    handle,
+    profileUrl,
+    status: textValue(data.status) ?? "Active",
+    followers: intValue(data.followers) ?? 0,
+    postsThisMonth: intValue(data.postsThisMonth) ?? 0,
+    interactions: intValue(data.interactions) ?? 0,
+    monthlyReach: intValue(data.monthlyReach),
+    averageViews: intValue(data.averageViews),
+    lastActiveDate: dateValue(data.lastActiveDate),
+    notes: textValue(data.notes),
   };
 }
 
@@ -30,15 +70,13 @@ export async function createChannel(data: Record<string, unknown>) {
   const context = await getTenantContext();
   if (!context) throw new Error("Unauthorized");
 
-  const { name, status, id: _tempId, createdAt: _c, updatedAt: _u, ...payload } = data;
+  const channelData = buildChannelCreateData(data);
 
   const ch = await prisma.socialChannel.create({
     data: {
       organizationId: context.tenant.id,
       createdById: context.user.id,
-      title: (name as string) || "New Channel",
-      status: (status as string) || "Active",
-      payload: (payload as any) || {}
+      ...channelData,
     }
   });
 
@@ -66,16 +104,26 @@ export async function updateChannel(id: string, patch: Record<string, unknown>) 
     throw new Error("Not found or unauthorized");
   }
 
-  const { name, status, id: _tempId, createdAt: _c, updatedAt: _u, ...payloadPatch } = patch;
-  const currentPayload = (typeof existing.payload === 'object' && existing.payload !== null) ? existing.payload : {};
-  const newPayload = { ...currentPayload, ...payloadPatch };
+  const accountName = textValue(patch.accountName) ?? textValue(patch.name) ?? textValue(patch.title) ?? existing.accountName ?? existing.title ?? "New Channel";
+  const handle = patch.handle !== undefined || patch.username !== undefined ? textValue(patch.handle) ?? textValue(patch.username) : existing.handle;
+  const profileUrl = patch.profileUrl !== undefined || patch.profileLink !== undefined ? textValue(patch.profileUrl) ?? textValue(patch.profileLink) : existing.profileUrl;
 
   const ch = await prisma.socialChannel.update({
     where: { id },
     data: {
-      title: name !== undefined ? (name as string) : existing.title,
-      status: status !== undefined ? (status as string) : existing.status,
-      payload: newPayload as any,
+      title: accountName,
+      accountName,
+      platform: patch.platform !== undefined ? textValue(patch.platform) : existing.platform,
+      handle,
+      profileUrl,
+      status: patch.status !== undefined ? textValue(patch.status) ?? existing.status : existing.status,
+      followers: patch.followers !== undefined ? intValue(patch.followers) ?? existing.followers : existing.followers,
+      postsThisMonth: patch.postsThisMonth !== undefined ? intValue(patch.postsThisMonth) ?? existing.postsThisMonth : existing.postsThisMonth,
+      interactions: patch.interactions !== undefined ? intValue(patch.interactions) ?? existing.interactions : existing.interactions,
+      monthlyReach: patch.monthlyReach !== undefined ? intValue(patch.monthlyReach) : existing.monthlyReach,
+      averageViews: patch.averageViews !== undefined ? intValue(patch.averageViews) : existing.averageViews,
+      lastActiveDate: patch.lastActiveDate !== undefined ? dateValue(patch.lastActiveDate) : existing.lastActiveDate,
+      notes: patch.notes !== undefined ? textValue(patch.notes) : existing.notes,
       updatedById: context.user.id,
     }
   });
@@ -128,7 +176,8 @@ export async function listChannelActivities() {
   const acts = await prisma.tenantActivity.findMany({
     where: { 
       organizationId: context.tenant.id,
-      module: "SocialChannels"
+      module: "MARKETING",
+      entityType: "SocialChannel",
     },
     orderBy: { createdAt: 'desc' },
     take: 20,

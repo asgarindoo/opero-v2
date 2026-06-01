@@ -185,15 +185,17 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
               {product.variants.length > 0 && (
                 <Section label="Variants" count={product.variants.length}>
                   <div className="space-y-1">
-                    {product.variants.map((variant: ProductVariant) => (
-                      <div key={variant.id} className="flex items-center justify-between py-2.5 px-1 border-b border-black/[0.02]">
+                    {product.variants.map((variant: ProductVariant, index) => {
+                      const variantSku = variant.sku || `${product.sku || "SKU"}-${index + 1}`;
+                      return (
+                      <div key={variant.id || variantSku} className="flex items-center justify-between py-2.5 px-1 border-b border-black/[0.02]">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className="w-7 h-7 shrink-0 rounded bg-black/5 flex items-center justify-center text-on-surface-variant opacity-40 font-mono text-[9px] font-bold">
-                            {variant.sku.slice(-3)}
+                            {variantSku.slice(-3)}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="font-display font-medium text-[12.5px] text-on-surface opacity-90 truncate" title={variant.name}>{variant.name}</p>
-                            <p className="font-body-sm text-[10px] text-on-surface-variant opacity-40 font-mono truncate">{variant.sku}</p>
+                            <p className="font-body-sm text-[10px] text-on-surface-variant opacity-40 font-mono truncate">{variantSku}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -203,7 +205,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                           <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80">{variant.quantity} units</p>
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </Section>
               )}

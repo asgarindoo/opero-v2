@@ -107,3 +107,87 @@ Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
 [browser] GoTrueClient@sb-jzmqvrutrujcobsmdnfk-auth-token:2 (2.105.4) 2026-05-31T06:11:46.043Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key. (features/chat/services/chat.client.ts:15:34)
 [browser] GoTrueClient@sb-jzmqvrutrujcobsmdnfk-auth-token:1 (2.105.4) 2026-05-31T06:05:44.892Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key. (features/chat/services/chat.client.ts:15:34)
 [browser] GoTrueClient@sb-jzmqvrutrujcobsmdnfk-auth-token:2 (2.105.4) 2026-05-31T06:11:46.005Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key. (features/chat/services/chat.client.ts:15:34)
+[browser] [chat-realtime] subscription error Error: socket closed: 1000
+    at Array.forEach (<anonymous>) (features/chat/context/ChatContext.tsx:698:19)
+[browser] [chat-realtime] subscription error Error: socket closed: 1006
+    at Array.forEach (<anonymous>) (features/chat/context/ChatContext.tsx:698:19)
+[browser] [presence] poll error TypeError: Failed to fetch
+    at fetchPresence (features/presence/services/presence.client.ts:28:26)
+    at loadPresence (features/presence/context/PresenceProvider.tsx:103:41)
+  26 | export async function fetchPresence(): Promise<PresenceResponse> {
+  27 |   console.log("[presence] fetching presence", { url: PRESENCE_ENDPOINT });
+> 28 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+  29 |     method: "GET",
+  30 |     cache: "no-store",
+  31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)
+[browser] [presence] heartbeat error TypeError: Failed to fetch
+    at sendPresenceHeartbeat (features/presence/services/presence.client.ts:7:26)
+    at syncPresence (features/presence/context/PresenceProvider.tsx:45:49)
+   5 | export async function sendPresenceHeartbeat(currentPage?: string): Promise<PresenceRespons...
+   6 |   console.log("[presence] sending heartbeat", { currentPage, url: PRESENCE_ENDPOINT });
+>  7 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+   8 |     method: "POST",
+   9 |     headers: { "Content-Type": "application/json" },
+  10 |     body: JSON.stringify({ currentPage }), (features/presence/context/PresenceProvider.tsx:66:17)
+[browser] [presence] heartbeat error TypeError: Failed to fetch
+    at sendPresenceHeartbeat (features/presence/services/presence.client.ts:7:26)
+    at syncPresence (features/presence/context/PresenceProvider.tsx:45:49)
+   5 | export async function sendPresenceHeartbeat(currentPage?: string): Promise<PresenceRespons...
+   6 |   console.log("[presence] sending heartbeat", { currentPage, url: PRESENCE_ENDPOINT });
+>  7 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+   8 |     method: "POST",
+   9 |     headers: { "Content-Type": "application/json" },
+  10 |     body: JSON.stringify({ currentPage }), (features/presence/context/PresenceProvider.tsx:66:17)
+[browser] [presence] poll error TypeError: Failed to fetch
+    at fetchPresence (features/presence/services/presence.client.ts:28:26)
+    at loadPresence (features/presence/context/PresenceProvider.tsx:103:41)
+  26 | export async function fetchPresence(): Promise<PresenceResponse> {
+  27 |   console.log("[presence] fetching presence", { url: PRESENCE_ENDPOINT });
+> 28 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+  29 |     method: "GET",
+  30 |     cache: "no-store",
+  31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)
+[browser] [presence] poll error TypeError: Failed to fetch
+    at fetchPresence (features/presence/services/presence.client.ts:28:26)
+    at loadPresence (features/presence/context/PresenceProvider.tsx:103:41)
+  26 | export async function fetchPresence(): Promise<PresenceResponse> {
+  27 |   console.log("[presence] fetching presence", { url: PRESENCE_ENDPOINT });
+> 28 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+  29 |     method: "GET",
+  30 |     cache: "no-store",
+  31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)
+[browser] [presence] heartbeat error TypeError: Failed to fetch
+    at sendPresenceHeartbeat (features/presence/services/presence.client.ts:7:26)
+    at syncPresence (features/presence/context/PresenceProvider.tsx:45:49)
+   5 | export async function sendPresenceHeartbeat(currentPage?: string): Promise<PresenceRespons...
+   6 |   console.log("[presence] sending heartbeat", { currentPage, url: PRESENCE_ENDPOINT });
+>  7 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+   8 |     method: "POST",
+   9 |     headers: { "Content-Type": "application/json" },
+  10 |     body: JSON.stringify({ currentPage }), (features/presence/context/PresenceProvider.tsx:66:17)
+[browser] [presence] poll error TypeError: Failed to fetch
+    at fetchPresence (features/presence/services/presence.client.ts:28:26)
+    at loadPresence (features/presence/context/PresenceProvider.tsx:103:41)
+  26 | export async function fetchPresence(): Promise<PresenceResponse> {
+  27 |   console.log("[presence] fetching presence", { url: PRESENCE_ENDPOINT });
+> 28 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+  29 |     method: "GET",
+  30 |     cache: "no-store",
+  31 |     credentials: "include", (features/presence/context/PresenceProvider.tsx:123:17)
+[browser] [presence] heartbeat error TypeError: Failed to fetch
+    at sendPresenceHeartbeat (features/presence/services/presence.client.ts:7:26)
+    at syncPresence (features/presence/context/PresenceProvider.tsx:45:49)
+   5 | export async function sendPresenceHeartbeat(currentPage?: string): Promise<PresenceRespons...
+   6 |   console.log("[presence] sending heartbeat", { currentPage, url: PRESENCE_ENDPOINT });
+>  7 |   const response = await fetch(PRESENCE_ENDPOINT, {
+     |                          ^
+   8 |     method: "POST",
+   9 |     headers: { "Content-Type": "application/json" },
+  10 |     body: JSON.stringify({ currentPage }), (features/presence/context/PresenceProvider.tsx:66:17)

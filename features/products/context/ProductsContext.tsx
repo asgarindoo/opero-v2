@@ -24,6 +24,30 @@ interface ProductsContextType {
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
 
+function productPatchForApi(updates: Partial<Product>): Partial<Product> {
+  const patch: Partial<Product> = {};
+  if (updates.name !== undefined) patch.name = updates.name;
+  if (updates.sku !== undefined) patch.sku = updates.sku;
+  if (updates.category !== undefined) patch.category = updates.category;
+  if (updates.type !== undefined) patch.type = updates.type;
+  if (updates.price !== undefined) patch.price = updates.price;
+  if (updates.currency !== undefined) patch.currency = updates.currency;
+  if (updates.status !== undefined) patch.status = updates.status;
+  if (updates.stock !== undefined) patch.stock = updates.stock;
+  if (updates.totalQuantity !== undefined) patch.totalQuantity = updates.totalQuantity;
+  if (updates.minThreshold !== undefined) patch.minThreshold = updates.minThreshold;
+  if (updates.description !== undefined) patch.description = updates.description;
+  if (updates.imageUrl !== undefined) patch.imageUrl = updates.imageUrl;
+  if (updates.variants !== undefined) patch.variants = updates.variants;
+  if (updates.activities !== undefined) patch.activities = updates.activities;
+  if (updates.notes !== undefined) patch.notes = updates.notes;
+  return patch;
+}
+
+function isRecordNotFound(err: unknown) {
+  return err instanceof Error && err.message === "Record not found";
+}
+
 export function ProductsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useTenant();
   const userName = getUserDisplayName(user, "You");
@@ -101,7 +125,11 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       if (p.id !== id) return p;
       const updated = { ...p, ...updates, updatedAt: new Date().toISOString() };
       const recordId = (p as { recordId?: string }).recordId ?? p.id;
-      saveProduct<Product>(recordId, updated).catch((err: unknown) => {
+      saveProduct<Product>(recordId, productPatchForApi(updates)).catch((err: unknown) => {
+        if (isRecordNotFound(err)) {
+          setProducts(current => current.filter(item => item.id !== id));
+          return;
+        }
         console.error("Failed to update product:", err);
       });
       return updated;
@@ -130,7 +158,11 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       };
       
       const recordId = (p as { recordId?: string }).recordId ?? p.id;
-      saveProduct<Product>(recordId, updated).catch((err: unknown) => {
+      saveProduct<Product>(recordId, productPatchForApi({ activities: updated.activities })).catch((err: unknown) => {
+        if (isRecordNotFound(err)) {
+          setProducts(current => current.filter(item => item.id !== productId));
+          return;
+        }
         console.error("Failed to add activity:", err);
       });
       return updated;
@@ -165,7 +197,15 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         updatedAt: newActivity.timestamp
       };
       const recordId = (p as { recordId?: string }).recordId ?? p.id;
-      saveProduct<Product>(recordId, updated).catch((err: unknown) => {
+      saveProduct<Product>(recordId, productPatchForApi({
+        totalQuantity: updated.totalQuantity,
+        status: updated.status,
+        activities: updated.activities,
+      })).catch((err: unknown) => {
+        if (isRecordNotFound(err)) {
+          setProducts(current => current.filter(item => item.id !== id));
+          return;
+        }
         console.error("Failed to adjust stock:", err);
       });
       return updated;

@@ -43,6 +43,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   if (!contact) return null;
+  const contextData = contact.contextData && typeof contact.contextData === "object" && !Array.isArray(contact.contextData) ? contact.contextData : {};
 
   const handleUpdate = (patch: Partial<Contact>, description?: string) => {
     if (description) {
@@ -199,22 +200,22 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
               </Section>
 
               {/* Context Data */}
-              {isFinancialType && Object.keys(contact.contextData).length > 0 && (
+              {isFinancialType && Object.keys(contextData).length > 0 && (
                 <Section label="Overview">
                   <div className="flex flex-col gap-3">
-                    {contact.contextData.value !== undefined && (
+                    {contextData.value !== undefined && (
                       <div className="space-y-1">
                         <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Deal Value</span>
                         <p className="font-display text-[13.5px] font-semibold text-on-surface">
-                          {contact.contextData.currency || "USD"} {new Intl.NumberFormat("en-US", { style: "decimal", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(contact.contextData.value)}
+                          {contextData.currency || "USD"} {new Intl.NumberFormat("en-US", { style: "decimal", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(contextData.value)}
                         </p>
                       </div>
                     )}
-                    {contact.contextData.stage !== undefined && (
+                    {contextData.stage !== undefined && (
                       <div className="space-y-1">
                         <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">Stage</span>
                         <p className="font-display text-[13.5px] font-semibold text-on-surface">
-                          {contact.contextData.stage}
+                          {contextData.stage}
                         </p>
                       </div>
                     )}

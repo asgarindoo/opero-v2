@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
-import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
+import { dateValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "FINANCE";
 const ENTITY = "Invoice";
@@ -25,46 +26,90 @@ async function findInvoiceRecord(tenantId: string, id: string, includeCreator = 
   const include = includeCreator
     ? { createdBy: { select: { id: true, name: true, email: true, image: true } } }
     : undefined;
-  const current = await prisma.invoice.findFirst({
+  return prisma.invoice.findFirst({
     where: { id, organizationId: tenantId },
     include,
   });
-  if (current) return current;
-
-  const invoices = await prisma.invoice.findMany({
-    where: { organizationId: tenantId },
-    include,
-  });
-  return invoices.find((invoice) => parsePayload(invoice.payload).id === id) ?? null;
 }
 
-async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus: string, mergedPayload: any, updatedTitle: string) {
-  // We need to either create an Income transaction or cancel an existing one
-  const existingTxList = await prisma.transaction.findMany({
-    where: { organizationId: ctx.tenantId }
-  });
+async function resolveSaleId(tenantId: string, value: unknown) {
+  if (value === null) return null;
+  const saleId = textValue(value);
+  if (!saleId) return undefined;
+  const sale = await prisma.sale.findFirst({ where: { id: saleId, organizationId: tenantId }, select: { id: true } });
+  return sale?.id ?? null;
+}
 
-  // Find matching transaction (since it's JSON, filter manually to be safe across Prisma versions)
-  const existingTx = existingTxList.find((tx) => {
-    const p = parsePayload(tx.payload);
-    return p.sourceType === "Invoice" && p.sourceId === invoiceId;
+function buildInvoiceTotals(data: Record<string, unknown>) {
+  const discountAmount = numberValue(data.discountAmount) ?? numberValue(data.discountTotal) ?? 0;
+  const taxAmount = numberValue(data.taxAmount) ?? numberValue(data.taxTotal) ?? 0;
+  const grandTotal = numberValue(data.grandTotal) ?? numberValue(data.totalAmount) ?? 0;
+
+  return { discountAmount, taxAmount, grandTotal };
+}
+
+async function buildInvoiceCreateData(tenantId: string, data: Record<string, unknown>) {
+  const invoiceNumber = textValue(data.invoiceNumber);
+  const title = invoiceNumber ?? getTitle(data);
+  const status = getStatus(data, "Unpaid");
+  const { discountAmount, taxAmount, grandTotal } = buildInvoiceTotals(data);
+
+  return {
+    invoiceNumber,
+    title,
+    status,
+    recipientName: textValue(data.recipientName) ?? textValue(data.contactName),
+    recipientEmail: textValue(data.recipientEmail),
+    contactName: textValue(data.contactName) ?? textValue(data.recipientName),
+    contactId: textValue(data.contactId),
+    issueDate: dateValue(data.issueDate),
+    dueDate: dateValue(data.dueDate),
+    items: jsonArray(data.items),
+    subtotal: numberValue(data.subtotal) ?? 0,
+    discountAmount,
+    discountRate: numberValue(data.discountRate),
+    discountTotal: numberValue(data.discountTotal) ?? discountAmount,
+    taxRate: numberValue(data.taxRate),
+    taxAmount,
+    taxTotal: numberValue(data.taxTotal) ?? taxAmount,
+    totalAmount: numberValue(data.totalAmount) ?? grandTotal,
+    currency: textValue(data.currency) ?? "USD",
+    paymentStatus: textValue(data.paymentStatus) ?? status,
+    paymentMethod: textValue(data.paymentMethod),
+    paidAt: dateValue(data.paidAt),
+    paymentReference: textValue(data.paymentReference),
+    saleId: await resolveSaleId(tenantId, data.saleId),
+    saleOrderNumber: textValue(data.saleOrderNumber),
+    notes: textValue(data.notes),
+    activities: jsonArray(data.activities),
+    attachments: jsonArray(data.attachments),
+  };
+}
+
+async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus: string, invoiceData: Record<string, unknown>, updatedTitle: string) {
+  const existingTx = await prisma.transaction.findFirst({
+    where: {
+      organizationId: ctx.tenantId,
+      sourceType: "Invoice",
+      sourceId: invoiceId,
+    },
   });
 
   if (invoiceStatus === "Paid") {
     if (!existingTx) {
-      // Create new Income Transaction
-      const amount = typeof mergedPayload.totalAmount === "number" ? mergedPayload.totalAmount : 0;
+      const amount = numberValue(invoiceData.totalAmount) ?? numberValue(invoiceData.grandTotal) ?? 0;
+      const invoiceNumber = textValue(invoiceData.invoiceNumber) ?? updatedTitle;
       const txPayload = {
-        title: `Payment received for Invoice ${mergedPayload.invoiceNumber || updatedTitle}`,
+        title: `Payment received for Invoice ${invoiceNumber}`,
         transactionDate: new Date().toISOString().split("T")[0],
         type: "Income",
         category: "Invoice Payment",
         amount,
-        currency: mergedPayload.currency || "USD",
+        currency: textValue(invoiceData.currency) ?? "USD",
         status: "Completed",
-        reference: mergedPayload.invoiceNumber || updatedTitle,
-        contactName: mergedPayload.customerName || mergedPayload.contactName,
-        contactId: mergedPayload.customerId || mergedPayload.contactId,
+        reference: invoiceNumber,
+        contactName: textValue(invoiceData.customerName) ?? textValue(invoiceData.contactName) ?? textValue(invoiceData.recipientName),
+        contactId: textValue(invoiceData.customerId) ?? textValue(invoiceData.contactId),
         paymentMethod: "-",
         notes: "Auto-generated from Invoice payment.",
         activities: [{
@@ -86,20 +131,33 @@ async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus
           id: "tx_" + crypto.randomUUID(),
           organizationId: ctx.tenantId,
           title: txPayload.title,
+          type: "Income",
+          amount,
+          currency: txPayload.currency,
+          category: txPayload.category,
+          transactionDate: new Date(),
+          paymentMethod: txPayload.paymentMethod,
+          reference: txPayload.reference,
+          sourceType: "Invoice",
+          sourceId: invoiceId,
+          contactName: txPayload.contactName,
+          contactId: txPayload.contactId,
+          notes: txPayload.notes,
+          activities: txPayload.activities,
+          attachments: [],
           status: "Completed",
-          payload: txPayload as any,
           createdById: ctx.userId,
           updatedById: ctx.userId,
         }
       });
     } else {
       // Just in case it was cancelled before, restore to Completed
-      const p = parsePayload(existingTx.payload);
       await prisma.transaction.update({
         where: { id: existingTx.id },
         data: {
           status: "Completed",
-          payload: { ...p, status: "Completed" } as any,
+          sourceType: existingTx.sourceType ?? "Invoice",
+          sourceId: existingTx.sourceId ?? invoiceId,
           updatedById: ctx.userId
         }
       });
@@ -107,12 +165,10 @@ async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus
   } else {
     // Status changed away from Paid (e.g. Unpaid or Cancelled) -> Cancel the transaction if it exists
     if (existingTx) {
-      const p = parsePayload(existingTx.payload);
       await prisma.transaction.update({
         where: { id: existingTx.id },
         data: {
           status: "Cancelled",
-          payload: { ...p, status: "Cancelled" } as any,
           updatedById: ctx.userId
         }
       });
@@ -122,23 +178,21 @@ async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus
 
 export async function createInvoice(data: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const title = getTitle(data);
-  const invoiceStatus = getStatus(data, "Unpaid");
+  const invoiceData = await buildInvoiceCreateData(ctx.tenantId, data);
+  const invoiceStatus = invoiceData.status;
   const invoice = await prisma.invoice.create({
     data: {
       id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
       organizationId: ctx.tenantId,
-      title,
-      status: invoiceStatus,
-      payload: createPayload(data),
+      ...invoiceData,
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: invoice.id, entityName: title, description: typeof data.description === "string" ? data.description : null });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: invoice.id, entityName: invoice.invoiceNumber ?? invoice.title, description: invoice.notes });
 
   if (invoiceStatus === "Paid") {
-    await syncFinanceTransaction(ctx, invoice.id, invoiceStatus, parsePayload(invoice.payload), title);
+    await syncFinanceTransaction(ctx, invoice.id, invoiceStatus, mapDomainRecord(invoice), invoice.title ?? "Untitled");
   }
 
   return mapDomainRecord(invoice, ctx.user);
@@ -148,19 +202,48 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
   const ctx = await requireTenant();
   const current = await findInvoiceRecord(ctx.tenantId, id);
   if (!current) return null;
-  const mergedPayload = { ...parsePayload(current.payload), ...patch };
-  const result = await prisma.invoice.updateMany({
-    where: { id: current.id, organizationId: ctx.tenantId },
-    data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: mergedPayload, updatedById: ctx.userId },
+  const { discountAmount, taxAmount, grandTotal } = buildInvoiceTotals(patch);
+  const saleId = patch.saleId !== undefined ? await resolveSaleId(ctx.tenantId, patch.saleId) : current.saleId;
+  const updated = await prisma.invoice.update({
+    where: { id: current.id },
+    data: {
+      invoiceNumber: patch.invoiceNumber !== undefined ? textValue(patch.invoiceNumber) : current.invoiceNumber,
+      title: patch.invoiceNumber !== undefined || patch.title !== undefined ? textValue(patch.invoiceNumber) ?? getTitle(patch, current.title ?? "Untitled") : current.title,
+      status: typeof patch.status === "string" ? patch.status : current.status,
+      recipientName: patch.recipientName !== undefined || patch.contactName !== undefined ? textValue(patch.recipientName) ?? textValue(patch.contactName) : current.recipientName,
+      recipientEmail: patch.recipientEmail !== undefined ? textValue(patch.recipientEmail) : current.recipientEmail,
+      contactName: patch.contactName !== undefined || patch.recipientName !== undefined ? textValue(patch.contactName) ?? textValue(patch.recipientName) : current.contactName,
+      contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
+      issueDate: patch.issueDate !== undefined ? dateValue(patch.issueDate) : current.issueDate,
+      dueDate: patch.dueDate !== undefined ? dateValue(patch.dueDate) : current.dueDate,
+      items: patch.items !== undefined ? jsonArray(patch.items) : jsonInputOrDefault(current.items, []),
+      subtotal: patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? current.subtotal : current.subtotal,
+      discountAmount: patch.discountAmount !== undefined || patch.discountTotal !== undefined ? discountAmount : current.discountAmount,
+      discountRate: patch.discountRate !== undefined ? numberValue(patch.discountRate) : current.discountRate,
+      discountTotal: patch.discountTotal !== undefined || patch.discountAmount !== undefined ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? current.discountTotal : current.discountTotal,
+      taxRate: patch.taxRate !== undefined ? numberValue(patch.taxRate) : current.taxRate,
+      taxAmount: patch.taxAmount !== undefined || patch.taxTotal !== undefined ? taxAmount : current.taxAmount,
+      taxTotal: patch.taxTotal !== undefined || patch.taxAmount !== undefined ? numberValue(patch.taxTotal) ?? numberValue(patch.taxAmount) ?? current.taxTotal : current.taxTotal,
+      totalAmount: patch.totalAmount !== undefined || patch.grandTotal !== undefined ? numberValue(patch.totalAmount) ?? grandTotal : current.totalAmount,
+      currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
+      paymentStatus: patch.paymentStatus !== undefined || patch.status !== undefined ? textValue(patch.paymentStatus) ?? textValue(patch.status) : current.paymentStatus,
+      paymentMethod: patch.paymentMethod !== undefined ? textValue(patch.paymentMethod) : current.paymentMethod,
+      paidAt: patch.paidAt !== undefined ? dateValue(patch.paidAt) : current.paidAt,
+      paymentReference: patch.paymentReference !== undefined ? textValue(patch.paymentReference) : current.paymentReference,
+      saleId,
+      saleOrderNumber: patch.saleOrderNumber !== undefined ? textValue(patch.saleOrderNumber) : current.saleOrderNumber,
+      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
+      activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
+      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
+      updatedById: ctx.userId,
+    },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
-  if (result.count === 0) return null;
-  const updated = await prisma.invoice.findFirst({ where: { id: current.id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
-  if (!updated) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: current.id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: current.id, entityName: updated.invoiceNumber ?? updated.title, description: updated.notes });
 
   // Post-update hook: Manage Finance Cashflow for Invoices
   if (typeof patch.status === "string" && patch.status !== current.status) {
-    await syncFinanceTransaction(ctx, current.id, patch.status, mergedPayload, updated.title ?? "Untitled");
+    await syncFinanceTransaction(ctx, current.id, patch.status, mapDomainRecord(updated), updated.title ?? "Untitled");
   }
 
   return mapDomainRecord(updated);

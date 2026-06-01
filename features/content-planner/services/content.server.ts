@@ -1,5 +1,55 @@
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/server/auth-utils";
+import { dateValue, jsonArray, jsonInputOrDefault, textValue } from "@/lib/api/feature-records";
+
+async function resolveTargetAccountId(tenantId: string, value: unknown) {
+  if (value === null) return null;
+  const targetAccountId = textValue(value);
+  if (!targetAccountId) return undefined;
+  const account = await prisma.socialChannel.findFirst({
+    where: { id: targetAccountId, organizationId: tenantId },
+    select: { id: true },
+  });
+  return account?.id ?? null;
+}
+
+function mapContentPost(post: any) {
+  const plannedDate = post.plannedDate?.toISOString?.() ?? "";
+  const plannedTime = post.plannedTime ?? "";
+  const contentType = post.contentType ?? "Post";
+
+  return {
+    title: post.title || "",
+    status: post.status || "Planned",
+    plannedDate,
+    plannedTime,
+    date: plannedDate,
+    time: plannedTime,
+    contentType,
+    type: contentType,
+    targetAccountId: post.targetAccountId ?? "",
+    tags: post.tags ?? [],
+    id: post.id,
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
+  };
+}
+
+async function buildContentPostCreateData(tenantId: string, data: Record<string, unknown>) {
+  const plannedDate = dateValue(data.plannedDate) ?? dateValue(data.date);
+  const plannedTime = textValue(data.plannedTime) ?? textValue(data.time);
+  const contentType = textValue(data.contentType) ?? textValue(data.type) ?? "Post";
+
+  return {
+    title: textValue(data.title) ?? "New Entry",
+    status: textValue(data.status) ?? "Planned",
+    plannedDate,
+    plannedTime,
+    contentType,
+    targetAccountId: await resolveTargetAccountId(tenantId, data.targetAccountId),
+    tags: jsonArray(data.tags),
+  };
+}
 
 export async function listContentPosts() {
   const context = await getTenantContext();
@@ -10,29 +60,20 @@ export async function listContentPosts() {
     orderBy: { createdAt: 'desc' }
   });
 
-  return posts.map((post: any) => ({
-    title: post.title || "",
-    status: post.status || "Planned",
-    ...(typeof post.payload === 'object' && post.payload !== null ? post.payload : {}),
-    id: post.id,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
-  }));
+  return posts.map(mapContentPost);
 }
 
 export async function createContentPost(data: Record<string, unknown>) {
   const context = await getTenantContext();
   if (!context) throw new Error("Unauthorized");
 
-  const { title, status, id: _tempId, createdAt: _c, updatedAt: _u, ...payload } = data;
+  const postData = await buildContentPostCreateData(context.tenant.id, data);
 
   const post = await prisma.contentPost.create({
     data: {
       organizationId: context.tenant.id,
       createdById: context.user.id,
-      title: (title as string) || "New Entry",
-      status: (status as string) || "Planned",
-      payload: (payload as any) || {}
+      ...postData,
     }
   });
 
@@ -48,14 +89,7 @@ export async function createContentPost(data: Record<string, unknown>) {
     }
   });
 
-  return {
-    title: post.title || "",
-    status: post.status || "Planned",
-    ...(typeof post.payload === 'object' && post.payload !== null ? post.payload : {}),
-    id: post.id,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
-  };
+  return mapContentPost(post);
 }
 
 export async function updateContentPost(id: string, patch: Record<string, unknown>) {
@@ -67,16 +101,20 @@ export async function updateContentPost(id: string, patch: Record<string, unknow
     throw new Error("Not found or unauthorized");
   }
 
-  const { title, status, id: _tempId, createdAt: _c, updatedAt: _u, ...payloadPatch } = patch;
-  const currentPayload = (typeof existing.payload === 'object' && existing.payload !== null) ? existing.payload : {};
-  const newPayload = { ...currentPayload, ...payloadPatch };
+  const targetAccountId = patch.targetAccountId !== undefined
+    ? await resolveTargetAccountId(context.tenant.id, patch.targetAccountId)
+    : existing.targetAccountId;
 
   const post = await prisma.contentPost.update({
     where: { id },
     data: {
-      title: title !== undefined ? (title as string) : existing.title,
-      status: status !== undefined ? (status as string) : existing.status,
-      payload: newPayload as any,
+      title: patch.title !== undefined ? textValue(patch.title) ?? existing.title : existing.title,
+      status: patch.status !== undefined ? textValue(patch.status) ?? existing.status : existing.status,
+      plannedDate: patch.plannedDate !== undefined || patch.date !== undefined ? dateValue(patch.plannedDate) ?? dateValue(patch.date) : existing.plannedDate,
+      plannedTime: patch.plannedTime !== undefined || patch.time !== undefined ? textValue(patch.plannedTime) ?? textValue(patch.time) : existing.plannedTime,
+      contentType: patch.contentType !== undefined || patch.type !== undefined ? textValue(patch.contentType) ?? textValue(patch.type) : existing.contentType,
+      targetAccountId,
+      tags: patch.tags !== undefined ? jsonArray(patch.tags) : jsonInputOrDefault(existing.tags, []),
       updatedById: context.user.id,
     }
   });
@@ -93,14 +131,7 @@ export async function updateContentPost(id: string, patch: Record<string, unknow
     }
   });
 
-  return {
-    title: post.title || "",
-    status: post.status || "Planned",
-    ...(typeof post.payload === 'object' && post.payload !== null ? post.payload : {}),
-    id: post.id,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
-  };
+  return mapContentPost(post);
 }
 
 export async function deleteContentPost(id: string) {

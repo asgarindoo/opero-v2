@@ -5,8 +5,18 @@ import { Goal, KeyResult, User, Milestone, Activity } from "@/features/goals";
 import { createGoal, deleteGoal as removeGoal, listGoals, updateGoal as saveGoal } from "@/features/goals/services/goals.client";
 
 // Helper to calculate progress
-function calculateGoalProgress(keyResults: KeyResult[], milestones?: Milestone[]): number {
-  if (keyResults && keyResults.length > 0) {
+function normalizeGoal(goal: Goal): Goal {
+  return {
+    ...goal,
+    keyResults: Array.isArray(goal.keyResults) ? goal.keyResults : [],
+    milestones: Array.isArray(goal.milestones) ? goal.milestones : [],
+    linkedItems: Array.isArray(goal.linkedItems) ? goal.linkedItems : [],
+    activities: Array.isArray(goal.activities) ? goal.activities : [],
+  };
+}
+
+function calculateGoalProgress(keyResults: KeyResult[] = [], milestones: Milestone[] = []): number {
+  if (keyResults.length > 0) {
     const totalPercentage = keyResults.reduce((acc, kr) => {
       // If target is 0, handle edge cases (like zero bugs). Assuming 100% if current <= target for inverted metrics, 
       // but for simplicity, let's just do standard (current/target)*100
@@ -17,7 +27,7 @@ function calculateGoalProgress(keyResults: KeyResult[], milestones?: Milestone[]
     }, 0);
     return Math.round(totalPercentage / keyResults.length);
   }
-  if (milestones && milestones.length > 0) {
+  if (milestones.length > 0) {
     const completedCount = milestones.filter(m => m.completed).length;
     return Math.round((completedCount / milestones.length) * 100);
   }
@@ -55,7 +65,10 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       try {
         const items = await listGoals<Goal>();
         if (!cancelled) {
-          setGoals(items.map(g => ({ ...g, progress: calculateGoalProgress(g.keyResults, g.milestones) })));
+          setGoals(items.map((g) => {
+            const normalized = normalizeGoal(g);
+            return { ...normalized, progress: calculateGoalProgress(normalized.keyResults, normalized.milestones) };
+          }));
           setError(null);
         }
       } catch (err) {
@@ -73,7 +86,8 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addGoal = async (goal: Goal) => {
-    const next = { ...goal, progress: calculateGoalProgress(goal.keyResults, goal.milestones) };
+    const normalized = normalizeGoal(goal);
+    const next = { ...normalized, progress: calculateGoalProgress(normalized.keyResults, normalized.milestones) };
     try {
       const created = await createGoal<Goal>(next);
       setGoals(prev => [created, ...prev]);
@@ -87,7 +101,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const updateGoal = (goalId: string, updates: Partial<Goal>) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
-      const updated = { ...g, ...updates };
+      const updated = normalizeGoal({ ...g, ...updates });
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to update goal:", err);
@@ -122,8 +136,9 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
       const newKr: KeyResult = { ...krData, id: `kr_${Date.now()}` };
-      const newKRs = [...g.keyResults, newKr];
-      const newProgress = calculateGoalProgress(newKRs, g.milestones);
+      const goal = normalizeGoal(g);
+      const newKRs = [...goal.keyResults, newKr];
+      const newProgress = calculateGoalProgress(newKRs, goal.milestones);
       const updated = { ...g, keyResults: newKRs, progress: newProgress };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {
@@ -136,8 +151,9 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const updateKeyResult = (goalId: string, krId: string, updates: Partial<KeyResult>) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
-      const newKRs = g.keyResults.map(kr => kr.id === krId ? { ...kr, ...updates } : kr);
-      const newProgress = calculateGoalProgress(newKRs, g.milestones);
+      const goal = normalizeGoal(g);
+      const newKRs = goal.keyResults.map(kr => kr.id === krId ? { ...kr, ...updates } : kr);
+      const newProgress = calculateGoalProgress(newKRs, goal.milestones);
       const updated = { ...g, keyResults: newKRs, progress: newProgress };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {
@@ -150,8 +166,9 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const addMilestone = (goalId: string, msData: Omit<Milestone, "id">) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
+      const goal = normalizeGoal(g);
       const newMs: Milestone = { ...msData, id: `ms_${Date.now()}` };
-      const updated = { ...g, milestones: [...g.milestones, newMs] };
+      const updated = { ...goal, milestones: [...goal.milestones, newMs] };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to add milestone:", err);
@@ -168,7 +185,8 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
     };
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
-      const updated = { ...g, activities: [newActivity, ...g.activities] };
+      const goal = normalizeGoal(g);
+      const updated = { ...goal, activities: [newActivity, ...goal.activities] };
       const recordId = (g as { recordId?: string }).recordId ?? g.id;
       saveGoal<Goal>(recordId, updated).catch((err) => {
         console.error("Failed to add activity:", err);
@@ -180,8 +198,9 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const toggleMilestone = (goalId: string, milestoneId: string) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
-      const nextMilestones = g.milestones.map(m => m.id === milestoneId ? { ...m, completed: !m.completed } : m);
-      const newProgress = calculateGoalProgress(g.keyResults, nextMilestones);
+      const goal = normalizeGoal(g);
+      const nextMilestones = goal.milestones.map(m => m.id === milestoneId ? { ...m, completed: !m.completed } : m);
+      const newProgress = calculateGoalProgress(goal.keyResults, nextMilestones);
       const updated = {
         ...g,
         milestones: nextMilestones,

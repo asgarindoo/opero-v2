@@ -4,15 +4,17 @@ import type { ChatBootstrap, ChatChannel, ChatMessage } from "../types";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-let _browserClient: ReturnType<typeof createClient> | null = null;
+declare global {
+  var __operoSupabaseRealtimeClient: ReturnType<typeof createClient> | undefined;
+}
 
 export function getSupabaseBrowserClient() {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase browser client is not configured.");
   }
 
-  if (!_browserClient) {
-    _browserClient = createClient(supabaseUrl, supabaseKey, {
+  if (!globalThis.__operoSupabaseRealtimeClient) {
+    globalThis.__operoSupabaseRealtimeClient = createClient(supabaseUrl, supabaseKey, {
       auth: {
         // Supabase auth is not used — better-auth manages sessions.
         // persistSession and autoRefreshToken are disabled to keep the client
@@ -30,7 +32,7 @@ export function getSupabaseBrowserClient() {
     });
   }
 
-  return _browserClient;
+  return globalThis.__operoSupabaseRealtimeClient;
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

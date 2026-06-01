@@ -2,11 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { requireTenant, type TenantContext } from "@/lib/server/auth-utils";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
-import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
+import { dateValue, firstStringFromArray, jsonArray, jsonInputOrDefault, jsonObjectOrUndefined, numberValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "TASKS";
 const ENTITY = "Task";
-// Trigger TS refresh
 
 async function getMemberIdentityMap(ctx: TenantContext) {
   const members = await prisma.member.findMany({
@@ -84,6 +84,55 @@ async function mapTaskRecords(ctx: TenantContext, records: any[]) {
   return records.map((task) => hydrateTaskIdentity(mapDomainRecord(task), identities));
 }
 
+async function resolveCampaignId(ctx: TenantContext, value: unknown) {
+  if (value === null) return null;
+  const campaignId = textValue(value);
+  if (!campaignId) return undefined;
+  const campaign = await prisma.campaign.findFirst({
+    where: { id: campaignId, organizationId: ctx.tenantId },
+    select: { id: true },
+  });
+  return campaign?.id ?? null;
+}
+
+async function resolveAssigneeId(ctx: TenantContext, data: Record<string, unknown>) {
+  const assigneeId = textValue(data.assigneeId) ?? firstStringFromArray(data.assignees);
+  if (!assigneeId) return undefined;
+  const member = await prisma.member.findFirst({
+    where: { organizationId: ctx.tenantId, userId: assigneeId },
+    select: { userId: true },
+  });
+  return member?.userId ?? null;
+}
+
+async function buildTaskCreateData(ctx: TenantContext, data: Record<string, unknown>) {
+  const title = getTitle(data);
+  return {
+    title,
+    description: textValue(data.description),
+    status: getStatus(data),
+    priority: textValue(data.priority),
+    dueDate: dateValue(data.dueDate) ?? dateValue(data.due),
+    startDate: dateValue(data.startDate),
+    reminderDate: dateValue(data.reminderDate),
+    estimatedHours: numberValue(data.estimatedHours),
+    assigneeId: await resolveAssigneeId(ctx, data),
+    campaignId: await resolveCampaignId(ctx, data.campaignId),
+    labels: jsonArray(data.labels),
+    assignees: jsonArray(data.assignees),
+    checklist: jsonArray(data.checklist),
+    subtasks: jsonArray(data.subtasks),
+    relationships: jsonArray(data.relationships),
+    externalLinks: jsonArray(data.externalLinks),
+    comments: jsonArray(data.comments),
+    reactions: jsonObjectOrUndefined(data.reactions),
+    activity: jsonArray(data.activity),
+    attachments: jsonArray(data.attachments),
+    watchers: jsonArray(data.watchers),
+    project: textValue(data.project),
+  };
+}
+
 export async function listTasks() {
   const ctx = await requireTenant();
   const tasks = await prisma.task.findMany({
@@ -117,15 +166,12 @@ export async function getTaskById(id: string) {
 
 export async function createTask(data: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const title = getTitle(data);
+  const taskData = await buildTaskCreateData(ctx, data);
   const task = await prisma.task.create({
     data: {
       id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
       organizationId: ctx.tenantId,
-      campaignId: typeof data.campaignId === "string" ? data.campaignId : undefined,
-      title,
-      status: getStatus(data),
-      payload: createPayload(data),
+      ...taskData,
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
@@ -137,8 +183,8 @@ export async function createTask(data: Record<string, unknown>) {
     action: "Created",
     entityType: ENTITY,
     entityId: task.id,
-    entityName: title,
-    description: typeof data.description === "string" ? data.description : null,
+    entityName: task.title,
+    description: task.description,
   }).catch(console.error);
   const identities = await getMemberIdentityMap(ctx);
   return hydrateTaskIdentity(mapDomainRecord(task, ctx.user), identities);
@@ -149,16 +195,33 @@ export async function updateTask(id: string, patch: Record<string, unknown>) {
   const current = await prisma.task.findUnique({ where: { id } });
   if (!current || current.organizationId !== ctx.tenantId) return null;
 
-  const currentPayload = parsePayload(current.payload);
-  const mergedPayload = { ...currentPayload, ...patch };
-  
+  const campaignId = patch.campaignId !== undefined ? await resolveCampaignId(ctx, patch.campaignId) : current.campaignId;
+  const assigneeId = patch.assigneeId !== undefined || patch.assignees !== undefined ? await resolveAssigneeId(ctx, patch) : current.assigneeId;
   const updated = await prisma.task.update({
     where: { id },
     data: {
       title: getTitle(patch, current.title ?? "Untitled"),
+      description: patch.description !== undefined ? textValue(patch.description) : current.description,
       status: typeof patch.status === "string" ? patch.status : current.status,
-      campaignId: patch.campaignId !== undefined ? (patch.campaignId as string | null) : current.campaignId,
-      payload: mergedPayload,
+      priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
+      dueDate: patch.dueDate !== undefined || patch.due !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.due) : current.dueDate,
+      startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
+      reminderDate: patch.reminderDate !== undefined ? dateValue(patch.reminderDate) : current.reminderDate,
+      estimatedHours: patch.estimatedHours !== undefined ? numberValue(patch.estimatedHours) : current.estimatedHours,
+      assigneeId,
+      campaignId,
+      labels: patch.labels !== undefined ? jsonArray(patch.labels) : jsonInputOrDefault(current.labels, []),
+      assignees: patch.assignees !== undefined ? jsonArray(patch.assignees) : jsonInputOrDefault(current.assignees, []),
+      checklist: patch.checklist !== undefined ? jsonArray(patch.checklist) : jsonInputOrDefault(current.checklist, []),
+      subtasks: patch.subtasks !== undefined ? jsonArray(patch.subtasks) : jsonInputOrDefault(current.subtasks, []),
+      relationships: patch.relationships !== undefined ? jsonArray(patch.relationships) : jsonInputOrDefault(current.relationships, []),
+      externalLinks: patch.externalLinks !== undefined ? jsonArray(patch.externalLinks) : jsonInputOrDefault(current.externalLinks, []),
+      comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
+      reactions: patch.reactions !== undefined ? jsonObjectOrUndefined(patch.reactions) : jsonObjectOrUndefined(current.reactions),
+      activity: patch.activity !== undefined ? jsonArray(patch.activity) : jsonInputOrDefault(current.activity, []),
+      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
+      watchers: patch.watchers !== undefined ? jsonArray(patch.watchers) : jsonInputOrDefault(current.watchers, []),
+      project: patch.project !== undefined ? textValue(patch.project) : current.project,
       updatedById: ctx.userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },

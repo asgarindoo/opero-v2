@@ -15,6 +15,11 @@ const statusConfig = {
   "completed": { icon: CheckCircle2, color: "text-blue-600", bg: "bg-blue-50", label: "Completed" },
 };
 
+function normalizeGoalStatus(status: string | undefined) {
+  const key = (status || "").toLowerCase().replace(/\s+/g, "-");
+  return key in statusConfig ? key as keyof typeof statusConfig : "on-track";
+}
+
 interface GoalListViewProps {
   goals: Goal[];
   onGoalClick: (goal: Goal) => void;
@@ -76,9 +81,10 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {goals.map((goal) => {
-                const conf = statusConfig[goal.status];
+                const conf = statusConfig[normalizeGoalStatus(goal.status)];
                 const StatusIcon = conf.icon;
-                const completedMilestones = goal.milestones.filter(m => m.completed).length;
+                const milestones = Array.isArray(goal.milestones) ? goal.milestones : [];
+                const completedMilestones = milestones.filter(m => m.completed).length;
                 const isSelected = selectedIds.has(goal.id);
 
                 return (
@@ -121,7 +127,7 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
                        <span className="font-body-sm text-[12px] font-medium text-on-surface opacity-50 font-display">
-                          {completedMilestones} <span className="opacity-40 font-normal">/</span> {goal.milestones.length}
+                          {completedMilestones} <span className="opacity-40 font-normal">/</span> {milestones.length}
                        </span>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-on-surface-variant opacity-40">

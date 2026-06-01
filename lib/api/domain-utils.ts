@@ -7,7 +7,14 @@ export type DomainAction = "Created" | "Updated" | "Deleted";
 
 export function parsePayload(payload: unknown): Record<string, any> {
   if (!payload) return {};
-  if (typeof payload === "string") return JSON.parse(payload);
+  if (typeof payload === "string") {
+    try {
+      return JSON.parse(payload);
+    } catch {
+      return {};
+    }
+  }
+  if (typeof payload !== "object" || Array.isArray(payload)) return {};
   return payload as Record<string, any>;
 }
 
@@ -51,23 +58,72 @@ function getUserImageLike(user: UserIdentity | null | undefined) {
   return user?.image ?? user?.avatar ?? null;
 }
 
+const RECORD_RELATION_KEYS = new Set(["payload", "createdBy", "updatedBy", "organization", "folder", "uploadedBy", "sale", "targetAccount"]);
+
+function serializeRecordValue(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}
+
+function explicitRecordData(record: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(record)
+      .filter(([key, value]) => !RECORD_RELATION_KEYS.has(key) && value !== null && value !== undefined)
+      .map(([key, value]) => [key, serializeRecordValue(value)])
+  );
+}
+
+function firstDefined(...values: unknown[]) {
+  return values.find((value) => value !== undefined && value !== null && value !== "");
+}
+
+function isoDateValue(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  return typeof value === "string" && value ? value : undefined;
+}
+
 export function mapDomainRecord(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
-  const payloadData = parsePayload(record.payload);
   const ownerSource = normalizeRecordUser(record.createdBy ?? fallbackUser);
+  const explicitData = explicitRecordData(record);
+  const dueDate = firstDefined(isoDateValue(record.dueDate));
+  const plannedDate = firstDefined(isoDateValue(record.plannedDate));
+  const saleNumber = firstDefined(record.saleNumber);
+  const invoiceNumber = firstDefined(record.invoiceNumber);
+  const grandTotal = firstDefined(record.grandTotal, record.totalAmount);
+  const discountAmount = firstDefined(record.discountAmount, record.discountTotal);
+  const taxAmount = firstDefined(record.taxAmount, record.taxTotal);
 
   return {
-    ...record,
-    ...payloadData,
+    ...explicitData,
     id: record.id,
-    name: record.name ?? payloadData.name ?? record.title ?? "Untitled",
+    name: record.name ?? record.accountName ?? record.title ?? "Untitled",
     title: record.title,
-    description: record.description ?? payloadData.description ?? "",
-    status: record.status ?? payloadData.status,
-    category: record.category ?? payloadData.category,
-    progress: record.progress ?? payloadData.progress,
-    stages: record.stages ?? payloadData.stages ?? [],
-    notes: record.notes ?? payloadData.notes ?? [],
-    dueDate: record.dueDate?.toISOString?.() ?? payloadData.dueDate,
+    description: record.description ?? "",
+    status: record.status,
+    category: record.category,
+    progress: record.progress,
+    stages: record.stages ?? [],
+    notes: record.notes ?? [],
+    dueDate,
+    due: dueDate,
+    date: plannedDate,
+    plannedDate,
+    time: record.plannedTime,
+    type: record.type ?? record.contentType,
+    contentType: record.contentType ?? record.type,
+    orderNumber: saleNumber,
+    saleNumber,
+    invoiceNumber,
+    customerName: record.customerName ?? record.contactName,
+    recipientName: record.recipientName ?? record.contactName,
+    contactName: record.contactName ?? record.customerName ?? record.recipientName,
+    total: grandTotal,
+    grandTotal,
+    totalAmount: firstDefined(record.totalAmount, grandTotal),
+    discountAmount,
+    discountTotal: firstDefined(record.discountTotal, discountAmount),
+    taxAmount,
+    taxTotal: firstDefined(record.taxTotal, taxAmount),
     createdBy: ownerSource,
     owner: ownerSource
       ? {
@@ -76,14 +132,14 @@ export function mapDomainRecord(record: any, fallbackUser?: { id: string; name: 
           email: ownerSource.email ?? undefined,
           avatar: ownerSource.image ?? undefined,
         }
-      : payloadData.owner ?? { id: "system", name: "System", avatar: undefined },
-    updated: payloadData.updated ?? record.updatedAt?.toISOString(),
-    labels: payloadData.labels ?? record.labels ?? [],
-    assignees: payloadData.assignees ?? record.assignees ?? [],
-    checklist: payloadData.checklist ?? record.checklist ?? [],
-    attachments: payloadData.attachments ?? record.attachments ?? [],
-    comments: payloadData.comments ?? record.comments ?? [],
-    activity: payloadData.activity ?? record.activity ?? [],
+      : { id: "system", name: "System", avatar: undefined },
+    updated: record.updatedAt?.toISOString(),
+    labels: record.labels ?? [],
+    assignees: record.assignees ?? [],
+    checklist: record.checklist ?? [],
+    attachments: record.attachments ?? [],
+    comments: record.comments ?? [],
+    activity: record.activity ?? [],
     recordId: record.id,
     recordCreatedAt: record.createdAt?.toISOString(),
     recordUpdatedAt: record.updatedAt?.toISOString(),

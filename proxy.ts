@@ -44,6 +44,8 @@ const ROOT_ONLY_ROUTES = [
   "/tenant-inactive",
 ];
 
+const ROOT_TENANT_API_ROUTES = new Set(["/api/tenant/join"]);
+
 const TENANT_SHORTPATHS = new Set([
   "/activity",
   "/assets",
@@ -94,6 +96,10 @@ function isStaticOrInternal(pathname: string) {
 
 function isRootOnlyRoute(pathname: string) {
   return ROOT_ONLY_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function isRootTenantApiRoute(pathname: string) {
+  return ROOT_TENANT_API_ROUTES.has(pathname);
 }
 
 function isTenantRoute(pathname: string) {
@@ -335,6 +341,10 @@ export default async function proxy(request: NextRequest) {
   }
 
   debugTenantProxy(request);
+
+  if (isRootTenantApiRoute(pathname)) {
+    return passThrough(request);
+  }
 
   const host = getHost(request);
   const tenantSlug = extractTenantSlugFromHost(host);

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { mapDomainRecord } from "@/lib/api/domain-utils";
 import { requireTenant } from "@/lib/server/auth-utils";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
@@ -45,9 +46,9 @@ export async function getDashboardSummary() {
     }),
   ]);
 
-  const tasks = taskRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
-  const flows = flowRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
-  const sales = saleRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
+  const tasks = taskRecords.map((r: any) => mapDomainRecord(r));
+  const flows = flowRecords.map((r: any) => mapDomainRecord(r));
+  const sales = saleRecords.map((r: any) => mapDomainRecord(r));
   const memberIdentityByUserId = new Map(
     members.map((m: any) => {
       const user = {
@@ -134,10 +135,9 @@ export async function getDashboardSummary() {
     dayStart.setDate(weekStart.getDate() + idx);
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayStart.getDate() + 1);
-    const count = taskRecords.filter((r: any) => {
-      const payloadObj = r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {};
-      const s = r.status || payloadObj.status;
-      return s === "Done" && r.updatedAt >= dayStart && r.updatedAt < dayEnd;
+    const count = tasks.filter((task: any) => {
+      const updatedAt = new Date(task.recordUpdatedAt ?? task.updatedAt ?? task.updated ?? 0);
+      return task.status === "Done" && updatedAt >= dayStart && updatedAt < dayEnd;
     }).length;
     return { day, tasks: count };
   });
@@ -194,7 +194,7 @@ export async function getDashboardSummary() {
     const count = sales.filter((s: any) => s.status === label || s.stage === label).length;
     const value = sales
       .filter((s: any) => s.status === label || s.stage === label)
-      .reduce((acc: any, s: any) => acc + (Number(s.value) || 0), 0);
+      .reduce((acc: any, s: any) => acc + (Number(s.value ?? s.total ?? s.grandTotal) || 0), 0);
     const pct = sales.length ? Math.round((count / sales.length) * 100) : 0;
     return { label, count, value, pct, colorIndex: index };
   });
@@ -207,7 +207,7 @@ export async function getDashboardSummary() {
   }));
 
   // ── Calendar (Content Planner) ──────────────────────────────────────────
-  const contents = contentRecords.map((r: any) => ({ ...r, ...(r.payload ? (typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload) : {}) }));
+  const contents = contentRecords.map((r: any) => mapDomainRecord(r));
 
   const calendarEvents = contents
     .filter((c: any) => {

@@ -35,6 +35,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
   const { user } = useTenant();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [category, setCategory] = useState<FlowCategory>("Operations");
   const [stages, setStages] = useState<Partial<FlowStage>[]>([
     { id: "s1", name: "", order: 0, checklist: [] }
@@ -90,6 +91,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
       category,
       status: "Active",
       progress: 0,
+      dueDate: dueDate || undefined,
       updated: new Date().toISOString(),
       owner: {
         id: user?.id ?? "me",
@@ -146,13 +148,24 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
             onChange={e => setDescription(e.target.value)}
           />
 
-          <div className="w-1/2 pt-2">
-            <SL>Category</SL>
-            <Dropdown
-              value={category}
-              options={FLOW_CATEGORIES.map(cat => ({ value: cat, label: cat }))}
-              onChange={(val) => setCategory(val as FlowCategory)}
-            />
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div>
+              <SL>Category</SL>
+              <Dropdown
+                value={category}
+                options={FLOW_CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+                onChange={(val) => setCategory(val as FlowCategory)}
+              />
+            </div>
+            <div>
+              <SL>Due Date</SL>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full h-9 rounded-[6px] border border-black/[0.08] bg-black/[0.02] px-3 font-body-md text-[12.5px] text-on-surface outline-none focus:border-primary/30 focus:bg-white transition-all"
+              />
+            </div>
           </div>
         </div>
 
@@ -189,7 +202,13 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
                         {(stage.name || "").length}/40
                       </span>
                     )}
-                    <button onClick={() => removeStage(idx)} className="opacity-0 group-hover/stage:opacity-100 transition-opacity p-0.5 rounded hover:bg-black/[0.06]">
+                    <button
+                      type="button"
+                      onClick={() => removeStage(idx)}
+                      disabled={stages.length === 1}
+                      className="p-1 rounded hover:bg-red-50 disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
+                      title={stages.length === 1 ? "At least one stage is required" : "Delete stage"}
+                    >
                       <Trash2 size={12} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.55)" }} />
                     </button>
                   </div>
@@ -211,13 +230,18 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
                             {item.text.length}/80
                           </span>
                         )}
-                        <button onClick={() => removeChecklistItem(idx, itemIdx)} className="opacity-0 group-hover/ci:opacity-100 transition-opacity p-0.5 rounded hover:bg-black/[0.06]">
+                        <button
+                          type="button"
+                          onClick={() => removeChecklistItem(idx, itemIdx)}
+                          className="p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Delete item"
+                        >
                           <Trash2 size={11} strokeWidth={1.75} style={{ color: "rgba(186,26,26,0.55)" }} />
                         </button>
                       </div>
                     ))}
                     
-                    <button onClick={() => addChecklistItem(idx)} className="flex items-center gap-1.5 px-2 py-1 font-label-caps text-[9px] font-bold uppercase tracking-widest rounded hover:bg-black/[0.04] transition-all" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
+                    <button type="button" onClick={() => addChecklistItem(idx)} className="flex items-center gap-1.5 px-2 py-1 font-label-caps text-[9px] font-bold uppercase tracking-widest rounded hover:bg-black/[0.04] transition-all" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
                       <Plus size={10} strokeWidth={2} /> Add Item
                     </button>
                   </div>
@@ -227,7 +251,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
           </div>
 
           <div className="mt-4 pt-4 border-t border-black/[0.04]">
-            <button onClick={addStage} className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[6px] hover:bg-black/[0.02] font-label-caps text-[10px] font-bold uppercase tracking-[0.08em] transition-colors" style={{ border: "1px dashed rgba(0,0,0,0.18)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
+            <button type="button" onClick={addStage} className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[6px] hover:bg-black/[0.02] font-label-caps text-[10px] font-bold uppercase tracking-[0.08em] transition-colors" style={{ border: "1px dashed rgba(0,0,0,0.18)", color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
               <Plus size={11} strokeWidth={2} /> Add Stage
             </button>
           </div>

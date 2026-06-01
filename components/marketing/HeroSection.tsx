@@ -68,7 +68,7 @@ export default function HeroSection() {
               <img
                 alt="Dashboard preview"
                 className="w-full h-full object-cover opacity-60 mix-blend-luminosity"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAskyM5VQ5Vq3sUuXB3597VVKYVQKTOlXSqW6ZicFQbIuvPHnL3tosAI6MYdPw--2vZcWRs-s_M74-GMogVlp4RV6ozuYvCkPs5IzWsM2RkqEcKFxpmh8923lNvQACeZSFMQggcUUPXWVt9mizLuKzKbNd8fpLr3zEW_AKlWWtliwkGTyUY9POwPwoub9hvixKrZKNNwVI03sXFZ-djFqDj9A17Rm1K7S-MoBxvBbnbJLDE2M-w6EuHzxe4GrIieDVHpg-s-aJlOUg"
+                src="/dashbaord.png"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent" />
             </div>

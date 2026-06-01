@@ -44,6 +44,25 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const reloadInvoices = useCallback(async () => {
+    try {
+      const items = await listInvoices<Invoice>();
+      setInvoices(items);
+    } catch (err) {
+      console.error("Failed to reload invoices:", err);
+    }
+  }, []);
+
+  const handleSaveError = useCallback((err: unknown, label: string) => {
+    const message = err instanceof Error ? err.message : "";
+    if (message === "Record not found") {
+      reloadInvoices();
+      return;
+    }
+
+    console.error(label, err);
+  }, [reloadInvoices]);
+
   const addInvoice = useCallback((partial: Partial<Invoice>) => {
     const totalAmount = (partial.items || []).reduce((acc, curr) => acc + curr.amount, 0);
     const newInvoice: Invoice = {
@@ -93,10 +112,10 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
 
     if (recordIdToSave && payloadToSave) {
       saveInvoice<Invoice>(recordIdToSave, payloadToSave).catch((err) => {
-        console.error("Failed to update invoice:", err);
+        handleSaveError(err, "Failed to update invoice:");
       });
     }
-  }, []);
+  }, [handleSaveError]);
 
   const markAsPaid = useCallback((id: string) => {
     let recordIdToSave: string | undefined;
@@ -124,10 +143,10 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
 
     if (recordIdToSave && payloadToSave) {
       saveInvoice<Invoice>(recordIdToSave, payloadToSave).catch((err) => {
-        console.error("Failed to mark invoice as paid:", err);
+        handleSaveError(err, "Failed to mark invoice as paid:");
       });
     }
-  }, []);
+  }, [handleSaveError, userName]);
 
   const deleteInvoices = useCallback((ids: string[]) => {
     setInvoices(prev => prev.filter(inv => !ids.includes(inv.id)));

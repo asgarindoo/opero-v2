@@ -1,9 +1,45 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
-import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
+import { jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "SALES";
 const ENTITY = "Sale";
+
+function buildSaleCreateData(data: Record<string, unknown>) {
+  const title = getTitle(data);
+  const saleNumber = textValue(data.saleNumber) ?? textValue(data.orderNumber);
+  const discountAmount = numberValue(data.discountAmount) ?? numberValue(data.discountTotal) ?? 0;
+  const grandTotal = numberValue(data.grandTotal) ?? numberValue(data.total) ?? 0;
+
+  return {
+    saleNumber,
+    title,
+    status: getStatus(data),
+    saleType: textValue(data.saleType),
+    paymentStatus: textValue(data.paymentStatus),
+    customerName: textValue(data.customerName) ?? textValue(data.contactName),
+    recipientName: textValue(data.recipientName),
+    contactName: textValue(data.contactName) ?? textValue(data.customerName) ?? textValue(data.recipientName),
+    contactId: textValue(data.contactId),
+    items: jsonArray(data.items),
+    subtotal: numberValue(data.subtotal) ?? 0,
+    discountAmount,
+    taxAmount: numberValue(data.taxAmount) ?? 0,
+    grandTotal,
+    currency: textValue(data.currency) ?? "USD",
+    orderDiscountValue: numberValue(data.orderDiscountValue),
+    orderDiscountType: textValue(data.orderDiscountType),
+    discountTotal: numberValue(data.discountTotal) ?? discountAmount,
+    taxPercentage: numberValue(data.taxPercentage),
+    notes: textValue(data.notes),
+    assignedStaff: jsonArray(data.assignedStaff),
+    activities: jsonArray(data.activities),
+    attachments: jsonArray(data.attachments),
+    shippingAddress: textValue(data.shippingAddress),
+    trackingNumber: textValue(data.trackingNumber),
+  };
+}
 
 export async function listSales() {
   const ctx = await requireTenant();
@@ -19,9 +55,17 @@ export async function getSaleById(id: string) {
 
 export async function createSale(data: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const title = getTitle(data);
-  const sale = await prisma.sale.create({ data: { id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(), organizationId: ctx.tenantId, title, status: getStatus(data), payload: createPayload(data), createdById: ctx.userId, updatedById: ctx.userId } });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: sale.id, entityName: title, description: typeof data.description === "string" ? data.description : null });
+  const saleData = buildSaleCreateData(data);
+  const sale = await prisma.sale.create({
+    data: {
+      id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
+      organizationId: ctx.tenantId,
+      ...saleData,
+      createdById: ctx.userId,
+      updatedById: ctx.userId,
+    },
+  });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: sale.id, entityName: sale.title, description: sale.notes });
   return mapDomainRecord(sale, ctx.user);
 }
 
@@ -29,11 +73,45 @@ export async function updateSale(id: string, patch: Record<string, unknown>) {
   const ctx = await requireTenant();
   const current = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
-  const result = await prisma.sale.updateMany({ where: { id, organizationId: ctx.tenantId }, data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: { ...parsePayload(current.payload), ...patch }, updatedById: ctx.userId } });
-  if (result.count === 0) return null;
-  const updated = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
-  if (!updated) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof patch.description === "string" ? patch.description : null });
+  const discountAmount = patch.discountAmount !== undefined || patch.discountTotal !== undefined
+    ? numberValue(patch.discountAmount) ?? numberValue(patch.discountTotal) ?? current.discountAmount
+    : current.discountAmount;
+  const grandTotal = patch.grandTotal !== undefined || patch.total !== undefined
+    ? numberValue(patch.grandTotal) ?? numberValue(patch.total) ?? current.grandTotal
+    : current.grandTotal;
+  const updated = await prisma.sale.update({
+    where: { id },
+    data: {
+      saleNumber: patch.saleNumber !== undefined || patch.orderNumber !== undefined ? textValue(patch.saleNumber) ?? textValue(patch.orderNumber) : current.saleNumber,
+      title: getTitle(patch, current.title ?? "Untitled"),
+      status: typeof patch.status === "string" ? patch.status : current.status,
+      saleType: patch.saleType !== undefined ? textValue(patch.saleType) : current.saleType,
+      paymentStatus: patch.paymentStatus !== undefined ? textValue(patch.paymentStatus) : current.paymentStatus,
+      customerName: patch.customerName !== undefined || patch.contactName !== undefined ? textValue(patch.customerName) ?? textValue(patch.contactName) : current.customerName,
+      recipientName: patch.recipientName !== undefined ? textValue(patch.recipientName) : current.recipientName,
+      contactName: patch.contactName !== undefined || patch.customerName !== undefined || patch.recipientName !== undefined ? textValue(patch.contactName) ?? textValue(patch.customerName) ?? textValue(patch.recipientName) : current.contactName,
+      contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
+      items: patch.items !== undefined ? jsonArray(patch.items) : jsonInputOrDefault(current.items, []),
+      subtotal: patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? current.subtotal : current.subtotal,
+      discountAmount,
+      taxAmount: patch.taxAmount !== undefined ? numberValue(patch.taxAmount) ?? current.taxAmount : current.taxAmount,
+      grandTotal,
+      currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
+      orderDiscountValue: patch.orderDiscountValue !== undefined ? numberValue(patch.orderDiscountValue) : current.orderDiscountValue,
+      orderDiscountType: patch.orderDiscountType !== undefined ? textValue(patch.orderDiscountType) : current.orderDiscountType,
+      discountTotal: patch.discountTotal !== undefined || patch.discountAmount !== undefined ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? current.discountTotal : current.discountTotal,
+      taxPercentage: patch.taxPercentage !== undefined ? numberValue(patch.taxPercentage) : current.taxPercentage,
+      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
+      assignedStaff: patch.assignedStaff !== undefined ? jsonArray(patch.assignedStaff) : jsonInputOrDefault(current.assignedStaff, []),
+      activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
+      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
+      shippingAddress: patch.shippingAddress !== undefined ? textValue(patch.shippingAddress) : current.shippingAddress,
+      trackingNumber: patch.trackingNumber !== undefined ? textValue(patch.trackingNumber) : current.trackingNumber,
+      updatedById: ctx.userId,
+    },
+    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+  });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: updated.notes });
   return mapDomainRecord(updated);
 }
 

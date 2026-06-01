@@ -37,13 +37,8 @@ export default function DocumentGrid({ onSelectFile }: Props) {
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
   const filteredDocs = documents.filter(d => {
-    // Filter by folder
-    if (activeFolderId && d.folderId !== activeFolderId) return false;
-    if (!activeFolderId && d.folderId) return false; // In "All Documents", maybe we show everything or just root? The Notion way usually shows everything if "All", but if they clicked a folder it shows contents. Let's say if activeFolderId is null, we show ALL documents regardless of folder.
-    // Wait, the user asked for simple folder system. Let's make "All Documents" show all documents, but if activeFolderId is set, show only those in the folder.
     if (activeFolderId && d.folderId !== activeFolderId) return false;
 
-    // Filter by search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchesTitle = d.title?.toLowerCase().includes(q);

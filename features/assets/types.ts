@@ -39,6 +39,7 @@ export interface Asset {
   purchaseValue?: number;
   currency?: string;
   warrantyExpiry?: string;
+  supplier?: string;
   supplierName?: string;
   imageUrl?: string;
   quantity: number;

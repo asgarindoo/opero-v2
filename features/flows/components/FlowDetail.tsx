@@ -30,8 +30,39 @@ interface FlowDetailProps {
 
 export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDelete }: FlowDetailProps) {
   const { user } = useTenant();
-  const [flow, setFlow] = useState<Flow>(initialFlow);
-  const [activeStageId, setActiveStageId] = useState<string | null>(flow.stages[0]?.id || null);
+  const fallbackNoteUser = React.useCallback(() => ({
+    id: user?.id || "system",
+    name: getUserDisplayName(user, "System"),
+    email: user?.email,
+    image: user?.image,
+  }), [user]);
+
+  const normalizeFlow = React.useCallback((input: Flow): Flow => {
+    const rawStages = input.stages?.length
+      ? input.stages
+      : [{ id: "stage-1", name: "Stage 1", isCompleted: false, checklist: [], order: 0 }];
+
+    return {
+    ...input,
+    stages: rawStages.map((stage, index) => ({
+      ...stage,
+      id: stage.id || `stage-${index + 1}`,
+      name: stage.name || `Stage ${index + 1}`,
+      isCompleted: Boolean(stage.isCompleted),
+      checklist: Array.isArray(stage.checklist) ? stage.checklist : [],
+      order: typeof stage.order === "number" ? stage.order : index,
+    })),
+    notes: (input.notes || []).map((note, index) => ({
+      ...note,
+      id: note.id || `note-${index + 1}`,
+      user: note.user?.id ? note.user : fallbackNoteUser(),
+      text: note.text || "",
+      timestamp: note.timestamp || new Date().toISOString(),
+    })),
+    };
+  }, [fallbackNoteUser]);
+  const [flow, setFlow] = useState<Flow>(() => normalizeFlow(initialFlow));
+  const [activeStageId, setActiveStageId] = useState<string | null>(() => normalizeFlow(initialFlow).stages[0]?.id || null);
 
   const [newItemText, setNewItemText] = useState("");
   const [newNoteText, setNewNoteText] = useState("");
@@ -39,6 +70,12 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{stageId: string, itemId: string} | null>(null);
+
+  React.useEffect(() => {
+    const normalized = normalizeFlow(initialFlow);
+    setFlow(normalized);
+    setActiveStageId((current) => normalized.stages.some((stage) => stage.id === current) ? current : normalized.stages[0]?.id || null);
+  }, [initialFlow, normalizeFlow]);
 
   const activeStage = flow.stages.find(s => s.id === activeStageId) || flow.stages[0];
 
@@ -50,9 +87,10 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
     let completedUnits = 0;
 
     nextStages.forEach(s => {
-      if (s.checklist && s.checklist.length > 0) {
-        totalUnits += s.checklist.length;
-        completedUnits += s.checklist.filter(i => i.isCompleted).length;
+      const checklist = Array.isArray(s.checklist) ? s.checklist : [];
+      if (checklist.length > 0) {
+        totalUnits += checklist.length;
+        completedUnits += checklist.filter(i => i.isCompleted).length;
       } else {
         totalUnits += 1;
         if (s.isCompleted) completedUnits += 1;
@@ -70,7 +108,8 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
     const stage = flow.stages.find(s => s.id === stageId);
     if (!stage) return;
 
-    const nextChecklist = stage.checklist.map(item =>
+    const checklist = Array.isArray(stage.checklist) ? stage.checklist : [];
+    const nextChecklist = checklist.map(item =>
       item.id === itemId ? { ...item, isCompleted: !item.isCompleted } : item
     );
 
@@ -94,7 +133,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
     };
 
     handleUpdateStage(activeStageId!, {
-      checklist: [...stage.checklist, newItem],
+      checklist: [...(Array.isArray(stage.checklist) ? stage.checklist : []), newItem],
       isCompleted: false
     });
     setNewItemText("");
@@ -167,8 +206,9 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
               {flow.stages.map((stage, idx) => {
                 const isActive = activeStageId === stage.id;
                 const isCompleted = stage.isCompleted;
-                const completedTasks = stage.checklist.filter(i => i.isCompleted).length;
-                const totalTasks = stage.checklist.length;
+                const checklist = Array.isArray(stage.checklist) ? stage.checklist : [];
+                const completedTasks = checklist.filter(i => i.isCompleted).length;
+                const totalTasks = checklist.length;
                 const isLast = idx === flow.stages.length - 1;
 
                 return (
@@ -252,7 +292,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
               </div>
 
               <div className="space-y-1">
-                {activeStage.checklist.map(item => (
+                {(activeStage?.checklist || []).map(item => (
                   <div
                     key={item.id}
                     onClick={() => toggleChecklistItem(activeStage.id, item.id)}
@@ -290,7 +330,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                     </button>
                   </form>
                 )}
-                {activeStage.checklist.length === 0 && (
+                {(activeStage?.checklist || []).length === 0 && (
                   <div className="py-4 px-5 flex items-center justify-between border border-dashed border-black/[0.06] rounded-md">
                     <span className="font-display text-[13px] text-zinc-400">No items in this stage.</span>
                     <button
@@ -320,7 +360,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                 {flow.notes && flow.notes.length > 0 ? (
                   <div className="space-y-6">
                     {flow.notes.map(note => {
-                      const noteUser = note.user.id === user?.id ? user : note.user;
+                      const noteUser = note.user?.id === user?.id ? user : note.user || fallbackNoteUser();
                       return (
                         <div key={note.id} className="flex gap-4 group">
                           <UserAvatar user={noteUser} size="lg" />
@@ -456,7 +496,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
           if (itemToDelete) {
             const stage = flow.stages.find(s => s.id === itemToDelete.stageId);
             if (stage) {
-              handleUpdateStage(itemToDelete.stageId, { checklist: stage.checklist.filter(c => c.id !== itemToDelete.itemId) });
+              handleUpdateStage(itemToDelete.stageId, { checklist: (stage.checklist || []).filter(c => c.id !== itemToDelete.itemId) });
             }
             setItemToDelete(null);
           }

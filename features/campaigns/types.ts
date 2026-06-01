@@ -24,6 +24,8 @@ export interface CampaignGoal {
 export interface Campaign {
   id: string;
   name: string;
+  title?: string;
+  objective?: string;
   description: string;
   status: CampaignStatus;
   priority: CampaignPriority;

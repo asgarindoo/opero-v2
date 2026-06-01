@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import useSWR from "swr";
 import { fetchChannels, createChannel as apiCreate, updateChannel as apiUpdate, deleteChannel as apiDelete } from "../services/channels.client";
 
@@ -10,8 +10,11 @@ export type ChannelCategory = "Social" | "Email" | "Community" | "Marketplace" |
 export interface Channel {
    id: string;
    name: string;
+   accountName?: string;
    platform: string;
+   handle?: string;
    username: string;
+   profileUrl?: string;
    profileLink: string;
    status: ChannelStatus;
    followers: number;
@@ -44,22 +47,45 @@ export function SocialChannelsProvider({ children }: { children: React.ReactNode
   const channels = data || [];
 
   const addChannel = async (channel: Channel) => {
-    // optimistic
-    mutate([...channels, channel], false);
-    await apiCreate(channel);
-    mutate();
+    await mutate(
+      async (current = []) => {
+        const created = await apiCreate(channel);
+        return current.map((c) => c.id === channel.id ? created : c);
+      },
+      {
+        optimisticData: (current = []) => [...current, channel],
+        rollbackOnError: true,
+        revalidate: false,
+      }
+    );
   };
   
   const updateChannel = async (id: string, updates: Partial<Channel>) => {
-    mutate(channels.map(c => c.id === id ? { ...c, ...updates } : c), false);
-    await apiUpdate(id, updates);
-    mutate();
+    await mutate(
+      async (current = []) => {
+        const updated = await apiUpdate(id, updates);
+        return current.map((c) => c.id === id ? updated : c);
+      },
+      {
+        optimisticData: (current = []) => current.map(c => c.id === id ? { ...c, ...updates } : c),
+        rollbackOnError: true,
+        revalidate: false,
+      }
+    );
   };
   
   const removeChannel = async (id: string) => {
-    mutate(channels.filter(c => c.id !== id), false);
-    await apiDelete(id);
-    mutate();
+    await mutate(
+      async (current = []) => {
+        await apiDelete(id);
+        return current.filter(c => c.id !== id);
+      },
+      {
+        optimisticData: (current = []) => current.filter(c => c.id !== id),
+        rollbackOnError: true,
+        revalidate: false,
+      }
+    );
   };
 
   const value = useMemo(() => ({

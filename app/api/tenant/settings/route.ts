@@ -55,8 +55,6 @@ export async function GET() {
                   name: true,
                   displayName: true,
                   maxMembers: true,
-                  maxBots: true,
-                  features: true,
                 },
               },
             },

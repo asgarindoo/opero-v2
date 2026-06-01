@@ -10,15 +10,21 @@ const statusConfig = {
   "completed": { icon: CheckCircle2, color: "text-blue-600", bg: "bg-blue-50", label: "Completed" },
 };
 
+function normalizeGoalStatus(status: string | undefined) {
+  const key = (status || "").toLowerCase().replace(/\s+/g, "-");
+  return key in statusConfig ? key as keyof typeof statusConfig : "on-track";
+}
+
 interface GoalCardProps {
   goal: Goal;
   onClick: () => void;
 }
 
 export default function GoalCard({ goal, onClick }: GoalCardProps) {
-  const conf = statusConfig[goal.status];
+  const conf = statusConfig[normalizeGoalStatus(goal.status)];
   const StatusIcon = conf.icon;
-  const completedMilestones = goal.milestones.filter(m => m.completed).length;
+  const milestones = Array.isArray(goal.milestones) ? goal.milestones : [];
+  const completedMilestones = milestones.filter(m => m.completed).length;
 
   return (
     <div 
@@ -58,7 +64,7 @@ export default function GoalCard({ goal, onClick }: GoalCardProps) {
       <div className="flex items-center justify-between mt-8 pt-4 border-t border-black/[0.03]">
          <div className="flex items-center gap-2">
             <Target size={12} className="text-on-surface-variant opacity-20" />
-            <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-widest">{completedMilestones}/{goal.milestones.length} Milestones</span>
+            <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-widest">{completedMilestones}/{milestones.length} Milestones</span>
          </div>
          <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">{goal.targetDate}</span>
       </div>

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
-import { createPayload, getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 
 const MODULE = "FLOWS";
 const ENTITY = "Flow";
@@ -11,6 +11,35 @@ function parseDate(value: unknown): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
+function normalizeStage(stage: unknown, index: number) {
+  const data = stage && typeof stage === "object" ? stage as Record<string, unknown> : {};
+  const checklist = Array.isArray(data.checklist)
+    ? data.checklist
+        .filter((item) => item && typeof item === "object")
+        .map((item, itemIndex) => {
+          const value = item as Record<string, unknown>;
+          return {
+            id: typeof value.id === "string" && value.id ? value.id : `item-${index + 1}-${itemIndex + 1}`,
+            text: typeof value.text === "string" ? value.text : "",
+            isCompleted: Boolean(value.isCompleted),
+          };
+        })
+    : [];
+
+  return {
+    id: typeof data.id === "string" && data.id ? data.id : `stage-${index + 1}`,
+    name: typeof data.name === "string" && data.name.trim() ? data.name.trim() : `Stage ${index + 1}`,
+    description: typeof data.description === "string" ? data.description : undefined,
+    isCompleted: typeof data.isCompleted === "boolean" ? data.isCompleted : data.status === "Done",
+    checklist,
+    order: typeof data.order === "number" ? data.order : index,
+  };
+}
+
+function normalizeStages(value: unknown) {
+  return Array.isArray(value) ? value.map(normalizeStage) : [];
+}
+
 function flowColumns(data: Record<string, unknown>, current: Record<string, unknown> = {}) {
   const merged = { ...current, ...data };
   return {
@@ -18,7 +47,7 @@ function flowColumns(data: Record<string, unknown>, current: Record<string, unkn
     category: typeof merged.category === "string" && merged.category ? merged.category : "Operations",
     description: typeof merged.description === "string" ? merged.description : null,
     progress: typeof merged.progress === "number" ? merged.progress : 0,
-    stages: Array.isArray(merged.stages) ? merged.stages : [],
+    stages: normalizeStages(merged.stages),
     notes: Array.isArray(merged.notes) ? merged.notes : [],
     dueDate: parseDate(merged.dueDate),
   };
@@ -69,7 +98,6 @@ export async function createFlow(data: Record<string, unknown>) {
       organizationId: ctx.tenantId,
       title,
       status: getStatus(data, "Active"),
-      payload: createPayload(data),
       ...flowColumns(data),
       createdById: ctx.userId,
       updatedById: ctx.userId,
@@ -104,11 +132,9 @@ export async function updateFlow(id: string, patch: Record<string, unknown>) {
     }
   }
 
-  const currentPayload = parsePayload(current.payload);
-  const mergedPayload = { ...currentPayload, ...patch };
   const result = await prisma.flow.updateMany({
     where: { id, organizationId: ctx.tenantId },
-    data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, payload: mergedPayload, ...flowColumns(patch, currentPayload), updatedById: ctx.userId },
+    data: { title: getTitle(patch, current.title ?? "Untitled"), status: typeof patch.status === "string" ? patch.status : current.status, ...flowColumns(patch, current as unknown as Record<string, unknown>), updatedById: ctx.userId },
   });
   if (result.count === 0) return null;
   const updated = await prisma.flow.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });

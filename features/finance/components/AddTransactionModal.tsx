@@ -13,6 +13,7 @@ import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
+import { useContacts } from "@/features/contacts/context/ContactsContext";
 
 /* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
@@ -28,6 +29,7 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
 
 export default function AddTransactionModal({ onClose, initialData }: { onClose: () => void, initialData?: Transaction }) {
   const { addTransaction, updateTransaction } = useFinance();
+  const { contacts } = useContacts();
   const [type, setType] = useState<TransactionType>(initialData?.type || "Expense");
   const [title, setTitle] = useState(initialData?.title || "");
   const [transactionDate, setTransactionDate] = useState(initialData?.transactionDate || "");
@@ -35,10 +37,15 @@ export default function AddTransactionModal({ onClose, initialData }: { onClose:
   const [category, setCategory] = useState(initialData?.category || "");
   const [currency, setCurrency] = useState(initialData?.currency || "USD");
   const [contactName, setContactName] = useState(initialData?.contactName || "");
+  const [contactId, setContactId] = useState(initialData?.contactId || "");
+  const [isContactDropdownOpen, setIsContactDropdownOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialData?.paymentMethod || "Bank Transfer");
   const [notes, setNotes] = useState(initialData?.notes || "");
 
   const isFormValid = title.trim() !== "" && amount.trim() !== "" && transactionDate !== "";
+  const contactOptions = contacts.filter((contact) =>
+    contact.name.toLowerCase().includes(contactName.toLowerCase())
+  );
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -52,6 +59,7 @@ export default function AddTransactionModal({ onClose, initialData }: { onClose:
       currency,
       category: category.trim() || "General",
       contactName: contactName.trim() || undefined,
+      contactId: contactId || undefined,
       paymentMethod,
       notes,
       status: initialData?.status || "Completed",
@@ -162,12 +170,44 @@ export default function AddTransactionModal({ onClose, initialData }: { onClose:
           </div>
           <div>
             <SL icon={<User size={12} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>Contact</SL>
-            <GlobalInput
-              maxLength={40}
-              placeholder="Vendor name"
-              value={contactName}
-              onChange={e => setContactName(e.target.value)}
-            />
+            <div className="relative">
+              <GlobalInput
+                maxLength={40}
+                placeholder="Select or enter contact"
+                value={contactName}
+                onChange={e => {
+                  setContactName(e.target.value);
+                  setContactId("");
+                }}
+                onFocus={() => setIsContactDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setIsContactDropdownOpen(false), 200)}
+              />
+              {isContactDropdownOpen && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-black/[0.08] rounded-[6px] shadow-xl max-h-40 overflow-y-auto">
+                  {contactOptions.length > 0 ? (
+                    contactOptions.map(contact => (
+                      <button
+                        key={contact.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-black/[0.03] transition-colors border-b border-black/[0.03] last:border-0"
+                        onMouseDown={() => {
+                          setContactName(contact.name);
+                          setContactId(contact.id);
+                          setIsContactDropdownOpen(false);
+                        }}
+                      >
+                        <p className="font-display text-[12px] font-medium text-on-surface">{contact.name}</p>
+                        <p className="font-body-sm text-[10px] text-on-surface-variant opacity-60">{contact.relationshipType}</p>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 font-body-sm text-[11px] text-on-surface-variant opacity-60">
+                      No contacts found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         

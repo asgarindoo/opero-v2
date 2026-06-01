@@ -108,8 +108,6 @@ export const auth = betterAuth({
                 name: "free",
                 displayName: "Free",
                 maxMembers: 1,
-                maxBots: 1,
-                features: { tasks: true, flows: false, goals: false },
               },
               update: {},
             });

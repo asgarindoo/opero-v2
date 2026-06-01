@@ -30,9 +30,12 @@ export interface SaleItem {
 
 export interface SaleOpportunity {
   id: string;
+  saleNumber?: string;
   orderNumber: string;
   title: string;
   saleType: SaleType;
+  customerName?: string;
+  recipientName?: string;
   contactName?: string; // Optional — not required
   contactId?: string;
   status: SaleStatus;
@@ -42,9 +45,11 @@ export interface SaleOpportunity {
   orderDiscountValue?: number; // Raw input value for order discount
   orderDiscountType?: DiscountType; // Type of order discount
   discountTotal: number; // Additional order-level discount amount
+  discountAmount?: number;
   taxPercentage?: number; // Optional tax rate (percentage)
   taxAmount?: number; // Calculated tax amount
   total: number; // Final payable amount
+  grandTotal?: number;
   currency: string;
   assignedStaff: string[];
   activities: SaleActivity[];

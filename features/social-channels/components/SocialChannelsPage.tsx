@@ -165,7 +165,7 @@ export default function SocialChannelsPage() {
       }
 
       if (slug) {
-         setTimeout(() => globalMutate(`/api/tenant/${slug}/social-channels/activity`), 300);
+         globalMutate(`/api/tenant/${slug}/social-channels/activity`);
       }
 
       setShowAdd(false); setForm({}); setEditId(null);
@@ -173,12 +173,13 @@ export default function SocialChannelsPage() {
 
    const confirmDelete = async () => {
       if (!channelToDelete) return;
-      await removeChannel(channelToDelete.id);
-      if (slug) {
-         setTimeout(() => globalMutate(`/api/tenant/${slug}/social-channels/activity`), 300);
-      }
+      const deletedChannel = channelToDelete;
       setIsDeleteModalOpen(false);
       setChannelToDelete(null);
+      await removeChannel(deletedChannel.id);
+      if (slug) {
+         globalMutate(`/api/tenant/${slug}/social-channels/activity`);
+      }
    };
 
    const ic = "w-full bg-[#fcfafa] border border-black/[0.06] rounded-[4px] px-4 py-2.5 font-display text-[12.5px] text-on-surface outline-none focus:border-black/[0.15] focus:bg-white transition-all duration-300 placeholder:text-black/100 appearance-none cursor-pointer";
@@ -633,7 +634,7 @@ export default function SocialChannelsPage() {
                               </div>
                            )}
                         </div>
-                        <button onClick={() => router.push(`/${slug}/content-planner`)} className="w-full py-2.5 font-label-caps text-[8px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 uppercase tracking-widest transition-opacity text-center">Open Content Planner →</button>
+                        <button onClick={() => router.push("/content-planner")} className="w-full py-2.5 font-label-caps text-[8px] font-bold text-on-surface-variant opacity-60 hover:opacity-100 uppercase tracking-widest transition-opacity text-center">Open Content Planner →</button>
                      </div>
 
                      {/* Recent Activity */}
