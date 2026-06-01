@@ -131,7 +131,9 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                        </span>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-on-surface-variant opacity-40">
-                       <span className="font-body-sm text-[11.5px] font-display">{goal.targetDate}</span>
+                       <span className="font-body-sm text-[11.5px] font-display">
+                         {new Date(goal.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                       </span>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-right">
                        <div className="flex items-center justify-end gap-1 transition-all">

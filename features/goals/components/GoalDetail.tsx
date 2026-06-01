@@ -106,7 +106,9 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
                 </span>
               )}
               <span className="font-display text-[11px] font-medium text-zinc-300">/</span>
-              <span className="font-display text-[11px] font-medium text-zinc-500">Target: {goal.targetDate}</span>
+              <span className="font-display text-[11px] font-medium text-zinc-500">
+                Target: {goal.targetDate ? new Date(goal.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+              </span>
             </div>
           </div>
         </div>

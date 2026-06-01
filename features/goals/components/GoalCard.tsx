@@ -66,7 +66,9 @@ export default function GoalCard({ goal, onClick }: GoalCardProps) {
             <Target size={12} className="text-on-surface-variant opacity-20" />
             <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-50 uppercase tracking-widest">{completedMilestones}/{milestones.length} Milestones</span>
          </div>
-         <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">{goal.targetDate}</span>
+         <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30 uppercase tracking-widest">
+           {new Date(goal.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+         </span>
       </div>
     </div>
   );
