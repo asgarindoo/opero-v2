@@ -31,7 +31,7 @@ function formatBytes(bytes?: number) {
 }
 
 export default function DocumentGrid({ onSelectFile }: Props) {
-  const { documents, deleteDocuments, activeFolderId, searchQuery } = useDocuments();
+  const { documents, deleteDocuments, activeFolderId, searchQuery, loading } = useDocuments();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export default function DocumentGrid({ onSelectFile }: Props) {
     setIsDeleteModalOpen(false);
   };
 
-  if (filteredDocs.length === 0) {
+  if (!loading && filteredDocs.length === 0) {
     return (
       <EmptyState
         icon="folder"
@@ -105,8 +105,25 @@ export default function DocumentGrid({ onSelectFile }: Props) {
   return (
     <div className="p-6 overflow-y-auto h-full relative db-sidebar">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-        {filteredDocs.map(doc => {
-          const isSelected = selectedIds.has(doc.id);
+        {loading ? (
+          [...Array(12)].map((_, i) => (
+            <div key={i} className="flex flex-col bg-white rounded-xl border border-black/[0.04] overflow-hidden">
+              <div className="aspect-[4/3] bg-black/[0.02] animate-pulse" />
+              <div className="p-3 flex flex-col gap-3">
+                <div className="h-3.5 w-3/4 bg-black/[0.04] rounded animate-pulse" />
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex flex-col gap-1.5 w-1/2">
+                    <div className="h-2 w-full bg-black/[0.04] rounded animate-pulse" />
+                    <div className="h-2 w-2/3 bg-black/[0.04] rounded animate-pulse" />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-black/[0.04] animate-pulse" />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          filteredDocs.map(doc => {
+            const isSelected = selectedIds.has(doc.id);
 
           return (
             <div 
@@ -174,7 +191,7 @@ export default function DocumentGrid({ onSelectFile }: Props) {
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       <SelectionBar 

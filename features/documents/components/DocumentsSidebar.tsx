@@ -110,7 +110,7 @@ export default function DocumentsSidebar() {
           }
         }}
         title="Delete folder?"
-        description={`This action permanently removes the "${folderToDelete?.title}" folder. All documents inside will be moved to the root workspace.`}
+        description={`This action permanently removes the "${folderToDelete?.title}" folder. All documents inside will be moved to the root documents.`}
         confirmLabel="Delete Folder"
       />
     </div>
