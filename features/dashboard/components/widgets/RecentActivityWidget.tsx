@@ -39,7 +39,7 @@ export default function RecentActivityWidget() {
             {[...Array(5)].map((_, i) => (
               <div key={i} className="relative pl-6 pb-7 last:pb-0">
                 {i < 4 && (
-                  <div className="absolute left-[4.5px] top-[12px] bottom-0 w-1px" style={{ background: "rgba(0,0,0,0.06)" }} />
+                  <div className="absolute left-[4.5px] top-[12px] bottom-0 w-[1px]" style={{ background: "rgba(0,0,0,0.06)" }} />
                 )}
                 <div className="absolute left-0 w-2.5 h-2.5 rounded-full bg-black/8 animate-pulse ring-4 ring-white" style={{ top: 3.5 }} />
                 <div className="space-y-1.5 ml-2">
@@ -63,7 +63,7 @@ export default function RecentActivityWidget() {
               <div key={item.id} className="relative pl-6 pb-7 last:pb-0">
                 {/* Vertical connecting line - hidden for the last item */}
                 {idx < feed.length - 1 && (
-                  <div className="absolute left-[4.5px] top-3.5 bottom-0 w-1px" style={{ background: "rgba(0,0,0,0.06)" }} />
+                  <div className="absolute left-[4.5px] top-3.5 bottom-0 w-[1px]" style={{ background: "rgba(0,0,0,0.06)" }} />
                 )}
 
                 {/* Timeline Dot — same as ActivityAuditLog */}

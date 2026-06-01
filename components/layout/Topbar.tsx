@@ -420,10 +420,21 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
                   </div>
                 )}
 
-                {/* Profile Settings */}
+                {/* Profile Settings & Other Links */}
                 <div className="py-1">
+                  <a
+                    href={getRootAppUrl("/onboarding")}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/3 transition-colors"
+                    onClick={() => setShowProfile(false)}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 15, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
+                      add_circle
+                    </span>
+                    <span className="font-body-sm text-[13px] text-on-surface">Join New Tenant</span>
+                  </a>
+
                   <button
-                    className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/3transition-colors"
+                    className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-black/3 transition-colors"
                     onClick={() => { router.push("/dashboard/profile"); setShowProfile(false); }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 15, color: "var(--color-on-surface-variant)", opacity: 0.7 }}>
