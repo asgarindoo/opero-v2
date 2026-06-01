@@ -70,10 +70,10 @@ export default function DocumentsSidebar() {
         )}
 
         {folders.map(folder => (
-          <div key={folder.id} className="relative group/folder">
+          <div key={folder.id} className="relative group">
             <button
               onClick={() => setActiveFolderId(folder.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors text-left ${
+              className={`w-full flex items-center gap-2.5 pr-3 pl-9 py-2 rounded-lg transition-colors text-left ${
                 activeFolderId === folder.id 
                   ? "bg-primary/5 text-primary" 
                   : "hover:bg-black/[0.03] text-on-surface opacity-80"
@@ -88,9 +88,9 @@ export default function DocumentsSidebar() {
                 setFolderToDelete(folder);
                 setIsDeleteModalOpen(true);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-0 group-hover/folder:opacity-100 hover:bg-black/5 transition-all"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-red-50 transition-all z-10"
             >
-              <Trash2 size={12} className="text-error/70" />
+              <Trash2 size={13} className="text-red-500" />
             </button>
           </div>
         ))}

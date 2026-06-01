@@ -119,7 +119,7 @@ export default function DocumentList({ onSelectFile }: Props) {
     <div className="flex flex-col h-full bg-[#faf8f6] relative">
       <div className="flex-1 overflow-auto">
         <Table className="min-w-200">
-          <TableHeader className="bg-black/2">
+          <TableHeader className="bg-[#faf8f6] sticky top-0 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
             <TableRow>
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
