@@ -448,6 +448,14 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
                   </span>
                   <span className="font-display text-[13px] text-zinc-700 leading-relaxed break-all">{flow.description || "No objective set."}</span>
                 </div>
+                <div className="flex flex-col gap-2">
+                  <span className="font-display text-[12px] text-zinc-500 flex items-center gap-1.5">
+                    Due Date
+                  </span>
+                  <span className="font-display text-[13px] text-zinc-700 leading-relaxed">
+                    {flow.dueDate ? new Date(flow.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "No due date"}
+                  </span>
+                </div>
                 <div className="flex items-center pt-2">
                   <span className="font-display text-[12px] text-zinc-500 w-24 shrink-0 flex items-center gap-1.5">
                     <User size={12} /> Created by

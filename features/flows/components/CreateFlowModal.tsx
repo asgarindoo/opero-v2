@@ -13,6 +13,7 @@ import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { getUserDisplayName } from "@/lib/user-identity";
+import DatePicker from "@/components/ui/DatePicker";
 
 /* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
@@ -159,11 +160,10 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
             </div>
             <div>
               <SL>Due Date</SL>
-              <input
-                type="date"
+              <DatePicker
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full h-9 rounded-[6px] border border-black/[0.08] bg-black/[0.02] px-3 font-body-md text-[12.5px] text-on-surface outline-none focus:border-primary/30 focus:bg-white transition-all"
+                onChange={(val) => setDueDate(val || "")}
+                placeholder="Select Date"
               />
             </div>
           </div>
