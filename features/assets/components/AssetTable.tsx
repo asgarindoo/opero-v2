@@ -16,6 +16,9 @@ import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
+import UserAvatar from "@/components/common/UserAvatar";
+import { getUserInitials } from "@/lib/user-identity";
+import { useMembers } from "@/features/members/context/MembersContext";
 
 interface Props {
   searchQuery: string;
@@ -25,6 +28,7 @@ interface Props {
 
 export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: Props) {
   const { assets, deleteAssets, loading } = useAssets();
+  const { members } = useMembers();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -220,11 +224,18 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                         return assignees.length > 0 ? (
                           <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-80 w-full">
                             <div className="flex -space-x-1.5 shrink-0">
-                              {assignees.slice(0, 3).map((owner, i) => (
-                                <div key={i} className="w-5 h-5 rounded-full bg-black/5 border border-white flex items-center justify-center font-bold text-[8px] text-on-surface-variant relative z-10">
-                                  {owner.charAt(0)}
-                                </div>
-                              ))}
+                              {assignees.slice(0, 3).map((owner, i) => {
+                                const m = members?.find((member) => member.name === owner);
+                                return (
+                                  <div key={i} className="relative z-10 rounded-full border border-white">
+                                    <UserAvatar
+                                      user={m ? { name: owner, email: m.email, image: m.image, initials: getUserInitials(m) } : { name: owner, initials: owner.charAt(0) }}
+                                      size="sm"
+                                      className="h-5 w-5 border-none"
+                                    />
+                                  </div>
+                                );
+                              })}
                             </div>
                             <span className="truncate block w-full">
                               {assignees.join(", ")}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { useMembers } from "@/features/members/context/MembersContext";
 import { X, Star, DollarSign, TrendingUp, Layers, MapPin, History, User, Trash2, Clock, Maximize2, CheckCircle2, Tag, UploadCloud, Loader2, Pencil, Check, Wallet, Calendar } from "lucide-react";
 import { AssetStatus, AssetComment } from "@/features/assets/types";
 import Button from "@/components/ui/Button";
@@ -52,6 +53,7 @@ function Section({ label, count, children, defaultOpen = true }: { label: string
 export default function AssetDrawer({ assetId, onClose }: { assetId: string, onClose: () => void }) {
   const { assets, updateAsset } = useAssets();
   const { user } = useTenant();
+  const { members } = useMembers();
   const asset = assets.find(a => a.id === assetId);
 
   const [tab, setTab] = useState<"details" | "activity">("details");
@@ -202,7 +204,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                 {asset.imageUrl ? (
                   <>
                     <img onClick={() => setIsImageExpanded(true)} src={asset.imageUrl} alt={asset.name} className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105" />
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity z-10" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setIsImageExpanded(true)} className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-colors" title="View Full Image">
                         <Maximize2 size={13} />
                       </button>
@@ -267,7 +269,17 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                   <MemberPicker
                     selected={(() => {
                       const arr = Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo as unknown as string] : []);
-                      return arr.map(name => ({ id: name, name, initials: getUserInitials({ name }), role: "" }));
+                      return arr.map(name => {
+                        const m = members?.find(member => member.name === name);
+                        return { 
+                          id: name, 
+                          name, 
+                          email: m?.email || "", 
+                          image: m?.image || null, 
+                          initials: getUserInitials({ name }), 
+                          role: m?.role || "" 
+                        };
+                      });
                     })()}
                     onChange={members => handleUpdate({ assignedTo: members.map(m => m.name) }, "assigned to", members.map(m => m.name).join(", ") || "Unassigned", "assignment")}
                   />
