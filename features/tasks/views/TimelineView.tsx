@@ -99,7 +99,7 @@ export default function TimelineView({ tasks, onTaskClick }: Props) {
           return (
             <div key={group.status}>
               {/* Group label */}
-              <div className="flex items-center gap-2 px-4 py-1.5 sticky top-[37px] z-10" style={{ background: "rgba(0,0,0,0.015)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+              <div className="flex items-center gap-2 px-4 py-1.5 sticky top-[37px] z-10 bg-[#fcf5f5]" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: sm.dot }} />
                 <span className="font-label-caps text-[9px] font-semibold uppercase tracking-[0.1em]" style={{ color: "var(--color-on-surface)", opacity: 0.6 }}>{group.status}</span>
                 <span className="font-label-caps text-[8px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.06)", color: "var(--color-on-surface-variant)" }}>{group.items.length}</span>
