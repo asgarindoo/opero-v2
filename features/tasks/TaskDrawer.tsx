@@ -380,6 +380,14 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 </div>
               </Section>
 
+              <div className="pt-8 flex justify-center pb-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
+                >
+                  Delete Task
+                </button>
+              </div>
             </div>
           )}
 

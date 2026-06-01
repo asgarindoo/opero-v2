@@ -160,8 +160,8 @@ export default function ListView({ tasks, groupBy, onTaskClick, onAddTask, searc
           <div key={group.key}>
             {/* ── Group header ── */}
             <div
-              className="flex items-center gap-2 px-4 py-2 sticky top-0 z-10 cursor-pointer hover:bg-black/[0.015] transition-colors"
-              style={{ background: "var(--color-background)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}
+              className="flex items-center gap-2 px-4 py-2 sticky top-0 z-10 cursor-pointer hover:bg-black/[0.015] transition-colors bg-[#fef8f8]"
+              style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}
               onClick={() => toggleCollapse(group.key)}
             >
               {isCollapsed

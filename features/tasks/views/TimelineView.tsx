@@ -22,13 +22,18 @@ export default function TimelineView({ tasks, onTaskClick }: Props) {
     const withDates = tasks.filter(t => t.due);
     if (!withDates.length) return { baseDate: "", totalDays: 30, tasksWithPos: [] };
 
-    const dates = withDates.flatMap(t => [t.startDate ?? t.created, t.due!]);
+    const dates = withDates.flatMap(t => {
+      const start = t.startDate || t.created || t.due!;
+      return [start, t.due!];
+    });
+    
     const minDate = dates.reduce((a, b) => a < b ? a : b);
     const maxDate = dates.reduce((a, b) => a > b ? a : b);
     const total   = Math.max(30, daysBetween(minDate, maxDate) + 6);
 
     const pos = withDates.map(t => {
-      const start  = dayOffset(t.startDate ?? t.created, minDate);
+      const startStr = t.startDate || t.created || t.due!;
+      const start  = dayOffset(startStr, minDate);
       const end    = dayOffset(t.due!, minDate);
       const width  = Math.max(1, end - start);
       return { task: t, start, end, width };
@@ -69,7 +74,7 @@ export default function TimelineView({ tasks, onTaskClick }: Props) {
     <div className="flex-1 overflow-auto db-sidebar">
       <div style={{ minWidth: LABEL_W + totalDays * DAY_W + 32 }}>
         {/* ── Header row ── */}
-        <div className="flex sticky top-0 z-20" style={{ background: "var(--color-background)", borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
+        <div className="flex sticky top-0 z-20 bg-[#fef8f8]" style={{ borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
           <div style={{ width: LABEL_W, flexShrink: 0, borderRight: "1px solid rgba(0,0,0,0.07)" }}
             className="px-4 py-2">
             <span style={{ color: "var(--color-on-surface-variant)", opacity: 0.4 }} className="font-label-caps text-[9px] font-semibold uppercase tracking-[0.1em]">Task</span>
