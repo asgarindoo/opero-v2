@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
-import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
-import { dateValue, intValue, textValue } from "@/lib/api/feature-records";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { dateValue, intValue, jsonObjectOrUndefined, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "GOALS";
 const ENTITY = "Goal";
@@ -13,18 +13,33 @@ function normalizeGoalStatus(status: unknown) {
   return "on-track";
 }
 
+const PAYLOAD_KEYS = ["collaboratorIds", "keyResults", "milestones", "linkedItems", "archived", "parentId"] as const;
+
+function goalPayload(data: Record<string, unknown>, currentPayload?: unknown) {
+  const payload = { ...parsePayload(currentPayload) };
+
+  for (const key of PAYLOAD_KEYS) {
+    if (data[key] !== undefined) payload[key] = data[key];
+  }
+
+  return jsonObjectOrUndefined(payload) ?? {};
+}
+
 function mapGoal(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const mapped = mapDomainRecord(record, fallbackUser) as any;
+  const payload = parsePayload(record.payload);
   return {
     ...mapped,
     status: normalizeGoalStatus(mapped.status),
     priority: mapped.priority ?? "medium",
     startDate: mapped.startDate ?? mapped.recordCreatedAt ?? "",
     targetDate: mapped.dueDate ?? "",
-    collaboratorIds: Array.isArray(mapped.collaboratorIds) ? mapped.collaboratorIds : [],
-    keyResults: Array.isArray(mapped.keyResults) ? mapped.keyResults : [],
-    milestones: Array.isArray(mapped.milestones) ? mapped.milestones : [],
-    linkedItems: Array.isArray(mapped.linkedItems) ? mapped.linkedItems : [],
+    collaboratorIds: Array.isArray(payload.collaboratorIds) ? payload.collaboratorIds : [],
+    keyResults: Array.isArray(payload.keyResults) ? payload.keyResults : [],
+    milestones: Array.isArray(payload.milestones) ? payload.milestones : [],
+    linkedItems: Array.isArray(payload.linkedItems) ? payload.linkedItems : [],
+    archived: typeof payload.archived === "boolean" ? payload.archived : false,
+    parentId: typeof payload.parentId === "string" ? payload.parentId : undefined,
   };
 }
 
@@ -70,6 +85,7 @@ export async function createGoal(data: Record<string, unknown>) {
       progress: intValue(data.progress) ?? 0,
       startDate: dateValue(data.startDate),
       dueDate: dateValue(data.dueDate) ?? dateValue(data.targetDate),
+      payload: goalPayload(data),
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
@@ -115,6 +131,7 @@ export async function updateGoal(id: string, patch: Record<string, unknown>) {
       progress: patch.progress !== undefined ? intValue(patch.progress) ?? current.progress : current.progress,
       startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
       dueDate: patch.dueDate !== undefined || patch.targetDate !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.targetDate) : current.dueDate,
+      payload: goalPayload(patch, current.payload),
       updatedById: ctx.userId,
     },
   });

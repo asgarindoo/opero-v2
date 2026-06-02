@@ -46,9 +46,26 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const milestoneRefs = React.useRef<Record<string, HTMLTextAreaElement | null>>({});
 
-  const addMilestone = () => {
-    setTempMilestones(prev => [...prev, { id: genId("ms"), title: "", date: "" }]);
+  const resizeTextarea = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  const focusMilestone = (id: string) => {
+    window.setTimeout(() => milestoneRefs.current[id]?.focus(), 0);
+  };
+
+  const addMilestone = (afterId?: string) => {
+    const next = { id: genId("ms"), title: "", date: "" };
+    setTempMilestones(prev => {
+      if (!afterId) return [...prev, next];
+      const index = prev.findIndex(m => m.id === afterId);
+      if (index === -1) return [...prev, next];
+      return [...prev.slice(0, index + 1), next, ...prev.slice(index + 1)];
+    });
+    focusMilestone(next.id);
   };
 
   const updateMilestone = (id: string, updates: Partial<{ title: string; date: string }>) => {
@@ -58,6 +75,18 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
   const removeMilestone = (id: string) => {
     if (tempMilestones.length <= 1) return;
     setTempMilestones(prev => prev.filter(m => m.id !== id));
+  };
+
+  const handleMilestoneKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>, id: string, index: number) => {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+
+    const current = tempMilestones[index];
+    if (!current?.title.trim()) return;
+
+    const next = tempMilestones[index + 1];
+    if (next) focusMilestone(next.id);
+    else addMilestone(id);
   };
 
   const isFormValid = title.trim() !== "" && targetOutcome.trim() !== "" && targetDate !== "" && (status as string) !== "";
@@ -202,12 +231,21 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
                     {!isLast && <div className="absolute top-[20px] bottom-[-16px] w-px bg-black/[0.08]" />}
                     <div className="w-2.5 h-2.5 rounded-full border-[2px] border-black/[0.15] bg-white relative z-10" />
                   </div>
-                  <input
+                  <textarea
                     maxLength={100}
+                    rows={1}
                     placeholder={`Checkpoint ${idx + 1}…`}
                     value={m.title}
-                    onChange={e => updateMilestone(m.id, { title: e.target.value })}
-                    className="flex-1 bg-transparent outline-none font-body-md text-[12.5px]"
+                    ref={el => {
+                      milestoneRefs.current[m.id] = el;
+                      if (el) resizeTextarea(el);
+                    }}
+                    onChange={e => {
+                      updateMilestone(m.id, { title: e.target.value });
+                      resizeTextarea(e.target);
+                    }}
+                    onKeyDown={e => handleMilestoneKeyDown(e, m.id, idx)}
+                    className="flex-1 bg-transparent outline-none font-body-md text-[12.5px] resize-none overflow-hidden py-1"
                     style={{ color: "var(--color-on-surface)" }}
                   />
                   <div className="w-36 shrink-0">
@@ -228,7 +266,7 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
 
             <button
               type="button"
-              onClick={addMilestone}
+              onClick={() => addMilestone()}
               className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] hover:bg-black/[0.04] transition-colors mt-1"
             >
               <Plus size={14} style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }} />

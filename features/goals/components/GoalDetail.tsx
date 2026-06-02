@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type KeyboardEvent } from "react";
 import { X, Target, CheckCircle2, Circle, Clock, MoreHorizontal, Trash2, Edit3, Save, Plus, FileText, MessageSquare, TrendingUp, AlertCircle, Archive } from "lucide-react";
 import type { Goal, Milestone, GoalStatus, Priority } from "@/features/goals";
 import Dropdown from "@/components/ui/Dropdown";
@@ -14,11 +14,19 @@ interface GoalDetailProps {
   onDelete: (id: string) => void;
 }
 
+function calculateMilestoneProgress(milestones: Milestone[]) {
+  const completedCount = milestones.filter(m => m.completed).length;
+  return milestones.length === 0 ? 0 : Math.round((completedCount / milestones.length) * 100);
+}
+
 export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDelete }: GoalDetailProps) {
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [goal, setFlow] = useState<Goal>(initialGoal);
+  const [isAddingMilestone, setIsAddingMilestone] = useState(false);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [milestoneToDelete, setMilestoneToDelete] = useState<Milestone | null>(null);
+  const newMilestoneRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -27,6 +35,17 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
 
     return () => window.clearTimeout(timeoutId);
   }, [initialGoal]);
+
+  useEffect(() => {
+    if (!isAddingMilestone) return;
+    const timeoutId = window.setTimeout(() => newMilestoneRef.current?.focus(), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [isAddingMilestone]);
+
+  function resizeTextarea(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
 
   function handleUpdate(updates: Partial<Goal>) {
     const next = { ...goal, ...updates };
@@ -39,11 +58,7 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
       m.id === milestoneId ? { ...m, completed: !m.completed } : m
     );
 
-    // Calculate new progress based on milestones
-    const completedCount = nextMilestones.filter(m => m.completed).length;
-    const progress = nextMilestones.length === 0 ? 0 : Math.round((completedCount / nextMilestones.length) * 100);
-
-    handleUpdate({ milestones: nextMilestones, progress });
+    handleUpdate({ milestones: nextMilestones, progress: calculateMilestoneProgress(nextMilestones) });
   }
 
   function updateMilestone(milestoneId: string, updates: Partial<Milestone>) {
@@ -55,11 +70,8 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
 
   function removeMilestone(milestoneId: string) {
     const nextMilestones = goal.milestones.filter(m => m.id !== milestoneId);
-    
-    const completedCount = nextMilestones.filter(m => m.completed).length;
-    const progress = nextMilestones.length === 0 ? 0 : Math.round((completedCount / nextMilestones.length) * 100);
-    
-    handleUpdate({ milestones: nextMilestones, progress });
+
+    handleUpdate({ milestones: nextMilestones, progress: calculateMilestoneProgress(nextMilestones) });
   }
 
   function confirmRemoveMilestone() {
@@ -69,15 +81,31 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
   }
 
   function addMilestone() {
+    setIsAddingMilestone(true);
+  }
+
+  function createMilestone(title: string) {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) return false;
+
     const newId = `ms-${Date.now()}`;
     const newMilestone: Milestone = {
       id: newId,
-      title: "",
+      title: trimmedTitle,
       date: goal.targetDate || "",
       completed: false
     };
-    handleUpdate({ milestones: [...goal.milestones, newMilestone] });
-    setEditingMilestoneId(newId);
+    const nextMilestones = [...goal.milestones, newMilestone];
+    handleUpdate({ milestones: nextMilestones, progress: calculateMilestoneProgress(nextMilestones) });
+    return true;
+  }
+
+  function handleNewMilestoneKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    if (!createMilestone(newMilestoneTitle)) return;
+    setNewMilestoneTitle("");
+    window.setTimeout(() => newMilestoneRef.current?.focus(), 0);
   }
 
   return (
@@ -199,19 +227,21 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
                           value={m.title}
                           onChange={e => {
                             updateMilestone(m.id, { title: e.target.value });
-                            e.target.style.height = 'auto';
-                            e.target.style.height = `${e.target.scrollHeight}px`;
+                            resizeTextarea(e.target);
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              setEditingMilestoneId(null);
+                            }
                           }}
                           onBlur={() => setEditingMilestoneId(null)}
                           autoFocus
                           ref={el => {
-                            if (el) {
-                              el.style.height = 'auto';
-                              el.style.height = `${el.scrollHeight}px`;
-                            }
+                            if (el) resizeTextarea(el);
                           }}
                           placeholder="Milestone title..."
-                          className={`font-display text-[16px] leading-snug bg-transparent border border-primary/30 rounded p-1 outline-none w-full resize-none overflow-hidden ${m.completed ? "text-zinc-400" : "text-zinc-900 font-medium"
+                          className={`font-display text-[16px] leading-snug bg-transparent border-0 border-b border-transparent focus:border-black/[0.12] rounded-none p-0 pb-1 outline-none w-full resize-none overflow-hidden ${m.completed ? "text-zinc-400" : "text-zinc-900 font-medium"
                             }`}
                         />
                       ) : (
@@ -232,7 +262,44 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
                     </div>
                   </div>
                 ))}
-                {goal.milestones.length === 0 && (
+                {isAddingMilestone && (
+                  <div className="relative flex items-start gap-6 group">
+                    <div className="absolute -left-[27px] top-[5px] z-10 w-[20px] h-[20px] bg-white rounded-full flex items-center justify-center">
+                      <div className="w-[14px] h-[14px] rounded-full border-[2px] border-zinc-300 bg-white" />
+                    </div>
+
+                    <div className="flex-1 flex flex-col pt-0.5">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="font-display text-[10px] font-bold text-zinc-400 tracking-[0.1em] uppercase">
+                          Target:
+                        </span>
+                        <span className="font-display text-[12px] text-zinc-400">
+                          {goal.targetDate ? new Date(goal.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "No date"}
+                        </span>
+                      </div>
+                      <textarea
+                        ref={el => {
+                          newMilestoneRef.current = el;
+                          if (el) resizeTextarea(el);
+                        }}
+                        maxLength={100}
+                        rows={1}
+                        value={newMilestoneTitle}
+                        onChange={e => {
+                          setNewMilestoneTitle(e.target.value);
+                          resizeTextarea(e.target);
+                        }}
+                        onKeyDown={handleNewMilestoneKeyDown}
+                        onBlur={() => {
+                          if (!newMilestoneTitle.trim()) setIsAddingMilestone(false);
+                        }}
+                        placeholder="New milestone..."
+                        className="font-display text-[16px] leading-snug bg-transparent border-0 border-b border-transparent focus:border-black/[0.12] rounded-none p-0 pb-1 outline-none w-full resize-none overflow-hidden text-zinc-900 font-medium"
+                      />
+                    </div>
+                  </div>
+                )}
+                {goal.milestones.length === 0 && !isAddingMilestone && (
                   <div className="py-8 flex justify-center border border-dashed border-black/[0.06] rounded-md">
                     <span className="font-display text-[13px] text-zinc-400">No milestones set.</span>
                   </div>
