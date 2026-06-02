@@ -40,6 +40,12 @@ type ChatReadRow = {
   lastReadAt: Date;
 };
 
+type DeletedMessageRow = {
+  id: string;
+  organizationId: string;
+  channelId: string | null;
+};
+
 function mapChannel(row: ChannelRow): ChatChannel {
   return {
     id: row.id,
@@ -139,6 +145,7 @@ export async function listTenantChannels(): Promise<ChatBootstrap> {
       FROM chat_message cm
       WHERE cm."organizationId" = cc."organizationId"
         AND cm."channelId" = cc.id
+        AND LOWER(COALESCE(cm.status, 'active')) <> 'deleted'
         AND (cm."senderId" IS NULL OR cm."senderId" <> ${ctx.userId})
         AND cm."createdAt" > COALESCE(cr."lastReadAt", 'epoch'::timestamp)
     ) unread ON true
@@ -190,6 +197,7 @@ export async function listTenantMessages(channelId: string) {
     LEFT JOIN "user" u ON u.id = cm."senderId"
     WHERE cm."organizationId" = ${ctx.tenantId}
       AND cm."channelId" = ${channelId}
+      AND LOWER(COALESCE(cm.status, 'active')) <> 'deleted'
     ORDER BY cm."createdAt" ASC
     LIMIT 200
   `;
@@ -214,6 +222,7 @@ export async function createTenantMessage(channelId: string, content: string, re
       WHERE cm.id = ${replyToId}
         AND cm."organizationId" = ${ctx.tenantId}
         AND cm."channelId" = ${channelId}
+        AND LOWER(COALESCE(cm.status, 'active')) <> 'deleted'
       LIMIT 1
     `;
     const row = replyRows[0];
@@ -263,6 +272,7 @@ export async function markTenantChannelRead(channelId: string) {
       FROM chat_message
       WHERE "organizationId" = ${ctx.tenantId}
         AND "channelId" = ${channelId}
+        AND LOWER(COALESCE(status, 'active')) <> 'deleted'
       ORDER BY "createdAt" DESC, id DESC
       LIMIT 1
     )
@@ -300,6 +310,7 @@ export async function updateTenantMessage(messageId: string, content: string) {
     WHERE cm.id = ${messageId}
       AND cm."organizationId" = ${ctx.tenantId}
       AND (${allowed} OR cm."senderId" = ${ctx.userId})
+      AND LOWER(COALESCE(cm.status, 'active')) <> 'deleted'
     RETURNING
       cm.id, cm."organizationId", cm."channelId", cm."senderId", cm.content, cm.type, cm.payload, cm."createdAt", cm."updatedAt",
       (SELECT name FROM "user" WHERE id = cm."senderId") AS "senderName",
@@ -314,15 +325,30 @@ export async function deleteTenantMessage(messageId: string) {
   const ctx = await requireTenant();
   const allowed = ctx.role === "owner" || ctx.role === "admin";
 
-  const rows = await prisma.$queryRaw<{ id: string }[]>`
-    DELETE FROM chat_message
+  const rows = await prisma.$queryRaw<DeletedMessageRow[]>`
+    UPDATE chat_message
+    SET
+      status = 'Deleted',
+      content = NULL,
+      "updatedAt" = now(),
+      "updatedById" = ${ctx.userId}
     WHERE id = ${messageId}
       AND "organizationId" = ${ctx.tenantId}
       AND (${allowed} OR "senderId" = ${ctx.userId})
-    RETURNING id
+      AND LOWER(COALESCE(status, 'active')) <> 'deleted'
+    RETURNING id, "organizationId", "channelId"
   `;
 
-  return rows[0] ?? null;
+  const deleted = rows[0];
+  if (!deleted) return null;
+
+  await prisma.$executeRaw`
+    DELETE FROM chat_message
+    WHERE id = ${deleted.id}
+      AND "organizationId" = ${ctx.tenantId}
+  `;
+
+  return deleted;
 }
 
 export async function deleteTenantChannel(channelId: string) {

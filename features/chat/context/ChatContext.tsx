@@ -116,8 +116,36 @@ function reconcileFetchedMessages(current: ChatMessage[], fetched: ChatMessage[]
   return { list: sortMessages(next), changed: changed || next !== current };
 }
 
+function removeDeletedMessage(current: Record<string, ChatMessage[]>, messageId: string, channelId?: string | null) {
+  const matchesMessage = (message: ChatMessage) => message.id === messageId || message.clientId === messageId;
+
+  if (channelId) {
+    const currentMessages = current[channelId];
+    if (!currentMessages) return current;
+
+    const nextMessages = currentMessages.filter((message) => !matchesMessage(message));
+    if (nextMessages.length === currentMessages.length) return current;
+    return { ...current, [channelId]: nextMessages };
+  }
+
+  let changed = false;
+  const next: Record<string, ChatMessage[]> = {};
+
+  for (const [currentChannelId, currentMessages] of Object.entries(current)) {
+    const nextMessages = currentMessages.filter((message) => !matchesMessage(message));
+    next[currentChannelId] = nextMessages;
+    if (nextMessages.length !== currentMessages.length) changed = true;
+  }
+
+  return changed ? next : current;
+}
+
 function textValue(value: unknown) {
   return typeof value === "string" ? value : null;
+}
+
+function isDeletedMessageStatus(value: unknown) {
+  return textValue(value)?.trim().toLowerCase() === "deleted";
 }
 
 function normalizedTimestamp(value: unknown) {
@@ -600,7 +628,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         },
         (payload) => {
           console.log("[chat-realtime] UPDATE chat_message", payload.new);
-          const message = mapRealtimeMessage(payload.new as Record<string, unknown>);
+          const record = payload.new as Record<string, unknown>;
+          const deletedId = textValue(coalesce(record, "id"));
+          const deletedChannelId = textValue(coalesce(record, "channelId", "channel_id"));
+
+          if (deletedId && isDeletedMessageStatus(coalesce(record, "status"))) {
+            window.setTimeout(() => {
+              setMessages((current) => removeDeletedMessage(current, deletedId, deletedChannelId));
+            }, 0);
+            return;
+          }
+
+          const message = mapRealtimeMessage(record);
           if (!message || message.organizationId !== organizationIdRef.current) return;
 
           window.setTimeout(() => {
@@ -629,14 +668,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           const record = payload.old as Record<string, unknown>;
           const deletedId = textValue(coalesce(record, "id"));
           const channelId = textValue(coalesce(record, "channelId", "channel_id"));
-          if (!deletedId || !channelId) return;
+          if (!deletedId) return;
 
           window.setTimeout(() => {
-            setMessages((current) => {
-              const currentMessages = current[channelId];
-              if (!currentMessages) return current;
-              return { ...current, [channelId]: currentMessages.filter((m) => m.id !== deletedId) };
-            });
+            setMessages((current) => removeDeletedMessage(current, deletedId, channelId));
           }, 0);
         }
       )

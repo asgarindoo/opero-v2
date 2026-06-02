@@ -27,11 +27,16 @@ BEGIN
 END;
 $$;
 
--- 2. Enable RLS (idempotent)
+-- 2. Make DELETE realtime payloads include old row data, not just primary keys.
+--    The chat UI needs channel/org data to remove deleted messages in-place.
+ALTER TABLE public.chat_message REPLICA IDENTITY FULL;
+ALTER TABLE public.chat_channel REPLICA IDENTITY FULL;
+
+-- 3. Enable RLS (idempotent)
 ALTER TABLE public.chat_message ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_channel ENABLE ROW LEVEL SECURITY;
 
--- 3. Allow anon role to SELECT rows for realtime event delivery.
+-- 4. Allow anon role to SELECT rows for realtime event delivery.
 --    Tenant isolation is already enforced by the Next.js API (better-auth).
 --    The client-side realtime subscription filters by organizationId anyway.
 DROP POLICY IF EXISTS "anon_realtime_read" ON public.chat_message;
@@ -46,7 +51,7 @@ CREATE POLICY "anon_realtime_read" ON public.chat_channel
   TO anon
   USING (true);
 
--- 4. Verify — run this SELECT to confirm both tables are in the publication
+-- 5. Verify — run this SELECT to confirm both tables are in the publication
 SELECT schemaname, tablename
 FROM pg_publication_tables
 WHERE pubname = 'supabase_realtime'
