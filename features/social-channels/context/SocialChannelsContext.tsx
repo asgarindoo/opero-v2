@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
 import useSWR from "swr";
 import { fetchChannels, createChannel as apiCreate, updateChannel as apiUpdate, deleteChannel as apiDelete } from "../services/channels.client";
 
@@ -36,30 +36,29 @@ interface SocialChannelsContextType {
 
 const SocialChannelsContext = createContext<SocialChannelsContextType | undefined>(undefined);
 
-const MOCK_CHANNELS: Channel[] = [];
-
 export function SocialChannelsProvider({ children }: { children: React.ReactNode }) {
   const { data, mutate, isLoading } = useSWR<Channel[]>("social-channels", fetchChannels, {
     fallbackData: [],
+    keepPreviousData: true,
   });
 
   const channels = data || [];
 
-  const addChannel = async (channel: Channel) => {
+  const addChannel = useCallback(async (channel: Channel) => {
     await mutate(
       async (current = []) => {
         const created = await apiCreate(channel);
-        return current.map((c) => c.id === channel.id ? created : c);
+        return [created, ...current.filter((c) => c.id !== channel.id && c.id !== created.id)];
       },
       {
-        optimisticData: (current = []) => [...current, channel],
+        optimisticData: (current = []) => [channel, ...current],
         rollbackOnError: true,
         revalidate: false,
       }
     );
-  };
+  }, [mutate]);
   
-  const updateChannel = async (id: string, updates: Partial<Channel>) => {
+  const updateChannel = useCallback(async (id: string, updates: Partial<Channel>) => {
     await mutate(
       async (current = []) => {
         const updated = await apiUpdate(id, updates);
@@ -71,9 +70,9 @@ export function SocialChannelsProvider({ children }: { children: React.ReactNode
         revalidate: false,
       }
     );
-  };
+  }, [mutate]);
   
-  const removeChannel = async (id: string) => {
+  const removeChannel = useCallback(async (id: string) => {
     await mutate(
       async (current = []) => {
         await apiDelete(id);
@@ -85,7 +84,7 @@ export function SocialChannelsProvider({ children }: { children: React.ReactNode
         revalidate: false,
       }
     );
-  };
+  }, [mutate]);
 
   const value = useMemo(() => ({
     channels,
@@ -95,7 +94,7 @@ export function SocialChannelsProvider({ children }: { children: React.ReactNode
     addChannel,
     updateChannel,
     removeChannel
-  }), [channels]);
+  }), [addChannel, channels, isLoading, removeChannel, updateChannel]);
 
   return <SocialChannelsContext.Provider value={value}>{children}</SocialChannelsContext.Provider>;
 }

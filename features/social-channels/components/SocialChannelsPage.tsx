@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTenant } from "@/components/providers/TenantProvider";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import ModuleHeader from "@/components/common/ModuleHeader";
 import SearchInput from "@/components/common/SearchInput";
@@ -18,6 +18,8 @@ import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import Dropdown from "@/components/ui/Dropdown";
 import UserAvatar from "@/components/common/UserAvatar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { createClientId } from "@/lib/client-id";
+import { getUserDisplayName } from "@/lib/user-identity";
 
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
    return (
@@ -77,8 +79,9 @@ export default function SocialChannelsPage() {
    const [channelToDelete, setChannelToDelete] = useState<Channel | null>(null);
 
    const router = useRouter();
-   const { tenant } = useTenant();
+   const { tenant, user } = useTenant();
    const slug = tenant?.slug || "dashboard";
+   const activityKey = slug ? `/api/tenant/${slug}/social-channels/activity` : null;
    const { mutate: globalMutate } = useSWRConfig();
    const { data: contentPosts, isLoading: isLoadingContent } = useSWR(`/api/tenant/content-planner`, async (url) => {
       const res = await fetch(url);
@@ -86,13 +89,34 @@ export default function SocialChannelsPage() {
       return res.json();
    }, { fallbackData: [] });
 
-   const { data: activities, isLoading: isLoadingActivities } = useSWR(slug ? `/api/tenant/${slug}/social-channels/activity` : null, async (url) => {
+   const { data: activities, isLoading: isLoadingActivities } = useSWR(activityKey, async (url) => {
       const res = await fetch(url);
       if (!res.ok) return [];
       return res.json();
-   }, { fallbackData: [] });
+   }, { fallbackData: [], keepPreviousData: true, revalidateOnFocus: false });
 
-   const SCHEDULED = (contentPosts || [])
+   const pushOptimisticActivity = (action: string, channel: string) => {
+      if (!activityKey) return;
+      const optimisticActivity = {
+         id: `pending-${createClientId()}`,
+         action,
+         channel,
+         user: getUserDisplayName(user, "You"),
+         userEmail: user?.email ?? undefined,
+         userImage: user?.image ?? undefined,
+         time: new Date().toISOString(),
+      };
+
+      globalMutate(
+         activityKey,
+         (current: any[] = []) => [optimisticActivity, ...current.filter((item) => item.id !== optimisticActivity.id)].slice(0, 5),
+         { revalidate: false }
+      );
+   };
+
+   const channelNamesById = useMemo(() => new Map(channels.map((channel) => [channel.id, channel.name])), [channels]);
+
+   const SCHEDULED = useMemo(() => (contentPosts || [])
       .filter((p: any) => p.status !== "Published" && p.status !== "Archived")
       .slice(0, 4) // Batasi ke 4
       .map((p: any) => ({
@@ -100,11 +124,11 @@ export default function SocialChannelsPage() {
          title: p.title,
          status: p.status,
          type: p.type || "Post",
-         channel: channels.find(c => c.id === p.targetAccountId)?.name || "Multiple",
+         channel: channelNamesById.get(p.targetAccountId) || "Multiple",
          date: p.date ? p.date.split('T')[0] : "—"
-      }));
+      })), [channelNamesById, contentPosts]);
 
-   const ACTIVITY = (activities || [])
+   const ACTIVITY = useMemo(() => (activities || [])
       .slice(0, 5) // Batasi ke 5
       .map((act: any) => {
          const date = new Date(act.time);
@@ -114,13 +138,16 @@ export default function SocialChannelsPage() {
             ...act,
             time: timeStr
          };
-      });
+      }), [activities]);
 
-   const filtered = channels.filter(c =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.username.toLowerCase().includes(search.toLowerCase()) ||
-      c.platform.toLowerCase().includes(search.toLowerCase())
-   );
+   const filtered = useMemo(() => {
+      const normalizedSearch = search.toLowerCase();
+      return channels.filter(c =>
+         c.name.toLowerCase().includes(normalizedSearch) ||
+         c.username.toLowerCase().includes(normalizedSearch) ||
+         c.platform.toLowerCase().includes(normalizedSearch)
+      );
+   }, [channels, search]);
 
    const openAdd = () => {
       setForm({
@@ -140,10 +167,21 @@ export default function SocialChannelsPage() {
       setShowAdd(false);
    };
 
-   const saveChannel = async () => {
+   const saveChannel = () => {
       if (!form.name || !form.platform) return;
+
       if (editId) {
-         await updateChannel(editId, form);
+         const channelId = editId;
+         const updates = { ...form };
+         const channelName = updates.name || channels.find((channel) => channel.id === channelId)?.name || "Unknown";
+         setEditId(null);
+         pushOptimisticActivity("Updated Channel", channelName);
+         updateChannel(channelId, updates)
+            .then(() => {
+               if (activityKey) globalMutate(activityKey);
+            })
+            .catch((err) => console.error("Failed to update social channel:", err));
+         return;
       } else {
          const newCh: Channel = {
             id: `ch-${Date.now()}`,
@@ -159,41 +197,49 @@ export default function SocialChannelsPage() {
             averageViews: form.averageViews,
             notes: form.notes || "",
          };
-         await addChannel(newCh);
+         setShowAdd(false);
+         setForm({});
+         setEditId(null);
+         pushOptimisticActivity("Added Channel", newCh.name);
+         addChannel(newCh)
+            .then(() => {
+               if (activityKey) globalMutate(activityKey);
+            })
+            .catch((err) => console.error("Failed to create social channel:", err));
       }
-
-      if (slug) {
-         globalMutate(`/api/tenant/${slug}/social-channels/activity`);
-      }
-
-      setShowAdd(false); setForm({}); setEditId(null);
    };
 
-   const confirmDelete = async () => {
+   const confirmDelete = () => {
       if (!channelToDelete) return;
       const deletedChannel = channelToDelete;
       setIsDeleteModalOpen(false);
       setChannelToDelete(null);
-      await removeChannel(deletedChannel.id);
-      if (slug) {
-         globalMutate(`/api/tenant/${slug}/social-channels/activity`);
-      }
+      pushOptimisticActivity("Deleted Channel", deletedChannel.name);
+      removeChannel(deletedChannel.id)
+         .then(() => {
+            if (activityKey) globalMutate(activityKey);
+         })
+         .catch((err) => console.error("Failed to delete social channel:", err));
    };
 
    const ic = "w-full bg-[#fcfafa] border border-black/[0.06] rounded-[4px] px-4 py-2.5 font-display text-[12.5px] text-on-surface outline-none focus:border-black/[0.15] focus:bg-white transition-all duration-300 placeholder:text-black/100 appearance-none cursor-pointer";
    const lc = "font-label-caps text-[8.5px] font-bold text-on-surface opacity-80 uppercase tracking-[0.12em] mb-1.5 block transition-opacity";
    const hc = "text-[9.5px] text-on-surface opacity-80 mt-1.5 block leading-relaxed";
 
-   const totalFollowersNum = channels.reduce((acc, c) => acc + (c.followers || 0), 0);
-   const totalInteractionsNum = channels.reduce((acc, c) => acc + (c.interactions || 0), 0);
-   const totalPostsNum = channels.reduce((acc, c) => acc + (c.postsThisMonth || 0), 0);
-   const totalReachNum = channels.reduce((acc, c) => acc + (c.monthlyReach || 0), 0);
+   const channelStats = useMemo(() => {
+      const totalFollowersNum = channels.reduce((acc, c) => acc + (c.followers || 0), 0);
+      const totalInteractionsNum = channels.reduce((acc, c) => acc + (c.interactions || 0), 0);
+      const totalPostsNum = channels.reduce((acc, c) => acc + (c.postsThisMonth || 0), 0);
+      const totalReachNum = channels.reduce((acc, c) => acc + (c.monthlyReach || 0), 0);
+      const activeCount = channels.filter(c => c.status === "Active").length;
+      const avgEngagement = totalFollowersNum > 0
+         ? ((totalInteractionsNum / totalFollowersNum) * 100).toFixed(1) + "%"
+         : "0%";
 
-   const avgEngagement = totalFollowersNum > 0
-      ? ((totalInteractionsNum / totalFollowersNum) * 100).toFixed(1) + "%"
-      : "0%";
+      return { activeCount, avgEngagement, totalFollowersNum, totalInteractionsNum, totalPostsNum, totalReachNum };
+   }, [channels]);
 
-   const activeCount = channels.filter(c => c.status === "Active").length;
+   const { activeCount, avgEngagement, totalFollowersNum, totalInteractionsNum, totalPostsNum, totalReachNum } = channelStats;
 
    return (
       <div className="flex flex-col h-full bg-[#fdf8f8] overflow-hidden">
