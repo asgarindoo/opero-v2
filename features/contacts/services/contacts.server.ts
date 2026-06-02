@@ -1,25 +1,52 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
-import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
-import { jsonArray, jsonInputOrDefault, textValue } from "@/lib/api/feature-records";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { jsonArray, jsonInputOrDefault, jsonObjectOrUndefined, textValue } from "@/lib/api/feature-records";
 import { contactSchema } from "../validators";
 
 const MODULE = "TEAM";
 const ENTITY = "Contact";
 
+const CONTACT_SELECT = {
+  id: true,
+  organizationId: true,
+  title: true,
+  status: true,
+  payload: true,
+  createdById: true,
+  updatedById: true,
+  createdAt: true,
+  updatedAt: true,
+  industry: true,
+  name: true,
+  persons: true,
+  relationshipType: true,
+  createdBy: { select: { id: true, name: true, email: true, image: true } },
+} as const;
+
+function contactPayload(data: Record<string, unknown>, currentPayload?: unknown) {
+  const payload = { ...parsePayload(currentPayload) };
+  if (data.comments !== undefined) payload.comments = data.comments;
+  if (data.contextData !== undefined) payload.contextData = data.contextData;
+  if (data.lastContacted !== undefined) payload.lastContacted = data.lastContacted;
+  if (data.isArchived !== undefined) payload.isArchived = data.isArchived;
+  return jsonObjectOrUndefined(payload) ?? {};
+}
+
 function mapContact(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const mapped = mapDomainRecord(record, fallbackUser) as any;
+  const payload = parsePayload(record.payload);
   return {
     ...mapped,
     relationshipType: mapped.relationshipType ?? "Lead",
     status: mapped.status ?? "New",
     industry: mapped.industry ?? "Unspecified",
-    contextData: mapped.contextData && typeof mapped.contextData === "object" && !Array.isArray(mapped.contextData) ? mapped.contextData : {},
+    contextData: payload.contextData && typeof payload.contextData === "object" && !Array.isArray(payload.contextData) ? payload.contextData : {},
     persons: Array.isArray(mapped.persons) ? mapped.persons : [],
-    comments: Array.isArray(mapped.comments) ? mapped.comments : [],
+    comments: Array.isArray(payload.comments) ? payload.comments : [],
     isArchived: mapped.isArchived ?? mapped.status === "Archived",
     createdAt: mapped.createdAt ?? mapped.recordCreatedAt ?? "",
-    lastContacted: mapped.lastContacted ?? mapped.recordUpdatedAt ?? mapped.recordCreatedAt ?? "",
+    lastContacted: typeof payload.lastContacted === "string" ? payload.lastContacted : mapped.recordUpdatedAt ?? mapped.recordCreatedAt ?? "",
   };
 }
 
@@ -43,13 +70,13 @@ function sanitizePersons(value: unknown) {
 
 export async function listContacts() {
   const ctx = await requireTenant();
-  const contacts = await prisma.contact.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
+  const contacts = await prisma.contact.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, select: CONTACT_SELECT });
   return contacts.map((contact) => mapContact(contact));
 }
 
 export async function getContactById(id: string) {
   const ctx = await requireTenant();
-  const contact = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
+  const contact = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, select: CONTACT_SELECT });
   return contact ? mapContact(contact) : null;
 }
 
@@ -67,10 +94,11 @@ export async function createContact(data: Record<string, unknown>) {
       status: getStatus(parsed),
       industry: textValue(parsed.industry),
       persons: jsonArray(sanitizePersons(parsed.persons) ?? parsed.persons),
-      comments: jsonArray(parsed.comments),
+      payload: contactPayload(parsed),
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
+    select: CONTACT_SELECT,
   });
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: contact.id, entityName: title });
   return mapContact(contact, ctx.user);
@@ -78,7 +106,7 @@ export async function createContact(data: Record<string, unknown>) {
 
 export async function updateContact(id: string, patch: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const current = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, select: CONTACT_SELECT });
   if (!current) return null;
 
   const parsed = contactSchema.partial().parse(patch);
@@ -92,12 +120,12 @@ export async function updateContact(id: string, patch: Record<string, unknown>) 
       status: parsed.status !== undefined ? getStatus(parsed, current.status ?? "Active") : current.status,
       industry: parsed.industry !== undefined ? textValue(parsed.industry) : current.industry,
       persons: parsed.persons !== undefined ? jsonArray(sanitizePersons(parsed.persons) ?? parsed.persons) : jsonInputOrDefault(current.persons, []),
-      comments: parsed.comments !== undefined ? jsonArray(parsed.comments) : jsonInputOrDefault(current.comments, []),
+      payload: contactPayload(parsed, current.payload),
       updatedById: ctx.userId,
     },
   });
   if (result.count === 0) return null;
-  const updated = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
+  const updated = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, select: CONTACT_SELECT });
   if (!updated) return null;
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title });
   return mapContact(updated);
@@ -105,7 +133,7 @@ export async function updateContact(id: string, patch: Record<string, unknown>) 
 
 export async function deleteContact(id: string) {
   const ctx = await requireTenant();
-  const current = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, select: { title: true } });
   if (!current) return null;
   const result = await prisma.contact.deleteMany({ where: { id, organizationId: ctx.tenantId } });
   if (result.count === 0) return null;
