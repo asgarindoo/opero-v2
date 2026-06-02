@@ -68,7 +68,7 @@ export default function HeroSection() {
               <img
                 alt="Dashboard preview"
                 className="w-full h-full object-cover opacity-60 mix-blend-luminosity"
-                src="/dashbaord.png"
+                src="/dashboard.png"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent" />
             </div>
