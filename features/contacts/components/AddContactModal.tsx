@@ -9,10 +9,8 @@ import { ModalShell } from "@/components/ui/global/modal/ModalShell";
 import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
-import { useTenant } from "@/components/providers/TenantProvider";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
-import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -26,7 +24,6 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
 }
 
 export default function AddContactModal({ onClose }: { onClose: () => void }) {
-  const { user } = useTenant();
   const { addContact } = useContacts();
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -73,17 +70,6 @@ export default function AddContactModal({ onClose }: { onClose: () => void }) {
       relationshipType,
       status,
       contextData,
-      activities: [{
-        id: "a" + Date.now(),
-        userId: user?.id,
-        author: getUserDisplayName(user, "System"),
-        email: user?.email ?? undefined,
-        avatar: user?.image ?? null,
-        initials: getUserInitials(user),
-        type: "system",
-        description: "Created contact record",
-        timestamp: new Date().toISOString()
-      }],
       persons: personName.trim() || personEmail.trim() ? [{
         id: "p" + Date.now(),
         name: personName.trim() || "Unknown",

@@ -2,10 +2,7 @@
 
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
-import { useMembers } from "@/features/members/context/MembersContext";
-import { Tag, MapPin, LayoutGrid, Calendar, Wallet, User, UploadCloud, X, Loader2 } from "lucide-react";
-import MemberPicker from "@/features/tasks/components/MemberPicker";
-import { type Member as TaskMember } from "@/features/tasks";
+import { Tag, MapPin, LayoutGrid, Calendar, Wallet, UploadCloud, X, Loader2 } from "lucide-react";
 
 import { ModalShell } from "@/components/ui/global/modal/ModalShell";
 import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
@@ -36,7 +33,6 @@ const CURRENCY_OPTIONS = [
 
 export default function AddAssetModal({ onClose }: { onClose: () => void }) {
   const { assets, addAsset } = useAssets();
-  const { members } = useMembers(); // Keeping this if needed later, otherwise MemberPicker fetches its own members.
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Electronics");
@@ -47,7 +43,6 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const [assignees, setAssignees] = useState<TaskMember[]>([]);
   const [location, setLocation] = useState("");
 
   const [currency, setCurrency] = useState("USD");
@@ -137,7 +132,6 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
       status: status,
       quantity: qty,
       imageUrl: finalImageUrl.trim() || undefined,
-      assignedTo: assignees.length > 0 ? assignees.map(a => a.name) : undefined,
       location: location.trim() || undefined,
       purchaseValue: !isNaN(pValue) ? pValue : undefined,
       currency: currency,
@@ -238,10 +232,7 @@ export default function AddAssetModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label="Assignees" icon={<User size={11} strokeWidth={1.75} />}>
-            <MemberPicker selected={assignees} onChange={setAssignees} />
-          </FormField>
+        <div className="grid grid-cols-1 gap-4">
           <GlobalInput
             label="Location"
             icon={<MapPin size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}

@@ -34,8 +34,6 @@ export interface SaleOpportunity {
   orderNumber: string;
   title: string;
   saleType: SaleType;
-  customerName?: string;
-  recipientName?: string;
   contactName?: string; // Optional — not required
   contactId?: string;
   status: SaleStatus;
@@ -51,12 +49,8 @@ export interface SaleOpportunity {
   total: number; // Final payable amount
   grandTotal?: number;
   currency: string;
-  assignedStaff: string[];
   activities: SaleActivity[];
-  attachments: string[];
-  notes: string;
   createdAt: string;
   updatedAt: string;
   shippingAddress?: string;
-  trackingNumber?: string;
 }

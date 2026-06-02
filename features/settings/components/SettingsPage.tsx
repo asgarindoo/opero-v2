@@ -32,8 +32,6 @@ type SettingsTab = "tenant" | "billing" | "security";
 type SettingsForm = {
   name: string;
   logo: string | null;
-  websiteUrl: string;
-  brandColor: string;
   timezone: string;
   locale: string;
 };
@@ -48,10 +46,7 @@ interface TenantSettingsResponse {
     tenantSettings: {
       timezone: string;
       locale: string;
-      brandColor: string | null;
       logoUrl: string | null;
-      websiteUrl: string | null;
-      industryType: string | null;
     } | null;
     tenantPlan: {
       status: string;
@@ -85,8 +80,6 @@ export default function SettingsPage() {
   const [form, setForm] = useState<SettingsForm>({
     name: "",
     logo: "",
-    websiteUrl: "",
-    brandColor: "",
     timezone: "UTC",
     locale: "en",
   });
@@ -148,8 +141,6 @@ export default function SettingsPage() {
         const nextForm = {
           name: payload.tenant.name,
           logo: getTenantLogoSrc(payload.tenant.id, logo),
-          websiteUrl: payload.tenant.tenantSettings?.websiteUrl ?? "",
-          brandColor: payload.tenant.tenantSettings?.brandColor ?? "",
           timezone: payload.tenant.tenantSettings?.timezone ?? "UTC",
           locale: payload.tenant.tenantSettings?.locale ?? "en",
         };
@@ -176,8 +167,6 @@ export default function SettingsPage() {
   const hasTenantChanges = Boolean(initialForm && (
     form.name !== initialForm.name ||
     form.logo !== initialForm.logo ||
-    form.websiteUrl !== initialForm.websiteUrl ||
-    form.brandColor !== initialForm.brandColor ||
     form.timezone !== initialForm.timezone ||
     form.locale !== initialForm.locale
   ));
@@ -221,8 +210,6 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
-          websiteUrl: form.websiteUrl,
-          brandColor: form.brandColor,
           timezone: form.timezone,
           locale: form.locale,
           ...(logoWasChanged ? { logo: form.logo ?? "" } : {}),
@@ -246,8 +233,6 @@ export default function SettingsPage() {
       const savedForm = {
         name: payload.tenant.name,
         logo: getTenantLogoSrc(payload.tenant.id, payload.tenant.logo),
-        websiteUrl: payload.tenant.tenantSettings?.websiteUrl ?? "",
-        brandColor: payload.tenant.tenantSettings?.brandColor ?? "",
         timezone: payload.tenant.tenantSettings?.timezone ?? "UTC",
         locale: payload.tenant.tenantSettings?.locale ?? "en",
       };

@@ -47,7 +47,6 @@ import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
-import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 import { FormField } from "@/components/ui/global/form/FormField";
 import DatePicker from "@/components/ui/DatePicker";
 import Dropdown from "@/components/ui/Dropdown";
@@ -61,7 +60,6 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState(() => "INV-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 1000));
   const [dueDate, setDueDate] = useState("");
-  const [notes, setNotes] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [items, setItems] = useState<(Partial<InvoiceItem> & { discountType?: "percentage" | "fixed" })[]>([
     { id: "1", description: "", quantity: 1, unitPrice: 0, discount: 0, discountType: "percentage", amount: 0 }
@@ -131,12 +129,15 @@ export default function AddInvoiceModal({ onClose }: { onClose: () => void }) {
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!isValid) return;
+    const selectedContact = contacts.find(c => c.name === contactName.trim());
+    const primaryPerson = selectedContact?.persons?.find(p => p.isPrimary) ?? selectedContact?.persons?.[0];
 
     addInvoice({
       contactName: contactName.trim() || undefined,
+      contactId: selectedContact?.id,
+      contactEmail: primaryPerson?.email || undefined,
       invoiceNumber,
       dueDate,
-      notes,
       items: items.filter(it => it.description?.trim()) as InvoiceItem[],
       status: "Unpaid",
       subtotal,

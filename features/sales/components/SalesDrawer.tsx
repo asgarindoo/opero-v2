@@ -130,7 +130,6 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
       contactName: sale.contactName,
       contactId: sale.contactId,
       saleId: sale.id,
-      saleOrderNumber: sale.orderNumber,
       issueDate: issuedAt.toISOString().split("T")[0],
       dueDate: dueAt.toISOString().split("T")[0],
       status: sale.paymentStatus === "Paid" ? "Paid" : "Unpaid",
@@ -142,9 +141,6 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
       discountTotal: sale.discountTotal,
       totalAmount: sale.total,
       currency: sale.currency || "USD",
-      notes: "Auto-generated from sale " + sale.orderNumber,
-      activities: [],
-      attachments: [],
       createdAt: issuedAt.toISOString(),
       updatedAt: issuedAt.toISOString(),
     };

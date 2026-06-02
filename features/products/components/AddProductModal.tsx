@@ -82,7 +82,6 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
       price: parseFloat(price.replace(/,/g, "")) || 0,
       totalQuantity: isService ? 0 : (parseInt(totalQuantity) || 0),
       minThreshold: parseInt(minThreshold) || 10,
-      variants: [],
     });
     onClose();
   };

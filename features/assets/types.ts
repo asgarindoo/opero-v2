@@ -2,7 +2,7 @@ export type AssetStatus = "Available" | "In Use" | "Maintenance" | "Damaged" | "
 
 export interface AssetActivity {
   id: string;
-  type: "assignment" | "status_change" | "note";
+  type: "status_change" | "note";
   description: string;
   detail?: string;
   timestamp: string;
@@ -31,9 +31,6 @@ export interface Asset {
   assetCode: string; // Unique tracking code
   status: AssetStatus;
   
-  // Optional Fields
-  assignedTo?: string[];
-  assignedToId?: string;
   location?: string;
   purchaseDate?: string;
   purchaseValue?: number;

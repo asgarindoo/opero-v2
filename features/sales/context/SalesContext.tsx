@@ -81,7 +81,6 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       status: partial.status || "Pending",
       paymentStatus: partial.paymentStatus || "Unpaid",
       currency: "USD",
-      assignedStaff: [userName],
       items,
       subtotal,
       discountTotal: partial.discountTotal || 0,
@@ -97,8 +96,6 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
         avatar: user?.image ?? null,
         initials: getUserInitials(user)
       }],
-      attachments: [],
-      notes: partial.notes || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...partialWithoutTotals,

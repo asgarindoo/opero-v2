@@ -36,11 +36,8 @@ function productPatchForApi(updates: Partial<Product>): Partial<Product> {
   if (updates.stock !== undefined) patch.stock = updates.stock;
   if (updates.totalQuantity !== undefined) patch.totalQuantity = updates.totalQuantity;
   if (updates.minThreshold !== undefined) patch.minThreshold = updates.minThreshold;
-  if (updates.description !== undefined) patch.description = updates.description;
-  if (updates.imageUrl !== undefined) patch.imageUrl = updates.imageUrl;
-  if (updates.variants !== undefined) patch.variants = updates.variants;
   if (updates.activities !== undefined) patch.activities = updates.activities;
-  if (updates.notes !== undefined) patch.notes = updates.notes;
+  if (updates.comments !== undefined) patch.comments = updates.comments;
   return patch;
 }
 
@@ -98,7 +95,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       status: status,
       totalQuantity: qty,
       minThreshold: minT,
-      variants: partial.variants || [],
+      comments: partial.comments || [],
       activities: [{
         id: "a" + Date.now(),
         type: "creation",
@@ -110,7 +107,6 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         avatar: user?.image ?? null,
         initials: getUserInitials(user)
       }],
-      notes: partial.notes || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...partial

@@ -178,9 +178,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
                     <TableCell className="w-full max-w-[0px]">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-8 h-8 rounded-lg overflow-hidden bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-all`}>
-                          {product.imageUrl ? (
-                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                          ) : isService ? (
+                          {isService ? (
                             <Wrench size={13} strokeWidth={1.5} />
                           ) : (
                             <Package size={13} strokeWidth={1.5} />
@@ -308,16 +306,10 @@ export default function ProductTable({ onSelectProduct }: Props) {
                                   <span className="font-display font-semibold opacity-80">{product.price > 0 ? formatPrice(product.price) : "—"}</span>
                                 </div>
                                 {!isService && (
-                                  <>
-                                    <div className="flex justify-between text-[12px]">
-                                      <span className="text-on-surface-variant opacity-60 font-body-sm">Variants</span>
-                                      <span className="font-display font-semibold opacity-80">{product.variants.length}</span>
-                                    </div>
-                                    <div className="flex justify-between text-[12px]">
-                                      <span className="text-on-surface-variant opacity-60 font-body-sm">Low Stock at</span>
-                                      <span className="font-display font-semibold opacity-80">{product.minThreshold} units</span>
-                                    </div>
-                                  </>
+                                  <div className="flex justify-between text-[12px]">
+                                    <span className="text-on-surface-variant opacity-60 font-body-sm">Low Stock at</span>
+                                    <span className="font-display font-semibold opacity-80">{product.minThreshold} units</span>
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -348,7 +340,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
         }}
         onConfirm={handleConfirmDelete}
         title={productToDelete ? "Delete product?" : "Delete selected products?"}
-        description={productToDelete ? "This action permanently removes the product, its stock history, and variant data." : `This action permanently removes ${selectedIds.size} products. This action cannot be undone.`}
+        description={productToDelete ? "This action permanently removes the product and its stock history." : `This action permanently removes ${selectedIds.size} products. This action cannot be undone.`}
         confirmLabel={productToDelete ? "Delete Product" : "Delete Products"}
       />
     </div>

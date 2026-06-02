@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
-import { dateValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
+import { dateValue, numberValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "FINANCE";
 const ENTITY = "Transaction";
@@ -22,8 +22,6 @@ function buildTransactionCreateData(data: Record<string, unknown>) {
     contactName: textValue(data.contactName),
     contactId: textValue(data.contactId),
     notes: textValue(data.notes),
-    activities: jsonArray(data.activities),
-    attachments: jsonArray(data.attachments),
   };
 }
 
@@ -76,8 +74,6 @@ export async function updateTransaction(id: string, patch: Record<string, unknow
       contactName: patch.contactName !== undefined ? textValue(patch.contactName) : current.contactName,
       contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
       notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
-      activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
       updatedById: ctx.userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },

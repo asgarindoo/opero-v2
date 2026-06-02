@@ -3,7 +3,7 @@ export type ProductType = "Physical" | "Service";
 
 export interface StockActivity {
   id: string;
-  type: "stock_in" | "stock_out" | "adjustment" | "note" | "creation";
+  type: "stock_in" | "stock_out" | "adjustment" | "creation";
   description: string;
   quantity?: number;
   timestamp: string;
@@ -14,12 +14,16 @@ export interface StockActivity {
   initials?: string;
 }
 
-export interface ProductVariant {
+export interface ProductComment {
   id: string;
-  name: string; // e.g. "Size L", "Blue"
-  sku: string;
-  price?: number;
-  quantity: number;
+  userId?: string;
+  author: string;
+  email?: string;
+  avatar?: string | null;
+  initials?: string;
+  body: string;
+  timestamp: string;
+  reactions?: Record<string, string[]>;
 }
 
 export interface Product {
@@ -34,11 +38,8 @@ export interface Product {
   stock?: number;
   totalQuantity: number;
   minThreshold: number; // Low stock alert
-  description?: string;
-  variants: ProductVariant[];
   activities: StockActivity[];
-  notes: string;
+  comments: ProductComment[];
   createdAt: string;
   updatedAt: string;
-  imageUrl?: string;
 }

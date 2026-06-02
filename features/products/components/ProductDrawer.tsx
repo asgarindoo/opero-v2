@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { useProducts } from "../context/ProductsContext";
 import { X, Clock, ArrowUpRight, ArrowDownLeft, AlertTriangle, Package, Wrench, Star, DollarSign, FileText, MessageSquare } from "lucide-react";
-import type { StockActivity, ProductVariant } from "../types";
+import type { ProductComment, StockActivity } from "../types";
 import { useTenant } from "@/components/providers/TenantProvider";
 import Drawer from "@/components/ui/Drawer";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import UserAvatar from "@/components/common/UserAvatar";
-import { getUserDisplayName } from "@/lib/user-identity";
+import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { Trash2 } from "lucide-react";
 
@@ -31,7 +31,7 @@ function formatPrice(price: number, currency: string = "USD") {
 }
 
 export default function ProductDrawer({ productId, onClose }: { productId: string; onClose: () => void }) {
-  const { allProducts, adjustStock, addActivity, updateProduct } = useProducts();
+  const { allProducts, adjustStock, updateProduct } = useProducts();
   const product = allProducts.find(p => p.id === productId);
   const { user } = useTenant();
   const [adjustQty, setAdjustQty] = useState("");
@@ -53,19 +53,22 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
 
   const handleAddNote = () => {
     if (!newNote.trim()) return;
-    addActivity(product.id, {
-      type: "note",
-      description: newNote.trim(),
-      quantity: 0,
+    const comment: ProductComment = {
+      id: "note_" + crypto.randomUUID(),
       userId: user?.id,
+      author: getUserDisplayName(user, "You"),
       email: user?.email ?? undefined,
-      avatar: user?.image ?? null
-    });
+      avatar: user?.image ?? null,
+      initials: getUserInitials(user),
+      body: newNote.trim(),
+      timestamp: new Date().toISOString(),
+      reactions: {},
+    };
+    updateProduct(product.id, { comments: [...(product.comments || []), comment] });
     setNewNote("");
   };
 
-  const notes = product.activities.filter(a => a.type === "note");
-  const actualActivities = product.activities.filter(a => a.type !== "note");
+  const notes = product.comments || [];
 
   return (
     <Drawer
@@ -181,35 +184,6 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                 </Section>
               )}
 
-              {/* Variants */}
-              {product.variants.length > 0 && (
-                <Section label="Variants" count={product.variants.length}>
-                  <div className="space-y-1">
-                    {product.variants.map((variant: ProductVariant, index) => {
-                      const variantSku = variant.sku || `${product.sku || "SKU"}-${index + 1}`;
-                      return (
-                      <div key={variant.id || variantSku} className="flex items-center justify-between py-2.5 px-1 border-b border-black/[0.02]">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="w-7 h-7 shrink-0 rounded bg-black/5 flex items-center justify-center text-on-surface-variant opacity-40 font-mono text-[9px] font-bold">
-                            {variantSku.slice(-3)}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-display font-medium text-[12.5px] text-on-surface opacity-90 truncate" title={variant.name}>{variant.name}</p>
-                            <p className=" text-[10px] text-on-surface-variant opacity-40 font-mono truncate">{variantSku}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          {variant.price && (
-                            <p className="font-body-sm font-semibold text-[11px] text-on-surface opacity-70">{formatPrice(variant.price)}</p>
-                          )}
-                          <p className="font-body-sm font-semibold text-[12px] text-on-surface opacity-80">{variant.quantity} units</p>
-                        </div>
-                      </div>
-                    )})}
-                  </div>
-                </Section>
-              )}
-
               <Section label="Notes" count={notes.length}>
                 <div className="space-y-6">
                   {notes.length === 0 ? (
@@ -238,7 +212,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                               <Trash2 size={12} />
                             </button>
                           </div>
-                          <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.description}</p>
+                          <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.body}</p>
                         </div>
                       </div>
                     ))
@@ -286,9 +260,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                 {product.activities.length === 0 ? (
                   <div className="text-center py-4 text-on-surface-variant opacity-30 font-body-sm text-[11px]">No activities yet</div>
                 ) : (
-                  [...product.activities].reverse().map((a: StockActivity) => {
-                    const isNote = a.type === "note";
-                    return (
+                  [...product.activities].reverse().map((a: StockActivity) => (
                       <div key={a.id} className="relative flex items-start gap-4">
                         <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
                         <div className="flex-1 space-y-0.5">
@@ -297,22 +269,11 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                               {a.userId === user?.id ? getUserDisplayName(user, a.author) : getUserDisplayName({ name: a.author, email: a.email }, "System")}
                             </span>
                             {' '}
-                            {isNote ? (
-                              <>
-                                added a note:{" "}
-                                <span className="whitespace-pre-wrap font-normal opacity-90 text-on-surface">
-                                  "{a.description}"
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                {a.description}
-                                {a.quantity !== undefined && a.quantity !== 0 && (
-                                  <span className="font-bold text-on-surface">
-                                    {' '}({a.quantity > 0 ? "+" : ""}{a.quantity})
-                                  </span>
-                                )}
-                              </>
+                            {a.description}
+                            {a.quantity !== undefined && a.quantity !== 0 && (
+                              <span className="font-bold text-on-surface">
+                                {' '}({a.quantity > 0 ? "+" : ""}{a.quantity})
+                              </span>
                             )}
                           </p>
                           <span className="font-label-caps text-[9px] text-on-surface-variant opacity-40">
@@ -322,8 +283,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                           </span>
                         </div>
                       </div>
-                    );
-                  })
+                  ))
                 )}
               </div>
             </section>
@@ -335,8 +295,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
         onClose={() => setNoteToDelete(null)}
         onConfirm={() => {
           if (noteToDelete) {
-            const updatedActivities = product.activities.filter(a => a.id !== noteToDelete);
-            updateProduct(product.id, { activities: updatedActivities });
+            updateProduct(product.id, { comments: (product.comments || []).filter(c => c.id !== noteToDelete) });
             setNoteToDelete(null);
           }
         }}

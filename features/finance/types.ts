@@ -3,18 +3,6 @@ export type DateRange = "Today" | "Last 7 Days" | "Last 30 Days" | "Last 12 Mont
 export type TransactionStatus = "Completed" | "Pending" | "Cancelled";
 export type PaymentMethod = "Bank Transfer" | "Credit Card" | "Cash" | "PayPal" | "Stripe";
 
-export interface FinanceActivity {
-  id: string;
-  type: "approval" | "payment" | "note" | "status_change";
-  description: string;
-  timestamp: string;
-  userId?: string;
-  author: string;
-  email?: string;
-  avatar?: string | null;
-  initials?: string;
-}
-
 export interface Transaction {
   id: string;
   title: string;
@@ -29,8 +17,6 @@ export interface Transaction {
   contactId?: string;
   paymentMethod: PaymentMethod;
   notes: string;
-  activities: FinanceActivity[];
-  attachments: string[];
   sourceType: "Manual" | "Invoice" | "Sale";
   sourceId?: string;
   createdAt: string;

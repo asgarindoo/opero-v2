@@ -10,24 +10,14 @@ export interface InvoiceItem {
   amount: number;
 }
 
-export interface InvoiceActivity {
-  id: string;
-  type: "creation" | "payment" | "reminder" | "status_change" | "note";
-  description: string;
-  timestamp: string;
-  author: string;
-}
-
 export interface Invoice {
   id: string;
   invoiceNumber: string;
   title?: string;
-  recipientName?: string;
-  recipientEmail?: string;
   contactName?: string; // Optional — not required
   contactId?: string;
+  contactEmail?: string;
   saleId?: string; // Optional link to a Sale
-  saleOrderNumber?: string; // Display reference to sale
   issueDate: string;
   dueDate: string;
   status: InvoiceStatus;
@@ -44,11 +34,6 @@ export interface Invoice {
   currency: string;
   paymentStatus?: string;
   paymentMethod?: string;
-  paidAt?: string;
-  paymentReference?: string;
-  notes: string;
-  activities: InvoiceActivity[];
-  attachments: string[];
   createdAt: string;
   updatedAt: string;
 }

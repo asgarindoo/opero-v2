@@ -12,7 +12,6 @@ function buildCampaignCreateData(data: Record<string, unknown>) {
   return {
     title: name,
     name,
-    objective: textValue(data.objective),
     description: textValue(data.description),
     status: getStatus(data),
     priority: textValue(data.priority),
@@ -21,12 +20,8 @@ function buildCampaignCreateData(data: Record<string, unknown>) {
     budget: numberValue(data.budget),
     currency: textValue(data.currency),
     tags: jsonArray(data.tags),
-    assignedStaff: jsonArray(data.assignedStaff),
     campaignAccounts: jsonArray(data.campaignAccounts),
-    goals: jsonArray(data.goals),
     activities: jsonArray(data.activities),
-    attachments: jsonArray(data.attachments),
-    notes: textValue(data.notes),
   };
 }
 
@@ -68,7 +63,6 @@ export async function updateCampaign(id: string, patch: Record<string, unknown>)
     data: {
       title: name,
       name,
-      objective: patch.objective !== undefined ? textValue(patch.objective) : current.objective,
       description: patch.description !== undefined ? textValue(patch.description) : current.description,
       status: typeof patch.status === "string" ? patch.status : current.status,
       priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
@@ -77,12 +71,8 @@ export async function updateCampaign(id: string, patch: Record<string, unknown>)
       budget: patch.budget !== undefined ? numberValue(patch.budget) : current.budget,
       currency: patch.currency !== undefined ? textValue(patch.currency) : current.currency,
       tags: patch.tags !== undefined ? jsonArray(patch.tags) : jsonInputOrDefault(current.tags, []),
-      assignedStaff: patch.assignedStaff !== undefined ? jsonArray(patch.assignedStaff) : jsonInputOrDefault(current.assignedStaff, []),
       campaignAccounts: patch.campaignAccounts !== undefined ? jsonArray(patch.campaignAccounts) : jsonInputOrDefault(current.campaignAccounts, []),
-      goals: patch.goals !== undefined ? jsonArray(patch.goals) : jsonInputOrDefault(current.goals, []),
       activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
-      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
       updatedById: ctx.userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },

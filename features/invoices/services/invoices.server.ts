@@ -58,10 +58,9 @@ async function buildInvoiceCreateData(tenantId: string, data: Record<string, unk
     invoiceNumber,
     title,
     status,
-    recipientName: textValue(data.recipientName) ?? textValue(data.contactName),
-    recipientEmail: textValue(data.recipientEmail),
-    contactName: textValue(data.contactName) ?? textValue(data.recipientName),
+    contactName: textValue(data.contactName),
     contactId: textValue(data.contactId),
+    contactEmail: textValue(data.contactEmail),
     issueDate: dateValue(data.issueDate),
     dueDate: dateValue(data.dueDate),
     items: jsonArray(data.items),
@@ -76,13 +75,7 @@ async function buildInvoiceCreateData(tenantId: string, data: Record<string, unk
     currency: textValue(data.currency) ?? "USD",
     paymentStatus: textValue(data.paymentStatus) ?? status,
     paymentMethod: textValue(data.paymentMethod),
-    paidAt: dateValue(data.paidAt),
-    paymentReference: textValue(data.paymentReference),
     saleId: await resolveSaleId(tenantId, data.saleId),
-    saleOrderNumber: textValue(data.saleOrderNumber),
-    notes: textValue(data.notes),
-    activities: jsonArray(data.activities),
-    attachments: jsonArray(data.attachments),
   };
 }
 
@@ -108,18 +101,10 @@ async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus
         currency: textValue(invoiceData.currency) ?? "USD",
         status: "Completed",
         reference: invoiceNumber,
-        contactName: textValue(invoiceData.customerName) ?? textValue(invoiceData.contactName) ?? textValue(invoiceData.recipientName),
-        contactId: textValue(invoiceData.customerId) ?? textValue(invoiceData.contactId),
+        contactName: textValue(invoiceData.contactName),
+        contactId: textValue(invoiceData.contactId),
         paymentMethod: "-",
         notes: "Auto-generated from Invoice payment.",
-        activities: [{
-          id: "a" + Date.now(),
-          type: "status_change",
-          description: "Income auto-recorded from invoice",
-          timestamp: new Date().toISOString(),
-          author: "System"
-        }],
-        attachments: [],
         sourceType: "Invoice",
         sourceId: invoiceId,
         createdAt: new Date().toISOString(),
@@ -143,8 +128,6 @@ async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus
           contactName: txPayload.contactName,
           contactId: txPayload.contactId,
           notes: txPayload.notes,
-          activities: txPayload.activities,
-          attachments: [],
           status: "Completed",
           createdById: ctx.userId,
           updatedById: ctx.userId,
@@ -189,7 +172,7 @@ export async function createInvoice(data: Record<string, unknown>) {
       updatedById: ctx.userId,
     },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: invoice.id, entityName: invoice.invoiceNumber ?? invoice.title, description: invoice.notes });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: invoice.id, entityName: invoice.invoiceNumber ?? invoice.title });
 
   if (invoiceStatus === "Paid") {
     await syncFinanceTransaction(ctx, invoice.id, invoiceStatus, mapDomainRecord(invoice), invoice.title ?? "Untitled");
@@ -210,10 +193,9 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
       invoiceNumber: patch.invoiceNumber !== undefined ? textValue(patch.invoiceNumber) : current.invoiceNumber,
       title: patch.invoiceNumber !== undefined || patch.title !== undefined ? textValue(patch.invoiceNumber) ?? getTitle(patch, current.title ?? "Untitled") : current.title,
       status: typeof patch.status === "string" ? patch.status : current.status,
-      recipientName: patch.recipientName !== undefined || patch.contactName !== undefined ? textValue(patch.recipientName) ?? textValue(patch.contactName) : current.recipientName,
-      recipientEmail: patch.recipientEmail !== undefined ? textValue(patch.recipientEmail) : current.recipientEmail,
-      contactName: patch.contactName !== undefined || patch.recipientName !== undefined ? textValue(patch.contactName) ?? textValue(patch.recipientName) : current.contactName,
+      contactName: patch.contactName !== undefined ? textValue(patch.contactName) : current.contactName,
       contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
+      contactEmail: patch.contactEmail !== undefined ? textValue(patch.contactEmail) : current.contactEmail,
       issueDate: patch.issueDate !== undefined ? dateValue(patch.issueDate) : current.issueDate,
       dueDate: patch.dueDate !== undefined ? dateValue(patch.dueDate) : current.dueDate,
       items: patch.items !== undefined ? jsonArray(patch.items) : jsonInputOrDefault(current.items, []),
@@ -228,18 +210,12 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
       currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
       paymentStatus: patch.paymentStatus !== undefined || patch.status !== undefined ? textValue(patch.paymentStatus) ?? textValue(patch.status) : current.paymentStatus,
       paymentMethod: patch.paymentMethod !== undefined ? textValue(patch.paymentMethod) : current.paymentMethod,
-      paidAt: patch.paidAt !== undefined ? dateValue(patch.paidAt) : current.paidAt,
-      paymentReference: patch.paymentReference !== undefined ? textValue(patch.paymentReference) : current.paymentReference,
       saleId,
-      saleOrderNumber: patch.saleOrderNumber !== undefined ? textValue(patch.saleOrderNumber) : current.saleOrderNumber,
-      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
-      activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
       updatedById: ctx.userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: current.id, entityName: updated.invoiceNumber ?? updated.title, description: updated.notes });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: current.id, entityName: updated.invoiceNumber ?? updated.title });
 
   // Post-update hook: Manage Finance Cashflow for Invoices
   if (typeof patch.status === "string" && patch.status !== current.status) {

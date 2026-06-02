@@ -12,7 +12,6 @@ import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
 import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
-import { GlobalTextarea } from "@/components/ui/global/form/GlobalTextarea";
 
 // Async currency converter using live global rates (ExchangeRate-API free tier)
 const convertCurrency = async (amount: number, from: string, to: string) => {
@@ -109,7 +108,6 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
   const [orderDiscountType, setOrderDiscountType] = useState<"percentage" | "fixed">("percentage");
   const [taxPercentage, setTaxPercentage] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [notes, setNotes] = useState("");
 
   // Track original (pre-conversion) prices for product-linked items so we can re-convert when currency changes
   const [productOriginals, setProductOriginals] = useState<Record<string, { price: number; currency: string }>>({});
@@ -179,7 +177,6 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
       subtotal,
       total,
       currency,
-      notes,
     });
     onClose();
   };
@@ -233,14 +230,6 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
             onChange={e => setTitle(e.target.value)}
             className="font-display font-semibold"
             style={{ fontSize: "16px", background: "transparent", border: "none", padding: "0" }}
-          />
-
-          <GlobalTextarea
-            rows={2}
-            maxLength={500}
-            placeholder="Add notes or descriptions (optional)…"
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
           />
 
           <div className="flex items-center gap-2 flex-wrap pt-2">

@@ -187,7 +187,7 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
             {/* Overview */}
             <Section label="Overview">
               <p className="font-display text-[13px] leading-relaxed text-on-surface-variant/80 break-words whitespace-pre-wrap">
-                {campaign.description || "No objective or description provided."}
+                {campaign.description || "No description provided."}
               </p>
             </Section>
 

@@ -16,8 +16,6 @@ const SettingsSchema = z.object({
       message: "Logo must be an image data URL or a valid URL",
     })
     .optional(),
-  websiteUrl: z.union([z.literal(""), z.url()]).optional(),
-  brandColor: z.union([z.literal(""), z.string().regex(/^#[0-9a-fA-F]{6}$/)]).optional(),
   timezone: z.string().min(1).max(80).optional(),
   locale: z.string().min(2).max(20).optional(),
 });
@@ -40,10 +38,7 @@ export async function GET() {
             select: {
               timezone: true,
               locale: true,
-              brandColor: true,
               logoUrl: true,
-              websiteUrl: true,
-              industryType: true,
             },
           },
           tenantPlan: {
@@ -94,7 +89,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const { name, logo, websiteUrl, brandColor, timezone, locale } = parsed.data;
+    const { name, logo, timezone, locale } = parsed.data;
     const current = await prisma.organization.findUnique({
       where: { id: tenant.id },
       select: {
@@ -118,15 +113,11 @@ export async function PATCH(req: NextRequest) {
           upsert: {
             create: {
               logoUrl: normalizedLogo,
-              websiteUrl: websiteUrl || null,
-              brandColor: brandColor || null,
               timezone: timezone || "UTC",
               locale: locale || "en",
             },
             update: {
               ...(logo !== undefined ? { logoUrl: normalizedLogo } : {}),
-              websiteUrl: websiteUrl || null,
-              brandColor: brandColor || null,
               ...(timezone ? { timezone } : {}),
               ...(locale ? { locale } : {}),
             },

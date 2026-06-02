@@ -55,13 +55,11 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
       owner: partial.owner || { id: user?.id, name: userName, email: user?.email, image: user?.image },
       startDate: partial.startDate || new Date().toISOString().split("T")[0],
       endDate: partial.endDate || new Date().toISOString().split("T")[0],
-      assignedStaff: partial.assignedStaff || [],
       linkedTasks: partial.linkedTasks || [],
       campaignAccounts: partial.campaignAccounts || [],
       budget: partial.budget || 0,
       currency: partial.currency || "USD",
       tags: partial.tags || [],
-      goals: partial.goals || [],
       activities: [{
         id: "act" + Date.now(),
         type: "update",
@@ -73,8 +71,6 @@ export function CampaignsProvider({ children }: { children: React.ReactNode }) {
         avatar: user?.image ?? null,
         initials: getUserInitials(user)
       }],
-      attachments: partial.attachments || [],
-      notes: partial.notes || "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...partial

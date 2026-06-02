@@ -182,7 +182,6 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
           <div className="flex items-center gap-2">
             <Badge variant={task.status === "Done" ? "success" : "warning"}>{task.status}</Badge>
             <Badge variant={task.priority === "high" || task.priority === "urgent" ? "error" : "info"}>{task.priority}</Badge>
-            {task.project && <span className="font-label-caps text-[9px] font-bold text-on-surface-variant opacity-30">{task.project}</span>}
           </div>
         </div>
 

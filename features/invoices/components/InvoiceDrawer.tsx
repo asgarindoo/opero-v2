@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useInvoices } from "../context/InvoicesContext";
-import { X, Building2, Clock, Tag, User, CheckCircle2, ChevronRight, MessageSquare, Briefcase, Star, DollarSign, ListTodo, CalendarClock, MoreHorizontal, TrendingUp, Layers, Paperclip, FileText, Download, Printer, Mail, Share2, History, AlertCircle } from "lucide-react";
-import { InvoiceStatus, InvoiceActivity } from "@/features/invoices";
+import { X, CheckCircle2, CalendarClock, Download, Printer, Mail } from "lucide-react";
+import { InvoiceStatus } from "@/features/invoices";
 import { useContacts } from "@/features/contacts/context/ContactsContext";
 import Button from "@/components/ui/Button";
 import { jsPDF } from "jspdf";
@@ -88,7 +88,7 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
   };
 
   const handleEmail = () => {
-    const contactEmail = contacts.find(c => c.name === inv.contactName)?.persons?.[0]?.email || "";
+    const contactEmail = inv.contactEmail || contacts.find(c => c.name === inv.contactName)?.persons?.[0]?.email || "";
     const subject = encodeURIComponent(`Invoice ${inv.invoiceNumber}`);
     const body = encodeURIComponent(`Hi ${inv.contactName || "Customer"},\n\nPlease find the details for invoice ${inv.invoiceNumber} attached.\n\nTotal Amount: ${formatCurrency(inv.totalAmount, inv.currency)}\nDue Date: ${new Date(inv.dueDate).toLocaleDateString()}\n\nThank you for your business!`);
     window.location.href = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
@@ -252,43 +252,7 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
               </div>
             </div>
 
-            {!isDownloading && (
-              <div className="print:hidden" data-html2canvas-ignore="true">
-                <div className="w-full h-px bg-black/5 mb-8" />
-
-                {/* Notes & Activity */}
-                <div className="grid grid-cols-2 gap-8 mb-8">
-                  <section>
-                    <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider mb-3">Invoice Notes</h4>
-                    <div className="p-3 rounded-lg bg-surface-container-low/30 border border-black/[0.02] font-body-sm text-[11.5px] text-on-surface-variant opacity-70 leading-relaxed break-words break-all whitespace-pre-wrap">
-                      {inv.notes || "No special instructions."}
-                    </div>
-                  </section>
-                  <section>
-                    <h4 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider mb-3">Billing Timeline</h4>
-                    <div className="space-y-4">
-                      {inv.activities.map(activity => {
-                        const Icon = activity.type === "payment" ? CheckCircle2 : activity.type === "reminder" ? AlertCircle : History;
-                        return (
-                          <div key={activity.id} className="flex gap-2.5">
-                            <div className="mt-0.5 opacity-60"><Icon size={11} /></div>
-                            <div>
-                              <div className="flex justify-between items-center gap-4 mb-0.5">
-                                <p className="font-display font-medium text-[11px] text-on-surface opacity-90 leading-none">{activity.description}</p>
-                                <span className="font-body-sm text-[9px] text-on-surface-variant opacity-60 shrink-0">{new Date(activity.timestamp).toLocaleDateString()}</span>
-                              </div>
-                              <p className="font-body-sm text-[10px] text-on-surface-variant opacity-60">by {activity.author}</p>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </section>
-                </div>
-              </div>
-            )}
-
-          </div>
+            </div>
         </div>
       </div>
     </div>

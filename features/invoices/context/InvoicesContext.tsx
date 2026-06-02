@@ -1,9 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Invoice, InvoiceActivity, InvoiceStatus } from "@/features/invoices";
+import { Invoice, InvoiceStatus } from "@/features/invoices";
 import { createInvoice, deleteInvoice, listInvoices, updateInvoice as saveInvoice } from "@/features/invoices/services/invoices.client";
-import { useTenant } from "@/components/providers/TenantProvider";
 
 interface InvoicesContextType {
   invoices: Invoice[];
@@ -17,9 +16,6 @@ interface InvoicesContextType {
 const InvoicesContext = createContext<InvoicesContextType | undefined>(undefined);
 
 export function InvoicesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useTenant();
-  const userName = user?.name || "You";
-
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,6 +65,8 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       id: "inv" + Date.now(),
       invoiceNumber: partial.invoiceNumber || "INV-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 1000),
       contactName: partial.contactName || undefined,
+      contactId: partial.contactId || undefined,
+      contactEmail: partial.contactEmail || undefined,
       issueDate: new Date().toISOString().split("T")[0],
       dueDate: partial.dueDate || new Date().toISOString().split("T")[0],
       status: (partial.status as InvoiceStatus) || "Unpaid",
@@ -80,15 +78,6 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
       discountTotal: partial.discountTotal ?? 0,
       totalAmount: partial.totalAmount ?? (totalAmount * 1.1),
       currency: partial.currency ?? "USD",
-      notes: partial.notes ?? "",
-      activities: [{
-        id: "a" + Date.now(),
-        type: "status_change",
-        description: "Invoice created",
-        timestamp: new Date().toISOString(),
-        author: userName || "You"
-      }],
-      attachments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...partial
@@ -123,18 +112,12 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
 
     setInvoices(prev => prev.map(inv => {
       if (inv.id !== id) return inv;
-      const newActivity: InvoiceActivity = {
-        id: Math.random().toString(36).substring(7),
-        type: "payment",
-        description: "Invoice marked as paid manually",
-        timestamp: new Date().toISOString(),
-        author: userName
-      };
+      const timestamp = new Date().toISOString();
       const updated: Invoice = {
         ...inv,
         status: "Paid",
-        activities: [newActivity, ...inv.activities],
-        updatedAt: newActivity.timestamp
+        paymentStatus: "Paid",
+        updatedAt: timestamp
       };
       recordIdToSave = (inv as { recordId?: string }).recordId ?? inv.id;
       payloadToSave = updated;
@@ -146,7 +129,7 @@ export function InvoicesProvider({ children }: { children: React.ReactNode }) {
         handleSaveError(err, "Failed to mark invoice as paid:");
       });
     }
-  }, [handleSaveError, userName]);
+  }, [handleSaveError]);
 
   const deleteInvoices = useCallback((ids: string[]) => {
     setInvoices(prev => prev.filter(inv => !ids.includes(inv.id)));

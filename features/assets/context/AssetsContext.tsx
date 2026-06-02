@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Asset, AssetActivity } from "@/features/assets";
+import { Asset } from "@/features/assets";
 import { createAsset, deleteAsset, listAssets, updateAsset as saveAsset } from "@/features/assets/services/assets.client";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
@@ -10,7 +10,6 @@ interface AssetsContextType {
   assets: Asset[];
   addAsset: (asset: Partial<Asset>) => void;
   updateAsset: (id: string, updates: Partial<Asset>) => void;
-  assignAsset: (id: string, persons: string[]) => void;
   deleteAssets: (ids: string[]) => void;
   loading: boolean;
 }
@@ -86,36 +85,6 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const assignAsset = useCallback((id: string, persons: string[]) => {
-    setAssets(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      const personList = persons.length > 0 ? persons.join(", ") : "Unassigned";
-      const newActivity: AssetActivity = {
-        id: Math.random().toString(36).substring(7),
-        type: "assignment",
-        description: persons.length > 0 ? `Assigned to ${personList}` : "Unassigned",
-        timestamp: new Date().toISOString(),
-        authorId: user?.id,
-        author: userName,
-        email: user?.email ?? undefined,
-        avatar: user?.image ?? null,
-        initials: getUserInitials(user)
-      };
-      const updated: Asset = {
-        ...a,
-        assignedTo: persons.length > 0 ? persons : undefined,
-        status: persons.length > 0 ? "In Use" : "Available",
-        activities: [newActivity, ...(a.activities || [])],
-        updatedAt: newActivity.timestamp
-      };
-      const recordId = (a as { recordId?: string }).recordId ?? a.id;
-      saveAsset<Asset>(recordId, updated).catch((err) => {
-        console.error("Failed to assign asset:", err);
-      });
-      return updated;
-    }));
-  }, [user?.email, user?.id, user?.image, userName]);
-
   const deleteAssets = useCallback((ids: string[]) => {
     const toDelete = assets.filter(a => ids.includes(a.id));
     setAssets(prev => prev.filter(a => !ids.includes(a.id)));
@@ -144,10 +113,9 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
     assets,
     addAsset,
     updateAsset,
-    assignAsset,
     deleteAssets,
     loading
-  }), [assets, addAsset, updateAsset, assignAsset, deleteAssets, loading]);
+  }), [assets, addAsset, updateAsset, deleteAssets, loading]);
 
   return <AssetsContext.Provider value={value}>{children}</AssetsContext.Provider>;
 }

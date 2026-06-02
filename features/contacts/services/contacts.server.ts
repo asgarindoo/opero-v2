@@ -16,9 +16,7 @@ function mapContact(record: any, fallbackUser?: { id: string; name: string; emai
     industry: mapped.industry ?? "Unspecified",
     contextData: mapped.contextData && typeof mapped.contextData === "object" && !Array.isArray(mapped.contextData) ? mapped.contextData : {},
     persons: Array.isArray(mapped.persons) ? mapped.persons : [],
-    tags: Array.isArray(mapped.tags) ? mapped.tags : [],
-    activities: Array.isArray(mapped.activities) ? mapped.activities : [],
-    assignedStaff: Array.isArray(mapped.assignedStaff) ? mapped.assignedStaff : [],
+    comments: Array.isArray(mapped.comments) ? mapped.comments : [],
     isArchived: mapped.isArchived ?? mapped.status === "Archived",
     createdAt: mapped.createdAt ?? mapped.recordCreatedAt ?? "",
     lastContacted: mapped.lastContacted ?? mapped.recordUpdatedAt ?? mapped.recordCreatedAt ?? "",
@@ -68,16 +66,13 @@ export async function createContact(data: Record<string, unknown>) {
       relationshipType: textValue(parsed.relationshipType),
       status: getStatus(parsed),
       industry: textValue(parsed.industry),
-      description: textValue(parsed.description),
       persons: jsonArray(sanitizePersons(parsed.persons) ?? parsed.persons),
-      tags: jsonArray(parsed.tags),
-      assignedStaff: jsonArray(parsed.assignedStaff),
-      notes: textValue(parsed.notes),
+      comments: jsonArray(parsed.comments),
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: contact.id, entityName: title, description: typeof parsed.description === "string" ? parsed.description : null });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: contact.id, entityName: title });
   return mapContact(contact, ctx.user);
 }
 
@@ -96,18 +91,15 @@ export async function updateContact(id: string, patch: Record<string, unknown>) 
       relationshipType: parsed.relationshipType !== undefined ? textValue(parsed.relationshipType) : current.relationshipType,
       status: parsed.status !== undefined ? getStatus(parsed, current.status ?? "Active") : current.status,
       industry: parsed.industry !== undefined ? textValue(parsed.industry) : current.industry,
-      description: parsed.description !== undefined ? textValue(parsed.description) : current.description,
       persons: parsed.persons !== undefined ? jsonArray(sanitizePersons(parsed.persons) ?? parsed.persons) : jsonInputOrDefault(current.persons, []),
-      tags: parsed.tags !== undefined ? jsonArray(parsed.tags) : jsonInputOrDefault(current.tags, []),
-      assignedStaff: parsed.assignedStaff !== undefined ? jsonArray(parsed.assignedStaff) : jsonInputOrDefault(current.assignedStaff, []),
-      notes: parsed.notes !== undefined ? textValue(parsed.notes) : current.notes,
+      comments: parsed.comments !== undefined ? jsonArray(parsed.comments) : jsonInputOrDefault(current.comments, []),
       updatedById: ctx.userId,
     },
   });
   if (result.count === 0) return null;
   const updated = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   if (!updated) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: typeof parsed.description === "string" ? parsed.description : null });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title });
   return mapContact(updated);
 }
 

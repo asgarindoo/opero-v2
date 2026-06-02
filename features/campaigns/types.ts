@@ -5,7 +5,7 @@ export type CampaignPriority = "Low" | "Medium" | "High" | "Critical";
 
 export interface CampaignActivity {
   id: string;
-  type: "update" | "goal" | "comment" | "staff_change" | "task" | "schedule";
+  type: "update" | "comment" | "task" | "schedule";
   description: string;
   timestamp: string;
   userId?: string;
@@ -15,33 +15,22 @@ export interface CampaignActivity {
   initials?: string;
 }
 
-export interface CampaignGoal {
-  id: string;
-  description: string;
-  isCompleted: boolean;
-}
-
 export interface Campaign {
   id: string;
   name: string;
   title?: string;
-  objective?: string;
   description: string;
   status: CampaignStatus;
   priority: CampaignPriority;
   owner: string | UserIdentity;
   startDate: string;
   endDate: string;
-  assignedStaff: string[]; // List of names
   linkedTasks: { id: string; title: string; status: string }[];
   campaignAccounts: { id: string; name: string; platform: string; username: string }[];
   budget?: number;
   currency?: string;
   tags: string[];
-  goals: CampaignGoal[];
   activities: CampaignActivity[];
-  attachments: string[]; // URLs or file names
-  notes: string;
   createdAt: string;
   updatedAt: string;
 }

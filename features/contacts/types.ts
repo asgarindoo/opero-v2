@@ -1,16 +1,15 @@
 export type ContactStatus = "New" | "Active" | "Pending" | "Inactive" | "Archived";
 export type RelationshipType = "Lead" | "Customer" | "Client" | "Vendor" | "Partner" | "Freelancer" | "Investor" | "Internal" | "Other";
 
-export interface ContactActivity {
+export interface ContactComment {
   id: string;
-  type: string;
-  description: string;
-  timestamp: string;
   userId?: string;
   author: string;
   email?: string;
   avatar?: string | null;
-  initials?: string;
+  initials: string;
+  body: string;
+  timestamp: string;
   reactions?: Record<string, import("@/features/tasks").Reaction>;
 }
 
@@ -38,10 +37,8 @@ export interface Contact {
   relationshipType: RelationshipType;
   contextData: ContactContextData;
   isArchived: boolean;
-  tags: string[];
   persons: Person[];
-  activities: ContactActivity[];
-  assignedStaff: string[];
+  comments: ContactComment[];
   createdAt: string;
   lastContacted: string;
 }

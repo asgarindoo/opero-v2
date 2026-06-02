@@ -3,7 +3,6 @@
 export type Priority         = "urgent" | "high" | "medium" | "low";
 export type Status           = "Backlog" | "Todo" | "In Progress" | "In Review" | "Done" | "Cancelled";
 export type RecurringSchedule = "none" | "daily" | "weekly" | "biweekly" | "monthly";
-export type RelationshipType = "blocks" | "blocked-by" | "relates-to" | "duplicates";
 
 // ─── Core Interfaces ──────────────────────────────────────────────────────────
 
@@ -21,26 +20,6 @@ export interface ChecklistItem {
   text: string;
   done: boolean;
   assigneeId?: string;
-}
-
-export interface SubSubtask {
-  id: string;
-  title: string;
-  done: boolean;
-}
-
-export interface Subtask {
-  id: string;
-  title: string;
-  done: boolean;
-  subtasks?: SubSubtask[];
-}
-
-export interface TaskRelationship {
-  id: string;
-  type: RelationshipType;
-  targetId: string;
-  targetTitle: string;
 }
 
 export interface ExternalLink {
@@ -98,20 +77,13 @@ export interface Task {
   labels: string[];
   startDate?: string | null;
   due: string | null;
-  reminderDate?: string | null;
   recurring?: RecurringSchedule;
   created: string;
-  estimatedHours?: number | null;
   checklist: ChecklistItem[];
-  subtasks?: Subtask[];
-  relationships?: TaskRelationship[];
   externalLinks?: ExternalLink[];
   comments: Comment[];
-  reactions?: Record<string, Reaction>;
   activity: ActivityEntry[];
   attachments: Attachment[];
-  watchers?: string[];              // member ids
-  project?: string;
   campaignId?: string | null;
   recordId?: string;
   recordCreatedAt?: string;

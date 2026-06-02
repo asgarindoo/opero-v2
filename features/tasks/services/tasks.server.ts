@@ -3,7 +3,7 @@ import { requireTenant, type TenantContext } from "@/lib/server/auth-utils";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
-import { dateValue, firstStringFromArray, jsonArray, jsonInputOrDefault, jsonObjectOrUndefined, numberValue, textValue } from "@/lib/api/feature-records";
+import { dateValue, firstStringFromArray, jsonArray, jsonInputOrDefault, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "TASKS";
 const ENTITY = "Task";
@@ -114,22 +114,15 @@ async function buildTaskCreateData(ctx: TenantContext, data: Record<string, unkn
     priority: textValue(data.priority),
     dueDate: dateValue(data.dueDate) ?? dateValue(data.due),
     startDate: dateValue(data.startDate),
-    reminderDate: dateValue(data.reminderDate),
-    estimatedHours: numberValue(data.estimatedHours),
     assigneeId: await resolveAssigneeId(ctx, data),
     campaignId: await resolveCampaignId(ctx, data.campaignId),
     labels: jsonArray(data.labels),
     assignees: jsonArray(data.assignees),
     checklist: jsonArray(data.checklist),
-    subtasks: jsonArray(data.subtasks),
-    relationships: jsonArray(data.relationships),
     externalLinks: jsonArray(data.externalLinks),
     comments: jsonArray(data.comments),
-    reactions: jsonObjectOrUndefined(data.reactions),
     activity: jsonArray(data.activity),
     attachments: jsonArray(data.attachments),
-    watchers: jsonArray(data.watchers),
-    project: textValue(data.project),
   };
 }
 
@@ -206,22 +199,15 @@ export async function updateTask(id: string, patch: Record<string, unknown>) {
       priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
       dueDate: patch.dueDate !== undefined || patch.due !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.due) : current.dueDate,
       startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
-      reminderDate: patch.reminderDate !== undefined ? dateValue(patch.reminderDate) : current.reminderDate,
-      estimatedHours: patch.estimatedHours !== undefined ? numberValue(patch.estimatedHours) : current.estimatedHours,
       assigneeId,
       campaignId,
       labels: patch.labels !== undefined ? jsonArray(patch.labels) : jsonInputOrDefault(current.labels, []),
       assignees: patch.assignees !== undefined ? jsonArray(patch.assignees) : jsonInputOrDefault(current.assignees, []),
       checklist: patch.checklist !== undefined ? jsonArray(patch.checklist) : jsonInputOrDefault(current.checklist, []),
-      subtasks: patch.subtasks !== undefined ? jsonArray(patch.subtasks) : jsonInputOrDefault(current.subtasks, []),
-      relationships: patch.relationships !== undefined ? jsonArray(patch.relationships) : jsonInputOrDefault(current.relationships, []),
       externalLinks: patch.externalLinks !== undefined ? jsonArray(patch.externalLinks) : jsonInputOrDefault(current.externalLinks, []),
       comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
-      reactions: patch.reactions !== undefined ? jsonObjectOrUndefined(patch.reactions) : jsonObjectOrUndefined(current.reactions),
       activity: patch.activity !== undefined ? jsonArray(patch.activity) : jsonInputOrDefault(current.activity, []),
       attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
-      watchers: patch.watchers !== undefined ? jsonArray(patch.watchers) : jsonInputOrDefault(current.watchers, []),
-      project: patch.project !== undefined ? textValue(patch.project) : current.project,
       updatedById: ctx.userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },

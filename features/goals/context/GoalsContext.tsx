@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from "react";
-import { Goal, KeyResult, User, Milestone, Activity } from "@/features/goals";
+import { Goal, KeyResult, User, Milestone } from "@/features/goals";
 import { createGoal, deleteGoal as removeGoal, listGoals, updateGoal as saveGoal } from "@/features/goals/services/goals.client";
 
 // Helper to calculate progress
@@ -11,15 +11,13 @@ function normalizeGoal(goal: Goal): Goal {
     keyResults: Array.isArray(goal.keyResults) ? goal.keyResults : [],
     milestones: Array.isArray(goal.milestones) ? goal.milestones : [],
     linkedItems: Array.isArray(goal.linkedItems) ? goal.linkedItems : [],
-    activities: Array.isArray(goal.activities) ? goal.activities : [],
   };
 }
 
 function calculateGoalProgress(keyResults: KeyResult[] = [], milestones: Milestone[] = []): number {
   if (keyResults.length > 0) {
     const totalPercentage = keyResults.reduce((acc, kr) => {
-      // If target is 0, handle edge cases (like zero bugs). Assuming 100% if current <= target for inverted metrics, 
-      // but for simplicity, let's just do standard (current/target)*100
+      // Keep zero-target key results from dividing by zero.
       if (kr.target === 0) {
         return acc + (kr.current <= 0 ? 100 : 0);
       }
@@ -44,7 +42,6 @@ interface GoalsContextType {
   deleteGoals: (ids: string[]) => void;
   addKeyResult: (goalId: string, kr: Omit<KeyResult, "id">) => void;
   updateKeyResult: (goalId: string, krId: string, updates: Partial<KeyResult>) => void;
-  addActivity: (goalId: string, activity: Omit<Activity, "id" | "timestamp">) => void;
   addMilestone: (goalId: string, ms: Omit<Milestone, "id">) => void;
   toggleMilestone: (goalId: string, milestoneId: string) => void;
   currentUser: User;
@@ -177,24 +174,6 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const addActivity = (goalId: string, activityData: Omit<Activity, "id" | "timestamp">) => {
-    const newActivity: Activity = {
-      ...activityData,
-      id: `act_${Date.now()}`,
-      timestamp: new Date().toISOString()
-    };
-    setGoals(prev => prev.map(g => {
-      if (g.id !== goalId) return g;
-      const goal = normalizeGoal(g);
-      const updated = { ...goal, activities: [newActivity, ...goal.activities] };
-      const recordId = (g as { recordId?: string }).recordId ?? g.id;
-      saveGoal<Goal>(recordId, updated).catch((err) => {
-        console.error("Failed to add activity:", err);
-      });
-      return updated;
-    }));
-  };
-
   const toggleMilestone = (goalId: string, milestoneId: string) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
@@ -215,7 +194,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({
-    goals, loading, error, addGoal, updateGoal, deleteGoal, deleteGoals, addKeyResult, updateKeyResult, addMilestone, addActivity, toggleMilestone, currentUser
+    goals, loading, error, addGoal, updateGoal, deleteGoal, deleteGoals, addKeyResult, updateKeyResult, addMilestone, toggleMilestone, currentUser
   }), [goals, loading, error, currentUser]);
 
   return <GoalsContext.Provider value={value}>{children}</GoalsContext.Provider>;

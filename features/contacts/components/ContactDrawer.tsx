@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useContacts } from "../context/ContactsContext";
-import { X, Building2, Briefcase, Mail, Phone, Activity as ActivityIcon, Edit3, MessageSquare, DollarSign, Target, User, Trash2, Clock } from "lucide-react";
+import { Mail, Phone, Trash2 } from "lucide-react";
 import Drawer from "@/components/ui/Drawer";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useTenant } from "@/components/providers/TenantProvider";
-import { ContactStatus, Contact } from "@/features/contacts";
+import { ContactStatus, Contact, ContactComment } from "@/features/contacts";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
 import ReactionsBar, { toggleReaction } from "@/features/tasks/components/ReactionsBar";
@@ -30,9 +30,8 @@ function Section({ label, icon, count, children, defaultOpen = true }: { label: 
 
 export default function ContactDrawer({ contactId, onClose }: { contactId: string, onClose: () => void }) {
   const { user } = useTenant();
-  const { contacts, addNote, updateContact, deleteContacts } = useContacts();
+  const { contacts, updateContact, deleteContacts } = useContacts();
   const contact = contacts.find(c => c.id === contactId);
-  const [tab, setTab] = useState<"details" | "activity">("details");
   const [newNote, setNewNote] = useState("");
 
   const [showAddPerson, setShowAddPerson] = useState(false);
@@ -45,32 +44,16 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
   if (!contact) return null;
   const contextData = contact.contextData && typeof contact.contextData === "object" && !Array.isArray(contact.contextData) ? contact.contextData : {};
 
-  const handleUpdate = (patch: Partial<Contact>, description?: string) => {
-    if (description) {
-      const newActivity = {
-        id: `a${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        type: "system" as const,
-        description,
-        timestamp: new Date().toISOString(),
-        userId: user?.id,
-        author: getUserDisplayName(user, "System"),
-        email: user?.email ?? undefined,
-        avatar: user?.image ?? null,
-        initials: getUserInitials(user)
-      };
-      patch.activities = [newActivity, ...(contact.activities || [])];
-      patch.lastContacted = newActivity.timestamp;
-    }
+  const handleUpdate = (patch: Partial<Contact>) => {
     updateContact(contact.id, patch);
   };
 
   const submitComment = () => {
     if (!newNote.trim()) return;
     const author = getUserDisplayName(user, "Current User");
-    const newActivity = {
-      id: "a" + Date.now(),
-      type: "note" as const,
-      description: newNote.trim(),
+    const newComment: ContactComment = {
+      id: "c" + Date.now(),
+      body: newNote.trim(),
       timestamp: new Date().toISOString(),
       userId: user?.id,
       author,
@@ -80,18 +63,18 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
     };
 
     updateContact(contact.id, {
-      activities: [newActivity, ...(contact.activities || [])],
-      lastContacted: newActivity.timestamp
+      comments: [...(contact.comments || []), newComment],
+      lastContacted: newComment.timestamp
     });
     setNewNote("");
   };
 
-  const handleNoteReaction = (activityId: string, emoji: string) => {
-    const activities = contact.activities?.map(a => {
-      if (a.id !== activityId) return a;
-      return { ...a, reactions: toggleReaction(a.reactions ?? {}, emoji) };
+  const handleNoteReaction = (commentId: string, emoji: string) => {
+    const comments = contact.comments?.map(c => {
+      if (c.id !== commentId) return c;
+      return { ...c, reactions: toggleReaction(c.reactions ?? {}, emoji) };
     });
-    updateContact(contact.id, { activities });
+    updateContact(contact.id, { comments });
   };
 
   const validateEmail = (email: string) => {
@@ -109,7 +92,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
     };
     handleUpdate({
       persons: [...(contact.persons || []), newPerson]
-    }, `added contact person: ${newPerson.name}`);
+    });
     setNewPersonName("");
     setNewPersonEmail("");
     setNewPersonRole("");
@@ -143,23 +126,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
           </div>
         </div>
 
-        {/* Tabs for Details/Activity */}
-        <div className="flex gap-6 border-b border-black/[0.04]">
-          {(["details", "activity"] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`pb-3 font-label-caps text-[10px] font-bold uppercase tracking-wider transition-all relative ${tab === t ? 'text-primary' : 'text-on-surface-variant opacity-30 hover:opacity-100'}`}
-            >
-              {t}
-              {tab === t && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full animate-fade-in" />}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
         <div className="animate-in fade-in duration-300">
-          {tab === "details" && (
             <div className="space-y-8">
               {/* Properties */}
               <Section label="Properties">
@@ -175,7 +142,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                         { value: "Inactive", label: "Inactive" },
                         { value: "Archived", label: "Archived" }
                       ]}
-                      onChange={(v) => handleUpdate({ status: v as ContactStatus }, `changed status to ${v}`)}
+                      onChange={(v) => handleUpdate({ status: v as ContactStatus })}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -193,7 +160,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                         { value: "Internal", label: "Internal" },
                         { value: "Other", label: "Other" },
                       ]}
-                      onChange={(v) => handleUpdate({ relationshipType: v as any }, `changed relationship to ${v}`)}
+                      onChange={(v) => handleUpdate({ relationshipType: v as any })}
                     />
                   </div>
                 </div>
@@ -303,11 +270,9 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                 )}
               </Section>
 
-              {/* Notes Input styled like TaskDrawer */}
-              <Section label="Notes" count={(contact.activities || []).filter(a => a.type === 'note' || !a.type).length}>
+              <Section label="Notes" count={(contact.comments || []).length}>
                 <div className="space-y-6">
-                  {/* Display Notes (currently they are all activities) */}
-                  {(contact.activities || []).filter(a => a.type === 'note' || !a.type).map(c => (
+                  {(contact.comments || []).map(c => (
                     <div key={c.id} className="flex gap-4 group">
                       <UserAvatar
                         user={c.userId === user?.id ? user : { name: c.author, email: c.email, image: c.avatar, initials: c.initials }}
@@ -329,7 +294,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                             <Trash2 size={12} />
                           </button>
                         </div>
-                        <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.description}</p>
+                        <p className="font-display text-[13px] text-on-surface-variant/80 leading-relaxed break-words break-all whitespace-pre-wrap">{c.body}</p>
                         <ReactionsBar reactions={c.reactions ?? {}} onToggle={e => handleNoteReaction(c.id, e)} />
                       </div>
                     </div>
@@ -369,43 +334,6 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
                 </div>
               </Section>
             </div>
-          )}
-
-          {tab === "activity" && (
-            <div className="space-y-6 relative pl-4">
-              <div className="absolute left-[3px] top-2 bottom-2 w-px bg-black/[0.04]" />
-              {[...(contact.activities || [])].reverse().map(a => (
-                <div key={a.id} className="relative flex items-start gap-4">
-                  <div className="absolute -left-[14px] top-1.5 w-2 h-2 rounded-full bg-black/[0.1] border-2 border-white" />
-                  <div className="flex-1 space-y-0.5">
-                    <p className="font-display text-[12.5px] text-on-surface-variant/80">
-                      <span className="font-bold text-on-surface">
-                        {a.userId === user?.id ? getUserDisplayName(user, a.author) : getUserDisplayName({ name: a.author, email: a.email }, "System")}
-                      </span>
-                      {' '}
-                      {a.type === 'note' ? (
-                        <>
-                          added a note:{" "}
-                          <span className="whitespace-pre-wrap font-normal opacity-90 text-on-surface">
-                            "{a.description}"
-                          </span>
-                        </>
-                      ) : (
-                        <>{a.description}</>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <Clock size={10} className="opacity-20" />
-                      <span className="text-[10px] text-on-surface-variant opacity-30">{new Date(a.timestamp).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {!(contact.activities && contact.activities.length > 0) && (
-                <p className="font-body-sm text-[12px] text-on-surface-variant opacity-60 italic">No activity recorded.</p>
-              )}
-            </div>
-          )}
         </div>
       </div>
       
@@ -415,8 +343,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
         onConfirm={() => {
           if (personToRemove) {
             handleUpdate(
-              { persons: contact.persons?.filter(person => person.id !== personToRemove.id) },
-              `removed contact person ${personToRemove.name}`
+              { persons: contact.persons?.filter(person => person.id !== personToRemove.id) }
             );
             setPersonToRemove(null);
           }
@@ -431,7 +358,7 @@ export default function ContactDrawer({ contactId, onClose }: { contactId: strin
         onClose={() => setNoteToDelete(null)}
         onConfirm={() => {
           if (noteToDelete) {
-            updateContact(contact.id, { activities: (contact.activities || []).filter(a => a.id !== noteToDelete) });
+            updateContact(contact.id, { comments: (contact.comments || []).filter(c => c.id !== noteToDelete) });
             setNoteToDelete(null);
           }
         }}

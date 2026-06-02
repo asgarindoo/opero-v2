@@ -6,32 +6,13 @@ import { intValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from 
 const MODULE = "SALES";
 const ENTITY = "Product";
 
-function normalizeVariants(value: unknown, productSku?: string | null) {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((variant) => variant && typeof variant === "object")
-    .map((variant, index) => {
-      const data = variant as Record<string, unknown>;
-      const name = textValue(data.name) ?? `Variant ${index + 1}`;
-      const sku = textValue(data.sku) ?? `${productSku || "SKU"}-${index + 1}`;
-      return {
-        id: textValue(data.id) ?? `variant-${index + 1}`,
-        name,
-        sku,
-        price: numberValue(data.price),
-        quantity: intValue(data.quantity) ?? 0,
-      };
-    });
-}
-
 function mapProduct(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const mapped = mapDomainRecord(record, fallbackUser) as any;
   return {
     ...mapped,
     sku: mapped.sku ?? "SKU-TBD",
-    variants: normalizeVariants(mapped.variants, mapped.sku),
     activities: Array.isArray(mapped.activities) ? mapped.activities : [],
-    notes: mapped.notes ?? "",
+    comments: Array.isArray(mapped.comments) ? mapped.comments : [],
   };
 }
 
@@ -52,11 +33,8 @@ function buildProductCreateData(data: Record<string, unknown>) {
     totalQuantity: intValue(data.totalQuantity) ?? stock,
     minThreshold: intValue(data.minThreshold) ?? 10,
     status: getStatus(data, "Active"),
-    description: textValue(data.description),
-    imageUrl: textValue(data.imageUrl),
-    variants: jsonArray(normalizeVariants(data.variants, sku)),
     activities: jsonArray(data.activities),
-    notes: textValue(data.notes),
+    comments: jsonArray(data.comments),
   };
 }
 
@@ -84,7 +62,7 @@ export async function createProduct(data: Record<string, unknown>) {
       updatedById: ctx.userId,
     },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: product.id, entityName: product.name ?? product.title, description: product.description });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: product.id, entityName: product.name ?? product.title });
   return mapProduct(product, ctx.user);
 }
 
@@ -108,16 +86,13 @@ export async function updateProduct(id: string, patch: Record<string, unknown>) 
       totalQuantity: intValue(patch.totalQuantity) ?? intValue(patch.stock) ?? current.totalQuantity,
       minThreshold: patch.minThreshold !== undefined ? intValue(patch.minThreshold) ?? current.minThreshold : current.minThreshold,
       status: typeof patch.status === "string" ? patch.status : current.status,
-      description: patch.description !== undefined ? textValue(patch.description) : current.description,
-      imageUrl: patch.imageUrl !== undefined ? textValue(patch.imageUrl) : current.imageUrl,
-      variants: patch.variants !== undefined ? jsonArray(normalizeVariants(patch.variants, current.sku)) : jsonInputOrDefault(current.variants, []),
       activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
+      comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
       updatedById: ctx.userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.name ?? updated.title, description: updated.description });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.name ?? updated.title });
   return mapProduct(updated);
 }
 

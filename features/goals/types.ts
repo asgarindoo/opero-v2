@@ -26,18 +26,10 @@ export interface Milestone {
 
 export interface LinkedItem {
   id: string;
-  type: "task" | "flow" | "project";
+  type: "task" | "flow";
   title: string;
   status: string;
   url?: string;
-}
-
-export interface Activity {
-  id: string;
-  userId: string;
-  type: "comment" | "status_change" | "progress_update" | "milestone_completed";
-  content: string;
-  timestamp: string;
 }
 
 export interface Goal {
@@ -46,7 +38,6 @@ export interface Goal {
   description: string;
   status: GoalStatus;
   priority: Priority;
-  ownerId: string;
   collaboratorIds: string[];
   startDate: string;
   targetDate: string;
@@ -56,7 +47,6 @@ export interface Goal {
   keyResults: KeyResult[];
   milestones: Milestone[];
   linkedItems: LinkedItem[];
-  activities: Activity[];
   
   targetOutcome?: string; // Strategic target outcome
   parentId?: string; // For hierarchy

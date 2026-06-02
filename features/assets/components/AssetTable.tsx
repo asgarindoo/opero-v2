@@ -16,9 +16,6 @@ import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
-import UserAvatar from "@/components/common/UserAvatar";
-import { getUserInitials } from "@/lib/user-identity";
-import { useMembers } from "@/features/members/context/MembersContext";
 
 interface Props {
   searchQuery: string;
@@ -28,7 +25,6 @@ interface Props {
 
 export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: Props) {
   const { assets, deleteAssets, loading } = useAssets();
-  const { members } = useMembers();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -36,12 +32,9 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
   const itemsPerPage = 20;
 
   const filteredAssets = assets.filter(a => {
-    const assigneesForSearch = (Array.isArray(a.assignedTo) ? a.assignedTo : (a.assignedTo ? [a.assignedTo] : []))
-      .map((owner) => typeof owner === "string" ? owner : ((owner as { name?: string })?.name || ""));
     const matchesSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.assetCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assigneesForSearch.join(" ").toLowerCase().includes(searchQuery.toLowerCase());
+      a.category.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (filterMode === "all") return matchesSearch;
     if (filterMode === "available") return matchesSearch && a.status === "Available";
@@ -105,7 +98,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
       <EmptyState
         icon="web_asset"
         title="No assets found"
-        description="Register your business assets to monitor assignment and maintenance."
+        description="Register your business assets to monitor inventory and maintenance."
       />
     );
   }
@@ -129,7 +122,6 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
               <TableHead>Asset Code</TableHead>
               <TableHead className="w-[30%] ml-3">Asset Name / Category</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Assigned To</TableHead>
               <TableHead>Location</TableHead>
               <TableHead className="text-right">Purchased</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -217,36 +209,6 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell max-w-[0px]">
-                      {(() => {
-                        const assignees = (Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo] : []))
-                          .map((owner) => typeof owner === "string" ? owner : ((owner as { name?: string })?.name || ""))
-                          .filter(Boolean);
-                        return assignees.length > 0 ? (
-                          <div className="flex items-center gap-1.5 font-display text-[11.5px] text-on-surface opacity-80 w-full">
-                            <div className="flex -space-x-1.5 shrink-0">
-                              {assignees.slice(0, 3).map((owner, i) => {
-                                const m = members?.find((member) => member.name === owner);
-                                return (
-                                  <div key={i} className="relative z-10 rounded-full border border-white">
-                                    <UserAvatar
-                                      user={m ? { name: owner, email: m.email, image: m.image, initials: getUserInitials(m) } : { name: owner, initials: owner.charAt(0) }}
-                                      size="sm"
-                                      className="h-5 w-5 border-none"
-                                    />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <span className="truncate block w-full">
-                              {assignees.join(", ")}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-body-sm text-[11px] text-on-surface-variant opacity-60 italic block truncate w-full">— Unassigned</span>
-                        );
-                      })()}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell max-w-[0px]">
                       <div className="min-w-0">
                         <p className="font-display text-[11.5px] text-on-surface-variant opacity-70 truncate w-full block">{asset.location || "N/A"}</p>
                       </div>
@@ -302,7 +264,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
         }}
         onConfirm={handleConfirmDelete}
         title={assetToDelete ? "Delete asset?" : "Delete selected assets?"}
-        description={assetToDelete ? "This action permanently removes the asset from your inventory and assignment history." : `This action permanently removes ${selectedIds.size} assets. This action cannot be undone.`}
+        description={assetToDelete ? "This action permanently removes the asset from your inventory." : `This action permanently removes ${selectedIds.size} assets. This action cannot be undone.`}
         confirmLabel={assetToDelete ? "Delete Asset" : "Delete Assets"}
       />
     </div>

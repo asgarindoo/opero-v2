@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import { useAssets } from "../context/AssetsContext";
 import { useTenant } from "@/components/providers/TenantProvider";
-import { useMembers } from "@/features/members/context/MembersContext";
-import { X, Star, DollarSign, TrendingUp, Layers, MapPin, History, User, Trash2, Clock, Maximize2, CheckCircle2, Tag, UploadCloud, Loader2, Pencil, Check, Wallet, Calendar } from "lucide-react";
+import { X, Star, DollarSign, TrendingUp, Layers, MapPin, History, Trash2, Clock, Maximize2, CheckCircle2, Tag, UploadCloud, Loader2, Pencil, Check, Wallet, Calendar } from "lucide-react";
 import { AssetStatus, AssetComment } from "@/features/assets/types";
 import Button from "@/components/ui/Button";
 import Dropdown from "@/components/ui/Dropdown";
-import MemberPicker from "@/features/tasks/components/MemberPicker";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
@@ -53,7 +51,6 @@ function Section({ label, count, children, defaultOpen = true }: { label: string
 export default function AssetDrawer({ assetId, onClose }: { assetId: string, onClose: () => void }) {
   const { assets, updateAsset } = useAssets();
   const { user } = useTenant();
-  const { members } = useMembers();
   const asset = assets.find(a => a.id === assetId);
 
   const [tab, setTab] = useState<"details" | "activity">("details");
@@ -135,7 +132,7 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
     }
   };
 
-  const handleUpdate = (patch: Partial<typeof asset>, actionDesc?: string, detail?: string, type: "assignment" | "status_change" | "note" = "note") => {
+  const handleUpdate = (patch: Partial<typeof asset>, actionDesc?: string, detail?: string, type: "status_change" | "note" = "note") => {
     if (actionDesc) {
       const newActivity = {
         id: `act${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -260,29 +257,6 @@ export default function AssetDrawer({ assetId, onClose }: { assetId: string, onC
                       options={CATEGORY_OPTIONS}
                     />
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 flex flex-col justify-center">
-                <span className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest flex items-center gap-1"><User size={10} /> Assignees</span>
-                <div className="-ml-1 mt-0.5 relative z-20">
-                  <MemberPicker
-                    selected={(() => {
-                      const arr = Array.isArray(asset.assignedTo) ? asset.assignedTo : (asset.assignedTo ? [asset.assignedTo as unknown as string] : []);
-                      return arr.map(name => {
-                        const m = members?.find(member => member.name === name);
-                        return { 
-                          id: name, 
-                          name, 
-                          email: m?.email || "", 
-                          image: m?.image || null, 
-                          initials: getUserInitials({ name }), 
-                          role: m?.role || "" 
-                        };
-                      });
-                    })()}
-                    onChange={members => handleUpdate({ assignedTo: members.map(m => m.name) }, "assigned to", members.map(m => m.name).join(", ") || "Unassigned", "assignment")}
-                  />
                 </div>
               </div>
 

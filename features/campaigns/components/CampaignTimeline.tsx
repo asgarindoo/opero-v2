@@ -42,11 +42,6 @@ function dayOffset(from: string, base: string) {
   return Math.round((new Date(from).getTime() - new Date(base).getTime()) / 86_400_000);
 }
 
-function progressFor(campaign: Campaign) {
-  if (!campaign.goals.length) return 0;
-  return Math.round((campaign.goals.filter(goal => goal.isCompleted).length / campaign.goals.length) * 100);
-}
-
 export default function CampaignTimeline({ searchQuery, filterMode, priorityFilter, onSelectCampaign }: Props) {
   const { campaigns } = useCampaigns();
 
@@ -124,7 +119,6 @@ export default function CampaignTimeline({ searchQuery, filterMode, priorityFilt
 
         <div className="bg-white">
           {timeline.rows.map(({ campaign, start, width }) => {
-            const progress = progressFor(campaign);
             return (
               <div key={campaign.id} className="flex border-b border-black/[0.035]" style={{ height: ROW_HEIGHT }}>
                 <button
@@ -159,14 +153,11 @@ export default function CampaignTimeline({ searchQuery, filterMode, priorityFilt
                       width: Math.max(width * DAY_WIDTH - 16, 160),
                     }}
                   >
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <span className="font-body-sm text-[11px] font-bold text-on-surface truncate group-hover:text-primary transition-colors">{getName(campaign.name)}</span>
-                      <span className="font-display text-[10px] font-bold text-on-surface opacity-60 tabular-nums">{progress}%</span>
-                    </div>
-                    <div className="h-1 w-full bg-black/[0.04] rounded-full overflow-hidden">
-                      <div className="h-full bg-black opacity-60 rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
-                    </div>
-                  </button>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="font-body-sm text-[11px] font-bold text-on-surface truncate group-hover:text-primary transition-colors">{getName(campaign.name)}</span>
+                      <span className="font-display text-[10px] font-bold text-on-surface opacity-60 tabular-nums">{campaign.status}</span>
+                  </div>
+                </button>
                 </div>
               </div>
             );

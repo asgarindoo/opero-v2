@@ -1,14 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Contact, ContactActivity, ContactStatus, RelationshipType } from "@/features/contacts";
+import { Contact, ContactStatus, RelationshipType } from "@/features/contacts";
 import { createContact, deleteContact, listContacts, updateContact as saveContact } from "@/features/contacts/services/contacts.client";
-import { useTenant } from "@/components/providers/TenantProvider";
-import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
+import { getUserInitials } from "@/lib/user-identity";
 
 interface ContactsContextType {
   contacts: Contact[];
-  addNote: (contactId: string, note: string) => void;
   updateStatus: (contactId: string, status: ContactStatus) => void;
   updateRelationshipType: (contactId: string, type: RelationshipType) => void;
   updateContact: (contactId: string, updates: Partial<Contact>) => void;
@@ -26,15 +24,11 @@ function contactPatchForApi(updates: Partial<Contact>): Partial<Contact> {
   if (updates.status !== undefined) patch.status = updates.status;
   if (updates.relationshipType !== undefined) patch.relationshipType = updates.relationshipType;
   if (updates.persons !== undefined) patch.persons = updates.persons;
-  if (updates.tags !== undefined) patch.tags = updates.tags;
-  if (updates.assignedStaff !== undefined) patch.assignedStaff = updates.assignedStaff;
+  if (updates.comments !== undefined) patch.comments = updates.comments;
   return patch;
 }
 
 export function ContactsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useTenant();
-  const userName = getUserDisplayName(user, "You");
-
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,9 +39,7 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     industry: contact.industry || "Unspecified",
     contextData: contact.contextData && typeof contact.contextData === "object" && !Array.isArray(contact.contextData) ? contact.contextData : {},
     persons: Array.isArray(contact.persons) ? contact.persons : [],
-    activities: Array.isArray(contact.activities) ? contact.activities : [],
-    tags: Array.isArray(contact.tags) ? contact.tags : [],
-    assignedStaff: Array.isArray(contact.assignedStaff) ? contact.assignedStaff : [],
+    comments: Array.isArray(contact.comments) ? contact.comments : [],
     isArchived: Boolean(contact.isArchived),
     createdAt: contact.createdAt || new Date().toISOString(),
     lastContacted: contact.lastContacted || contact.createdAt || new Date().toISOString(),
@@ -73,35 +65,6 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, []);
-
-  const addNote = useCallback((contactId: string, note: string) => {
-    setContacts(prev => prev.map(c => {
-      if (c.id !== contactId) return c;
-      const newActivity: ContactActivity = {
-        id: Math.random().toString(36).substring(7),
-        type: "note",
-        description: note,
-        timestamp: new Date().toISOString(),
-        userId: user?.id,
-        author: userName,
-        email: user?.email ?? undefined,
-        avatar: user?.image ?? null,
-        initials: getUserInitials(user)
-      };
-      const updated = {
-        ...c,
-        activities: [newActivity, ...(c.activities || [])],
-        lastContacted: newActivity.timestamp
-      };
-
-      const recordId = (c as { recordId?: string }).recordId ?? c.id;
-      saveContact<Contact>(recordId, contactPatchForApi(updated)).catch((err) => {
-        console.error("Failed to save contact note:", err);
-      });
-
-      return updated;
-    }));
-  }, [user?.email, user?.id, user?.image, userName]);
 
   const updateStatus = useCallback((contactId: string, status: ContactStatus) => {
     setContacts(prev => prev.map(c => {
@@ -137,10 +100,8 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
       relationshipType: partial.relationshipType || "Lead",
       contextData: partial.contextData || {},
       isArchived: false,
-      tags: [],
       persons: partial.persons || [],
-      activities: [],
-      assignedStaff: [],
+      comments: [],
       createdAt: new Date().toISOString(),
       lastContacted: new Date().toISOString(),
       ...partial
@@ -177,14 +138,13 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({
     contacts,
-    addNote,
     updateStatus,
     updateRelationshipType,
     updateContact,
     addContact,
     deleteContacts,
     loading
-  }), [contacts, addNote, updateStatus, updateRelationshipType, updateContact, addContact, deleteContacts, loading]);
+  }), [contacts, updateStatus, updateRelationshipType, updateContact, addContact, deleteContacts, loading]);
 
   return (
     <ContactsContext.Provider value={value}>

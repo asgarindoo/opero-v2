@@ -129,7 +129,6 @@ export default function SocialChannelsPage() {
          followers: 0,
          postsThisMonth: 0,
          interactions: 0,
-         lastActiveDate: new Date().toISOString().split('T')[0]
       });
       setEditId(null);
       setShowAdd(true);
@@ -158,7 +157,6 @@ export default function SocialChannelsPage() {
             interactions: form.interactions || 0,
             monthlyReach: form.monthlyReach,
             averageViews: form.averageViews,
-            lastActiveDate: form.lastActiveDate || new Date().toISOString().split('T')[0],
             notes: form.notes || "",
          };
          await addChannel(newCh);
@@ -468,8 +466,8 @@ export default function SocialChannelsPage() {
                                              <p className="font-display text-[13.5px] font-bold text-on-surface">{formatStat(ch.followers)}</p>
                                           </div>
                                           <div className="text-right">
-                                             <p className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest mb-1">Last Sent</p>
-                                             <p className="font-display text-[13.5px] font-bold text-on-surface">{ch.lastActiveDate.split('-').slice(1).join('/') || "—"}</p>
+                                             <p className="font-label-caps text-[7.5px] font-bold text-on-surface-variant opacity-60 uppercase tracking-widest mb-1">Reach</p>
+                                             <p className="font-display text-[13.5px] font-bold text-on-surface">{formatStat(ch.monthlyReach ?? 0)}</p>
                                           </div>
                                        </>
                                     ) : (

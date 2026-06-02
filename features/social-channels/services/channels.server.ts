@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/server/auth-utils";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
-import { dateValue, intValue, textValue } from "@/lib/api/feature-records";
+import { intValue, textValue } from "@/lib/api/feature-records";
 
 function mapChannel(c: any) {
   const accountName = c.accountName || c.title || "";
@@ -24,7 +24,6 @@ function mapChannel(c: any) {
     interactions: c.interactions ?? 0,
     monthlyReach: c.monthlyReach,
     averageViews: c.averageViews,
-    lastActiveDate: c.lastActiveDate?.toISOString?.() ?? "",
     notes: c.notes ?? "",
     id: c.id,
     createdAt: c.createdAt.toISOString(),
@@ -49,7 +48,6 @@ function buildChannelCreateData(data: Record<string, unknown>) {
     interactions: intValue(data.interactions) ?? 0,
     monthlyReach: intValue(data.monthlyReach),
     averageViews: intValue(data.averageViews),
-    lastActiveDate: dateValue(data.lastActiveDate),
     notes: textValue(data.notes),
   };
 }
@@ -122,7 +120,6 @@ export async function updateChannel(id: string, patch: Record<string, unknown>) 
       interactions: patch.interactions !== undefined ? intValue(patch.interactions) ?? existing.interactions : existing.interactions,
       monthlyReach: patch.monthlyReach !== undefined ? intValue(patch.monthlyReach) : existing.monthlyReach,
       averageViews: patch.averageViews !== undefined ? intValue(patch.averageViews) : existing.averageViews,
-      lastActiveDate: patch.lastActiveDate !== undefined ? dateValue(patch.lastActiveDate) : existing.lastActiveDate,
       notes: patch.notes !== undefined ? textValue(patch.notes) : existing.notes,
       updatedById: context.user.id,
     }

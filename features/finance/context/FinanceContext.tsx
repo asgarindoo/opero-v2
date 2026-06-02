@@ -1,10 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Transaction, TransactionStatus, FinanceActivity, TransactionType, FinancialSummary, DateRange } from "@/features/finance";
+import { Transaction, TransactionStatus, TransactionType, FinancialSummary, DateRange } from "@/features/finance";
 import { createTransaction, deleteTransaction, listTransactions, updateTransaction as saveTransaction } from "@/features/finance/services/finance.client";
-import { useTenant } from "@/components/providers/TenantProvider";
-import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 
 interface FinanceContextType {
   transactions: Transaction[];
@@ -24,9 +22,6 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useTenant();
-  const userName = getUserDisplayName(user, "You");
-
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"All" | TransactionType>("All");
@@ -90,18 +85,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       reference: autoRef,
       paymentMethod: "Bank Transfer",
       notes: "",
-      activities: [{
-        id: "a" + ts,
-        type: "status_change",
-        description: "Transaction recorded manually",
-        timestamp: new Date().toISOString(),
-        userId: user?.id,
-        author: userName,
-        email: user?.email ?? undefined,
-        avatar: user?.image ?? null,
-        initials: getUserInitials(user)
-      }],
-      attachments: [],
       sourceType: "Manual",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -113,7 +96,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     createTransaction<Transaction>(newTx)
       .then((created) => setTransactions(prev => [created, ...prev]))
       .catch((err) => console.error("Failed to create transaction:", err));
-  }, [user?.email, user?.id, user?.image, userName]);
+  }, []);
 
   const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
     setTransactions(prev => prev.map(tx => {

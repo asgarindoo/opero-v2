@@ -6,22 +6,10 @@ import { dateValue, intValue, jsonArray, jsonInputOrDefault, numberValue, textVa
 const MODULE = "DOCUMENTS";
 const ENTITY = "Asset";
 
-function assigneeNames(value: unknown) {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((item) => {
-      if (typeof item === "string") return item;
-      if (item && typeof item === "object") return textValue((item as Record<string, unknown>).name);
-      return undefined;
-    })
-    .filter((name): name is string => Boolean(name));
-}
-
 function mapAsset(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const mapped = mapDomainRecord(record, fallbackUser) as any;
   return {
     ...mapped,
-    assignedTo: assigneeNames(mapped.assignedTo),
     activities: Array.isArray(mapped.activities) ? mapped.activities : [],
     comments: Array.isArray(mapped.comments) ? mapped.comments : [],
   };
@@ -37,8 +25,6 @@ function buildAssetCreateData(data: Record<string, unknown>) {
     assetCode: textValue(data.assetCode),
     quantity: intValue(data.quantity) ?? 1,
     status: getStatus(data, "Active"),
-    assignedTo: jsonArray(assigneeNames(data.assignedTo)),
-    assignedToId: textValue(data.assignedToId),
     location: textValue(data.location),
     purchaseDate: dateValue(data.purchaseDate),
     purchaseValue: numberValue(data.purchaseValue),
@@ -93,8 +79,6 @@ export async function updateAsset(id: string, patch: Record<string, unknown>) {
       assetCode: patch.assetCode !== undefined ? textValue(patch.assetCode) : current.assetCode,
       quantity: patch.quantity !== undefined ? intValue(patch.quantity) ?? current.quantity : current.quantity,
       status: typeof patch.status === "string" ? patch.status : current.status,
-      assignedTo: patch.assignedTo !== undefined ? jsonArray(assigneeNames(patch.assignedTo)) : jsonInputOrDefault(current.assignedTo, []),
-      assignedToId: patch.assignedToId !== undefined ? textValue(patch.assignedToId) : current.assignedToId,
       location: patch.location !== undefined ? textValue(patch.location) : current.location,
       purchaseDate: patch.purchaseDate !== undefined ? dateValue(patch.purchaseDate) : current.purchaseDate,
       purchaseValue: patch.purchaseValue !== undefined ? numberValue(patch.purchaseValue) : current.purchaseValue,

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
-import { dateValue, intValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
+import { dateValue, intValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "GOALS";
 const ENTITY = "Goal";
@@ -21,12 +21,10 @@ function mapGoal(record: any, fallbackUser?: { id: string; name: string; email?:
     priority: mapped.priority ?? "medium",
     startDate: mapped.startDate ?? mapped.recordCreatedAt ?? "",
     targetDate: mapped.dueDate ?? "",
-    ownerId: mapped.ownerId ?? mapped.owner?.id ?? "system",
     collaboratorIds: Array.isArray(mapped.collaboratorIds) ? mapped.collaboratorIds : [],
     keyResults: Array.isArray(mapped.keyResults) ? mapped.keyResults : [],
     milestones: Array.isArray(mapped.milestones) ? mapped.milestones : [],
     linkedItems: Array.isArray(mapped.linkedItems) ? mapped.linkedItems : [],
-    activities: Array.isArray(mapped.activities) ? mapped.activities : [],
   };
 }
 
@@ -69,16 +67,9 @@ export async function createGoal(data: Record<string, unknown>) {
       description: textValue(data.description),
       status: normalizeGoalStatus(getStatus(data)),
       priority: textValue(data.priority),
-      metric: textValue(data.metric),
-      targetValue: numberValue(data.targetValue),
-      currentValue: numberValue(data.currentValue),
       progress: intValue(data.progress) ?? 0,
       startDate: dateValue(data.startDate),
       dueDate: dateValue(data.dueDate) ?? dateValue(data.targetDate),
-      ownerId: textValue(data.ownerId),
-      tags: jsonArray(data.tags),
-      activities: jsonArray(data.activities),
-      notes: textValue(data.notes),
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
@@ -121,16 +112,9 @@ export async function updateGoal(id: string, patch: Record<string, unknown>) {
       description: patch.description !== undefined ? textValue(patch.description) : current.description,
       status: typeof patch.status === "string" ? normalizeGoalStatus(patch.status) : current.status,
       priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
-      metric: patch.metric !== undefined ? textValue(patch.metric) : current.metric,
-      targetValue: patch.targetValue !== undefined ? numberValue(patch.targetValue) : current.targetValue,
-      currentValue: patch.currentValue !== undefined ? numberValue(patch.currentValue) : current.currentValue,
       progress: patch.progress !== undefined ? intValue(patch.progress) ?? current.progress : current.progress,
       startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
       dueDate: patch.dueDate !== undefined || patch.targetDate !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.targetDate) : current.dueDate,
-      ownerId: patch.ownerId !== undefined ? textValue(patch.ownerId) : current.ownerId,
-      tags: patch.tags !== undefined ? jsonArray(patch.tags) : jsonInputOrDefault(current.tags, []),
-      activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
       updatedById: ctx.userId,
     },
   });

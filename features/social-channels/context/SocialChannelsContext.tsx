@@ -22,7 +22,6 @@ export interface Channel {
    interactions: number;
    monthlyReach?: number;
    averageViews?: number;
-   lastActiveDate: string;
    notes: string;
 }
 

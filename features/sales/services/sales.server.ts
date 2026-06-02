@@ -18,9 +18,7 @@ function buildSaleCreateData(data: Record<string, unknown>) {
     status: getStatus(data),
     saleType: textValue(data.saleType),
     paymentStatus: textValue(data.paymentStatus),
-    customerName: textValue(data.customerName) ?? textValue(data.contactName),
-    recipientName: textValue(data.recipientName),
-    contactName: textValue(data.contactName) ?? textValue(data.customerName) ?? textValue(data.recipientName),
+    contactName: textValue(data.contactName),
     contactId: textValue(data.contactId),
     items: jsonArray(data.items),
     subtotal: numberValue(data.subtotal) ?? 0,
@@ -32,12 +30,8 @@ function buildSaleCreateData(data: Record<string, unknown>) {
     orderDiscountType: textValue(data.orderDiscountType),
     discountTotal: numberValue(data.discountTotal) ?? discountAmount,
     taxPercentage: numberValue(data.taxPercentage),
-    notes: textValue(data.notes),
-    assignedStaff: jsonArray(data.assignedStaff),
     activities: jsonArray(data.activities),
-    attachments: jsonArray(data.attachments),
     shippingAddress: textValue(data.shippingAddress),
-    trackingNumber: textValue(data.trackingNumber),
   };
 }
 
@@ -65,7 +59,7 @@ export async function createSale(data: Record<string, unknown>) {
       updatedById: ctx.userId,
     },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: sale.id, entityName: sale.title, description: sale.notes });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: sale.id, entityName: sale.title });
   return mapDomainRecord(sale, ctx.user);
 }
 
@@ -87,9 +81,7 @@ export async function updateSale(id: string, patch: Record<string, unknown>) {
       status: typeof patch.status === "string" ? patch.status : current.status,
       saleType: patch.saleType !== undefined ? textValue(patch.saleType) : current.saleType,
       paymentStatus: patch.paymentStatus !== undefined ? textValue(patch.paymentStatus) : current.paymentStatus,
-      customerName: patch.customerName !== undefined || patch.contactName !== undefined ? textValue(patch.customerName) ?? textValue(patch.contactName) : current.customerName,
-      recipientName: patch.recipientName !== undefined ? textValue(patch.recipientName) : current.recipientName,
-      contactName: patch.contactName !== undefined || patch.customerName !== undefined || patch.recipientName !== undefined ? textValue(patch.contactName) ?? textValue(patch.customerName) ?? textValue(patch.recipientName) : current.contactName,
+      contactName: patch.contactName !== undefined ? textValue(patch.contactName) : current.contactName,
       contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
       items: patch.items !== undefined ? jsonArray(patch.items) : jsonInputOrDefault(current.items, []),
       subtotal: patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? current.subtotal : current.subtotal,
@@ -101,17 +93,13 @@ export async function updateSale(id: string, patch: Record<string, unknown>) {
       orderDiscountType: patch.orderDiscountType !== undefined ? textValue(patch.orderDiscountType) : current.orderDiscountType,
       discountTotal: patch.discountTotal !== undefined || patch.discountAmount !== undefined ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? current.discountTotal : current.discountTotal,
       taxPercentage: patch.taxPercentage !== undefined ? numberValue(patch.taxPercentage) : current.taxPercentage,
-      notes: patch.notes !== undefined ? textValue(patch.notes) : current.notes,
-      assignedStaff: patch.assignedStaff !== undefined ? jsonArray(patch.assignedStaff) : jsonInputOrDefault(current.assignedStaff, []),
       activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
       shippingAddress: patch.shippingAddress !== undefined ? textValue(patch.shippingAddress) : current.shippingAddress,
-      trackingNumber: patch.trackingNumber !== undefined ? textValue(patch.trackingNumber) : current.trackingNumber,
       updatedById: ctx.userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
   });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title, description: updated.notes });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title });
   return mapDomainRecord(updated);
 }
 

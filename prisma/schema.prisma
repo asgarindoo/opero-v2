@@ -232,10 +232,7 @@ model TenantSettings {
   organizationId String   @unique
   timezone       String   @default("UTC")
   locale         String   @default("en")
-  brandColor     String?
   logoUrl        String?
-  websiteUrl     String?
-  industryType   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -325,22 +322,15 @@ model Task {
   priority       String?
   dueDate        DateTime?
   startDate      DateTime?
-  reminderDate   DateTime?
-  estimatedHours Float?
   assigneeId     String?
   campaignId     String?
   labels         Json      @default("[]")
   assignees      Json      @default("[]")
   checklist      Json      @default("[]")
-  subtasks       Json      @default("[]")
-  relationships  Json      @default("[]")
   externalLinks  Json      @default("[]")
   comments       Json      @default("[]")
-  reactions      Json?
   activity       Json      @default("[]")
   attachments    Json      @default("[]")
-  watchers       Json      @default("[]")
-  project        String?
   payload        Json?
   createdById    String?
   updatedById    String?
@@ -392,7 +382,6 @@ model Campaign {
   organizationId   String
   title            String?
   name             String?
-  objective        String?   @db.Text
   description      String?   @db.Text
   status           String?
   priority         String?
@@ -401,12 +390,8 @@ model Campaign {
   budget           Float?
   currency         String?
   tags             Json      @default("[]")
-  assignedStaff    Json      @default("[]")
   campaignAccounts Json      @default("[]")
-  goals            Json      @default("[]")
   activities       Json      @default("[]")
-  attachments      Json      @default("[]")
-  notes            String?   @db.Text
   payload          Json?
   createdById      String?
   updatedById      String?
@@ -433,11 +418,8 @@ model Contact {
   relationshipType String?
   status           String?
   industry         String?
-  description      String?  @db.Text
   persons          Json     @default("[]")
-  tags             Json     @default("[]")
-  assignedStaff    Json     @default("[]")
-  notes            String?  @db.Text
+  comments         Json     @default("[]")
   payload          Json?
   createdById      String?
   updatedById      String?
@@ -487,16 +469,9 @@ model Goal {
   description    String?   @db.Text
   status         String?
   priority       String?
-  metric         String?
-  targetValue    Float?
-  currentValue   Float?
   progress       Int       @default(0)
   startDate      DateTime?
   dueDate        DateTime?
-  ownerId        String?
-  tags           Json      @default("[]")
-  activities     Json      @default("[]")
-  notes          String?   @db.Text
   payload        Json?
   createdById    String?
   updatedById    String?
@@ -510,7 +485,6 @@ model Goal {
   @@index([organizationId])
   @@index([organizationId, status])
   @@index([organizationId, dueDate])
-  @@index([ownerId])
   @@map("goal")
 }
 
@@ -522,8 +496,6 @@ model Sale {
   status             String?
   saleType           String?
   paymentStatus      String?
-  customerName       String?
-  recipientName      String?
   contactName        String?
   contactId          String?
   items              Json     @default("[]")
@@ -536,12 +508,8 @@ model Sale {
   orderDiscountType  String?
   discountTotal      Float    @default(0)
   taxPercentage      Float?
-  notes              String?  @db.Text
-  assignedStaff      Json     @default("[]")
   activities         Json     @default("[]")
-  attachments        Json     @default("[]")
   shippingAddress    String?
-  trackingNumber     String?
   payload            Json?
   createdById        String?
   updatedById        String?
@@ -565,10 +533,9 @@ model Invoice {
   invoiceNumber    String?
   title            String?
   status           String?
-  recipientName    String?
-  recipientEmail   String?
   contactName      String?
   contactId        String?
+  contactEmail     String?
   issueDate        DateTime?
   dueDate          DateTime?
   items            Json      @default("[]")
@@ -583,13 +550,7 @@ model Invoice {
   currency         String    @default("USD")
   paymentStatus    String?
   paymentMethod    String?
-  paidAt           DateTime?
-  paymentReference String?
   saleId           String?
-  saleOrderNumber  String?
-  notes            String?   @db.Text
-  activities       Json      @default("[]")
-  attachments      Json      @default("[]")
   payload          Json?
   createdById      String?
   updatedById      String?
@@ -626,8 +587,6 @@ model Transaction {
   contactName     String?
   contactId       String?
   notes           String?   @db.Text
-  activities      Json      @default("[]")
-  attachments     Json      @default("[]")
   payload         Json?
   createdById     String?
   updatedById     String?
@@ -660,11 +619,8 @@ model Product {
   totalQuantity  Int      @default(0)
   minThreshold   Int      @default(10)
   status         String?
-  description    String?  @db.Text
-  imageUrl       String?
-  variants       Json     @default("[]")
   activities     Json     @default("[]")
-  notes          String?  @db.Text
+  comments       Json     @default("[]")
   payload        Json?
   createdById    String?
   updatedById    String?
@@ -691,8 +647,6 @@ model Asset {
   assetCode      String?
   quantity       Int       @default(1)
   status         String?
-  assignedTo     Json      @default("[]")
-  assignedToId   String?
   location       String?
   purchaseDate   DateTime?
   purchaseValue  Float?
@@ -796,7 +750,6 @@ model SocialChannel {
   interactions   Int       @default(0)
   monthlyReach   Int?
   averageViews   Int?
-  lastActiveDate DateTime?
   notes          String?   @db.Text
   payload        Json?
   createdById    String?

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Plus, Trash2, Calendar, Target } from "lucide-react";
 import type { Goal, GoalStatus, Priority } from "@/features/goals";
-import { useTenant } from "@/components/providers/TenantProvider";
 import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
 
@@ -36,9 +35,6 @@ function genId(prefix = "id") {
 }
 
 export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalProps) {
-  const { user } = useTenant();
-  const userName = user?.name || "You";
-
   const [title, setTitle] = useState("");
   const [targetOutcome, setTargetOutcome] = useState("");
   const [description, setDescription] = useState("");
@@ -84,7 +80,6 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
         targetOutcome: trimmedOutcome,
         status: status,
         priority,
-        ownerId: "me",
         collaboratorIds: [],
         startDate: now,
         targetDate,
@@ -94,13 +89,6 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
           .filter(m => m.title.trim() !== "")
           .map(m => ({ id: m.id, title: m.title, date: m.date || targetDate, completed: false })),
         linkedItems: [],
-        activities: [{
-          id: "a" + Date.now(),
-          type: "status_change",
-          content: "Goal established",
-          timestamp: new Date().toISOString(),
-          userId: user?.id || "me"
-        }]
       };
 
       if (onCreate) {
@@ -158,7 +146,7 @@ export default function CreateGoalModal({ onClose, onCreate }: CreateGoalModalPr
           <SL>Target Outcome</SL>
           <GlobalInput
             maxLength={100}
-            placeholder="Measurable success metric…"
+            placeholder="Desired outcome..."
             value={targetOutcome}
             onChange={e => { setTargetOutcome(e.target.value); setError(null); }}
           />
