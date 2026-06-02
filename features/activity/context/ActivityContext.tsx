@@ -11,6 +11,8 @@ interface ActivityContextType {
   setSearchQuery: (query: string) => void;
   selectedCategory: "All" | ActivityModule;
   setSelectedCategory: (category: "All" | ActivityModule) => void;
+  dateRange: string;
+  setDateRange: (range: string) => void;
   groupedActivities: ActivityGroup[];
   loading: boolean;
   error: string | null;
@@ -18,10 +20,36 @@ interface ActivityContextType {
 
 const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
 
+function isInsideDateRange(timestamp: string, range: string) {
+  if (range === "All Time") return true;
+
+  const activityDate = new Date(timestamp);
+  const now = new Date();
+  if (Number.isNaN(activityDate.getTime())) return false;
+
+  if (range === "Today") {
+    return activityDate.toDateString() === now.toDateString();
+  }
+
+  const rangeDays: Record<string, number> = {
+    "Last 7 Days": 7,
+    "Last 30 Days": 30,
+    "Last 12 Months": 365,
+  };
+
+  const days = rangeDays[range];
+  if (!days) return true;
+
+  const cutoff = new Date(now);
+  cutoff.setDate(now.getDate() - days);
+  return activityDate >= cutoff;
+}
+
 export function ActivityProvider({ children }: { children: React.ReactNode }) {
   const [allActivities, setAllActivities] = useState<ActivityLog[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"All" | ActivityModule>("All");
+  const [dateRange, setDateRange] = useState("Last 7 Days");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,9 +81,10 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
                             a.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             getUserDisplayName(a.user).toLowerCase().includes(searchQuery.toLowerCase());
       const matchesModule = selectedCategory === "All" || a.module === selectedCategory;
-      return matchesSearch && matchesModule;
+      const matchesDateRange = isInsideDateRange(a.timestamp, dateRange);
+      return matchesSearch && matchesModule && matchesDateRange;
     });
-  }, [allActivities, searchQuery, selectedCategory]);
+  }, [allActivities, dateRange, searchQuery, selectedCategory]);
 
   const groupedActivities = useMemo(() => {
     const groups: Record<string, ActivityLog[]> = {};
@@ -83,6 +112,8 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
+    dateRange,
+    setDateRange,
     groupedActivities,
     loading,
     error

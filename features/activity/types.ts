@@ -1,5 +1,5 @@
 export type ActivityCategory = "INFO" | "UPDATE" | "WARNING" | "AUTOMATION" | "SECURITY";
-export type ActivityModule = "TASKS" | "MARKETING" | "TEAM" | "FINANCE" | "DOCUMENTS" | "SYSTEM" | "SALES" | "CAMPAIGNS" | "FLOWS" | "GOALS";
+export type ActivityModule = "TASKS" | "MARKETING" | "TEAM" | "FINANCE" | "DOCUMENTS" | "SALES" | "CAMPAIGNS" | "FLOWS" | "GOALS";
 export type ActionType = "Created" | "Updated" | "Deleted" | "Completed" | "Signed" | "Triggered" | "Invited" | "Uploaded" | "Connected" | "Published" | "Archived" | "Approved" | "Sent";
 
 export interface ActivityLog {

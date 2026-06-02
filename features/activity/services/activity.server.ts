@@ -11,15 +11,15 @@ const ACTION_CATEGORY: Record<string, string> = {
 
 export async function listActivities(moduleFilter?: string) {
   const ctx = await requireTenant();
-  const activityModule = moduleFilter && moduleFilter !== "All" ? moduleFilter : undefined;
+  const activityModule = moduleFilter && moduleFilter !== "All" && moduleFilter !== "SYSTEM" ? moduleFilter : undefined;
 
   const logs = await prisma.tenantActivity.findMany({
     where: {
       organizationId: ctx.tenantId,
+      module: activityModule ?? { not: "SYSTEM" },
       ...(activityModule ? { module: activityModule } : {}),
     },
     orderBy: { createdAt: "desc" },
-    take: 200,
     include: {
       user: { select: { id: true, name: true, email: true, image: true } },
     },
@@ -43,10 +43,10 @@ export async function listActivities(moduleFilter?: string) {
     entityType: log.entityType ?? "Record",
     entityId: log.entityId ?? log.id,
     user: {
-      id: log.user?.id ?? log.userId ?? "system",
-      name: getUserDisplayName(log.user, "System"),
+      id: log.user?.id ?? log.userId ?? "workspace",
+      name: getUserDisplayName(log.user, "Workspace"),
       email: log.user?.email ?? undefined,
-      role: roleMap.get(log.userId ?? "") ?? "System",
+      role: roleMap.get(log.userId ?? "") ?? "Workspace",
       avatar: log.user?.id ? normalizeUserAvatarImage(log.user.id, log.user.image) ?? undefined : undefined,
     },
     timestamp: log.createdAt.toISOString(),

@@ -9,7 +9,7 @@ export default function ActivityDetailsDrawer({ activityId, onClose }: { activit
   const activity = activities.find(a => a.id === activityId);
 
   if (!activity) return null;
-  const userName = getUserDisplayName(activity.user);
+  const userName = getUserDisplayName(activity.user, "Workspace");
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -44,7 +44,7 @@ export default function ActivityDetailsDrawer({ activityId, onClose }: { activit
                  <div>
                     <p className="font-label-caps text-[8px] font-bold text-on-surface-variant opacity-30 uppercase tracking-[0.2em] mb-1">EVENT DESCRIPTION</p>
                     <p className="font-body text-[13.5px] text-on-surface leading-relaxed">
-                       {activity.description || `${userName} performed ${activity.action.toLowerCase()} on ${activity.entityName}`}
+                       {activity.description || `${userName} ${activity.action.toLowerCase()} ${activity.entityType.toLowerCase()} ${activity.entityName}`}
                     </p>
                  </div>
               </div>

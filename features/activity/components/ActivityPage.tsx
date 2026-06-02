@@ -1,10 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  ChevronDown,
-  Calendar as CalendarIcon
-} from "lucide-react";
 import { ActivityProvider, useActivity } from "@/features/activity/context/ActivityContext";
 import ActivityTimeline from "@/features/activity/components/ActivityTimeline";
 import ActivityDetailsDrawer from "@/features/activity/components/ActivityDetailsDrawer";
@@ -21,11 +17,12 @@ function ActivityContent() {
     searchQuery,
     setSearchQuery,
     selectedCategory,
-    setSelectedCategory
+    setSelectedCategory,
+    dateRange,
+    setDateRange
   } = useActivity();
 
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState("Last 7 Days");
 
   const modules = [
     { id: "All", label: "All Activity" },
@@ -34,9 +31,33 @@ function ActivityContent() {
     { id: "TEAM", label: "Team" },
     { id: "FINANCE", label: "Finance" },
     { id: "SALES", label: "Sales" },
-    { id: "DOCUMENTS", label: "Documents" },
-    { id: "SYSTEM", label: "System" }
+    { id: "DOCUMENTS", label: "Documents" }
   ];
+
+  const exportActivities = () => {
+    const headers = ["Time", "Module", "Action", "Entity Type", "Entity Name", "User", "Description"];
+    const rows = activities.map((activity) => [
+      new Date(activity.timestamp).toLocaleString(),
+      activity.module,
+      activity.action,
+      activity.entityType,
+      activity.entityName,
+      activity.user.name,
+      activity.description ?? "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `activity-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-col h-full bg-[#fef8f8] overflow-hidden">
@@ -64,7 +85,7 @@ function ActivityContent() {
         rightContent={(
           <div className="flex items-center gap-3 px-6">
             <DateRangePicker value={dateRange} onChange={setDateRange} />
-            <ExportButton label="Export" />
+            <ExportButton label="Export" onClick={exportActivities} />
           </div>
         )}
       />
