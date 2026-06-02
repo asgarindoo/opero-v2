@@ -19,8 +19,6 @@ import { PRIORITY_META, STATUS_META, ALL_STATUSES, ALL_PRIORITIES } from "@/feat
 import AttachmentZone from "./AttachmentZone";
 import LabelManager from "./LabelManager";
 import MemberPicker from "@/features/tasks/components/MemberPicker";
-import DependencyPanel from "@/features/tasks/components/DependencyPanel";
-import RecurringPicker from "@/features/tasks/components/RecurringPicker";
 import ExternalLinksPanel from "@/features/tasks/components/ExternalLinksPanel";
 import ReactionsBar, { toggleReaction } from "@/features/tasks/components/ReactionsBar";
 

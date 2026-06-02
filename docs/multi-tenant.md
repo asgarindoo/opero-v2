@@ -48,9 +48,9 @@ the session, tenant status, and membership before returning a context.
 ## Tenant Filtering
 
 Every tenant-owned query must filter by `context.tenantId`; every create must
-set `organizationId`/`tenant_id` on the server. The optional
-`lib/server/tenant-prisma.ts` wrapper demonstrates the pattern for scoped Prisma
-queries.
+set `organizationId`/`tenant_id` on the server. Shared route and record helpers
+in `lib/api/domain-route.ts` and `lib/api/domain-utils.ts` keep that filtering
+pattern consistent across feature modules.
 
 ## RBAC
 
