@@ -7,6 +7,7 @@ import Drawer from "@/components/ui/Drawer";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import UserAvatar from "@/components/common/UserAvatar";
+import { createClientId } from "@/lib/client-id";
 import { getUserDisplayName, getUserInitials } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { Trash2 } from "lucide-react";
@@ -54,7 +55,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
   const handleAddNote = () => {
     if (!newNote.trim()) return;
     const comment: ProductComment = {
-      id: "note_" + crypto.randomUUID(),
+      id: `note_${createClientId()}`,
       userId: user?.id,
       author: getUserDisplayName(user, "You"),
       email: user?.email ?? undefined,

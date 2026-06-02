@@ -1,18 +1,48 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenant } from "@/lib/server/auth-utils";
-import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
-import { intValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
+import { getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
+import { intValue, jsonArray, jsonInputOrDefault, jsonObjectOrUndefined, numberValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "SALES";
 const ENTITY = "Product";
 
+const PRODUCT_SELECT = {
+  id: true,
+  organizationId: true,
+  title: true,
+  name: true,
+  sku: true,
+  category: true,
+  type: true,
+  price: true,
+  currency: true,
+  stock: true,
+  totalQuantity: true,
+  minThreshold: true,
+  status: true,
+  activities: true,
+  payload: true,
+  createdById: true,
+  updatedById: true,
+  createdAt: true,
+  updatedAt: true,
+  createdBy: { select: { id: true, name: true, email: true, image: true } },
+} as const;
+
+function productPayload(data: Record<string, unknown>, currentPayload?: unknown) {
+  const payload = { ...parsePayload(currentPayload), ...parsePayload(data.payload) };
+  if (data.comments !== undefined) payload.comments = data.comments;
+  return jsonObjectOrUndefined(payload) ?? {};
+}
+
 function mapProduct(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const mapped = mapDomainRecord(record, fallbackUser) as any;
+  const payload = parsePayload(record.payload);
   return {
     ...mapped,
     sku: mapped.sku ?? "SKU-TBD",
     activities: Array.isArray(mapped.activities) ? mapped.activities : [],
-    comments: Array.isArray(mapped.comments) ? mapped.comments : [],
+    comments: Array.isArray(payload.comments) ? payload.comments : [],
   };
 }
 
@@ -34,19 +64,19 @@ function buildProductCreateData(data: Record<string, unknown>) {
     minThreshold: intValue(data.minThreshold) ?? 10,
     status: getStatus(data, "Active"),
     activities: jsonArray(data.activities),
-    comments: jsonArray(data.comments),
+    payload: productPayload(data),
   };
 }
 
 export async function listProducts() {
   const ctx = await requireTenant();
-  const products = await prisma.product.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
+  const products = await prisma.product.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, select: PRODUCT_SELECT });
   return products.map((product: any) => mapProduct(product));
 }
 
 export async function getProductById(id: string) {
   const ctx = await requireTenant();
-  const product = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
+  const product = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId }, select: PRODUCT_SELECT });
   return product ? mapProduct(product) : null;
 }
 
@@ -61,6 +91,7 @@ export async function createProduct(data: Record<string, unknown>) {
       createdById: ctx.userId,
       updatedById: ctx.userId,
     },
+    select: PRODUCT_SELECT,
   });
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: product.id, entityName: product.name ?? product.title });
   return mapProduct(product, ctx.user);
@@ -68,7 +99,7 @@ export async function createProduct(data: Record<string, unknown>) {
 
 export async function updateProduct(id: string, patch: Record<string, unknown>) {
   const ctx = await requireTenant();
-  const current = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId }, select: PRODUCT_SELECT });
   if (!current) return null;
   const name = textValue(patch.name) ?? textValue(patch.title) ?? current.name ?? current.title ?? "Untitled";
   const stock = intValue(patch.stock) ?? intValue(patch.totalQuantity) ?? current.stock;
@@ -87,10 +118,10 @@ export async function updateProduct(id: string, patch: Record<string, unknown>) 
       minThreshold: patch.minThreshold !== undefined ? intValue(patch.minThreshold) ?? current.minThreshold : current.minThreshold,
       status: typeof patch.status === "string" ? patch.status : current.status,
       activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
+      payload: productPayload(patch, current.payload),
       updatedById: ctx.userId,
     },
-    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+    select: PRODUCT_SELECT,
   });
   await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.name ?? updated.title });
   return mapProduct(updated);
@@ -98,7 +129,7 @@ export async function updateProduct(id: string, patch: Record<string, unknown>) 
 
 export async function deleteProduct(id: string) {
   const ctx = await requireTenant();
-  const current = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId }, select: { title: true } });
   if (!current) return null;
   const result = await prisma.product.deleteMany({ where: { id, organizationId: ctx.tenantId } });
   if (result.count === 0) return null;
