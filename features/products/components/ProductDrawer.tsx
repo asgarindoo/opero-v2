@@ -195,7 +195,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="font-display font-medium text-[12.5px] text-on-surface opacity-90 truncate" title={variant.name}>{variant.name}</p>
-                            <p className="font-body-sm text-[10px] text-on-surface-variant opacity-40 font-mono truncate">{variantSku}</p>
+                            <p className=" text-[10px] text-on-surface-variant opacity-40 font-mono truncate">{variantSku}</p>
                           </div>
                         </div>
                         <div className="text-right">

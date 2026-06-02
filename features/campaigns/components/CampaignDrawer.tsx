@@ -298,7 +298,7 @@ export default function CampaignDrawer({ campaignId, onClose }: { campaignId: st
                         </div>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleRemoveTask(task); }}
-                          className="opacity-0 group-hover:opacity-100 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 hover:bg-black/[0.04] rounded transition-all"
+                          className=" group-hover:opacity-100 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 hover:bg-black/[0.04] rounded transition-all"
                           title="Remove task from campaign"
                         >
                           <X size={12} strokeWidth={2} />

@@ -154,7 +154,7 @@ export default function TenantSelectionPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-body-sm text-[12px] text-on-surface-variant/55 font-mono">{t.slug}.opero.app</span>
+                    <span className="text-[12px] text-on-surface-variant/55 font-mono">{t.slug}.opero.app</span>
                   </div>
                 </div>
 
