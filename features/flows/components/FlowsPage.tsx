@@ -23,6 +23,8 @@ export default function FlowsPage() {
   const [selectedCategory, setSelectedCategory] = useState<"All" | FlowCategory>("All");
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const pendingUpdatesRef = React.useRef<Record<string, Flow | undefined>>({});
+  const savingFlowsRef = React.useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -76,14 +78,38 @@ export default function FlowsPage() {
     setFlows(prev => [saved, ...prev]);
   };
 
-  // Handler for updating a flow
-  const handleUpdateFlow = async (updated: Flow) => {
+  async function flushFlowUpdate(id: string) {
+    if (savingFlowsRef.current[id]) return;
+    savingFlowsRef.current[id] = true;
+
     try {
-      const saved = await updateFlow<Flow>(updated.id, updated);
-      setFlows(prev => prev.map(f => f.id === saved.id ? saved : f));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update flow");
+      while (pendingUpdatesRef.current[id]) {
+        const nextUpdate = pendingUpdatesRef.current[id];
+        delete pendingUpdatesRef.current[id];
+        if (!nextUpdate) continue;
+
+        try {
+          const saved = await updateFlow<Flow>(id, nextUpdate);
+          if (!pendingUpdatesRef.current[id]) {
+            setFlows(prev => prev.map(f => f.id === saved.id ? saved : f));
+          }
+        } catch (err) {
+          if (!pendingUpdatesRef.current[id]) {
+            alert(err instanceof Error ? err.message : "Failed to update flow");
+          }
+        }
+      }
+    } finally {
+      savingFlowsRef.current[id] = false;
+      if (pendingUpdatesRef.current[id]) void flushFlowUpdate(id);
     }
+  }
+
+  // Handler for updating a flow
+  const handleUpdateFlow = (updated: Flow) => {
+    setFlows(prev => prev.map(f => f.id === updated.id ? updated : f));
+    pendingUpdatesRef.current[updated.id] = updated;
+    void flushFlowUpdate(updated.id);
   };
 
   // Handler for deleting/archiving a flow

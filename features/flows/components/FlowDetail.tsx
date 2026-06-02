@@ -28,6 +28,24 @@ interface FlowDetailProps {
   onDelete: (id: string) => void;
 }
 
+function calculateProgress(stages: FlowStage[]) {
+  let totalUnits = 0;
+  let completedUnits = 0;
+
+  stages.forEach(s => {
+    const checklist = Array.isArray(s.checklist) ? s.checklist : [];
+    if (checklist.length > 0) {
+      totalUnits += checklist.length;
+      completedUnits += checklist.filter(i => i.isCompleted).length;
+    } else {
+      totalUnits += 1;
+      if (s.isCompleted) completedUnits += 1;
+    }
+  });
+
+  return totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
+}
+
 export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDelete }: FlowDetailProps) {
   const { user } = useTenant();
   const fallbackNoteUser = React.useCallback(() => ({
@@ -62,6 +80,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
     };
   }, [fallbackNoteUser]);
   const [flow, setFlow] = useState<Flow>(() => normalizeFlow(initialFlow));
+  const flowRef = React.useRef(flow);
   const [activeStageId, setActiveStageId] = useState<string | null>(() => normalizeFlow(initialFlow).stages[0]?.id || null);
 
   const [newItemText, setNewItemText] = useState("");
@@ -73,58 +92,53 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
 
   React.useEffect(() => {
     const normalized = normalizeFlow(initialFlow);
+    flowRef.current = normalized;
     setFlow(normalized);
     setActiveStageId((current) => normalized.stages.some((stage) => stage.id === current) ? current : normalized.stages[0]?.id || null);
   }, [initialFlow, normalizeFlow]);
 
   const activeStage = flow.stages.find(s => s.id === activeStageId) || flow.stages[0];
 
-  const handleUpdateStage = (stageId: string, updates: Partial<FlowStage>) => {
-    const nextStages = flow.stages.map(s => s.id === stageId ? { ...s, ...updates } : s);
-
-    // Calculate total progress based on tasks. If a stage has no tasks, it counts as 1 unit.
-    let totalUnits = 0;
-    let completedUnits = 0;
-
-    nextStages.forEach(s => {
-      const checklist = Array.isArray(s.checklist) ? s.checklist : [];
-      if (checklist.length > 0) {
-        totalUnits += checklist.length;
-        completedUnits += checklist.filter(i => i.isCompleted).length;
-      } else {
-        totalUnits += 1;
-        if (s.isCompleted) completedUnits += 1;
-      }
-    });
-
-    const progress = totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
-
-    const nextFlow = { ...flow, stages: nextStages, progress, updated: new Date().toISOString() };
+  const commitFlowUpdate = React.useCallback((updater: (current: Flow) => Flow) => {
+    const nextFlow = updater(flowRef.current);
+    flowRef.current = nextFlow;
     setFlow(nextFlow);
     onUpdate(nextFlow);
-  };
+  }, [onUpdate]);
+
+  const handleUpdateStage = React.useCallback((stageId: string, updates: Partial<FlowStage>) => {
+    commitFlowUpdate((current) => {
+      const nextStages = current.stages.map(s => s.id === stageId ? { ...s, ...updates } : s);
+      return { ...current, stages: nextStages, progress: calculateProgress(nextStages), updated: new Date().toISOString() };
+    });
+  }, [commitFlowUpdate]);
 
   const toggleChecklistItem = (stageId: string, itemId: string) => {
-    const stage = flow.stages.find(s => s.id === stageId);
-    if (!stage) return;
+    commitFlowUpdate((current) => {
+      const nextStages = current.stages.map(stage => {
+        if (stage.id !== stageId) return stage;
+        const checklist = Array.isArray(stage.checklist) ? stage.checklist : [];
+        const nextChecklist = checklist.map(item =>
+          item.id === itemId ? { ...item, isCompleted: !item.isCompleted } : item
+        );
 
-    const checklist = Array.isArray(stage.checklist) ? stage.checklist : [];
-    const nextChecklist = checklist.map(item =>
-      item.id === itemId ? { ...item, isCompleted: !item.isCompleted } : item
-    );
+        return {
+          ...stage,
+          checklist: nextChecklist,
+          isCompleted: nextChecklist.length > 0 && nextChecklist.every(i => i.isCompleted),
+        };
+      });
 
-    // If all items in checklist are completed, mark stage as completed (auto-operational help)
-    const isStageCompleted = nextChecklist.length > 0 && nextChecklist.every(i => i.isCompleted);
-
-    handleUpdateStage(stageId, { checklist: nextChecklist, isCompleted: isStageCompleted });
+      return { ...current, stages: nextStages, progress: calculateProgress(nextStages), updated: new Date().toISOString() };
+    });
   };
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemText.trim()) return;
 
-    const stage = flow.stages.find(s => s.id === activeStageId);
-    if (!stage) return;
+    const targetStageId = activeStageId;
+    if (!targetStageId) return;
 
     const newItem = {
       id: `item-${Date.now()}`,
@@ -132,9 +146,17 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
       isCompleted: false
     };
 
-    handleUpdateStage(activeStageId!, {
-      checklist: [...(Array.isArray(stage.checklist) ? stage.checklist : []), newItem],
-      isCompleted: false
+    commitFlowUpdate((current) => {
+      const nextStages = current.stages.map(stage => {
+        if (stage.id !== targetStageId) return stage;
+        return {
+          ...stage,
+          checklist: [...(Array.isArray(stage.checklist) ? stage.checklist : []), newItem],
+          isCompleted: false,
+        };
+      });
+
+      return { ...current, stages: nextStages, progress: calculateProgress(nextStages), updated: new Date().toISOString() };
     });
     setNewItemText("");
     setIsAddingItem(false);
@@ -155,14 +177,11 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
       timestamp: new Date().toISOString()
     };
 
-    const nextFlow = {
-      ...flow,
-      notes: [...(flow.notes || []), newNote],
+    commitFlowUpdate((current) => ({
+      ...current,
+      notes: [...(current.notes || []), newNote],
       updated: new Date().toISOString()
-    };
-
-    setFlow(nextFlow);
-    onUpdate(nextFlow);
+    }));
     setNewNoteText("");
   };
 
@@ -488,7 +507,11 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
         onClose={() => setNoteToDelete(null)}
         onConfirm={() => {
           if (noteToDelete) {
-            onUpdate({ ...flow, notes: (flow.notes || []).filter(n => n.id !== noteToDelete) });
+            commitFlowUpdate((current) => ({
+              ...current,
+              notes: (current.notes || []).filter(n => n.id !== noteToDelete),
+              updated: new Date().toISOString(),
+            }));
             setNoteToDelete(null);
           }
         }}
