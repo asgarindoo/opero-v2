@@ -13,10 +13,14 @@ import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 type FilterMode = "all" | "pending" | "paid" | "completed";
 
 function SalesPageContent() {
+  const { role } = useTenant();
+  const canDeleteSales = canUse(role, "sales.delete");
   const { sales } = useSales();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
@@ -91,7 +95,7 @@ function SalesPageContent() {
       />
 
       <div className="flex-1 overflow-hidden bg-background">
-        <SalesList searchQuery={searchQuery} filterMode={filterMode} onSelectSale={setSelectedSaleId} />
+        <SalesList searchQuery={searchQuery} filterMode={filterMode} onSelectSale={setSelectedSaleId} canDelete={canDeleteSales} />
       </div>
 
       {selectedSaleId && <SalesDrawer saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />}

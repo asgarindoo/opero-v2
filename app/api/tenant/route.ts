@@ -8,7 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireRole } from "@/lib/server/auth-utils";
+import { requireAuth, requireTenant } from "@/lib/server/auth-utils";
+import { canDeleteTenant } from "@/lib/server/rbac";
 import { uploadTenantLogoFromDataUrl } from "@/lib/server/supabase-storage";
 import { z } from "zod";
 
@@ -201,7 +202,10 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE() {
   try {
-    const { tenant } = await requireRole(["owner"]);
+    const { tenant, role } = await requireTenant();
+    if (!canDeleteTenant(role)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    }
 
     await prisma.organization.delete({
       where: { id: tenant.id },

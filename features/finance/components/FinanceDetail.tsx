@@ -9,9 +9,10 @@ interface FinanceDetailProps {
   transaction: Transaction;
   onClose: () => void;
   onDelete: () => void;
+  canDelete: boolean;
 }
 
-export default function FinanceDetail({ transaction, onClose, onDelete }: FinanceDetailProps) {
+export default function FinanceDetail({ transaction, onClose, onDelete, canDelete }: FinanceDetailProps) {
   const txDateStr = transaction.transactionDate || (transaction as any).date || transaction.createdAt || new Date().toISOString();
   const dateStr = new Date(txDateStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   
@@ -55,15 +56,17 @@ export default function FinanceDetail({ transaction, onClose, onDelete }: Financ
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
-            title="Delete Transaction"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+        {canDelete && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
+              title="Delete Transaction"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Main Content Split */}
@@ -183,6 +186,7 @@ export default function FinanceDetail({ transaction, onClose, onDelete }: Financ
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={() => {
+          if (!canDelete) return;
           onDelete();
           setIsDeleteModalOpen(false);
         }}

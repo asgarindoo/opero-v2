@@ -11,9 +11,13 @@ import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import type { ChatChannel } from "@/features/chat";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { isManagerRole } from "@/lib/client/rbac";
 
 export default function ChannelSidebar() {
   const pathname = usePathname();
+  const { role } = useTenant();
+  const canManageChannels = isManagerRole(role);
   const { channels, unreadCounts, loadingChannels, error, deleteChannel } = useChat();
   const { onlineUsers } = usePresence();
   const [showCreate, setShowCreate] = useState(false);
@@ -31,12 +35,14 @@ export default function ChannelSidebar() {
         <div className="mb-6">
           <div className="flex items-center justify-between px-4 mb-2.5 text-on-surface-variant">
             <span className="font-label-caps text-[8.5px] font-bold tracking-[0.15em] opacity-60">CHANNELS</span>
-            <button 
-              onClick={() => setShowCreate(true)}
-              className="opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-surface-container-high rounded text-on-surface-variant"
-            >
-              <Plus size={14} />
-            </button>
+            {canManageChannels && (
+              <button 
+                onClick={() => setShowCreate(true)}
+                className="opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-surface-container-high rounded text-on-surface-variant"
+              >
+                <Plus size={14} />
+              </button>
+            )}
           </div>
 
           <div className="space-y-[4px]">
@@ -76,19 +82,21 @@ export default function ChannelSidebar() {
                       {unreadCounts[channel.id] > 99 ? "99+" : unreadCounts[channel.id]}
                     </span>
                   )}
-                  <button
-                    type="button"
-                    className="p-1 rounded opacity-30 hover:opacity-100 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all ml-1 shrink-0"
-                    title="Delete channel"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setChannelToDelete(channel);
-                      setIsDeleteModalOpen(true);
-                    }}
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  {canManageChannels && (
+                    <button
+                      type="button"
+                      className="p-1 rounded opacity-30 hover:opacity-100 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all ml-1 shrink-0"
+                      title="Delete channel"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setChannelToDelete(channel);
+                        setIsDeleteModalOpen(true);
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </Link>
               );
             })}
@@ -114,7 +122,7 @@ export default function ChannelSidebar() {
         )}
       </div>
 
-      {showCreate && <CreateChannelModal onClose={() => setShowCreate(false)} />}
+      {canManageChannels && showCreate && <CreateChannelModal onClose={() => setShowCreate(false)} />}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -122,6 +130,7 @@ export default function ChannelSidebar() {
           setChannelToDelete(null);
         }}
         onConfirm={() => {
+          if (!canManageChannels) return;
           if (channelToDelete) {
             void deleteChannel(channelToDelete.id);
             setIsDeleteModalOpen(false);

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 import { dateValue, numberValue, textValue } from "@/lib/api/feature-records";
 
@@ -26,19 +26,19 @@ function buildTransactionCreateData(data: Record<string, unknown>) {
 }
 
 export async function listTransactions() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("finance.read");
   const transactions = await prisma.transaction.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return transactions.map((transaction) => mapDomainRecord(transaction));
 }
 
 export async function getTransactionById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("finance.read");
   const transaction = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return transaction ? mapDomainRecord(transaction) : null;
 }
 
 export async function createTransaction(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("finance.create");
   const transactionData = buildTransactionCreateData(data);
   const transaction = await prisma.transaction.create({
     data: {
@@ -54,7 +54,7 @@ export async function createTransaction(data: Record<string, unknown>) {
 }
 
 export async function updateTransaction(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("finance.update");
   const current = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const updated = await prisma.transaction.update({
@@ -83,7 +83,7 @@ export async function updateTransaction(id: string, patch: Record<string, unknow
 }
 
 export async function deleteTransaction(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("finance.delete");
   const current = await prisma.transaction.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.transaction.deleteMany({ where: { id, organizationId: ctx.tenantId } });

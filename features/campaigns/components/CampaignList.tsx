@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/common/DataState";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { getUserDisplayName, type UserIdentity } from "@/lib/user-identity";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 interface Props {
   searchQuery: string;
@@ -32,6 +34,8 @@ function formatCurrency(val?: number, curr: string = "USD") {
 }
 
 export default function CampaignList({ searchQuery, filterMode, priorityFilter, onSelectCampaign }: Props) {
+  const { role } = useTenant();
+  const canDelete = canUse(role, "campaigns.delete");
   const { campaigns, deleteCampaigns, loading } = useCampaigns();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -72,11 +76,13 @@ export default function CampaignList({ searchQuery, filterMode, priorityFilter, 
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setCampaignToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (campaignToDelete) {
       deleteCampaigns([campaignToDelete]);
       setCampaignToDelete(null);
@@ -267,12 +273,14 @@ export default function CampaignList({ searchQuery, filterMode, priorityFilter, 
         </Table>
       </div>
 
-      <SelectionBar
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="campaigns"
-      />
+      {canDelete && (
+        <SelectionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="campaigns"
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
 import { dateValue, intValue, jsonObjectOrUndefined, textValue } from "@/lib/api/feature-records";
 
@@ -44,19 +44,19 @@ function mapGoal(record: any, fallbackUser?: { id: string; name: string; email?:
 }
 
 export async function listGoals() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("goals.read");
   const goals = await prisma.goal.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return goals.map((goal) => mapGoal(goal));
 }
 
 export async function getGoalById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("goals.read");
   const goal = await prisma.goal.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return goal ? mapGoal(goal) : null;
 }
 
 export async function createGoal(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("goals.create");
   const title = getTitle(data);
 
   if (!title || title.trim() === "" || title.trim() === "Untitled") {
@@ -95,7 +95,7 @@ export async function createGoal(data: Record<string, unknown>) {
 }
 
 export async function updateGoal(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("goals.update");
   const current = await prisma.goal.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
 
@@ -143,7 +143,7 @@ export async function updateGoal(id: string, patch: Record<string, unknown>) {
 }
 
 export async function deleteGoal(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("goals.delete");
   const current = await prisma.goal.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.goal.deleteMany({ where: { id, organizationId: ctx.tenantId } });

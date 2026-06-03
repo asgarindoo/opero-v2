@@ -12,11 +12,15 @@ import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 type ViewMode = "kanban" | "list";
 type FilterMode = "all" | "customers" | "partners" | "suppliers";
 
 function ContactsPageContent() {
+  const { role } = useTenant();
+  const canDeleteContacts = canUse(role, "contacts.delete");
   const { contacts } = useContacts();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -82,13 +86,13 @@ function ContactsPageContent() {
 
       <div className="flex-1 overflow-hidden bg-[#fef8f8]">
         {viewMode === "kanban" ? (
-          <KanbanView filterMode={filterMode} searchQuery={searchQuery} onSelectContact={setSelectedContactId} onAddNew={() => setShowAddModal(true)} />
+          <KanbanView filterMode={filterMode} searchQuery={searchQuery} onSelectContact={setSelectedContactId} onAddNew={() => setShowAddModal(true)} canDelete={canDeleteContacts} />
         ) : (
-          <ContactList filterMode={filterMode} searchQuery={searchQuery} onSelectContact={setSelectedContactId} />
+          <ContactList filterMode={filterMode} searchQuery={searchQuery} onSelectContact={setSelectedContactId} canDelete={canDeleteContacts} />
         )}
       </div>
 
-      {selectedContactId && <ContactDrawer contactId={selectedContactId} onClose={() => setSelectedContactId(null)} />}
+      {selectedContactId && <ContactDrawer contactId={selectedContactId} onClose={() => setSelectedContactId(null)} canDelete={canDeleteContacts} />}
       {showAddModal && <AddContactModal onClose={() => setShowAddModal(false)} />}
     </div>
   );

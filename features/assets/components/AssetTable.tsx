@@ -16,6 +16,8 @@ import ListFooter from "@/components/common/ListFooter";
 import SelectionBar from "@/components/common/SelectionBar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 interface Props {
   searchQuery: string;
@@ -24,6 +26,8 @@ interface Props {
 }
 
 export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: Props) {
+  const { role } = useTenant();
+  const canDelete = canUse(role, "assets.delete");
   const { assets, deleteAssets, loading } = useAssets();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,11 +82,13 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setAssetToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (assetToDelete) {
       deleteAssets([assetToDelete]);
       setAssetToDelete(null);
@@ -109,6 +115,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
         <Table className="min-w-[800px]">
           <TableHeader className="bg-[#faf5f5]/50">
             <TableRow>
+              {canDelete && (
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
                   <input
@@ -119,6 +126,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                   />
                 </div>
               </TableHead>
+              )}
               <TableHead>Asset Code</TableHead>
               <TableHead className="w-[30%] ml-3">Asset Name / Category</TableHead>
               <TableHead>Status</TableHead>
@@ -175,6 +183,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                     onClick={() => onSelectAsset(asset.id)}
                     className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
                   >
+                    {canDelete && (
                     <TableCell onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center">
                         <input
@@ -185,6 +194,7 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                         />
                       </div>
                     </TableCell>
+                    )}
                     <TableCell className="max-w-[0px]">
                       <span className="font-mono text-[10.5px] font-bold text-on-surface opacity-60 tracking-tight truncate block w-full">
                         {asset.assetCode}
@@ -220,14 +230,16 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
                     </TableCell>
                     <TableCell className="px-4 text-center">
                       <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
-                          onClick={(e) => handleDeleteOne(e, asset.id)}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
+                        {canDelete && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
+                            onClick={(e) => handleDeleteOne(e, asset.id)}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        )}
                         <div className="ml-1 opacity-60">
                           <ChevronRight size={13} />
                         </div>
@@ -249,12 +261,14 @@ export default function AssetTable({ searchQuery, filterMode, onSelectAsset }: P
         label="assets"
       />
 
-      <SelectionBar
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="assets"
-      />
+      {canDelete && (
+        <SelectionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="assets"
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

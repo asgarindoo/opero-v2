@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { parsePayload } from "@/lib/api/domain-utils";
-import { getTenantContext } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
 import { jsonObjectOrUndefined, numberValue, textValue } from "@/lib/api/feature-records";
@@ -108,8 +108,7 @@ function buildChannelCreateData(data: Record<string, unknown>) {
 }
 
 export async function listChannels() {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("socialChannels.read");
 
   const channels = await prisma.socialChannel.findMany({
     where: { organizationId: context.tenant.id },
@@ -121,8 +120,7 @@ export async function listChannels() {
 }
 
 export async function createChannel(data: Record<string, unknown>) {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("socialChannels.create");
 
   const channelData = buildChannelCreateData(data);
 
@@ -151,8 +149,7 @@ export async function createChannel(data: Record<string, unknown>) {
 }
 
 export async function updateChannel(id: string, patch: Record<string, unknown>) {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("socialChannels.update");
 
   const existing = await prisma.socialChannel.findUnique({ where: { id }, select: CHANNEL_SELECT });
   if (!existing || existing.organizationId !== context.tenant.id) {
@@ -202,8 +199,7 @@ export async function updateChannel(id: string, patch: Record<string, unknown>) 
 }
 
 export async function deleteChannel(id: string) {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("socialChannels.delete");
 
   const existing = await prisma.socialChannel.findUnique({ where: { id }, select: { organizationId: true, title: true } });
   if (!existing || existing.organizationId !== context.tenant.id) {
@@ -228,8 +224,7 @@ export async function deleteChannel(id: string) {
 }
 
 export async function listChannelActivities() {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("socialChannels.read");
 
   const acts = await prisma.tenantActivity.findMany({
     where: { 

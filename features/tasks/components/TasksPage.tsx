@@ -13,6 +13,7 @@ import TaskDrawer from "@/features/tasks/TaskDrawer";
 import CreateTaskModal from "@/features/tasks/CreateTaskModal";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { getUserDisplayName } from "@/lib/user-identity";
+import { canUse } from "@/lib/client/rbac";
 
 import ModuleHeader from "@/components/common/ModuleHeader";
 import SearchInput from "@/components/common/SearchInput";
@@ -65,7 +66,8 @@ export default function TasksPage() {
     }
   }, [tasks]);
 
-  const { user } = useTenant();
+  const { user, role } = useTenant();
+  const canDeleteTasks = canUse(role, "tasks.delete");
 
   const nextId = `T-${String(tasks.length + 1).padStart(3, "0")}`;
 
@@ -100,6 +102,8 @@ export default function TasksPage() {
   }
 
   async function deleteTask(id: string) {
+    if (!canDeleteTasks) return;
+
     const taskToDelete = tasks.find(t => t.id === id);
     setTasks(prev => prev.filter(t => t.id !== id));
     setActiveTask(null);
@@ -212,6 +216,7 @@ export default function TasksPage() {
           onClose={() => setActiveTask(null)}
           onUpdate={updateTask}
           onDelete={deleteTask}
+          canDelete={canDeleteTasks}
         />
       )}
 

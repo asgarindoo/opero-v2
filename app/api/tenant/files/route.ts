@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { downloadPrivateObject, deletePrivateObject, TENANT_FILES_BUCKET, uploadTenantDocument } from "@/lib/server/supabase-storage";
 
 export async function POST(req: NextRequest) {
   try {
-    const { tenant } = await requireRole(["owner", "admin", "member"]);
+    const { tenant } = await requirePermission("files.upload");
     const formData = await req.formData();
     const file = formData.get("file");
     const folder = formData.get("folder");
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const { tenant } = await requireRole(["owner", "admin", "member"]);
+    const { tenant } = await requirePermission("files.read");
     const path = req.nextUrl.searchParams.get("path");
 
     if (!path || !path.startsWith(`tenants/${tenant.id}/`)) {
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { tenant } = await requireRole(["owner", "admin", "member"]);
+    const { tenant } = await requirePermission("files.delete");
     const path = req.nextUrl.searchParams.get("path");
 
     if (!path || !path.startsWith(`tenants/${tenant.id}/`)) {

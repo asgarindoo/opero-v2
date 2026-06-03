@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
@@ -29,7 +29,10 @@ export default function RootLayout({
           }
         `}</style>
       </head>
-      <body className="bg-background text-on-surface antialiased grid-pattern relative overflow-x-hidden font-body-md">
+      <body
+        className="bg-background text-on-surface antialiased grid-pattern relative overflow-x-hidden font-body-md"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
 import { intValue, jsonArray, jsonInputOrDefault, jsonObjectOrUndefined, numberValue, textValue } from "@/lib/api/feature-records";
 
@@ -69,19 +69,19 @@ function buildProductCreateData(data: Record<string, unknown>) {
 }
 
 export async function listProducts() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("products.read");
   const products = await prisma.product.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, select: PRODUCT_SELECT });
   return products.map((product: any) => mapProduct(product));
 }
 
 export async function getProductById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("products.read");
   const product = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId }, select: PRODUCT_SELECT });
   return product ? mapProduct(product) : null;
 }
 
 export async function createProduct(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("products.create");
   const productData = buildProductCreateData(data);
   const product = await prisma.product.create({
     data: {
@@ -98,7 +98,7 @@ export async function createProduct(data: Record<string, unknown>) {
 }
 
 export async function updateProduct(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("products.update");
   const current = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId }, select: PRODUCT_SELECT });
   if (!current) return null;
   const name = textValue(patch.name) ?? textValue(patch.title) ?? current.name ?? current.title ?? "Untitled";
@@ -128,7 +128,7 @@ export async function updateProduct(id: string, patch: Record<string, unknown>) 
 }
 
 export async function deleteProduct(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("products.delete");
   const current = await prisma.product.findFirst({ where: { id, organizationId: ctx.tenantId }, select: { title: true } });
   if (!current) return null;
   const result = await prisma.product.deleteMany({ where: { id, organizationId: ctx.tenantId } });

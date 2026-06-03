@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant, type TenantContext } from "@/lib/server/auth-utils";
+import type { TenantContext } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
@@ -127,7 +128,7 @@ async function buildTaskCreateData(ctx: TenantContext, data: Record<string, unkn
 }
 
 export async function listTasks() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("tasks.read");
   const tasks = await prisma.task.findMany({
     where: { organizationId: ctx.tenantId },
     orderBy: { createdAt: "desc" },
@@ -137,7 +138,7 @@ export async function listTasks() {
 }
 
 export async function listCampaignTasks(campaignId: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("tasks.read");
   const tasks = await prisma.task.findMany({
     where: { organizationId: ctx.tenantId, campaignId },
     orderBy: { createdAt: "desc" },
@@ -147,7 +148,7 @@ export async function listCampaignTasks(campaignId: string) {
 }
 
 export async function getTaskById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("tasks.read");
   const task = await prisma.task.findFirst({
     where: { id, organizationId: ctx.tenantId },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
@@ -158,7 +159,7 @@ export async function getTaskById(id: string) {
 }
 
 export async function createTask(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("tasks.create");
   const taskData = await buildTaskCreateData(ctx, data);
   const task = await prisma.task.create({
     data: {
@@ -184,7 +185,7 @@ export async function createTask(data: Record<string, unknown>) {
 }
 
 export async function updateTask(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("tasks.update");
   const current = await prisma.task.findUnique({ where: { id } });
   if (!current || current.organizationId !== ctx.tenantId) return null;
 
@@ -228,7 +229,7 @@ export async function updateTask(id: string, patch: Record<string, unknown>) {
 }
 
 export async function deleteTask(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("tasks.delete");
   const current = await prisma.task.findUnique({ where: { id } });
   if (!current || current.organizationId !== ctx.tenantId) return null;
 

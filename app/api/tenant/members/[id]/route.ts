@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/server/auth-utils";
+import { canManageMembers, requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
 
@@ -21,7 +21,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { tenant, role: currentUserRole } = await requireRole(["owner", "admin"]);
+    const { tenant, role: currentUserRole } = await requirePermission("members.manage");
     const { id: memberId } = await params;
     
     const body = await req.json();
@@ -43,15 +43,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
-    // Role hierarchy & permission checks:
-    // 1. Only 'owner' can change roles to/from 'owner'
-    // 2. 'admin' cannot change an 'owner's role or details
-    if (member.role === "owner" && currentUserRole !== "owner") {
-      return NextResponse.json({ error: "Insufficient permissions to modify an owner" }, { status: 403 });
-    }
-    
-    if (parsed.data.role === "owner" && currentUserRole !== "owner") {
-      return NextResponse.json({ error: "Only owners can promote others to owner" }, { status: 403 });
+    if (!canManageMembers(currentUserRole, member.role, parsed.data.role)) {
+      return NextResponse.json({ error: "Insufficient permissions to modify this member" }, { status: 403 });
     }
 
     if (member.role === "owner" && parsed.data.role && parsed.data.role !== "owner") {
@@ -104,7 +97,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { tenant, role: currentUserRole } = await requireRole(["owner", "admin"]);
+    const { tenant, role: currentUserRole } = await requirePermission("members.manage");
     const { id: memberId } = await params;
 
     const member = await prisma.member.findUnique({
@@ -115,13 +108,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
-    // Protection logic:
-    // 1. Only owner can delete other admins/owners
-    if ((member.role === "admin" || member.role === "owner") && currentUserRole !== "owner") {
+    if (!canManageMembers(currentUserRole, member.role)) {
       return NextResponse.json({ error: "Only owners can remove admins or other owners" }, { status: 403 });
     }
 
-    // 2. Prevent removing the last owner
+    // Prevent removing the last owner.
     if (member.role === "owner") {
       const ownerCount = await prisma.member.count({
         where: { organizationId: tenant.id, role: "owner" },

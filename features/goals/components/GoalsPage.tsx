@@ -12,10 +12,14 @@ import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 type GoalFilter = "all" | "active" | "archive";
 
 export default function GoalsPage() {
+  const { role } = useTenant();
+  const canDeleteGoals = canUse(role, "goals.delete");
   const { goals, loading, error, addGoal, updateGoal, deleteGoal } = useGoals();
   const [view, setView] = useState<"list" | "grid">("grid");
   const [search, setSearch] = useState("");
@@ -54,9 +58,11 @@ export default function GoalsPage() {
           onClose={() => setSelectedGoalId(null)}
           onUpdate={(updated) => updateGoal(updated.id, updated)}
           onDelete={(id) => {
+            if (!canDeleteGoals) return;
             deleteGoal(id);
             setSelectedGoalId(null);
           }}
+          canDelete={canDeleteGoals}
         />
       </div>
     );
@@ -124,7 +130,7 @@ export default function GoalsPage() {
           <ErrorState message={error} />
         ) : filtered.length > 0 ? (
           view === "list" ? (
-            <GoalListView goals={filtered} onGoalClick={(goal) => setSelectedGoalId(goal.id)} />
+            <GoalListView goals={filtered} onGoalClick={(goal) => setSelectedGoalId(goal.id)} canDelete={canDeleteGoals} />
           ) : (
             <div className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">

@@ -5,8 +5,9 @@ export async function GET(req: NextRequest) {
   try {
     const data = await listChannels();
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof Response) return error;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 400 });
   }
 }
 
@@ -15,7 +16,8 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const data = await createChannel(json);
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof Response) return error;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 400 });
   }
 }

@@ -8,8 +8,9 @@ export async function GET() {
   try {
     const data = await listContentPosts();
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 401 });
+  } catch (error: unknown) {
+    if (error instanceof Response) return error;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 401 });
   }
 }
 
@@ -18,7 +19,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = await createContentPost(body);
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof Response) return error;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 400 });
   }
 }

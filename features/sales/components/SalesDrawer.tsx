@@ -14,6 +14,7 @@ import Badge from "@/components/ui/Badge";
 import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
@@ -69,7 +70,8 @@ function getDefaultInvoiceDueDate() {
 
 export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClose: () => void }) {
   const { sales, addActivity, updateSale } = useSales();
-  const { user } = useTenant();
+  const { user, role } = useTenant();
+  const canCreateInvoices = canUse(role, "invoices.create");
   const sale = sales.find(s => s.id === saleId);
   const [newNote, setNewNote] = useState("");
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
@@ -100,6 +102,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
   };
 
   const handleOpenInvoiceModal = () => {
+    if (!canCreateInvoices) return;
     setInvoiceDueDate(getDefaultInvoiceDueDate());
     setInvoiceModalError(null);
     setGeneratedInvoiceNumber(null);
@@ -107,6 +110,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
   };
 
   const handleGenerateInvoice = async () => {
+    if (!canCreateInvoices) return;
     const issuedAt = new Date();
     const dueAt = new Date(invoiceDueDate);
     if (isNaN(dueAt.getTime())) {
@@ -285,9 +289,11 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
                         <span className="font-label-caps text-[10px] tracking-widest mt-[1px]">PAID</span>
                       </div>
                     )}
-                    <Button variant="secondary" className="flex-1" icon={FileText} onClick={handleOpenInvoiceModal}>
-                      INVOICE
-                    </Button>
+                    {canCreateInvoices && (
+                      <Button variant="secondary" className="flex-1" icon={FileText} onClick={handleOpenInvoiceModal}>
+                        INVOICE
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Section>
@@ -438,7 +444,7 @@ export default function SalesDrawer({ saleId, onClose }: { saleId: string; onClo
         confirmLabel="Delete"
         variant="danger"
       />
-      {isInvoiceModalOpen && (
+      {canCreateInvoices && isInvoiceModalOpen && (
         <ModalShell onClose={() => setIsInvoiceModalOpen(false)} maxWidth={420}>
           <ModalHeader title={generatedInvoiceNumber ? "Invoice Generated" : "Generate Invoice"} onClose={() => setIsInvoiceModalOpen(false)} />
           <ModalContent className="db-sidebar space-y-4">

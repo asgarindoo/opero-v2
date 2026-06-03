@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { tenant } = await requireRole(["owner", "admin"]);
+    const { tenant } = await requirePermission("members.invite");
     const { id } = await params;
 
     const link = await prisma.tenantInviteLink.findUnique({

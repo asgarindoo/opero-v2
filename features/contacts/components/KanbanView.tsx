@@ -10,9 +10,10 @@ interface Props {
   searchQuery: string;
   onSelectContact: (id: string) => void;
   onAddNew?: () => void;
+  canDelete: boolean;
 }
 
-export default function KanbanView({ filterMode, searchQuery, onSelectContact, onAddNew }: Props) {
+export default function KanbanView({ filterMode, searchQuery, onSelectContact, onAddNew, canDelete }: Props) {
   const { contacts, deleteContacts } = useContacts();
   const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
 
@@ -55,15 +56,17 @@ export default function KanbanView({ filterMode, searchQuery, onSelectContact, o
                 <div className="w-10 h-10 rounded-full bg-black/[0.03] border border-black/[0.04] flex items-center justify-center font-display font-semibold text-[13px] text-on-surface">
                   {contact.initials}
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteContactId(contact.id);
-                  }}
-                  className="p-1.5 rounded-md text-on-surface-variant opacity-40 hover:opacity-100 hover:text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
+                {canDelete && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteContactId(contact.id);
+                    }}
+                    className="p-1.5 rounded-md text-on-surface-variant opacity-40 hover:opacity-100 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
 
               <div className="mb-4 flex-1">
@@ -113,6 +116,7 @@ export default function KanbanView({ filterMode, searchQuery, onSelectContact, o
         isOpen={deleteContactId !== null}
         onClose={() => setDeleteContactId(null)}
         onConfirm={() => {
+          if (!canDelete) return;
           if (deleteContactId) {
             deleteContacts([deleteContactId]);
             setDeleteContactId(null);

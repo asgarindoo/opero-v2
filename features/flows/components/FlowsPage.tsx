@@ -13,8 +13,12 @@ import Button from "@/components/ui/Button";
 import FlowListView from "@/features/flows/components/FlowListView";
 import { createFlow, deleteFlow, listFlows, updateFlow } from "@/features/flows";
 import { CardGridSkeleton, EmptyState, ErrorState, RowSkeleton } from "@/components/common/DataState";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 export default function FlowsPage() {
+  const { role } = useTenant();
+  const canDeleteFlows = canUse(role, "flows.delete");
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +118,7 @@ export default function FlowsPage() {
 
   // Handler for deleting/archiving a flow
   const handleDeleteFlow = async (id: string) => {
+    if (!canDeleteFlows) return;
     try {
       await deleteFlow(id);
       setFlows(prev => prev.filter(f => f.id !== id));
@@ -130,6 +135,7 @@ export default function FlowsPage() {
         onClose={() => setSelectedFlowId(null)}
         onUpdate={handleUpdateFlow}
         onDelete={handleDeleteFlow}
+        canDelete={canDeleteFlows}
       />
     );
   }
@@ -209,7 +215,7 @@ export default function FlowsPage() {
             <FlowListView
               flows={filtered}
               onFlowClick={(flow) => setSelectedFlowId(flow.id)}
-              onBulkDelete={async (ids) => {
+              onBulkDelete={canDeleteFlows ? async (ids) => {
                 try {
                   for (const id of ids) {
                     await deleteFlow(id);
@@ -218,7 +224,7 @@ export default function FlowsPage() {
                 } catch (err) {
                   alert(err instanceof Error ? err.message : "Failed to delete flows");
                 }
-              }}
+              } : undefined}
             />
           )
         ) : (

@@ -18,8 +18,12 @@ import DateRangePicker from "@/components/common/DateRangePicker";
 import Button from "@/components/ui/Button";
 import ExportButton from "@/components/common/ExportButton";
 import { ContactsProvider } from "@/features/contacts/context/ContactsContext";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 function FinanceContent() {
+  const { role } = useTenant();
+  const canManageFinance = canUse(role, "finance.create");
   const { 
     transactions,
     summary, 
@@ -61,9 +65,11 @@ function FinanceContent() {
            transaction={selectedTx} 
            onClose={() => setSelectedTxId(null)} 
            onDelete={() => {
+             if (!canManageFinance) return;
              deleteTransactions([selectedTx.id]);
              setSelectedTxId(null);
            }}
+           canDelete={canManageFinance}
          />
       </div>
     );
@@ -105,14 +111,16 @@ function FinanceContent() {
               value={dateRange} 
               onChange={(v) => setDateRange(v as any)} 
             />
-            <Button 
-              variant="primary" 
-              size="sm" 
-              icon={Plus}
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              NEW ENTRY
-            </Button>
+            {canManageFinance && (
+              <Button 
+                variant="primary" 
+                size="sm" 
+                icon={Plus}
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                NEW ENTRY
+              </Button>
+            )}
           </>
         )}
       />
@@ -131,10 +139,11 @@ function FinanceContent() {
         <FinanceListView 
           transactions={filtered} 
           onTransactionClick={(tx) => setSelectedTxId(tx.id)} 
+          canDelete={canManageFinance}
         />
       </main>
 
-      {isAddModalOpen && (
+      {canManageFinance && isAddModalOpen && (
         <AddTransactionModal onClose={() => setIsAddModalOpen(false)} />
       )}
     </div>

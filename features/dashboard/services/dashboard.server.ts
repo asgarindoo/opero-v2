@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { mapDomainRecord } from "@/lib/api/domain-utils";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 
@@ -19,7 +19,7 @@ const ICON_MAP: Record<string, string> = {
 };
 
 export async function getDashboardSummary() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("dashboard.read");
 
   const [org, taskRecords, flowRecords, saleRecords, activityRecords, members, contentRecords] = await Promise.all([
     // Use organization (correct model name)

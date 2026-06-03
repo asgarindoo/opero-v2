@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Shield, Clock, Plus, Hash, Copy, Check } from "lucide-react";
+import { Users, Clock, Plus } from "lucide-react";
 import { useMembers } from "@/features/members";
 
 // Components
 import MembersDirectory from "@/features/members/components/MembersDirectory";
-import RolesPermissions from "@/features/members/components/RolesPermissions";
 import ActivityAuditLog from "@/features/members/components/ActivityAuditLog";
 import InviteModal from "@/features/members/components/InviteModal";
 import MemberDrawer from "@/features/members/components/MemberDrawer";
@@ -17,50 +16,20 @@ import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
 
-type Tab = "directory" | "roles" | "activity";
+type Tab = "directory" | "activity";
 
 export default function MembersPage() {
-  const { members, currentUserRole, tenantCode, loading } = useMembers();
-  const canInvite = loading || currentUserRole === "Owner" || currentUserRole === "Admin";
+  const { members, currentUserRole, loading } = useMembers();
+  const canManageMembers = currentUserRole === "Owner" || currentUserRole === "Admin";
+  const canInvite = canManageMembers;
 
   const [activeTab, setActiveTab] = useState<Tab>("directory");
   const [searchQuery, setSearchQuery] = useState("");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [copiedCode, setCopiedCode] = useState(false);
-
-  const copyInviteCode = async () => {
-    if (!tenantCode) return;
-    let copied = false;
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(tenantCode);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
-
-    if (!copied) {
-      const el = document.createElement("textarea");
-      el.value = tenantCode;
-      el.style.position = "fixed";
-      el.style.opacity = "0";
-      document.body.appendChild(el);
-      el.focus();
-      el.select();
-      copied = document.execCommand("copy");
-      document.body.removeChild(el);
-    }
-
-    setCopiedCode(copied);
-    if (copied) setTimeout(() => setCopiedCode(false), 2000);
-  };
 
   const tabs = [
     { id: "directory", label: "Directory", icon: Users },
-    { id: "roles", label: "Roles & Permissions", icon: Shield },
     { id: "activity", label: "Audit Log", icon: Clock },
   ];
 
@@ -106,7 +75,6 @@ export default function MembersPage() {
       {/* ── View Area ── */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === "directory" && <MembersDirectory searchQuery={searchQuery} onSelectMember={setSelectedMemberId} />}
-        {activeTab === "roles" && <RolesPermissions />}
         {activeTab === "activity" && <ActivityAuditLog />}
       </div>
 

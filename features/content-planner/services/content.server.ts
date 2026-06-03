@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getTenantContext } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { dateValue, jsonArray, jsonInputOrDefault, textValue } from "@/lib/api/feature-records";
 
 async function resolveTargetAccountId(tenantId: string, value: unknown) {
@@ -52,8 +52,7 @@ async function buildContentPostCreateData(tenantId: string, data: Record<string,
 }
 
 export async function listContentPosts() {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("contentPlanner.read");
 
   const posts = await prisma.contentPost.findMany({
     where: { organizationId: context.tenant.id },
@@ -64,8 +63,7 @@ export async function listContentPosts() {
 }
 
 export async function createContentPost(data: Record<string, unknown>) {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("contentPlanner.create");
 
   const postData = await buildContentPostCreateData(context.tenant.id, data);
 
@@ -93,8 +91,7 @@ export async function createContentPost(data: Record<string, unknown>) {
 }
 
 export async function updateContentPost(id: string, patch: Record<string, unknown>) {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("contentPlanner.update");
 
   const existing = await prisma.contentPost.findUnique({ where: { id } });
   if (!existing || existing.organizationId !== context.tenant.id) {
@@ -135,8 +132,7 @@ export async function updateContentPost(id: string, patch: Record<string, unknow
 }
 
 export async function deleteContentPost(id: string) {
-  const context = await getTenantContext();
-  if (!context) throw new Error("Unauthorized");
+  const context = await requirePermission("contentPlanner.delete");
 
   const existing = await prisma.contentPost.findUnique({ where: { id } });
   if (!existing || existing.organizationId !== context.tenant.id) {

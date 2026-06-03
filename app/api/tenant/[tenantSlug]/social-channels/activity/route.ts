@@ -5,7 +5,8 @@ export async function GET(req: NextRequest) {
   try {
     const data = await listChannelActivities();
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof Response) return error;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 400 });
   }
 }

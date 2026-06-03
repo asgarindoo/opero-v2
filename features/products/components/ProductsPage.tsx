@@ -11,8 +11,12 @@ import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
 import ExportButton from "@/components/common/ExportButton";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 function ProductsContent() {
+  const { role } = useTenant();
+  const canDeleteProducts = canUse(role, "products.delete");
   const {
     products,
     allProducts,
@@ -96,12 +100,12 @@ function ProductsContent() {
 
       <main className="flex-1 overflow-y-auto bg-background">
         <div className="animate-fade-in">
-          <ProductTable onSelectProduct={setSelectedProductId} />
+          <ProductTable onSelectProduct={setSelectedProductId} canDelete={canDeleteProducts} />
         </div>
       </main>
 
       {selectedProductId && (
-        <ProductDrawer productId={selectedProductId} onClose={() => setSelectedProductId(null)} />
+        <ProductDrawer productId={selectedProductId} onClose={() => setSelectedProductId(null)} canDelete={canDeleteProducts} />
       )}
 
       {isAddModalOpen && (

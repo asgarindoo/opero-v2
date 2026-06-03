@@ -12,6 +12,7 @@ interface GoalDetailProps {
   onClose: () => void;
   onUpdate: (updated: Goal) => void;
   onDelete: (id: string) => void;
+  canDelete: boolean;
 }
 
 function calculateMilestoneProgress(milestones: Milestone[]) {
@@ -19,7 +20,7 @@ function calculateMilestoneProgress(milestones: Milestone[]) {
   return milestones.length === 0 ? 0 : Math.round((completedCount / milestones.length) * 100);
 }
 
-export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDelete }: GoalDetailProps) {
+export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDelete, canDelete }: GoalDetailProps) {
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [goal, setFlow] = useState<Goal>(initialGoal);
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
@@ -142,12 +143,14 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
-          >
-            <Trash2 size={16} />
-          </button>
+          {canDelete && (
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -392,6 +395,7 @@ export default function GoalDetail({ goal: initialGoal, onClose, onUpdate, onDel
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={() => {
+          if (!canDelete) return;
           onDelete(goal.id);
           setIsDeleteModalOpen(false);
         }}

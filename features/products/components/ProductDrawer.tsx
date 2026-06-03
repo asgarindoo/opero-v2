@@ -31,7 +31,7 @@ function formatPrice(price: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(price);
 }
 
-export default function ProductDrawer({ productId, onClose }: { productId: string; onClose: () => void }) {
+export default function ProductDrawer({ productId, onClose }: { productId: string; onClose: () => void; canDelete?: boolean }) {
   const { allProducts, adjustStock, updateProduct } = useProducts();
   const product = allProducts.find(p => p.id === productId);
   const { user } = useTenant();

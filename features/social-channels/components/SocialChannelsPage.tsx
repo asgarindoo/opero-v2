@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 import React, { useMemo, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import ModuleHeader from "@/components/common/ModuleHeader";
@@ -79,7 +80,8 @@ export default function SocialChannelsPage() {
    const [channelToDelete, setChannelToDelete] = useState<Channel | null>(null);
 
    const router = useRouter();
-   const { tenant, user } = useTenant();
+   const { tenant, user, role } = useTenant();
+   const canManageChannels = canUse(role, "socialChannels.create");
    const slug = tenant?.slug || "dashboard";
    const activityKey = slug ? `/api/tenant/${slug}/social-channels/activity` : null;
    const { mutate: globalMutate } = useSWRConfig();
@@ -150,6 +152,7 @@ export default function SocialChannelsPage() {
    }, [channels, search]);
 
    const openAdd = () => {
+      if (!canManageChannels) return;
       setForm({
          status: "Active",
          platform: "",
@@ -161,6 +164,7 @@ export default function SocialChannelsPage() {
       setShowAdd(true);
    };
    const openEdit = (ch: Channel) => {
+      if (!canManageChannels) return;
       setForm({ ...ch });
       setEditId(ch.id);
       setActiveChannel(ch.id);
@@ -168,6 +172,7 @@ export default function SocialChannelsPage() {
    };
 
    const saveChannel = () => {
+      if (!canManageChannels) return;
       if (!form.name || !form.platform) return;
 
       if (editId) {
@@ -210,6 +215,7 @@ export default function SocialChannelsPage() {
    };
 
    const confirmDelete = () => {
+      if (!canManageChannels) return;
       if (!channelToDelete) return;
       const deletedChannel = channelToDelete;
       setIsDeleteModalOpen(false);
@@ -245,7 +251,7 @@ export default function SocialChannelsPage() {
       <div className="flex flex-col h-full bg-[#fdf8f8] overflow-hidden">
 
          {/* Side Panel */}
-         {showAdd && (
+         {canManageChannels && showAdd && (
             <ModalShell onClose={() => setShowAdd(false)} maxWidth={640}>
                <ModalHeader title={editId ? "Update Channel" : "New Social Channel"} onClose={() => setShowAdd(false)} />
 
@@ -392,7 +398,7 @@ export default function SocialChannelsPage() {
             rightContent={(
                <>
                   <SearchInput value={search} onChange={setSearch} placeholder="Search channels..." width={180} />
-                  <Button variant="primary" size="sm" icon={Plus} onClick={openAdd}>ADD CHANNEL</Button>
+                  {canManageChannels && <Button variant="primary" size="sm" icon={Plus} onClick={openAdd}>ADD CHANNEL</Button>}
                </>
             )}
          />
@@ -536,7 +542,7 @@ export default function SocialChannelsPage() {
 
                                  {/* actions */}
                                  <div className="flex items-center gap-4 shrink-0 ml-4">
-                                    <div className="flex items-center gap-1">
+                                    {canManageChannels && <div className="flex items-center gap-1">
                                        <button
                                           onClick={(e) => { e.stopPropagation(); openEdit(ch); }}
                                           className="h-7 w-7 flex items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 hover:text-on-surface transition-colors rounded-[5px] bg-black/[0.025] hover:bg-black/[0.06]"
@@ -551,7 +557,7 @@ export default function SocialChannelsPage() {
                                        >
                                           <X size={12} />
                                        </button>
-                                    </div>
+                                    </div>}
                                  </div>
                               </div>
 
@@ -622,12 +628,12 @@ export default function SocialChannelsPage() {
                         ))}
 
                         {/* Ghost Add */}
-                        <button onClick={openAdd} className="w-full border border-dashed border-black/[0.07] rounded-[8px] py-6 flex items-center justify-center gap-3 group hover:border-black/15 transition-all bg-white/30">
+                        {canManageChannels && <button onClick={openAdd} className="w-full border border-dashed border-black/[0.07] rounded-[8px] py-6 flex items-center justify-center gap-3 group hover:border-black/15 transition-all bg-white/30">
                            <div className="w-6 h-6 rounded-full border border-dashed border-black/15 flex items-center justify-center group-hover:scale-110 transition-transform">
                               <Plus size={12} className="text-black/60 group-hover:text-black" />
                            </div>
                            <span className="font-label-caps text-[9px] font-bold text-black/60 group-hover:text-black/80 uppercase tracking-[0.2em]">Add Channel</span>
-                        </button>
+                        </button>}
                      </div>
                   </div>
 

@@ -13,6 +13,8 @@ import Dropdown from "@/components/ui/Dropdown";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 interface DocumentDetailProps {
   fileId: string;
@@ -20,6 +22,8 @@ interface DocumentDetailProps {
 }
 
 export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps) {
+  const { role } = useTenant();
+  const canDelete = canUse(role, "documents.delete");
   const { documents, deleteDocuments, updateDocumentEntry, folders } = useDocuments();
   const file = documents.find(f => f.id === fileId);
 
@@ -119,13 +123,15 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
                 <Download size={14} />
              </button>
            )}
-           <button 
-             onClick={() => setIsDeleteModalOpen(true)}
-             className="flex items-center justify-center w-8 h-8 rounded-[6px] hover:bg-red-50 text-red-600 transition-all ml-1"
-             title="Delete"
-           >
-             <Trash2 size={14} />
-           </button>
+           {canDelete && (
+             <button 
+               onClick={() => setIsDeleteModalOpen(true)}
+               className="flex items-center justify-center w-8 h-8 rounded-[6px] hover:bg-red-50 text-red-600 transition-all ml-1"
+               title="Delete"
+             >
+               <Trash2 size={14} />
+             </button>
+           )}
         </div>
       </header>
 
@@ -294,6 +300,7 @@ export default function DocumentDetail({ fileId, onClose }: DocumentDetailProps)
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={() => {
+          if (!canDelete) return;
           deleteDocuments([file.id]);
           setIsDeleteModalOpen(false);
           onClose();

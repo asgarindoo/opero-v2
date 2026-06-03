@@ -28,7 +28,7 @@ function Section({ label, icon, count, children, defaultOpen = true }: { label: 
   );
 }
 
-export default function ContactDrawer({ contactId, onClose }: { contactId: string, onClose: () => void }) {
+export default function ContactDrawer({ contactId, onClose }: { contactId: string, onClose: () => void, canDelete?: boolean }) {
   const { user } = useTenant();
   const { contacts, updateContact, deleteContacts } = useContacts();
   const contact = contacts.find(c => c.id === contactId);

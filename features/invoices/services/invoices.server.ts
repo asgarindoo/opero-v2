@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
 import { dateValue, jsonArray, jsonInputOrDefault, jsonObjectOrUndefined, numberValue, textValue } from "@/lib/api/feature-records";
 
@@ -61,7 +61,7 @@ function mapInvoice(record: any, fallbackUser?: { id: string; name: string; emai
 }
 
 export async function listInvoices() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("invoices.read");
   const invoices = await prisma.invoice.findMany({
     where: { organizationId: ctx.tenantId },
     orderBy: { createdAt: "desc" },
@@ -71,7 +71,7 @@ export async function listInvoices() {
 }
 
 export async function getInvoiceById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("invoices.read");
   const invoice = await findInvoiceRecord(ctx.tenantId, id);
   return invoice ? mapInvoice(invoice) : null;
 }
@@ -211,7 +211,7 @@ async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus
 }
 
 export async function createInvoice(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("invoices.create");
   const invoiceData = await buildInvoiceCreateData(ctx.tenantId, data);
   const invoiceStatus = invoiceData.status;
   const invoice = await prisma.invoice.create({
@@ -233,7 +233,7 @@ export async function createInvoice(data: Record<string, unknown>) {
 }
 
 export async function updateInvoice(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("invoices.update");
   const current = await findInvoiceRecord(ctx.tenantId, id);
   if (!current) return null;
   const { discountAmount, taxAmount, grandTotal } = buildInvoiceTotals(patch);
@@ -277,7 +277,7 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
 }
 
 export async function deleteInvoice(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("invoices.delete");
   const current = await findInvoiceRecord(ctx.tenantId, id);
   if (!current) return null;
   const result = await prisma.invoice.deleteMany({ where: { id: current.id, organizationId: ctx.tenantId } });

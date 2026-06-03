@@ -26,6 +26,7 @@ interface FlowDetailProps {
   onClose: () => void;
   onUpdate: (updated: Flow) => void;
   onDelete: (id: string) => void;
+  canDelete: boolean;
 }
 
 function calculateProgress(stages: FlowStage[]) {
@@ -46,7 +47,7 @@ function calculateProgress(stages: FlowStage[]) {
   return totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
 }
 
-export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDelete }: FlowDetailProps) {
+export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDelete, canDelete }: FlowDetailProps) {
   const { user } = useTenant();
   const fallbackNoteUser = React.useCallback(() => ({
     id: user?.id || "system",
@@ -206,12 +207,14 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
-          >
-            <Trash2 size={16} />
-          </button>
+          {canDelete && (
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-all"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -494,6 +497,7 @@ export default function FlowDetail({ flow: initialFlow, onClose, onUpdate, onDel
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={() => {
+          if (!canDelete) return;
           onDelete(flow.id);
           setIsDeleteModalOpen(false);
         }}

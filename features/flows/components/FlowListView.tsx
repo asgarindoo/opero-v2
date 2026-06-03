@@ -36,12 +36,14 @@ export default function FlowListView({ flows, onFlowClick, onBulkDelete }: FlowL
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!onBulkDelete) return;
     setFlowToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
     const ids = flowToDelete ? [flowToDelete] : Array.from(selectedIds);
+    if (!onBulkDelete || ids.length === 0) return;
     onBulkDelete?.(ids);
     setSelectedIds(new Set());
     setFlowToDelete(null);
@@ -110,14 +112,16 @@ export default function FlowListView({ flows, onFlowClick, onBulkDelete }: FlowL
                   </td>
                   <td className="px-8 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-zinc-300 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        onClick={(e) => handleDeleteOne(e, flow.id)}
-                      >
-                        <Trash2 size={13} />
-                      </Button>
+                      {onBulkDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-zinc-300 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          onClick={(e) => handleDeleteOne(e, flow.id)}
+                        >
+                          <Trash2 size={13} />
+                        </Button>
+                      )}
                       <ChevronRight size={13} className="text-zinc-300 ml-1 group-hover:text-zinc-600 transition-colors" />
                     </div>
                   </td>
@@ -128,12 +132,14 @@ export default function FlowListView({ flows, onFlowClick, onBulkDelete }: FlowL
         </table>
       </div>
 
-      <SelectionBar
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="flows"
-      />
+      {onBulkDelete && (
+        <SelectionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="flows"
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

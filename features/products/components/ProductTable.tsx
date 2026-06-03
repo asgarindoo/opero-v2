@@ -33,9 +33,10 @@ function formatPrice(price: number, currency: string = "USD") {
 
 interface Props {
   onSelectProduct?: (id: string) => void;
+  canDelete: boolean;
 }
 
-export default function ProductTable({ onSelectProduct }: Props) {
+export default function ProductTable({ onSelectProduct, canDelete }: Props) {
   const { products, deleteProducts, loading } = useProducts();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -60,11 +61,13 @@ export default function ProductTable({ onSelectProduct }: Props) {
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setProductToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (productToDelete) {
       deleteProducts([productToDelete]);
       setProductToDelete(null);
@@ -90,6 +93,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
       <Table className="table-fixed min-w-[800px]">
         <TableHeader className="bg-[#faf5f5]/50">
           <TableRow className="h-10">
+            {canDelete && (
             <TableHead className="w-[50px] !px-2">
               <div className="w-full flex justify-center">
                 <input
@@ -100,6 +104,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
                 />
               </div>
             </TableHead>
+            )}
             <TableHead className="px-4">Product / Service</TableHead>
             <TableHead className="w-32 hidden lg:table-cell px-4">Category</TableHead>
             <TableHead className="w-32 hidden lg:table-cell px-4 text-right">Price</TableHead>
@@ -165,6 +170,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
                     onClick={() => onSelectProduct ? onSelectProduct(product.id) : setExpandedId(isExpanded ? null : product.id)}
                     className={`group transition-all ${isSelected ? "bg-primary/[0.02]" : isExpanded ? "bg-black/[0.015]" : ""}`}
                   >
+                    {canDelete && (
                     <TableCell onClick={e => e.stopPropagation()} className="w-[50px] !px-2">
                       <div className="w-full flex justify-center">
                         <input
@@ -175,6 +181,7 @@ export default function ProductTable({ onSelectProduct }: Props) {
                         />
                       </div>
                     </TableCell>
+                    )}
                     <TableCell className="w-full max-w-[0px]">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-8 h-8 rounded-lg overflow-hidden bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-all`}>
@@ -248,14 +255,16 @@ export default function ProductTable({ onSelectProduct }: Props) {
 
                     <TableCell className="px-4 text-center">
                       <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
-                          onClick={(e) => handleDeleteOne(e, product.id)}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
+                            onClick={(e) => handleDeleteOne(e, product.id)}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        )}
                         <div className="ml-1 opacity-60">
                           <ChevronRight size={13} />
                         </div>
@@ -325,12 +334,14 @@ export default function ProductTable({ onSelectProduct }: Props) {
         </TableBody>
       </Table>
 
-      <SelectionBar
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="products"
-      />
+      {canDelete && (
+        <SelectionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="products"
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

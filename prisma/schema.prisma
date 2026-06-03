@@ -35,7 +35,6 @@ model User {
   flowsCreated          Flow[]          @relation("FlowCreatedBy")
   campaignsCreated      Campaign[]      @relation("CampaignCreatedBy")
   contactsCreated       Contact[]       @relation("ContactCreatedBy")
-  rolesCreated          Role[]          @relation("RoleCreatedBy")
   goalsCreated          Goal[]          @relation("GoalCreatedBy")
   salesCreated          Sale[]          @relation("SaleCreatedBy")
   invoicesCreated       Invoice[]       @relation("InvoiceCreatedBy")
@@ -56,7 +55,6 @@ model User {
   flowsUpdated          Flow[]          @relation("FlowUpdatedBy")
   campaignsUpdated      Campaign[]      @relation("CampaignUpdatedBy")
   contactsUpdated       Contact[]       @relation("ContactUpdatedBy")
-  rolesUpdated          Role[]          @relation("RoleUpdatedBy")
   goalsUpdated          Goal[]          @relation("GoalUpdatedBy")
   salesUpdated          Sale[]          @relation("SaleUpdatedBy")
   invoicesUpdated       Invoice[]       @relation("InvoiceUpdatedBy")
@@ -146,7 +144,6 @@ model Organization {
   flows            Flow[]
   campaigns        Campaign[]
   contacts         Contact[]
-  roles            Role[]
   goals            Goal[]
   sales            Sale[]
   invoices         Invoice[]
@@ -434,31 +431,6 @@ model Contact {
   @@index([organizationId, status])
   @@index([organizationId, relationshipType])
   @@map("contact")
-}
-
-model Role {
-  id             String   @id @default(cuid())
-  organizationId String
-  title          String?
-  name           String?
-  description    String?  @db.Text
-  status         String?
-  permissions    Json     @default("[]")
-  color          String?
-  sortOrder      Int      @default(0)
-  payload        Json?
-  createdById    String?
-  updatedById    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy    User?        @relation("RoleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy    User?        @relation("RoleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  @@index([organizationId])
-  @@index([organizationId, status])
-  @@map("role")
 }
 
 model Goal {

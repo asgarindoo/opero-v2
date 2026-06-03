@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 import { deletePrivateObject, TENANT_FILES_BUCKET } from "@/lib/server/supabase-storage";
 import { intValue, jsonArray, jsonInputOrDefault, textValue } from "@/lib/api/feature-records";
@@ -49,19 +49,19 @@ async function buildDocumentCreateData(tenantId: string, userId: string, data: R
 }
 
 export async function listDocuments() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documents.read");
   const documents = await prisma.document.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return documents.map((document) => mapDomainRecord(document));
 }
 
 export async function getDocumentById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documents.read");
   const document = await prisma.document.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return document ? mapDomainRecord(document) : null;
 }
 
 export async function createDocument(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documents.create");
   const documentData = await buildDocumentCreateData(ctx.tenantId, ctx.userId, data);
   const document = await prisma.document.create({
     data: {
@@ -77,7 +77,7 @@ export async function createDocument(data: Record<string, unknown>) {
 }
 
 export async function updateDocument(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documents.update");
   const current = await prisma.document.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const folderId = patch.folderId !== undefined ? await resolveFolderId(ctx.tenantId, patch.folderId) : current.folderId;
@@ -105,7 +105,7 @@ export async function updateDocument(id: string, patch: Record<string, unknown>)
 }
 
 export async function deleteDocument(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documents.delete");
   const current = await prisma.document.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.document.deleteMany({ where: { id, organizationId: ctx.tenantId } });
@@ -125,19 +125,19 @@ export async function deleteDocument(id: string) {
 }
 
 export async function listFolders() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documentFolders.read");
   const folders = await prisma.folder.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return folders.map((folder) => mapDomainRecord(folder));
 }
 
 export async function getFolderById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documentFolders.read");
   const folder = await prisma.folder.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return folder ? mapDomainRecord(folder) : null;
 }
 
 export async function createFolder(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documentFolders.create");
   const title = getTitle(data);
   const parentId = await resolveParentFolderId(ctx.tenantId, data.parentId);
   const folder = await prisma.folder.create({
@@ -161,7 +161,7 @@ export async function createFolder(data: Record<string, unknown>) {
 }
 
 export async function updateFolder(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documentFolders.update");
   const current = await prisma.folder.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const title = getTitle(patch, current.title ?? "Untitled");
@@ -188,7 +188,7 @@ export async function updateFolder(id: string, patch: Record<string, unknown>) {
 }
 
 export async function deleteFolder(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("documentFolders.delete");
   const current = await prisma.folder.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.folder.deleteMany({ where: { id, organizationId: ctx.tenantId } });

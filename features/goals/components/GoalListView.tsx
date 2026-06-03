@@ -23,9 +23,10 @@ function normalizeGoalStatus(status: string | undefined) {
 interface GoalListViewProps {
   goals: Goal[];
   onGoalClick: (goal: Goal) => void;
+  canDelete: boolean;
 }
 
-export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) {
+export default function GoalListView({ goals, onGoalClick, canDelete }: GoalListViewProps) {
   const { deleteGoals } = useGoals();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -49,11 +50,13 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setGoalToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (goalToDelete) {
       deleteGoals([goalToDelete]);
       setGoalToDelete(null);
@@ -137,14 +140,16 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-right">
                        <div className="flex items-center justify-end gap-1 transition-all">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 text-on-surface-variant opacity-40 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
-                            onClick={(e) => handleDeleteOne(e, goal.id)}
-                          >
-                            <Trash2 size={13} />
-                          </Button>
+                          {canDelete && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-on-surface-variant opacity-40 hover:text-red-500 hover:opacity-100 hover:bg-red-50"
+                              onClick={(e) => handleDeleteOne(e, goal.id)}
+                            >
+                              <Trash2 size={13} />
+                            </Button>
+                          )}
                           <ChevronRight size={14} className="text-on-surface-variant opacity-20 ml-1" />
                        </div>
                     </td>
@@ -156,12 +161,14 @@ export default function GoalListView({ goals, onGoalClick }: GoalListViewProps) 
         </div>
       </div>
 
-      <SelectionBar 
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="goals"
-      />
+      {canDelete && (
+        <SelectionBar 
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="goals"
+        />
+      )}
 
       <ConfirmationModal 
         isOpen={isDeleteModalOpen}

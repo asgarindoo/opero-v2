@@ -21,9 +21,10 @@ interface Props {
   filterMode: string;
   searchQuery: string;
   onSelectContact: (id: string) => void;
+  canDelete: boolean;
 }
 
-export default function ContactList({ filterMode, searchQuery, onSelectContact }: Props) {
+export default function ContactList({ filterMode, searchQuery, onSelectContact, canDelete }: Props) {
   const { contacts, deleteContacts, loading } = useContacts();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -73,11 +74,13 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setContactToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (contactToDelete) {
       deleteContacts([contactToDelete]);
       setContactToDelete(null);
@@ -104,6 +107,7 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
         <Table className="min-w-[800px]">
           <TableHeader className="bg-[#fbf5f5]">
             <TableRow className="h-10">
+              {canDelete && (
               <TableHead className="w-10 px-4">
                 <div className="flex items-center justify-center">
                   <input 
@@ -114,6 +118,7 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                   />
                 </div>
               </TableHead>
+              )}
               <TableHead className="w-[35%] px-4">Contact / Company</TableHead>
               <TableHead className="w-[25%] px-4">Primary Contact</TableHead>
               <TableHead className="w-[15%] px-4">Relationship</TableHead>
@@ -165,6 +170,7 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                     onClick={() => onSelectContact(contact.id)}
                     className={`group h-12 hover:bg-black/[0.015] cursor-pointer transition-colors ${isSelected ? "bg-primary/[0.02]" : ""}`}
                   >
+                    {canDelete && (
                     <TableCell className="px-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center">
                         <input 
@@ -175,6 +181,7 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                         />
                       </div>
                     </TableCell>
+                    )}
                     <TableCell className="px-4 whitespace-nowrap">
                       <div className="flex flex-col min-w-0 gap-0.5">
                         <span 
@@ -217,14 +224,16 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
                     </TableCell>
                     <TableCell className="px-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50"
-                          onClick={(e) => handleDeleteOne(e, contact.id)}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
+                        {canDelete && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50"
+                            onClick={(e) => handleDeleteOne(e, contact.id)}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        )}
                         <ChevronRight size={13} className="text-on-surface-variant ml-0.5" />
                       </div>
                     </TableCell>
@@ -238,12 +247,14 @@ export default function ContactList({ filterMode, searchQuery, onSelectContact }
 
 
 
-      <SelectionBar 
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="contacts"
-      />
+      {canDelete && (
+        <SelectionBar 
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="contacts"
+        />
+      )}
 
       <ConfirmationModal 
         isOpen={isDeleteModalOpen}

@@ -17,10 +17,14 @@ import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
 import SearchInput from "@/components/common/SearchInput";
 import Button from "@/components/ui/Button";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 type FilterMode = "all" | "unpaid" | "paid" | "overdue" | "cancelled";
 
 function InvoicesPageContent() {
+  const { role } = useTenant();
+  const canManageInvoices = canUse(role, "invoices.create");
   const { invoices } = useInvoices();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
@@ -58,14 +62,16 @@ function InvoicesPageContent() {
                   <Printer size={14} />
                </button>
             </div>
-            <Button 
-              variant="primary" 
-              size="sm" 
-              icon={Plus}
-              onClick={() => setShowAddModal(true)}
-            >
-              NEW INVOICE
-            </Button>
+            {canManageInvoices && (
+              <Button 
+                variant="primary" 
+                size="sm" 
+                icon={Plus}
+                onClick={() => setShowAddModal(true)}
+              >
+                NEW INVOICE
+              </Button>
+            )}
           </>
         )}
       />
@@ -82,12 +88,12 @@ function InvoicesPageContent() {
 
       {/* Main Table Area */}
       <div className="flex-1 overflow-hidden bg-background">
-        <InvoiceTable searchQuery={searchQuery} filterMode={filterMode} onSelectInvoice={setSelectedInvoiceId} />
+        <InvoiceTable searchQuery={searchQuery} filterMode={filterMode} onSelectInvoice={setSelectedInvoiceId} canDelete={canManageInvoices} />
       </div>
 
       {/* Drawer & Modal */}
-      {selectedInvoiceId && <InvoiceDrawer invoiceId={selectedInvoiceId} onClose={() => setSelectedInvoiceId(null)} />}
-      {showAddModal && <AddInvoiceModal onClose={() => setShowAddModal(false)} />}
+      {selectedInvoiceId && <InvoiceDrawer invoiceId={selectedInvoiceId} onClose={() => setSelectedInvoiceId(null)} canManage={canManageInvoices} />}
+      {canManageInvoices && showAddModal && <AddInvoiceModal onClose={() => setShowAddModal(false)} />}
     </div>
   );
 }

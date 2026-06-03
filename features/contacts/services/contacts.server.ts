@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord, parsePayload } from "@/lib/api/domain-utils";
 import { jsonArray, jsonInputOrDefault, jsonObjectOrUndefined, textValue } from "@/lib/api/feature-records";
 import { contactSchema } from "../validators";
@@ -69,19 +69,19 @@ function sanitizePersons(value: unknown) {
 }
 
 export async function listContacts() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("contacts.read");
   const contacts = await prisma.contact.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, select: CONTACT_SELECT });
   return contacts.map((contact) => mapContact(contact));
 }
 
 export async function getContactById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("contacts.read");
   const contact = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, select: CONTACT_SELECT });
   return contact ? mapContact(contact) : null;
 }
 
 export async function createContact(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("contacts.create");
   const parsed = contactSchema.parse(data);
   const title = getTitle(parsed);
   const contact = await prisma.contact.create({
@@ -105,7 +105,7 @@ export async function createContact(data: Record<string, unknown>) {
 }
 
 export async function updateContact(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("contacts.update");
   const current = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, select: CONTACT_SELECT });
   if (!current) return null;
 
@@ -132,7 +132,7 @@ export async function updateContact(id: string, patch: Record<string, unknown>) 
 }
 
 export async function deleteContact(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("contacts.delete");
   const current = await prisma.contact.findFirst({ where: { id, organizationId: ctx.tenantId }, select: { title: true } });
   if (!current) return null;
   const result = await prisma.contact.deleteMany({ where: { id, organizationId: ctx.tenantId } });

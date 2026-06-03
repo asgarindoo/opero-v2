@@ -25,9 +25,10 @@ interface Props {
   searchQuery: string;
   filterMode: string;
   onSelectInvoice: (id: string) => void;
+  canDelete: boolean;
 }
 
-export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice }: Props) {
+export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice, canDelete }: Props) {
   const { invoices, deleteInvoices, loading } = useInvoices();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -75,11 +76,13 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setInvoiceToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (invoiceToDelete) {
       deleteInvoices([invoiceToDelete]);
       setInvoiceToDelete(null);
@@ -106,6 +109,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
         <Table className="min-w-[800px]">
           <TableHeader className="bg-[#fbf5f5]">
             <TableRow>
+              {canDelete && (
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
                   <input
@@ -116,6 +120,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                   />
                 </div>
               </TableHead>
+              )}
               <TableHead>Invoice #</TableHead>
               <TableHead className="w-[25%] ml-3">Customer</TableHead>
               <TableHead>Status</TableHead>
@@ -179,6 +184,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                     onClick={() => onSelectInvoice(inv.id)}
                     className={`group ${isSelected ? "bg-primary/[0.02]" : "hover:bg-black/[0.01]"}`}
                   >
+                    {canDelete && (
                     <TableCell onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center">
                         <input
@@ -189,6 +195,7 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                         />
                       </div>
                     </TableCell>
+                    )}
                     <TableCell className="max-w-[0px]">
                       <div className="flex items-center gap-2.5">
                         <div className="w-6 h-6 shrink-0 rounded-[5px] bg-black/[0.03] flex items-center justify-center text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">
@@ -237,14 +244,16 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
                     </TableCell>
                     <TableCell className="px-4 text-center">
                       <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
-                          onClick={(e) => handleDeleteOne(e, inv.id)}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
+                            onClick={(e) => handleDeleteOne(e, inv.id)}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        )}
                         <div className="ml-1 opacity-60">
                           <ChevronRight size={13} />
                         </div>
@@ -258,12 +267,14 @@ export default function InvoiceTable({ searchQuery, filterMode, onSelectInvoice 
         </Table>
       </div>
 
-      <SelectionBar
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="invoices"
-      />
+      {canDelete && (
+        <SelectionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="invoices"
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

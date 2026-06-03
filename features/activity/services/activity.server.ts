@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
 
@@ -10,7 +10,7 @@ const ACTION_CATEGORY: Record<string, string> = {
 };
 
 export async function listActivities(moduleFilter?: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("activity.read");
   const activityModule = moduleFilter && moduleFilter !== "All" && moduleFilter !== "SYSTEM" ? moduleFilter : undefined;
 
   const logs = await prisma.tenantActivity.findMany({

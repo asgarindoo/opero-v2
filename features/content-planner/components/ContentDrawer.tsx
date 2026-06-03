@@ -12,6 +12,8 @@ import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Input from "@/components/ui/Input";
 import { ContentTagsInput } from "@/features/content-planner/components/ContentTagsInput";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 function getName(val: any): string {
   if (!val) return "";
@@ -43,6 +45,8 @@ function Section({ label, icon, count, children, defaultOpen = true }: { label: 
 }
 
 export default function ContentDrawer({ postId, onClose }: { postId: string; onClose: () => void }) {
+  const { role } = useTenant();
+  const canDelete = canUse(role, "contentPlanner.delete");
   const { posts, deletePosts, updatePost } = useContentPlanner();
   const { channels } = useSocialChannels();
   const [tab, setTab] = useState<"details" | "activity">("details");
@@ -60,6 +64,7 @@ export default function ContentDrawer({ postId, onClose }: { postId: string; onC
   if (!post) return null;
 
   const handleDelete = () => {
+    if (!canDelete) return;
     deletePosts([post.id]);
     setIsDeleteModalOpen(false);
     onClose();
@@ -213,14 +218,16 @@ export default function ContentDrawer({ postId, onClose }: { postId: string; onC
               </div>
             </Section>
 
-            <div className="pt-8 flex justify-center pb-4">
-              <button
-                onClick={() => setIsDeleteModalOpen(true)}
-                className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
-              >
-                Delete Post
-              </button>
-            </div>
+            {canDelete && (
+              <div className="pt-8 flex justify-center pb-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
+                >
+                  Delete Post
+                </button>
+              </div>
+            )}
           </div>
         )}
 

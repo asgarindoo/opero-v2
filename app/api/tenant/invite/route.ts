@@ -2,7 +2,8 @@ import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireRole } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { generateInviteCode, generateInviteToken } from "@/lib/utils/invite-code";
 
 const CreateInviteLinkSchema = z.object({
@@ -64,7 +65,7 @@ async function createUniqueInviteLink(organizationId: string, createdById: strin
  */
 export async function GET(req: NextRequest) {
   try {
-    const { tenant } = await requireRole(["owner", "admin"]);
+    const { tenant } = await requirePermission("members.invite");
 
     let organization = await prisma.organization.findUnique({
       where: { id: tenant.id },
@@ -103,7 +104,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth();
-    const { tenant } = await requireRole(["owner", "admin"]);
+    const { tenant } = await requirePermission("members.invite");
     const body = await req.json();
     const parsed = CreateInviteLinkSchema.safeParse(body);
 

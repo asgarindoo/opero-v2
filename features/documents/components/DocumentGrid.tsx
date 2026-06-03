@@ -17,6 +17,8 @@ import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 interface Props {
   onSelectFile: (id: string) => void;
@@ -31,6 +33,8 @@ function formatBytes(bytes?: number) {
 }
 
 export default function DocumentGrid({ onSelectFile }: Props) {
+  const { role } = useTenant();
+  const canDelete = canUse(role, "documents.delete");
   const { documents, deleteDocuments, activeFolderId, searchQuery, loading } = useDocuments();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -77,11 +81,13 @@ export default function DocumentGrid({ onSelectFile }: Props) {
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setFileToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (fileToDelete) {
       deleteDocuments([fileToDelete]);
       setFileToDelete(null);
@@ -194,12 +200,14 @@ export default function DocumentGrid({ onSelectFile }: Props) {
         }))}
       </div>
 
-      <SelectionBar 
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="documents"
-      />
+      {canDelete && (
+        <SelectionBar 
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="documents"
+        />
+      )}
 
       <ConfirmationModal 
         isOpen={isDeleteModalOpen}

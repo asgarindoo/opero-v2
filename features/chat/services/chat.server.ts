@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant, type TenantContext } from "@/lib/server/auth-utils";
+import type { TenantContext } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
 import type { ChatBootstrap, ChatChannel, ChatMessage } from "../types";
@@ -128,7 +129,7 @@ async function getTenantChannel(ctx: TenantContext, channelId: string) {
 }
 
 export async function listTenantChannels(): Promise<ChatBootstrap> {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("chat.read");
 
   const rows = await prisma.$queryRaw<ChannelWithUnreadRow[]>`
     SELECT
@@ -163,7 +164,7 @@ export async function listTenantChannels(): Promise<ChatBootstrap> {
 }
 
 export async function createTenantChannel(input: { name: string; description?: string }) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("chat.create");
   const name = slugChannelName(input.name);
   const description = input.description?.trim() || null;
 
@@ -183,7 +184,7 @@ export async function createTenantChannel(input: { name: string; description?: s
 }
 
 export async function listTenantMessages(channelId: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("chat.read");
   console.log(`[chat] listTenantMessages tenantId="${ctx.tenantId}" channelId="${channelId}"`);
   const channel = await getTenantChannel(ctx, channelId);
   if (!channel) return null;
@@ -206,7 +207,7 @@ export async function listTenantMessages(channelId: string) {
 }
 
 export async function createTenantMessage(channelId: string, content: string, replyToId?: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("chat.create");
   const channel = await getTenantChannel(ctx, channelId);
   if (!channel) return null;
   let replyTo: { id: string; senderName: string; content: string } | null = null;
@@ -262,7 +263,7 @@ export async function createTenantMessage(channelId: string, content: string, re
 }
 
 export async function markTenantChannelRead(channelId: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("chat.read");
   const channel = await getTenantChannel(ctx, channelId);
   if (!channel) return null;
 
@@ -301,7 +302,7 @@ export async function markTenantChannelRead(channelId: string) {
 }
 
 export async function updateTenantMessage(messageId: string, content: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("chat.update");
   const allowed = ctx.role === "owner" || ctx.role === "admin";
 
   const rows = await prisma.$queryRaw<MessageRow[]>`
@@ -322,7 +323,7 @@ export async function updateTenantMessage(messageId: string, content: string) {
 }
 
 export async function deleteTenantMessage(messageId: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("chat.update");
   const allowed = ctx.role === "owner" || ctx.role === "admin";
 
   const rows = await prisma.$queryRaw<DeletedMessageRow[]>`
@@ -352,10 +353,7 @@ export async function deleteTenantMessage(messageId: string) {
 }
 
 export async function deleteTenantChannel(channelId: string) {
-  const ctx = await requireTenant();
-  const allowed = ctx.role === "owner" || ctx.role === "admin";
-
-  if (!allowed) return null;
+  const ctx = await requirePermission("chat.manage");
 
   const rows = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`

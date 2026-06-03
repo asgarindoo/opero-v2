@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 
 const MODULE = "FLOWS";
@@ -54,7 +54,7 @@ function flowColumns(data: Record<string, unknown>, current: Record<string, unkn
 }
 
 export async function listFlows() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("flows.read");
   const flows = await prisma.flow.findMany({
     where: { organizationId: ctx.tenantId },
     orderBy: { createdAt: "desc" },
@@ -64,7 +64,7 @@ export async function listFlows() {
 }
 
 export async function getFlowById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("flows.read");
   const flow = await prisma.flow.findFirst({
     where: { id, organizationId: ctx.tenantId },
     include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
@@ -73,7 +73,7 @@ export async function getFlowById(id: string) {
 }
 
 export async function createFlow(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("flows.create");
   const title = getTitle(data);
   
   if (!title || title.trim() === "" || title.trim() === "Untitled") {
@@ -108,7 +108,7 @@ export async function createFlow(data: Record<string, unknown>) {
 }
 
 export async function updateFlow(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("flows.update");
   const current = await prisma.flow.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
 
@@ -144,7 +144,7 @@ export async function updateFlow(id: string, patch: Record<string, unknown>) {
 }
 
 export async function deleteFlow(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("flows.delete");
   const current = await prisma.flow.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.flow.deleteMany({ where: { id, organizationId: ctx.tenantId } });

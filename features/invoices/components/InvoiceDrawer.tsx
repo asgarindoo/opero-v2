@@ -12,7 +12,7 @@ function formatCurrency(val: number, currency: string) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(val);
 }
 
-export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: string, onClose: () => void }) {
+export default function InvoiceDrawer({ invoiceId, onClose, canManage }: { invoiceId: string, onClose: () => void, canManage: boolean }) {
   const { invoices, updateInvoice, markAsPaid } = useInvoices();
   const { contacts } = useContacts();
   const inv = invoices.find(i => i.id === invoiceId);
@@ -22,10 +22,12 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
   if (!inv) return null;
 
   const handleMarkAsPaid = () => {
+    if (!canManage) return;
     markAsPaid(inv.id);
   };
 
   const handleCancel = () => {
+    if (!canManage) return;
     updateInvoice(inv.id, { status: "Cancelled" });
   };
 
@@ -157,7 +159,7 @@ export default function InvoiceDrawer({ invoiceId, onClose }: { invoiceId: strin
                     CANCELLED
                   </div>
                 )}
-                {inv.status === "Unpaid" && (
+                {canManage && inv.status === "Unpaid" && (
                   <div className="flex items-center gap-2">
                     <Button
                       variant="secondary"

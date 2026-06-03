@@ -7,8 +7,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const json = await req.json();
     const data = await updateChannel(resolvedParams.id, json);
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof Response) return error;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 400 });
   }
 }
 
@@ -17,7 +18,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const resolvedParams = await params;
     await deleteChannel(resolvedParams.id);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof Response) return error;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 400 });
   }
 }

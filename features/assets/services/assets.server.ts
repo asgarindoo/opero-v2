@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 import { dateValue, intValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
 
@@ -38,19 +38,19 @@ function buildAssetCreateData(data: Record<string, unknown>) {
 }
 
 export async function listAssets() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("assets.read");
   const assets = await prisma.asset.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return assets.map((asset) => mapAsset(asset));
 }
 
 export async function getAssetById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("assets.read");
   const asset = await prisma.asset.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return asset ? mapAsset(asset) : null;
 }
 
 export async function createAsset(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("assets.create");
   const assetData = buildAssetCreateData(data);
   const asset = await prisma.asset.create({
     data: {
@@ -66,7 +66,7 @@ export async function createAsset(data: Record<string, unknown>) {
 }
 
 export async function updateAsset(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("assets.update");
   const current = await prisma.asset.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const name = textValue(patch.name) ?? textValue(patch.title) ?? current.name ?? current.title ?? "Untitled";
@@ -97,7 +97,7 @@ export async function updateAsset(id: string, patch: Record<string, unknown>) {
 }
 
 export async function deleteAsset(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("assets.delete");
   const current = await prisma.asset.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.asset.deleteMany({ where: { id, organizationId: ctx.tenantId } });

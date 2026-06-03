@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, requireRole } from "@/lib/server/auth-utils";
+import { getCurrentUser } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import {
   removePrivateObject,
   TENANT_ASSETS_BUCKET,
@@ -23,7 +24,7 @@ const SettingsSchema = z.object({
 export async function GET() {
   try {
     const user = await getCurrentUser();
-    const { tenant, role } = await requireRole(["owner", "admin", "member"]);
+    const { tenant, role } = await requirePermission("settings.read");
 
     const [organization, membersCount] = await Promise.all([
       prisma.organization.findUnique({
@@ -78,7 +79,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { tenant } = await requireRole(["owner", "admin"]);
+    const { tenant } = await requirePermission("settings.update");
     const body = await req.json();
     const parsed = SettingsSchema.safeParse(body);
 

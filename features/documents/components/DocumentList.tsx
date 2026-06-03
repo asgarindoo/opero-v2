@@ -22,6 +22,8 @@ import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { EmptyState } from "@/components/common/DataState";
 import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 interface Props {
   onSelectFile: (id: string) => void;
@@ -37,6 +39,8 @@ function formatBytes(bytes?: number, decimals = 1) {
 }
 
 export default function DocumentList({ onSelectFile }: Props) {
+  const { role } = useTenant();
+  const canDelete = canUse(role, "documents.delete");
   const { documents, deleteDocuments, activeFolderId, searchQuery, loading } = useDocuments();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,11 +94,13 @@ export default function DocumentList({ onSelectFile }: Props) {
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setFileToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (fileToDelete) {
       deleteDocuments([fileToDelete]);
       setFileToDelete(null);
@@ -121,6 +127,7 @@ export default function DocumentList({ onSelectFile }: Props) {
         <Table className="min-w-200">
           <TableHeader className="bg-[#faf8f6] sticky top-0 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
             <TableRow>
+              {canDelete && (
               <TableHead className="w-10">
                 <div className="flex items-center justify-center">
                   <input
@@ -131,6 +138,7 @@ export default function DocumentList({ onSelectFile }: Props) {
                   />
                 </div>
               </TableHead>
+              )}
               <TableHead className="w-[35%] ml-3">Name / Tags</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Size</TableHead>
@@ -191,6 +199,7 @@ export default function DocumentList({ onSelectFile }: Props) {
                     onClick={() => onSelectFile(doc.id)}
                     className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
                   >
+                    {canDelete && (
                     <TableCell onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center">
                         <input
@@ -201,6 +210,7 @@ export default function DocumentList({ onSelectFile }: Props) {
                         />
                       </div>
                     </TableCell>
+                    )}
                     <TableCell className="max-w-[0px]">
                       <div className="flex items-center gap-3 ml-3">
                         <div className="w-7 h-7 rounded-[6px] bg-black/[0.03] flex items-center justify-center shrink-0">
@@ -245,14 +255,16 @@ export default function DocumentList({ onSelectFile }: Props) {
                     </TableCell>
                     <TableCell className="px-4 text-center">
                       <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
-                          onClick={(e) => handleDeleteOne(e, doc.id)}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
+                            onClick={(e) => handleDeleteOne(e, doc.id)}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="icon" 
@@ -293,12 +305,14 @@ export default function DocumentList({ onSelectFile }: Props) {
         label="documents"
       />
 
-      <SelectionBar
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="documents"
-      />
+      {canDelete && (
+        <SelectionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="documents"
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

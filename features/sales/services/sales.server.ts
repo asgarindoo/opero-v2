@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 import { jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
 
@@ -36,19 +36,19 @@ function buildSaleCreateData(data: Record<string, unknown>) {
 }
 
 export async function listSales() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("sales.read");
   const sales = await prisma.sale.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return sales.map((sale) => mapDomainRecord(sale));
 }
 
 export async function getSaleById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("sales.read");
   const sale = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return sale ? mapDomainRecord(sale) : null;
 }
 
 export async function createSale(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("sales.create");
   const saleData = buildSaleCreateData(data);
   const sale = await prisma.sale.create({
     data: {
@@ -64,7 +64,7 @@ export async function createSale(data: Record<string, unknown>) {
 }
 
 export async function updateSale(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("sales.update");
   const current = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const discountAmount = patch.discountAmount !== undefined || patch.discountTotal !== undefined
@@ -104,7 +104,7 @@ export async function updateSale(id: string, patch: Record<string, unknown>) {
 }
 
 export async function deleteSale(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("sales.delete");
   const current = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.sale.deleteMany({ where: { id, organizationId: ctx.tenantId } });

@@ -1,9 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Member, Role, Permission, ActivityLog, RoleType, InviteLink } from "@/features/members";
+import { Member, ActivityLog, RoleType, InviteLink } from "@/features/members";
 import { listActivities } from "@/features/activity";
-import { listRoles, updateRole } from "@/features/members/services/members.client";
 import { getUserInitials } from "@/lib/user-identity";
 
 interface ApiMember {
@@ -30,67 +29,11 @@ interface ApiActivity {
   timestamp: string;
 }
 
-export const PERMISSIONS: Permission[] = [
-  // Dashboard
-  { id: "dash_view", category: "Dashboard", name: "View Dashboard", description: "Can view the main dashboard overview." },
-  // Tasks
-  { id: "tasks_view", category: "Tasks", name: "View Tasks", description: "Can view tasks assigned to the team." },
-  { id: "tasks_create", category: "Tasks", name: "Create Tasks", description: "Can create new tasks." },
-  { id: "tasks_edit", category: "Tasks", name: "Edit Tasks", description: "Can edit any task details." },
-  { id: "tasks_delete", category: "Tasks", name: "Delete Tasks", description: "Can permanently delete tasks." },
-  // Goals
-  { id: "goals_view", category: "Goals", name: "View Goals", description: "Can view team goals and key results." },
-  { id: "goals_manage", category: "Goals", name: "Manage Goals", description: "Can create, edit, and update goals progress." },
-  // Flows
-  { id: "flows_view", category: "Flows", name: "View Flows", description: "Can view automation flows." },
-  { id: "flows_build", category: "Flows", name: "Build Flows", description: "Can create and edit flow pipelines." },
-  // Chat
-  { id: "chat_access", category: "Chat", name: "Access Team Chat", description: "Can participate in team chat channels." },
-  { id: "chat_manage", category: "Chat", name: "Manage Channels", description: "Can create, rename, and delete chat channels." },
-  // Analytics
-  { id: "analytics_view", category: "Analytics", name: "View Analytics", description: "Can view reports and usage analytics." },
-  // Members
-  { id: "members_view", category: "Members", name: "View Directory", description: "Can view the members directory." },
-  { id: "members_invite", category: "Members", name: "Invite Members", description: "Can invite new members to the workspace." },
-  { id: "members_manage", category: "Members", name: "Manage Roles & Access", description: "Can change roles and configure access control." },
-  // Settings
-  { id: "settings_manage", category: "Settings", name: "Workspace Settings", description: "Can manage billing, domains, and global settings." },
-];
-
-const defaultRoles: Role[] = [
-  {
-    id: "owner",
-    name: "Owner",
-    description: "Full workspace access and billing ownership.",
-    permissions: PERMISSIONS.map((permission) => permission.id),
-  },
-  {
-    id: "admin",
-    name: "Admin",
-    description: "Manage workspace operations, members, and most settings.",
-    permissions: PERMISSIONS
-      .filter((permission) => permission.id !== "settings_manage")
-      .map((permission) => permission.id),
-  },
-  {
-    id: "member",
-    name: "Staff",
-    description: "Access daily workspace tools and assigned work.",
-    permissions: PERMISSIONS
-      .filter((permission) => (
-        permission.id.endsWith("_view") ||
-        permission.id === "chat_access" ||
-        permission.id === "tasks_create" ||
-        permission.id === "goals_view"
-      ))
-      .map((permission) => permission.id),
-  },
-];
-
 const roleMap: Record<string, RoleType> = {
   owner: "Owner",
   admin: "Admin",
   member: "Staff",
+  staff: "Staff",
 };
 
 const revRoleMap: Record<RoleType, string> = {
@@ -99,12 +42,15 @@ const revRoleMap: Record<RoleType, string> = {
   Staff: "member",
 };
 
+function toRoleType(value: unknown): RoleType | null {
+  if (typeof value !== "string") return null;
+  return roleMap[value.trim().toLowerCase()] ?? null;
+}
+
 interface MembersContextType {
   members: Member[];
   loading: boolean;
   activityLogs: ActivityLog[];
-  roles: Role[];
-  permissions: Permission[];
   inviteLinks: InviteLink[];
   tenantCode: string;
   currentUserRole: RoleType | null;
@@ -115,9 +61,6 @@ interface MembersContextType {
   removeMember: (id: string) => Promise<void>;
   updateMemberRole: (id: string, newRole: RoleType) => Promise<void>;
   updateMemberOrg: (id: string, department: string, jobTitle: string) => Promise<void>;
-
-  // Access Control actions
-  toggleRolePermission: (roleId: string, permissionId: string) => Promise<void>;
 
   // Invite Link actions
   generateInviteLink: (expireDays: number | null) => Promise<InviteLink>;
@@ -132,7 +75,6 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
   const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([]);
   const [tenantCode, setTenantCode] = useState("");
   const [currentUserRole, setCurrentUserRole] = useState<RoleType | null>(null);
@@ -163,7 +105,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       if (membersData.members) {
         setMembers((membersData.members as ApiMember[]).map((m) => ({
           ...m,
-          role: roleMap[m.role] || "Staff",
+          role: toRoleType(m.role) ?? "Staff",
           department: m.department ?? undefined,
           jobTitle: m.position ?? undefined,
           lastActive: m.lastActive ?? undefined,
@@ -171,15 +113,10 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
         })));
       }
       if (membersData.currentRole) {
-        setCurrentUserRole(roleMap[membersData.currentRole] || "Staff");
+        setCurrentUserRole(toRoleType(membersData.currentRole) ?? "Staff");
       }
 
-      const [rolesData, inviteRes] = await Promise.all([
-        listRoles<Role>(),
-        fetch("/api/tenant/invite"),
-      ]);
-
-      setRoles(rolesData.length > 0 ? rolesData : defaultRoles);
+      const inviteRes = await fetch("/api/tenant/invite");
 
       if (inviteRes.ok) {
         const inviteData = await inviteRes.json();
@@ -272,32 +209,6 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     }
   }, [refreshActivity]);
 
-  // Access Control
-  const toggleRolePermission = useCallback(async (roleId: string, permissionId: string) => {
-    if (roleId === "r1" || roleId === "owner") return; // Owner role is locked
-
-    const current = roles.find(r => r.id === roleId);
-    if (!current) return;
-
-    const hasPerm = current.permissions.includes(permissionId);
-    const newPerms = hasPerm
-      ? current.permissions.filter(p => p !== permissionId)
-      : [...current.permissions, permissionId];
-
-    const recordId = (current as { recordId?: string }).recordId;
-    if (!recordId) {
-      setRoles(prev => prev.map(r => r.id === roleId ? { ...r, permissions: newPerms } : r));
-      return;
-    }
-
-    try {
-      const updated = await updateRole<Role>(recordId, { permissions: newPerms });
-      setRoles(prev => prev.map(r => r.id === roleId ? updated : r));
-    } catch (err) {
-      console.error("Failed to update role permissions:", err);
-    }
-  }, [roles]);
-
   // Invite Links
   const generateInviteLink = useCallback(async (expireDays: number | null) => {
     const res = await fetch("/api/tenant/invite", {
@@ -326,8 +237,6 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     members,
     loading,
     activityLogs,
-    roles,
-    permissions: PERMISSIONS,
     inviteLinks,
     tenantCode,
     currentUserRole,
@@ -336,14 +245,13 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     removeMember,
     updateMemberRole,
     updateMemberOrg,
-    toggleRolePermission,
     generateInviteLink,
     revokeInviteLink,
     logActivity: () => refreshActivity()
   }), [
-    members, loading, activityLogs, roles, inviteLinks, tenantCode, currentUserRole,
+    members, loading, activityLogs, inviteLinks, tenantCode, currentUserRole,
     fetchMembers, inviteMember, removeMember, updateMemberRole, updateMemberOrg,
-    toggleRolePermission, generateInviteLink, revokeInviteLink, refreshActivity
+    generateInviteLink, revokeInviteLink, refreshActivity
   ]);
 
   return (

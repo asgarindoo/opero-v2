@@ -39,6 +39,7 @@ interface Props {
   onClose: () => void;
   onUpdate: (id: string, patch: Partial<Task>) => void;
   onDelete: (id: string) => void;
+  canDelete: boolean;
 }
 
 function Section({ label, icon, count, children, defaultOpen = true }: { label: string; icon?: React.ReactNode; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -56,7 +57,7 @@ function Section({ label, icon, count, children, defaultOpen = true }: { label: 
   );
 }
 
-export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete }: Props) {
+export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete, canDelete }: Props) {
   const { user } = useTenant();
   const [tab, setTab] = useState<"details" | "activity">("details");
   const [comment, setComment] = useState("");
@@ -241,7 +242,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
             </span>
             <button
               onClick={() => setIsDetachModalOpen(true)}
-              className="opacity-0 group-hover:opacity-100 font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 transition-opacity ml-auto"
+              className="group-hover:opacity-100 font-label-caps text-[9px] font-bold uppercase tracking-widest text-on-surface-variant opacity-50 hover:opacity-100 transition-opacity ml-auto"
             >
               Detach
             </button>
@@ -377,14 +378,16 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
                 </div>
               </Section>
 
-              <div className="pt-8 flex justify-center pb-4">
-                <button
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
-                >
-                  Delete Task
-                </button>
-              </div>
+              {canDelete && (
+                <div className="pt-8 flex justify-center pb-4">
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="font-label-caps text-[10px] font-bold text-red-500 opacity-50 hover:opacity-100 uppercase tracking-widest transition-opacity"
+                  >
+                    Delete Task
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -429,6 +432,7 @@ export default function TaskDrawer({ task, allTasks, onClose, onUpdate, onDelete
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={() => {
+          if (!canDelete) return;
           onDelete(task.id);
           setIsDeleteModalOpen(false);
           onClose();

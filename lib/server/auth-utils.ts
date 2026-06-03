@@ -165,14 +165,14 @@ export async function requireTenantAccess(
  * Asserts that the current user has one of the specified roles in the active tenant.
  * Throws 401 if not authenticated, 403 if role requirement not met.
  *
- * Role hierarchy: owner > admin > member
+ * This is an explicit allow-list. Include every role that should pass.
  *
  * @example
  * await requireRole(["owner", "admin"]) // allow owner or admin
  */
 export async function requireRole(
   allowedRoles: OrgRole[]
-): Promise<TenantMembership> {
+): Promise<TenantContext> {
   const context = await requireTenantMember();
 
   if (!allowedRoles.includes(context.role)) {

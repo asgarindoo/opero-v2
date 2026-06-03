@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
 
@@ -10,7 +10,7 @@ import { getUserDisplayName } from "@/lib/user-identity";
  */
 export async function GET() {
   try {
-    const { tenant, role } = await requireRole(["owner", "admin", "member"]);
+    const { tenant, role } = await requirePermission("members.read");
 
     const members = await prisma.member.findMany({
       where: { organizationId: tenant.id },

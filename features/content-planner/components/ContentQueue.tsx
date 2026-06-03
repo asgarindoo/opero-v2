@@ -9,6 +9,8 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { useContentPlanner } from "@/features/content-planner/context/ContentPlannerContext";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 interface ContentQueueProps {
   posts: ContentPost[];
@@ -27,6 +29,8 @@ interface ContentQueueProps {
   };
 
 export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps) {
+  const { role } = useTenant();
+  const canDelete = canUse(role, "contentPlanner.delete");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { channels } = useSocialChannels();
   const { deletePosts, loading } = useContentPlanner();
@@ -35,6 +39,7 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setPostToDelete(id);
     setIsDeleteModalOpen(true);
   };
@@ -65,6 +70,7 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
         <Table className="bg-transparent min-w-[800px]">
           <TableHeader className="bg-[#fbf5f5]">
             <TableRow className="h-10">
+              {canDelete && (
               <TableHead className="w-10 px-4">
                 <div className="flex items-center justify-center">
                   <input
@@ -75,6 +81,7 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
                   />
                 </div>
               </TableHead>
+              )}
               <TableHead className="w-[30%] px-4">Content Piece</TableHead>
               <TableHead className="w-[20%] px-4">Target Account</TableHead>
               <TableHead className="w-[10%] px-4">Status</TableHead>
@@ -134,6 +141,7 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
                     onClick={() => onSelectPost(post)}
                     className={`group h-12 hover:bg-black/[0.015] cursor-pointer transition-colors ${isSelected ? "bg-primary/[0.02]" : ""}`}
                   >
+                    {canDelete && (
                     <TableCell className="px-4" onClick={e => toggleOne(post.id, e as any)}>
                       <div className="flex items-center justify-center">
                         <input
@@ -144,6 +152,7 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
                         />
                       </div>
                     </TableCell>
+                    )}
                     <TableCell className="px-4 whitespace-nowrap">
                       <div className="flex flex-col min-w-0 gap-0.5">
                         <span
@@ -188,14 +197,16 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
                     </TableCell>
                     <TableCell className="px-4 whitespace-nowrap text-center">
                       <div className="flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50"
-                          onClick={(e) => handleDeleteOne(e, post.id)}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50"
+                            onClick={(e) => handleDeleteOne(e, post.id)}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        )}
                         <ChevronRight size={13} className="text-on-surface-variant ml-0.5" />
                       </div>
                     </TableCell>
@@ -214,6 +225,7 @@ export default function ContentQueue({ posts, onSelectPost }: ContentQueueProps)
           setPostToDelete(null);
         }}
         onConfirm={() => {
+          if (!canDelete) return;
           if (postToDelete) {
             deletePosts([postToDelete]);
             setIsDeleteModalOpen(false);

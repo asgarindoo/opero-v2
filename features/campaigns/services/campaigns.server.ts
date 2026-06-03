@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenant } from "@/lib/server/auth-utils";
+import { requirePermission } from "@/lib/server/rbac";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 import { dateValue, jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
 
@@ -26,19 +26,19 @@ function buildCampaignCreateData(data: Record<string, unknown>) {
 }
 
 export async function listCampaigns() {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("campaigns.read");
   const campaigns = await prisma.campaign.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return campaigns.map((campaign: any) => mapDomainRecord(campaign));
 }
 
 export async function getCampaignById(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("campaigns.read");
   const campaign = await prisma.campaign.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
   return campaign ? mapDomainRecord(campaign) : null;
 }
 
 export async function createCampaign(data: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("campaigns.create");
   const campaignData = buildCampaignCreateData(data);
   const campaign = await prisma.campaign.create({
     data: {
@@ -54,7 +54,7 @@ export async function createCampaign(data: Record<string, unknown>) {
 }
 
 export async function updateCampaign(id: string, patch: Record<string, unknown>) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("campaigns.update");
   const current = await prisma.campaign.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const name = textValue(patch.name) ?? textValue(patch.title) ?? current.name ?? current.title ?? "Untitled";
@@ -82,7 +82,7 @@ export async function updateCampaign(id: string, patch: Record<string, unknown>)
 }
 
 export async function deleteCampaign(id: string) {
-  const ctx = await requireTenant();
+  const ctx = await requirePermission("campaigns.delete");
   const current = await prisma.campaign.findFirst({ where: { id, organizationId: ctx.tenantId } });
   if (!current) return null;
   const result = await prisma.campaign.deleteMany({ where: { id, organizationId: ctx.tenantId } });

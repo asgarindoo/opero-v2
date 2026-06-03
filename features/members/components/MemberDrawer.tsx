@@ -7,8 +7,19 @@ import UserAvatar from "@/components/common/UserAvatar";
 import { getUserDisplayName } from "@/lib/user-identity";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 
+const ROLE_DETAILS: Record<RoleType, string> = {
+  Owner: "Full workspace access and ownership controls.",
+  Admin: "Manage workspace operations and staff members.",
+  Staff: "Access daily workspace tools and assigned work.",
+};
+
+const ASSIGNABLE_ROLES: Array<{ name: RoleType; description: string }> = [
+  { name: "Admin", description: ROLE_DETAILS.Admin },
+  { name: "Staff", description: ROLE_DETAILS.Staff },
+];
+
 export default function MemberDrawer({ memberId, onClose }: { memberId: string, onClose: () => void }) {
-  const { members, removeMember, updateMemberRole, updateMemberOrg, roles, permissions } = useMembers();
+  const { members, removeMember, updateMemberRole, updateMemberOrg, currentUserRole } = useMembers();
   const { presence } = usePresence();
   const member = members.find(m => m.id === memberId);
   const [isEditingRole, setIsEditingRole] = useState(false);
@@ -26,6 +37,11 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
 
   if (!member) return null;
   const memberName = getUserDisplayName(member, "Unnamed User");
+  const canManageThisMember =
+    currentUserRole === "Owner" ||
+    (currentUserRole === "Admin" && member.role === "Staff");
+  const canChangeRole = currentUserRole === "Owner" && member.role !== "Owner";
+  const canRemoveMember = canManageThisMember && member.role !== "Owner";
 
   const handleRemove = () => {
     removeMember(member.id);
@@ -44,7 +60,6 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
     setIsEditingOrg(false);
   };
 
-  const roleObj = roles.find(r => r.name === member.role);
   const memberPresence = presence.find((record) => record.userId === member.userId);
   const isOnline = memberPresence?.isOnline ?? false;
   const lastSeenAt = memberPresence?.lastSeenAt ?? member.lastActive;
@@ -90,9 +105,6 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
     return `Last active ${days} days ago`;
   }
 
-  const permissionById = new Map(permissions.map((permission) => [permission.id, permission]));
-  // Get permissions for this role to display
-  const grantedPerms = roleObj?.permissions || [];
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
@@ -159,7 +171,7 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-label-caps text-[10px] text-on-surface-variant opacity-60 uppercase tracking-wider">Organization</h4>
-                {!isEditingOrg && (
+                {!isEditingOrg && canManageThisMember && (
                   <button
                     onClick={handleEditOrgClick}
                     className="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors"
@@ -215,11 +227,11 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
 
             <div className="w-full h-px bg-black/5" />
 
-            {/* Role & Permissions */}
+            {/* Access Level */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-label-caps text-[10px] text-on-surface-variant opacity-60 uppercase tracking-wider">Access Level</h4>
-                {member.role !== "Owner" && (
+                {canChangeRole && (
                   <button
                     onClick={() => setIsEditingRole(!isEditingRole)}
                     className="font-label-caps text-[9px] text-primary hover:underline"
@@ -231,11 +243,11 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
 
               {isEditingRole ? (
                 <div className="flex flex-col gap-2 animate-fade-in-up">
-                  {roles.filter(r => r.name !== "Owner").map(r => (
+                  {ASSIGNABLE_ROLES.map(r => (
                     <button
-                      key={r.id}
+                      key={r.name}
                       onClick={() => {
-                        updateMemberRole(member.id, r.name as RoleType);
+                        updateMemberRole(member.id, r.name);
                         setIsEditingRole(false);
                       }}
                       className={`flex items-start p-3 rounded-xl border transition-all text-left ${member.role === r.name ? 'border-primary bg-primary/5' : 'border-black/10 hover:border-black/20'}`}
@@ -257,20 +269,8 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
                     <div>
                       <div className="font-display font-semibold text-[13px] text-on-surface mb-0.5">{member.role}</div>
                       <div className="font-body-sm text-[11px] text-on-surface-variant opacity-70">
-                        {roleObj?.description}
+                        {ROLE_DETAILS[member.role]}
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Detailed Permissions view (soft chips) */}
-                  <div className="pt-2">
-                    <h5 className="font-label-caps text-[9px] text-on-surface-variant opacity-60 uppercase tracking-wider mb-2">Granted Permissions</h5>
-                    <div className="flex flex-wrap gap-1.5">
-                      {grantedPerms.map(permId => (
-                        <span key={permId} className="px-2 py-1 rounded-md bg-black/[0.03] text-on-surface-variant font-body-sm text-[10px] border border-black/[0.03]">
-                          {permissionById.get(permId)?.name ?? permId.replace("_", " ")}
-                        </span>
-                      ))}
                     </div>
                   </div>
                 </div>
@@ -280,7 +280,7 @@ export default function MemberDrawer({ memberId, onClose }: { memberId: string, 
         </div>
 
         {/* Footer Actions */}
-        {member.role !== "Owner" && (
+        {canRemoveMember && (
           <div className="px-6 py-4 shrink-0 bg-surface-container-lowest border-t" style={{ borderColor: "rgba(0,0,0,0.05)" }}>
             <button
               onClick={() => setShowDeleteConfirm(true)}

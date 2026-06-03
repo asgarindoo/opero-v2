@@ -4,8 +4,12 @@ import React, { useState } from "react";
 import { Folder, Plus, Search, Grid, List, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
 import { useDocuments } from "../context/DocumentsContext";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
+import { useTenant } from "@/components/providers/TenantProvider";
+import { canUse } from "@/lib/client/rbac";
 
 export default function DocumentsSidebar() {
+  const { role } = useTenant();
+  const canDeleteFolders = canUse(role, "documentFolders.delete");
   const { folders, activeFolderId, setActiveFolderId, addFolder, removeFolder } = useDocuments();
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -82,16 +86,18 @@ export default function DocumentsSidebar() {
               <Folder size={15} strokeWidth={activeFolderId === folder.id ? 2 : 1.5} />
               <span className="font-display text-[13px] font-medium truncate flex-1">{folder.title}</span>
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setFolderToDelete(folder);
-                setIsDeleteModalOpen(true);
-              }}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-red-50 transition-all z-10"
-            >
-              <Trash2 size={13} className="text-red-500" />
-            </button>
+            {canDeleteFolders && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFolderToDelete(folder);
+                  setIsDeleteModalOpen(true);
+                }}
+                className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-red-50 transition-all z-10"
+              >
+                <Trash2 size={13} className="text-red-500" />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -103,6 +109,7 @@ export default function DocumentsSidebar() {
           setFolderToDelete(null);
         }}
         onConfirm={() => {
+          if (!canDeleteFolders) return;
           if (folderToDelete) {
             removeFolder(folderToDelete.id);
             setIsDeleteModalOpen(false);

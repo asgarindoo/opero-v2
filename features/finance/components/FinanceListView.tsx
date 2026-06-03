@@ -21,6 +21,7 @@ import Button from "@/components/ui/Button";
 interface FinanceListViewProps {
   transactions: Transaction[];
   onTransactionClick: (transaction: Transaction) => void;
+  canDelete: boolean;
 }
 
 const getStatusVariant = (status: string): any => {
@@ -36,7 +37,7 @@ const getStatusVariant = (status: string): any => {
   }
 };
 
-export default function FinanceListView({ transactions, onTransactionClick }: FinanceListViewProps) {
+export default function FinanceListView({ transactions, onTransactionClick, canDelete }: FinanceListViewProps) {
   const { deleteTransactions, loading } = useFinance();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -60,11 +61,13 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
 
   const handleDeleteOne = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (!canDelete) return;
     setTxToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (!canDelete) return;
     if (txToDelete) {
       deleteTransactions([txToDelete]);
       setTxToDelete(null);
@@ -90,6 +93,7 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
       <Table className="min-w-[800px]">
         <TableHeader className="bg-[#faf5f5]/50">
           <TableRow>
+            {canDelete && (
             <TableHead className="w-10">
               <div className="flex items-center justify-center">
                 <input
@@ -100,6 +104,7 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                 />
               </div>
             </TableHead>
+            )}
             <TableHead>Reference / Title</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Category</TableHead>
@@ -157,6 +162,7 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                   onClick={() => onTransactionClick(tx)}
                   className={`group ${isSelected ? "bg-primary/[0.02]" : ""}`}
                 >
+                  {canDelete && (
                   <TableCell onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-center">
                       <input
@@ -167,6 +173,7 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                       />
                     </div>
                   </TableCell>
+                  )}
                   <TableCell className="max-w-[0px]">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-6 h-6 rounded-[5px] flex shrink-0 items-center justify-center transition-all bg-black/[0.03] text-on-surface-variant opacity-60 group-hover:opacity-100`}>
@@ -208,14 +215,16 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
                   </TableCell>
                   <TableCell className="px-4 text-center">
                     <div className="w-full flex justify-center items-center gap-0.5 opacity-30 group-hover:opacity-100 transition-all">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
-                        onClick={(e) => handleDeleteOne(e, tx.id)}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6.5 w-6.5 text-on-surface-variant hover:text-red-500 hover:bg-red-50 transition-all"
+                          onClick={(e) => handleDeleteOne(e, tx.id)}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      )}
                       <div className="ml-1 opacity-60">
                         <ChevronRight size={13} />
                       </div>
@@ -228,12 +237,14 @@ export default function FinanceListView({ transactions, onTransactionClick }: Fi
         </TableBody>
       </Table>
 
-      <SelectionBar
-        count={selectedIds.size}
-        onClear={() => setSelectedIds(new Set())}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        label="transactions"
-      />
+      {canDelete && (
+        <SelectionBar
+          count={selectedIds.size}
+          onClear={() => setSelectedIds(new Set())}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          label="transactions"
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
