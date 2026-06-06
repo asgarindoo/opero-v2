@@ -12,20 +12,35 @@ CREATE TABLE IF NOT EXISTS "tenant_record" (
 CREATE INDEX IF NOT EXISTS "tenant_record_organizationId_type_idx"
   ON "tenant_record"("organizationId", "type");
 
-ALTER TABLE "tenant_record"
-  ADD CONSTRAINT "tenant_record_organizationId_fkey"
-  FOREIGN KEY ("organizationId") REFERENCES "organization"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tenant_record_organizationId_fkey') THEN
+    ALTER TABLE "tenant_record"
+      ADD CONSTRAINT "tenant_record_organizationId_fkey"
+      FOREIGN KEY ("organizationId") REFERENCES "organization"("id")
+      ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "tenant_record"
-  ADD CONSTRAINT "tenant_record_createdById_fkey"
-  FOREIGN KEY ("createdById") REFERENCES "user"("id")
-  ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tenant_record_createdById_fkey') THEN
+    ALTER TABLE "tenant_record"
+      ADD CONSTRAINT "tenant_record_createdById_fkey"
+      FOREIGN KEY ("createdById") REFERENCES "user"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "tenant_record"
-  ADD CONSTRAINT "tenant_record_updatedById_fkey"
-  FOREIGN KEY ("updatedById") REFERENCES "user"("id")
-  ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tenant_record_updatedById_fkey') THEN
+    ALTER TABLE "tenant_record"
+      ADD CONSTRAINT "tenant_record_updatedById_fkey"
+      FOREIGN KEY ("updatedById") REFERENCES "user"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "tenant_activity" (
   "id" TEXT PRIMARY KEY,
@@ -43,12 +58,22 @@ CREATE TABLE IF NOT EXISTS "tenant_activity" (
 CREATE INDEX IF NOT EXISTS "tenant_activity_organizationId_module_idx"
   ON "tenant_activity"("organizationId", "module");
 
-ALTER TABLE "tenant_activity"
-  ADD CONSTRAINT "tenant_activity_organizationId_fkey"
-  FOREIGN KEY ("organizationId") REFERENCES "organization"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tenant_activity_organizationId_fkey') THEN
+    ALTER TABLE "tenant_activity"
+      ADD CONSTRAINT "tenant_activity_organizationId_fkey"
+      FOREIGN KEY ("organizationId") REFERENCES "organization"("id")
+      ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "tenant_activity"
-  ADD CONSTRAINT "tenant_activity_userId_fkey"
-  FOREIGN KEY ("userId") REFERENCES "user"("id")
-  ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tenant_activity_userId_fkey') THEN
+    ALTER TABLE "tenant_activity"
+      ADD CONSTRAINT "tenant_activity_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "user"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

@@ -21,6 +21,7 @@ const PRODUCT_SELECT = {
   minThreshold: true,
   status: true,
   activities: true,
+  comments: true,
   payload: true,
   createdById: true,
   updatedById: true,
@@ -31,18 +32,17 @@ const PRODUCT_SELECT = {
 
 function productPayload(data: Record<string, unknown>, currentPayload?: unknown) {
   const payload = { ...parsePayload(currentPayload), ...parsePayload(data.payload) };
-  if (data.comments !== undefined) payload.comments = data.comments;
+  delete payload.comments;
   return jsonObjectOrUndefined(payload) ?? {};
 }
 
 function mapProduct(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const mapped = mapDomainRecord(record, fallbackUser) as any;
-  const payload = parsePayload(record.payload);
   return {
     ...mapped,
     sku: mapped.sku ?? "SKU-TBD",
     activities: Array.isArray(mapped.activities) ? mapped.activities : [],
-    comments: Array.isArray(payload.comments) ? payload.comments : [],
+    comments: Array.isArray(mapped.comments) ? mapped.comments : [],
   };
 }
 
@@ -64,6 +64,7 @@ function buildProductCreateData(data: Record<string, unknown>) {
     minThreshold: intValue(data.minThreshold) ?? 10,
     status: getStatus(data, "Active"),
     activities: jsonArray(data.activities),
+    comments: jsonArray(data.comments),
     payload: productPayload(data),
   };
 }
@@ -118,6 +119,7 @@ export async function updateProduct(id: string, patch: Record<string, unknown>) 
       minThreshold: patch.minThreshold !== undefined ? intValue(patch.minThreshold) ?? current.minThreshold : current.minThreshold,
       status: typeof patch.status === "string" ? patch.status : current.status,
       activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
+      comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
       payload: productPayload(patch, current.payload),
       updatedById: ctx.userId,
     },

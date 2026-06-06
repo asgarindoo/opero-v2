@@ -1,76 +1,76 @@
 -- DropIndex
-DROP INDEX "goal_ownerId_idx";
+DROP INDEX IF EXISTS "goal_ownerId_idx";
 
 -- AlterTable
-ALTER TABLE "asset" DROP COLUMN "assignedTo",
-DROP COLUMN "assignedToId";
+ALTER TABLE "asset" DROP COLUMN IF EXISTS "assignedTo",
+DROP COLUMN IF EXISTS "assignedToId";
 
 -- AlterTable
-ALTER TABLE "campaign" DROP COLUMN "assignedStaff",
-DROP COLUMN "attachments",
-DROP COLUMN "goals",
-DROP COLUMN "notes",
-DROP COLUMN "objective";
+ALTER TABLE "campaign" DROP COLUMN IF EXISTS "assignedStaff",
+DROP COLUMN IF EXISTS "attachments",
+DROP COLUMN IF EXISTS "goals",
+DROP COLUMN IF EXISTS "notes",
+DROP COLUMN IF EXISTS "objective";
 
 -- AlterTable
-ALTER TABLE "contact" DROP COLUMN "assignedStaff",
-DROP COLUMN "description",
-DROP COLUMN "notes",
-DROP COLUMN "tags",
-ADD COLUMN     "comments" JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE "contact" DROP COLUMN IF EXISTS "assignedStaff",
+DROP COLUMN IF EXISTS "description",
+DROP COLUMN IF EXISTS "notes",
+DROP COLUMN IF EXISTS "tags",
+ADD COLUMN IF NOT EXISTS "comments" JSONB NOT NULL DEFAULT '[]';
 
 -- AlterTable
-ALTER TABLE "goal" DROP COLUMN "activities",
-DROP COLUMN "currentValue",
-DROP COLUMN "metric",
-DROP COLUMN "notes",
-DROP COLUMN "ownerId",
-DROP COLUMN "tags",
-DROP COLUMN "targetValue";
+ALTER TABLE "goal" DROP COLUMN IF EXISTS "activities",
+DROP COLUMN IF EXISTS "currentValue",
+DROP COLUMN IF EXISTS "metric",
+DROP COLUMN IF EXISTS "notes",
+DROP COLUMN IF EXISTS "ownerId",
+DROP COLUMN IF EXISTS "tags",
+DROP COLUMN IF EXISTS "targetValue";
 
 -- AlterTable
-ALTER TABLE "invoice" DROP COLUMN "activities",
-DROP COLUMN "attachments",
-DROP COLUMN "notes",
-DROP COLUMN "paidAt",
-DROP COLUMN "paymentReference",
-DROP COLUMN "recipientEmail",
-DROP COLUMN "recipientName",
-DROP COLUMN "saleOrderNumber",
-ADD COLUMN     "contactEmail" TEXT;
+ALTER TABLE "invoice" DROP COLUMN IF EXISTS "activities",
+DROP COLUMN IF EXISTS "attachments",
+DROP COLUMN IF EXISTS "notes",
+DROP COLUMN IF EXISTS "paidAt",
+DROP COLUMN IF EXISTS "paymentReference",
+DROP COLUMN IF EXISTS "recipientEmail",
+DROP COLUMN IF EXISTS "recipientName",
+DROP COLUMN IF EXISTS "saleOrderNumber",
+ADD COLUMN IF NOT EXISTS "contactEmail" TEXT;
 
 -- AlterTable
-ALTER TABLE "product" DROP COLUMN "description",
-DROP COLUMN "imageUrl",
-DROP COLUMN "notes",
-DROP COLUMN "variants",
-ADD COLUMN     "comments" JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE "product" DROP COLUMN IF EXISTS "description",
+DROP COLUMN IF EXISTS "imageUrl",
+DROP COLUMN IF EXISTS "notes",
+DROP COLUMN IF EXISTS "variants",
+ADD COLUMN IF NOT EXISTS "comments" JSONB NOT NULL DEFAULT '[]';
 
 -- AlterTable
-ALTER TABLE "sale" DROP COLUMN "assignedStaff",
-DROP COLUMN "attachments",
-DROP COLUMN "customerName",
-DROP COLUMN "notes",
-DROP COLUMN "recipientName",
-DROP COLUMN "trackingNumber";
+ALTER TABLE "sale" DROP COLUMN IF EXISTS "assignedStaff",
+DROP COLUMN IF EXISTS "attachments",
+DROP COLUMN IF EXISTS "customerName",
+DROP COLUMN IF EXISTS "notes",
+DROP COLUMN IF EXISTS "recipientName",
+DROP COLUMN IF EXISTS "trackingNumber";
 
 -- AlterTable
-ALTER TABLE "social_channel" DROP COLUMN "lastActiveDate";
+ALTER TABLE "social_channel" DROP COLUMN IF EXISTS "lastActiveDate";
 
 -- AlterTable
-ALTER TABLE "task" DROP COLUMN "estimatedHours",
-DROP COLUMN "project",
-DROP COLUMN "reactions",
-DROP COLUMN "relationships",
-DROP COLUMN "reminderDate",
-DROP COLUMN "subtasks",
-DROP COLUMN "watchers";
+ALTER TABLE "task" DROP COLUMN IF EXISTS "estimatedHours",
+DROP COLUMN IF EXISTS "project",
+DROP COLUMN IF EXISTS "reactions",
+DROP COLUMN IF EXISTS "relationships",
+DROP COLUMN IF EXISTS "reminderDate",
+DROP COLUMN IF EXISTS "subtasks",
+DROP COLUMN IF EXISTS "watchers";
 
 -- AlterTable
-ALTER TABLE "tenant_settings" DROP COLUMN "brandColor",
-DROP COLUMN "industryType",
-DROP COLUMN "websiteUrl";
+ALTER TABLE "tenant_settings" DROP COLUMN IF EXISTS "brandColor",
+DROP COLUMN IF EXISTS "industryType",
+DROP COLUMN IF EXISTS "websiteUrl";
 
 -- AlterTable
-ALTER TABLE "transaction" DROP COLUMN "activities",
-DROP COLUMN "attachments";
+ALTER TABLE "transaction" DROP COLUMN IF EXISTS "activities",
+DROP COLUMN IF EXISTS "attachments";

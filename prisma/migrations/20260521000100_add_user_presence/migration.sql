@@ -1,4 +1,4 @@
-CREATE TABLE "user_presence" (
+CREATE TABLE IF NOT EXISTS "user_presence" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -9,12 +9,22 @@ CREATE TABLE "user_presence" (
     CONSTRAINT "user_presence_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "user_presence_userId_organizationId_key" ON "user_presence"("userId", "organizationId");
-CREATE INDEX "user_presence_organizationId_idx" ON "user_presence"("organizationId");
-CREATE INDEX "user_presence_lastSeenAt_idx" ON "user_presence"("lastSeenAt");
+CREATE UNIQUE INDEX IF NOT EXISTS "user_presence_userId_organizationId_key" ON "user_presence"("userId", "organizationId");
+CREATE INDEX IF NOT EXISTS "user_presence_organizationId_idx" ON "user_presence"("organizationId");
+CREATE INDEX IF NOT EXISTS "user_presence_lastSeenAt_idx" ON "user_presence"("lastSeenAt");
 
-ALTER TABLE "user_presence" ADD CONSTRAINT "user_presence_userId_fkey"
-FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_presence_userId_fkey') THEN
+    ALTER TABLE "user_presence" ADD CONSTRAINT "user_presence_userId_fkey"
+    FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
-ALTER TABLE "user_presence" ADD CONSTRAINT "user_presence_organizationId_fkey"
-FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_presence_organizationId_fkey') THEN
+    ALTER TABLE "user_presence" ADD CONSTRAINT "user_presence_organizationId_fkey"
+    FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;

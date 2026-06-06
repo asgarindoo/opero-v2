@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import type { TenantContext } from "@/lib/server/auth-utils";
 import { requirePermission } from "@/lib/server/rbac";
+import { tenantRls } from "@/lib/server/tenant-rls";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
@@ -85,28 +87,30 @@ async function mapTaskRecords(ctx: TenantContext, records: any[]) {
   return records.map((task) => hydrateTaskIdentity(mapDomainRecord(task), identities));
 }
 
-async function resolveCampaignId(ctx: TenantContext, value: unknown) {
+type TaskLookupClient = Pick<Prisma.TransactionClient, "campaign" | "member">;
+
+async function resolveCampaignId(db: TaskLookupClient, ctx: TenantContext, value: unknown) {
   if (value === null) return null;
   const campaignId = textValue(value);
   if (!campaignId) return undefined;
-  const campaign = await prisma.campaign.findFirst({
+  const campaign = await db.campaign.findFirst({
     where: { id: campaignId, organizationId: ctx.tenantId },
     select: { id: true },
   });
   return campaign?.id ?? null;
 }
 
-async function resolveAssigneeId(ctx: TenantContext, data: Record<string, unknown>) {
+async function resolveAssigneeId(db: TaskLookupClient, ctx: TenantContext, data: Record<string, unknown>) {
   const assigneeId = textValue(data.assigneeId) ?? firstStringFromArray(data.assignees);
   if (!assigneeId) return undefined;
-  const member = await prisma.member.findFirst({
+  const member = await db.member.findFirst({
     where: { organizationId: ctx.tenantId, userId: assigneeId },
     select: { userId: true },
   });
   return member?.userId ?? null;
 }
 
-async function buildTaskCreateData(ctx: TenantContext, data: Record<string, unknown>) {
+async function buildTaskCreateData(db: TaskLookupClient, ctx: TenantContext, data: Record<string, unknown>) {
   const title = getTitle(data);
   return {
     title,
@@ -115,8 +119,8 @@ async function buildTaskCreateData(ctx: TenantContext, data: Record<string, unkn
     priority: textValue(data.priority),
     dueDate: dateValue(data.dueDate) ?? dateValue(data.due),
     startDate: dateValue(data.startDate),
-    assigneeId: await resolveAssigneeId(ctx, data),
-    campaignId: await resolveCampaignId(ctx, data.campaignId),
+    assigneeId: await resolveAssigneeId(db, ctx, data),
+    campaignId: await resolveCampaignId(db, ctx, data.campaignId),
     labels: jsonArray(data.labels),
     assignees: jsonArray(data.assignees),
     checklist: jsonArray(data.checklist),
@@ -129,30 +133,36 @@ async function buildTaskCreateData(ctx: TenantContext, data: Record<string, unkn
 
 export async function listTasks() {
   const ctx = await requirePermission("tasks.read");
-  const tasks = await prisma.task.findMany({
-    where: { organizationId: ctx.tenantId },
-    orderBy: { createdAt: "desc" },
-    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
-  });
+  const tasks = await tenantRls(ctx, (tx) =>
+    tx.task.findMany({
+      where: { organizationId: ctx.tenantId },
+      orderBy: { createdAt: "desc" },
+      include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+    })
+  );
   return mapTaskRecords(ctx, tasks);
 }
 
 export async function listCampaignTasks(campaignId: string) {
   const ctx = await requirePermission("tasks.read");
-  const tasks = await prisma.task.findMany({
-    where: { organizationId: ctx.tenantId, campaignId },
-    orderBy: { createdAt: "desc" },
-    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
-  });
+  const tasks = await tenantRls(ctx, (tx) =>
+    tx.task.findMany({
+      where: { organizationId: ctx.tenantId, campaignId },
+      orderBy: { createdAt: "desc" },
+      include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+    })
+  );
   return mapTaskRecords(ctx, tasks);
 }
 
 export async function getTaskById(id: string) {
   const ctx = await requirePermission("tasks.read");
-  const task = await prisma.task.findFirst({
-    where: { id, organizationId: ctx.tenantId },
-    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
-  });
+  const task = await tenantRls(ctx, (tx) =>
+    tx.task.findFirst({
+      where: { id, organizationId: ctx.tenantId },
+      include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+    })
+  );
   if (!task) return null;
   const [mappedTask] = await mapTaskRecords(ctx, [task]);
   return mappedTask;
@@ -160,15 +170,17 @@ export async function getTaskById(id: string) {
 
 export async function createTask(data: Record<string, unknown>) {
   const ctx = await requirePermission("tasks.create");
-  const taskData = await buildTaskCreateData(ctx, data);
-  const task = await prisma.task.create({
-    data: {
-      id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
-      organizationId: ctx.tenantId,
-      ...taskData,
-      createdById: ctx.userId,
-      updatedById: ctx.userId,
-    },
+  const task = await tenantRls(ctx, async (tx) => {
+    const taskData = await buildTaskCreateData(tx, ctx, data);
+    return tx.task.create({
+      data: {
+        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
+        organizationId: ctx.tenantId,
+        ...taskData,
+        createdById: ctx.userId,
+        updatedById: ctx.userId,
+      },
+    });
   });
   logDomainActivity({
     tenantId: ctx.tenantId,
@@ -186,33 +198,36 @@ export async function createTask(data: Record<string, unknown>) {
 
 export async function updateTask(id: string, patch: Record<string, unknown>) {
   const ctx = await requirePermission("tasks.update");
-  const current = await prisma.task.findUnique({ where: { id } });
-  if (!current || current.organizationId !== ctx.tenantId) return null;
+  const updated = await tenantRls(ctx, async (tx) => {
+    const current = await tx.task.findFirst({ where: { id, organizationId: ctx.tenantId } });
+    if (!current) return null;
 
-  const campaignId = patch.campaignId !== undefined ? await resolveCampaignId(ctx, patch.campaignId) : current.campaignId;
-  const assigneeId = patch.assigneeId !== undefined || patch.assignees !== undefined ? await resolveAssigneeId(ctx, patch) : current.assigneeId;
-  const updated = await prisma.task.update({
-    where: { id },
-    data: {
-      title: getTitle(patch, current.title ?? "Untitled"),
-      description: patch.description !== undefined ? textValue(patch.description) : current.description,
-      status: typeof patch.status === "string" ? patch.status : current.status,
-      priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
-      dueDate: patch.dueDate !== undefined || patch.due !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.due) : current.dueDate,
-      startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
-      assigneeId,
-      campaignId,
-      labels: patch.labels !== undefined ? jsonArray(patch.labels) : jsonInputOrDefault(current.labels, []),
-      assignees: patch.assignees !== undefined ? jsonArray(patch.assignees) : jsonInputOrDefault(current.assignees, []),
-      checklist: patch.checklist !== undefined ? jsonArray(patch.checklist) : jsonInputOrDefault(current.checklist, []),
-      externalLinks: patch.externalLinks !== undefined ? jsonArray(patch.externalLinks) : jsonInputOrDefault(current.externalLinks, []),
-      comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
-      activity: patch.activity !== undefined ? jsonArray(patch.activity) : jsonInputOrDefault(current.activity, []),
-      attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
-      updatedById: ctx.userId,
-    },
-    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+    const campaignId = patch.campaignId !== undefined ? await resolveCampaignId(tx, ctx, patch.campaignId) : current.campaignId;
+    const assigneeId = patch.assigneeId !== undefined || patch.assignees !== undefined ? await resolveAssigneeId(tx, ctx, patch) : current.assigneeId;
+    return tx.task.update({
+      where: { id },
+      data: {
+        title: getTitle(patch, current.title ?? "Untitled"),
+        description: patch.description !== undefined ? textValue(patch.description) : current.description,
+        status: typeof patch.status === "string" ? patch.status : current.status,
+        priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
+        dueDate: patch.dueDate !== undefined || patch.due !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.due) : current.dueDate,
+        startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
+        assigneeId,
+        campaignId,
+        labels: patch.labels !== undefined ? jsonArray(patch.labels) : jsonInputOrDefault(current.labels, []),
+        assignees: patch.assignees !== undefined ? jsonArray(patch.assignees) : jsonInputOrDefault(current.assignees, []),
+        checklist: patch.checklist !== undefined ? jsonArray(patch.checklist) : jsonInputOrDefault(current.checklist, []),
+        externalLinks: patch.externalLinks !== undefined ? jsonArray(patch.externalLinks) : jsonInputOrDefault(current.externalLinks, []),
+        comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
+        activity: patch.activity !== undefined ? jsonArray(patch.activity) : jsonInputOrDefault(current.activity, []),
+        attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
+        updatedById: ctx.userId,
+      },
+      include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+    });
   });
+  if (!updated) return null;
 
   logDomainActivity({
     tenantId: ctx.tenantId,
@@ -230,10 +245,13 @@ export async function updateTask(id: string, patch: Record<string, unknown>) {
 
 export async function deleteTask(id: string) {
   const ctx = await requirePermission("tasks.delete");
-  const current = await prisma.task.findUnique({ where: { id } });
-  if (!current || current.organizationId !== ctx.tenantId) return null;
-
-  await prisma.task.delete({ where: { id } });
+  const current = await tenantRls(ctx, async (tx) => {
+    const current = await tx.task.findFirst({ where: { id, organizationId: ctx.tenantId } });
+    if (!current) return null;
+    const result = await tx.task.deleteMany({ where: { id, organizationId: ctx.tenantId } });
+    return result.count === 0 ? null : current;
+  });
+  if (!current) return null;
 
   logDomainActivity({
     tenantId: ctx.tenantId,

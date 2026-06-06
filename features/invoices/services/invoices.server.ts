@@ -14,6 +14,7 @@ const INVOICE_SELECT = {
   status: true,
   contactName: true,
   contactId: true,
+  contactEmail: true,
   issueDate: true,
   dueDate: true,
   items: true,
@@ -39,11 +40,8 @@ const INVOICE_SELECT = {
 
 function invoicePayload(data: Record<string, unknown>, currentPayload?: unknown) {
   const payload = { ...parsePayload(currentPayload), ...parsePayload(data.payload) };
-  const contactEmail = textValue(data.contactEmail) ?? textValue(data.recipientEmail);
-  if (contactEmail !== undefined) {
-    payload.contactEmail = contactEmail;
-    payload.recipientEmail = contactEmail;
-  }
+  delete payload.contactEmail;
+  delete payload.recipientEmail;
   if (data.recipientName !== undefined) payload.recipientName = textValue(data.recipientName);
   return jsonObjectOrUndefined(payload) ?? {};
 }
@@ -51,7 +49,7 @@ function invoicePayload(data: Record<string, unknown>, currentPayload?: unknown)
 function mapInvoice(record: any, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
   const mapped = mapDomainRecord(record, fallbackUser) as any;
   const payload = parsePayload(record.payload);
-  const contactEmail = textValue(mapped.contactEmail) ?? textValue(mapped.recipientEmail) ?? textValue(payload.contactEmail) ?? textValue(payload.recipientEmail);
+  const contactEmail = textValue(mapped.contactEmail);
   return {
     ...mapped,
     contactName: mapped.contactName ?? mapped.recipientName ?? payload.contactName ?? payload.recipientName,
@@ -111,6 +109,7 @@ async function buildInvoiceCreateData(tenantId: string, data: Record<string, unk
     status,
     contactName: textValue(data.contactName),
     contactId: textValue(data.contactId),
+    contactEmail: textValue(data.contactEmail) ?? textValue(data.recipientEmail),
     payload: invoicePayload(data),
     issueDate: dateValue(data.issueDate),
     dueDate: dateValue(data.dueDate),
@@ -246,6 +245,7 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
       status: typeof patch.status === "string" ? patch.status : current.status,
       contactName: patch.contactName !== undefined ? textValue(patch.contactName) : current.contactName,
       contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
+      contactEmail: patch.contactEmail !== undefined || patch.recipientEmail !== undefined ? textValue(patch.contactEmail) ?? textValue(patch.recipientEmail) : current.contactEmail,
       payload: invoicePayload(patch, current.payload),
       issueDate: patch.issueDate !== undefined ? dateValue(patch.issueDate) : current.issueDate,
       dueDate: patch.dueDate !== undefined ? dateValue(patch.dueDate) : current.dueDate,

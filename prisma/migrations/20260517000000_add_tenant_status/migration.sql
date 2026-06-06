@@ -1,2 +1,2 @@
-ALTER TABLE "organization"
+ALTER TABLE IF EXISTS "organization"
 ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'active';

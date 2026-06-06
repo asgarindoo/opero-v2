@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { mapDomainRecord } from "@/lib/api/domain-utils";
 import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
+import { tenantRls } from "@/lib/server/tenant-rls";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 
 function getChecklistProgress(checklist?: Array<{ done: boolean }>) {
@@ -27,7 +28,9 @@ export async function getDashboardSummary() {
       where: { id: ctx.tenantId },
       select: { name: true },
     }),
-    prisma.task.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { updatedAt: "desc" } }),
+    tenantRls(ctx, (tx) =>
+      tx.task.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { updatedAt: "desc" } })
+    ),
     prisma.flow.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { updatedAt: "desc" } }),
     prisma.sale.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { updatedAt: "desc" } }),
     prisma.tenantActivity.findMany({

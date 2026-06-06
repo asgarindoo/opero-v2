@@ -13,14 +13,32 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Setup connection pool with SSL — required for Supabase
 const connectionString = process.env.DATABASE_URL ?? "";
+
+function getPoolMax() {
+  const configured = Number(process.env.DATABASE_POOL_MAX ?? process.env.PG_POOL_MAX);
+  if (Number.isInteger(configured) && configured > 0) return configured;
+
+  return process.env.NODE_ENV === "production" ? 3 : 10;
+}
+
+function getSslConfig() {
+  const configured = process.env.DATABASE_SSL?.toLowerCase();
+  if (configured === "true") return { rejectUnauthorized: false };
+  if (configured === "false") return false;
+
+  const isSupabaseUrl = /(?:^|\.)(?:supabase\.co|pooler\.supabase\.com)/.test(connectionString);
+  return process.env.NODE_ENV === "production" && isSupabaseUrl
+    ? { rejectUnauthorized: false }
+    : false;
+}
+
 const pool = new Pool({
   connectionString,
-  ssl: false,
+  ssl: getSslConfig(),
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
-  max: 10,
+  max: getPoolMax(),
 });
 const adapter = new PrismaPg(pool);
 

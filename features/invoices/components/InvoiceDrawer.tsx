@@ -47,17 +47,11 @@ export default function InvoiceDrawer({ invoiceId, onClose, canManage }: { invoi
         const element = invoiceRef.current;
         if (!element) return;
 
-        // Capture the element using html-to-image instead of html2canvas to avoid oklab parsing errors
+        // Capture the element using html-to-image to avoid CSS color parsing issues.
         const imgData = await toPng(element, {
           pixelRatio: 2,
           backgroundColor: "#ffffff",
-          skipFonts: true, // Bypass cross-origin CSS parsing which causes the SecurityError
-          filter: (node) => {
-            if (node instanceof HTMLElement && node.dataset.html2canvasIgnore === "true") {
-              return false;
-            }
-            return true;
-          }
+          skipFonts: true, // Bypass cross-origin CSS parsing which causes the SecurityError.
         });
 
         const pdf = new jsPDF({
@@ -127,7 +121,7 @@ export default function InvoiceDrawer({ invoiceId, onClose, canManage }: { invoi
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto print:overflow-visible print:px-0 print:py-0 bg-surface-container-lowest">
-          {/* We wrap the content in a div to capture it easily with html2canvas */}
+          {/* We wrap the content in a div to capture it for PDF export. */}
           <div ref={invoiceRef} className="px-8 pb-12 pt-6 bg-surface-container-lowest">
 
             <div className="mb-10 flex justify-between items-start gap-4">

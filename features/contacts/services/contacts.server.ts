@@ -20,13 +20,14 @@ const CONTACT_SELECT = {
   industry: true,
   name: true,
   persons: true,
+  comments: true,
   relationshipType: true,
   createdBy: { select: { id: true, name: true, email: true, image: true } },
 } as const;
 
 function contactPayload(data: Record<string, unknown>, currentPayload?: unknown) {
   const payload = { ...parsePayload(currentPayload) };
-  if (data.comments !== undefined) payload.comments = data.comments;
+  delete payload.comments;
   if (data.contextData !== undefined) payload.contextData = data.contextData;
   if (data.lastContacted !== undefined) payload.lastContacted = data.lastContacted;
   if (data.isArchived !== undefined) payload.isArchived = data.isArchived;
@@ -43,7 +44,7 @@ function mapContact(record: any, fallbackUser?: { id: string; name: string; emai
     industry: mapped.industry ?? "Unspecified",
     contextData: payload.contextData && typeof payload.contextData === "object" && !Array.isArray(payload.contextData) ? payload.contextData : {},
     persons: Array.isArray(mapped.persons) ? mapped.persons : [],
-    comments: Array.isArray(payload.comments) ? payload.comments : [],
+    comments: Array.isArray(mapped.comments) ? mapped.comments : [],
     isArchived: mapped.isArchived ?? mapped.status === "Archived",
     createdAt: mapped.createdAt ?? mapped.recordCreatedAt ?? "",
     lastContacted: typeof payload.lastContacted === "string" ? payload.lastContacted : mapped.recordUpdatedAt ?? mapped.recordCreatedAt ?? "",
@@ -94,6 +95,7 @@ export async function createContact(data: Record<string, unknown>) {
       status: getStatus(parsed),
       industry: textValue(parsed.industry),
       persons: jsonArray(sanitizePersons(parsed.persons) ?? parsed.persons),
+      comments: jsonArray(parsed.comments),
       payload: contactPayload(parsed),
       createdById: ctx.userId,
       updatedById: ctx.userId,
@@ -120,6 +122,7 @@ export async function updateContact(id: string, patch: Record<string, unknown>) 
       status: parsed.status !== undefined ? getStatus(parsed, current.status ?? "Active") : current.status,
       industry: parsed.industry !== undefined ? textValue(parsed.industry) : current.industry,
       persons: parsed.persons !== undefined ? jsonArray(sanitizePersons(parsed.persons) ?? parsed.persons) : jsonInputOrDefault(current.persons, []),
+      comments: parsed.comments !== undefined ? jsonArray(parsed.comments) : jsonInputOrDefault(current.comments, []),
       payload: contactPayload(parsed, current.payload),
       updatedById: ctx.userId,
     },
