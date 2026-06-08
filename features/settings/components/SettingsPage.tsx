@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
-import { getRootAppUrl } from "@/lib/tenant-url";
+import { getRootAppUrl, getTenantHost } from "@/lib/tenant-url";
 import { markPresenceOffline } from "@/features/presence";
 import ModuleHeader from "@/components/common/ModuleHeader";
 import ModuleTabs from "@/components/common/ModuleTabs";
@@ -448,7 +448,7 @@ export default function SettingsPage() {
                         <label className="mb-2 block font-medium text-[13px] text-on-surface">Subdomain</label>
                         <input
                           type="text"
-                          value={`${data.tenant.slug}.opero.app`}
+                          value={getTenantHost(data.tenant.slug)}
                           readOnly
                           className="h-10 w-full cursor-not-allowed rounded-[6px] border border-black/[0.06] bg-black/[0.02] px-3 text-[13px] text-on-surface-variant outline-none"
                         />

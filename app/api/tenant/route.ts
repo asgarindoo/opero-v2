@@ -46,10 +46,34 @@ function isOrganizationExistsError(err: unknown) {
 // ── GET /api/tenant ───────────────────────────────────────────────────────────
 export async function GET() {
   try {
-    await requireAuth();
+    const user = await requireAuth();
 
-    const hdrs = await headers();
-    const orgs = await auth.api.listOrganizations({ headers: hdrs });
+    const memberships = await prisma.member.findMany({
+      where: {
+        userId: user.id,
+        status: "active",
+        organization: { status: "active" },
+      },
+      orderBy: { createdAt: "asc" },
+      select: {
+        role: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo: true,
+            metadata: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    const orgs = memberships.map((membership) => ({
+      ...membership.organization,
+      role: membership.role,
+    }));
 
     return NextResponse.json({ organizations: orgs });
   } catch (err) {

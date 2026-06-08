@@ -6,11 +6,14 @@ import PricingSection from "@/components/marketing/PricingSection";
 import FAQSection from "@/components/marketing/FAQSection";
 import CTASection from "@/components/marketing/CTASection";
 import Footer from "@/components/marketing/Footer";
+import { getCurrentUser } from "@/lib/server/auth-utils";
 
-export default function Home() {
+export default async function Home() {
+  const initialUser = await getCurrentUser();
+
   return (
     <>
-      <Header />
+      <Header initialUser={initialUser} sessionResolvedOnServer />
       <main className="pt-16 sm:pt-20 pb-[32px] sm:pb-[48px] organic-bg-pattern relative">
         <HeroSection />
         <BentoSection />

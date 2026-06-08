@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
+import { getTenantDashboardUrl, getTenantHost, rememberTenant } from "@/lib/tenant-url";
 
 /* â”€â”€ Plan data â”€â”€ */
 const plans = [
@@ -192,7 +192,7 @@ function StepInfo({
         <p className="font-body-sm text-[12px] text-on-surface-variant/50 pl-1">
           Your Tenant URL:{" "}
           <span className="font-semibold text-primary/70 font-mono tracking-tight">
-            {form.slug || "your-Tenant"}.opero.app
+            {getTenantHost(form.slug || "your-tenant")}
           </span>
         </p>
       </div>
@@ -509,7 +509,7 @@ function StepLaunch({
             </p>
             <p className="font-body-md text-[14px] text-on-surface-variant">
               <span className="font-semibold text-primary">{tenantName || "Your Tenant"}</span> is live at{" "}
-              <span className="font-mono text-primary/70">{tenantSlug || "your-tenant"}.opero.app</span>
+              <span className="font-mono text-primary/70">{getTenantHost(tenantSlug || "your-tenant")}</span>
             </p>
           </div>
 
@@ -560,9 +560,10 @@ export default function CreateTenantPage() {
   }, []);
 
   const handleEnterDashboard = async () => {
-    // The org was already created in StepLaunch — just set it active
-    const { data: orgs } = await authClient.organization.list();
-    const created = orgs?.find((o) => o.slug === tenantForm.slug);
+    // The org was already created in StepLaunch - refresh it from our tenant API.
+    const res = await fetch("/api/tenant", { cache: "no-store" });
+    const payload = await res.json().catch(() => ({}));
+    const created = payload.organizations?.find((o: { slug?: string }) => o.slug === tenantForm.slug);
     if (created) {
       await authClient.organization.setActive({ organizationId: created.id });
       rememberTenant({ id: created.id, slug: created.slug });

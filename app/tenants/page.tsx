@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { ArrowRight, UserPlus } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import TenantLogo from "@/components/marketing/TenantLogo";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
-import { getTenantDashboardUrl, rememberTenant } from "@/lib/tenant-url";
+import { getTenantDashboardUrl, getTenantHost, isValidTenantSlug, rememberTenant } from "@/lib/tenant-url";
 
 const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
   owner:  { label: "Owner",  bg: "rgba(0,0,0,0.07)",  color: "var(--color-primary)" },
@@ -16,6 +17,7 @@ const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
 export default function TenantSelectionPage() {
   const [selecting, setSelecting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [orgs, setOrgs] = useState<Array<{
     id: string; name: string; slug: string;
     role: string; logo?: string | null; color: string;
@@ -28,15 +30,22 @@ export default function TenantSelectionPage() {
   useEffect(() => {
     let cancelled = false;
 
-    authClient.organization.list().then(({ data }) => {
-      if (cancelled) return;
+    fetch("/api/tenant", { cache: "no-store" })
+      .then(async (res) => {
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error ?? "Failed to load tenants.");
+        return payload.organizations ?? [];
+      })
+      .then((data) => {
+        if (cancelled) return;
 
-      if (data) {
-        const mapped = data.map((org, i) => ({
+        const mapped = data
+          .filter((org: { slug?: unknown }) => isValidTenantSlug(org.slug))
+          .map((org: { id: string; name: string; slug: string; role?: string; logo?: string | null }, i: number) => ({
           id: org.id,
           name: org.name,
           slug: org.slug,
-          role: (org as { role?: string }).role ?? "member",
+          role: org.role ?? "member",
           logo: org.logo ?? null,
           color: `hsl(${(i * 47 + 200) % 360}, 12%, ${20 + (i % 4) * 3}%)`,
         }));
@@ -51,9 +60,13 @@ export default function TenantSelectionPage() {
         }
 
         setOrgs(mapped);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load tenants.");
+        setLoading(false);
+      });
 
     return () => {
       cancelled = true;
@@ -101,7 +114,9 @@ export default function TenantSelectionPage() {
             </div>
           ) : orgs.length === 0 ? (
             <div className="text-center py-8">
-              <p className="font-body-md text-[14px] text-on-surface-variant">No tenants found.</p>
+              <p className="font-body-md text-[14px] text-on-surface-variant">
+                {error ?? "No tenants found."}
+              </p>
             </div>
           ) : (
             orgs.map((t, idx) => {
@@ -154,15 +169,17 @@ export default function TenantSelectionPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] text-on-surface-variant/55 font-mono">{t.slug}.opero.app</span>
+                    <span className="text-[12px] text-on-surface-variant/55 font-mono">{getTenantHost(t.slug)}</span>
                   </div>
                 </div>
 
                 {/* Arrow */}
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="material-symbols-outlined text-[18px] text-on-surface-variant/25 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200">
-                    arrow_forward
-                  </span>
+                  <ArrowRight
+                    aria-hidden
+                    size={18}
+                    className="text-on-surface-variant/25 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200"
+                  />
                 </div>
               </button>
             );
@@ -176,7 +193,7 @@ export default function TenantSelectionPage() {
             href="/onboarding/join"
             className="flex items-center gap-2 font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-on-surface-variant/50 hover:text-primary border border-outline/15 hover:border-outline/35 px-5 py-2.5 rounded-full transition-all duration-200 hover:bg-surface-container"
           >
-            <span className="material-symbols-outlined text-[14px]">group_add</span>
+            <UserPlus aria-hidden size={14} />
             Join another tenant
           </Link>
         </div>

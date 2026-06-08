@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 
 const PayloadSchema = z.object({
@@ -20,6 +21,7 @@ export function createDomainCollectionHandlers(service: Pick<DomainService, "lis
         const items = await service.list();
         return NextResponse.json({ items });
       } catch (err) {
+        unstable_rethrow(err);
         if (err instanceof Response) return err;
         console.error(`[GET ${req.nextUrl.pathname}]`, err);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -41,6 +43,7 @@ export function createDomainCollectionHandlers(service: Pick<DomainService, "lis
         const item = await service.create(parsed.data.data);
         return NextResponse.json({ item }, { status: 201 });
       } catch (err) {
+        unstable_rethrow(err);
         if (err instanceof Response) return err;
         console.error(`[POST ${req.nextUrl.pathname}]`, err);
         return NextResponse.json({ error: err instanceof Error ? err.message : "Internal server error" }, { status: 500 });
@@ -59,6 +62,7 @@ export function createDomainItemHandlers(service: Pick<DomainService, "update" |
         if (!item) return NextResponse.json({ error: "Record not found" }, { status: 404 });
         return NextResponse.json({ item });
       } catch (err) {
+        unstable_rethrow(err);
         if (err instanceof Response) return err;
         console.error(`[GET ${req.nextUrl.pathname}]`, err);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -82,6 +86,7 @@ export function createDomainItemHandlers(service: Pick<DomainService, "update" |
         if (!item) return NextResponse.json({ error: "Record not found" }, { status: 404 });
         return NextResponse.json({ item });
       } catch (err) {
+        unstable_rethrow(err);
         if (err instanceof Response) return err;
         console.error(`[PATCH ${req.nextUrl.pathname}]`, err);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -95,6 +100,7 @@ export function createDomainItemHandlers(service: Pick<DomainService, "update" |
         if (!item) return NextResponse.json({ error: "Record not found" }, { status: 404 });
         return NextResponse.json({ success: true });
       } catch (err) {
+        unstable_rethrow(err);
         if (err instanceof Response) return err;
         console.error(`[DELETE ${req.nextUrl.pathname}]`, err);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

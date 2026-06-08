@@ -13,6 +13,10 @@ function getRootParsed() {
   return new URL(ROOT_URL);
 }
 
+export function isValidTenantSlug(slug: unknown): slug is string {
+  return typeof slug === "string" && /^[a-z0-9-]{2,30}$/.test(slug);
+}
+
 /**
  * Build the root app URL for a given path.
  *
@@ -32,11 +36,18 @@ export function getRootAppUrl(path = "/") {
  *   getTenantDashboardUrl("myotic", "/tasks") → "http://myotic.lvh.me:3000/tasks"
  */
 export function getTenantDashboardUrl(slug: string, path = "/dashboard"): string {
+  if (!isValidTenantSlug(slug)) return getRootAppUrl("/tenants");
+
   const root = getRootParsed();
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || root.hostname;
-  const tenantHostname = `${slug}.${rootDomain}`;
-  const portSuffix     = root.port ? `:${root.port}` : "";
-  return `${root.protocol}//${tenantHostname}${portSuffix}${path}`;
+  return `${root.protocol}//${getTenantHost(slug, rootDomain)}${path}`;
+}
+
+export function getTenantHost(slug: string, rootDomain?: string): string {
+  const root = getRootParsed();
+  const domain = rootDomain || process.env.NEXT_PUBLIC_ROOT_DOMAIN || root.hostname;
+  const portSuffix = root.port ? `:${root.port}` : "";
+  return `${slug}.${domain}${portSuffix}`;
 }
 
 const LAST_TENANT_KEY = "opero:last-tenant";
@@ -58,4 +69,3 @@ export function getRememberedTenant(): { id: string; slug: string } | null {
     return null;
   }
 }
-

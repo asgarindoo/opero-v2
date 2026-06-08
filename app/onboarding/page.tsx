@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
 
 const choices = [
   {
@@ -34,9 +33,20 @@ export default function TenantGateway() {
   const [hasOwnedTenant, setHasOwnedTenant] = useState(false);
 
   useEffect(() => {
-    authClient.organization.list().then(({ data }) => {
-      setHasOwnedTenant(Boolean(data?.some((org) => (org as { role?: string }).role === "owner")));
-    });
+    let cancelled = false;
+
+    fetch("/api/tenant", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((payload) => {
+        if (!cancelled) {
+          setHasOwnedTenant(Boolean(payload.organizations?.some((org: { role?: string }) => org.role === "owner")));
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

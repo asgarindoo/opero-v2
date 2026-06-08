@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession, useActiveOrganization, useListOrganizations } from "@/lib/auth-client";
+import { useListOrganizations } from "@/lib/auth-client";
+import { useTenant } from "@/components/providers/TenantProvider";
 import { usePathname, useRouter } from "next/navigation";
 import { NAV_GROUPS } from "./navConfig";
 import { getRootAppUrl } from "@/lib/tenant-url";
@@ -37,15 +38,14 @@ interface Props {
 }
 
 export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }: Props) {
-  const { data: session } = useSession();
-  const { data: activeOrg } = useActiveOrganization();
+  const { tenant, user } = useTenant();
   const { data: orgs } = useListOrganizations();
   const pathname = usePathname();
   const router = useRouter();
 
-  const tenantName = activeOrg?.name ?? "Workspace";
-  const userName = getUserDisplayName(session?.user);
-  const userImage = session?.user?.image ?? null;
+  const tenantName = tenant.name;
+  const userName = getUserDisplayName(user);
+  const userImage = user.image;
 
   // Check if user belongs to more than one tenant to show selection link
   const hasMultipleOrgs = (orgs ?? []).length > 1;
@@ -356,7 +356,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
               onClick={() => setShowProfile((s) => !s)}
             >
               {/* Avatar */}
-              <UserAvatar user={session?.user} image={userImage} size="md" />
+              <UserAvatar user={user} image={userImage} size="md" />
               {/* Name (hidden on small screens) */}
               <span
                 className="hidden md:inline font-body-sm text-[12.5px] font-medium max-w-24 truncate"
@@ -386,7 +386,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
                 {/* User info header */}
                 <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
                   <div className="flex items-center gap-2.5">
-                    <UserAvatar user={session?.user} image={userImage} size="lg" />
+                    <UserAvatar user={user} image={userImage} size="lg" />
                     <div className="min-w-0">
                       <div className="font-body-sm text-[13px] font-semibold truncate" style={{ color: "var(--color-on-surface)" }}>
                         {userName}
@@ -395,7 +395,7 @@ export default function Topbar({ collapsed, onToggleCollapse, onMobileMenuOpen }
                         className="font-body-sm text-[11px] mt-0.5 truncate"
                         style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}
                       >
-                        {session?.user?.email ?? ""}
+                        {user.email}
                       </div>
                     </div>
                   </div>

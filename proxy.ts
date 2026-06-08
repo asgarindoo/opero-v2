@@ -44,7 +44,18 @@ const ROOT_ONLY_ROUTES = [
   "/tenant-inactive",
 ];
 
-const ROOT_TENANT_API_ROUTES = new Set(["/api/tenant/join"]);
+const ROOT_TENANT_API_ROUTES = new Set([
+  "/api/tenant",
+  "/api/tenant/create-eligibility",
+  "/api/tenant/join",
+]);
+
+const SHARED_API_ROUTES = new Set(["/api/profile"]);
+
+const SHARED_API_ROUTE_PREFIXES = [
+  "/api/profile/",
+  "/api/tenant/logo/",
+];
 
 const TENANT_SHORTPATHS = new Set([
   "/activity",
@@ -100,6 +111,14 @@ function isRootOnlyRoute(pathname: string) {
 
 function isRootTenantApiRoute(pathname: string) {
   return ROOT_TENANT_API_ROUTES.has(pathname);
+}
+
+function isSharedApiRoute(pathname: string) {
+  return SHARED_API_ROUTES.has(pathname) || SHARED_API_ROUTE_PREFIXES.some((route) => pathname.startsWith(route));
+}
+
+function isApiRoute(pathname: string) {
+  return pathname.startsWith("/api/");
 }
 
 function isTenantRoute(pathname: string) {
@@ -328,6 +347,37 @@ async function resolveTenantState(tenantSlug: string) {
   });
 }
 
+async function hasActiveTenantMembership(organizationId: string, userId: string) {
+  const membership = await prisma.member.findUnique({
+    where: { organizationId_userId: { organizationId, userId } },
+    select: { status: true },
+  });
+
+  return membership?.status === "active";
+}
+
+async function resolveUserTenantFallback(userId: string, activeOrganizationId?: string | null) {
+  const memberships = await prisma.member.findMany({
+    where: {
+      userId,
+      status: "active",
+      organization: { status: "active" },
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      organization: {
+        select: { id: true, slug: true },
+      },
+    },
+  });
+
+  const activeMembership = activeOrganizationId
+    ? memberships.find((membership) => membership.organization.id === activeOrganizationId)
+    : null;
+
+  return activeMembership ?? (memberships.length === 1 ? memberships[0] : null);
+}
+
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -342,13 +392,13 @@ export default async function proxy(request: NextRequest) {
 
   debugTenantProxy(request);
 
-  if (isRootTenantApiRoute(pathname)) {
-    return passThrough(request);
-  }
-
   const host = getHost(request);
   const tenantSlug = extractTenantSlugFromHost(host);
   const isTenantSubdomain = Boolean(tenantSlug);
+
+  if (isSharedApiRoute(pathname) || (!isTenantSubdomain && isRootTenantApiRoute(pathname))) {
+    return passThrough(request);
+  }
 
   if (isTenantSubdomain && tenantSlug) {
     if (isRootOnlyRoute(pathname)) {
@@ -364,12 +414,20 @@ export default async function proxy(request: NextRequest) {
 
     const tenant = await resolveTenantState(tenantSlug);
     if (!tenant) {
+      if (isApiRoute(pathname)) {
+        return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      }
+
       const target = buildRootUrl("/tenant-not-found");
       target.searchParams.set("tenant", tenantSlug);
       return redirect(request, target);
     }
 
     if (tenant.status !== "active") {
+      if (isApiRoute(pathname)) {
+        return NextResponse.json({ error: "Tenant inactive" }, { status: 423 });
+      }
+
       const target = buildRootUrl("/tenant-inactive");
       target.searchParams.set("tenant", tenantSlug);
       return redirect(request, target);
@@ -377,7 +435,22 @@ export default async function proxy(request: NextRequest) {
 
     const session = await getSession(request);
     if (!session?.user?.id) {
+      if (isApiRoute(pathname)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
       return redirect(request, buildLoginRedirect(request));
+    }
+
+    const hasAccess = await hasActiveTenantMembership(tenant.id, session.user.id);
+    if (!hasAccess) {
+      if (isApiRoute(pathname)) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
+
+      const target = buildRootUrl("/unauthorized");
+      target.searchParams.set("tenant", tenantSlug);
+      return redirect(request, target);
     }
 
     return rewriteWithTenantHeaders(request, tenantSlug, session.user.id);
@@ -407,14 +480,29 @@ export default async function proxy(request: NextRequest) {
 
     const activeOrgId = session.session?.activeOrganizationId;
     if (activeOrgId) {
-      const org = await prisma.organization.findUnique({
-        where: { id: activeOrgId },
-        select: { slug: true },
+      const membership = await prisma.member.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: activeOrgId,
+            userId: session.user.id,
+          },
+        },
+        select: {
+          status: true,
+          organization: {
+            select: { slug: true, status: true },
+          },
+        },
       });
 
-      if (org?.slug) {
-        return redirect(request, buildTenantUrl(org.slug, pathname, request.nextUrl.search));
+      if (membership?.status === "active" && membership.organization.status === "active") {
+        return redirect(request, buildTenantUrl(membership.organization.slug, pathname, request.nextUrl.search));
       }
+    }
+
+    const fallback = await resolveUserTenantFallback(session.user.id);
+    if (fallback?.organization.slug) {
+      return redirect(request, buildTenantUrl(fallback.organization.slug, pathname, request.nextUrl.search));
     }
 
     return redirect(request, buildRootUrl("/tenants"));

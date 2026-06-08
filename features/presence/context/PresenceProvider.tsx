@@ -8,6 +8,7 @@ import type { PresenceState } from "../types";
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const PRESENCE_POLL_INTERVAL_MS = 30_000;
+const DEBUG_PRESENCE = process.env.NODE_ENV === "development";
 
 const initialState: PresenceState = {
   onlineCount: 0,
@@ -18,6 +19,14 @@ const initialState: PresenceState = {
 };
 
 const PresenceContext = createContext<PresenceState>(initialState);
+
+function debugPresence(message: string, data?: unknown) {
+  if (DEBUG_PRESENCE) console.log(message, data);
+}
+
+function debugPresenceError(message: string, error: unknown) {
+  if (DEBUG_PRESENCE) console.error(message, error);
+}
 
 export function PresenceProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -45,9 +54,9 @@ export function usePresenceHeartbeat(
         const data = await sendPresenceHeartbeat(currentPage);
         if (cancelled) return;
 
-        console.log("[presence] onlineCount after heartbeat", data.onlineCount);
+        debugPresence("[presence] onlineCount after heartbeat", data.onlineCount);
         data.presence.forEach((record) => {
-          console.log("[presence] user lastSeenAt", {
+          debugPresence("[presence] user lastSeenAt", {
             userId: record.userId,
             lastSeenAt: record.lastSeenAt,
             isOnline: record.isOnline,
@@ -63,7 +72,7 @@ export function usePresenceHeartbeat(
         });
         setHeartbeatReady?.(true);
       } catch (err) {
-        console.error("[presence] heartbeat error", err);
+        debugPresenceError("[presence] heartbeat error", err);
         if (!cancelled) {
           setPresenceState?.((current) => ({ ...current, isLoading: false }));
         }
@@ -103,9 +112,9 @@ export function useTenantPresence(
         const data = await fetchPresence();
         if (cancelled) return;
 
-        console.log("[presence] onlineCount from poll", data.onlineCount);
+        debugPresence("[presence] onlineCount from poll", data.onlineCount);
         data.presence.forEach((record) => {
-          console.log("[presence] polled user lastSeenAt", {
+          debugPresence("[presence] polled user lastSeenAt", {
             userId: record.userId,
             lastSeenAt: record.lastSeenAt,
             isOnline: record.isOnline,
@@ -120,7 +129,7 @@ export function useTenantPresence(
           lastUpdatedAt: new Date().toISOString(),
         });
       } catch (err) {
-        console.error("[presence] poll error", err);
+        debugPresenceError("[presence] poll error", err);
         if (!cancelled) {
           setPresenceState?.((current) => ({ ...current, isLoading: false }));
         }

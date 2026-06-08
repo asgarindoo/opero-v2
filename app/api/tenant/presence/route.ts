@@ -7,6 +7,11 @@ import { getUserDisplayName } from "@/lib/user-identity";
 export const dynamic = "force-dynamic";
 
 const ONLINE_WINDOW_MS = 100 * 1000;
+const DEBUG_PRESENCE = process.env.NODE_ENV === "development";
+
+function debugPresence(message: string, data?: unknown) {
+  if (DEBUG_PRESENCE) console.log(message, data);
+}
 
 interface PresenceWithUser {
   id: string;
@@ -91,7 +96,7 @@ async function getPresencePayload(organizationId: string) {
   }));
   const onlineUsers = presenceRecords.filter((presence) => presence.isOnline && presence.lastSeenAt >= since);
 
-  console.log("[presence api] payload", {
+  debugPresence("[presence api] payload", {
     tenantId: organizationId,
     onlineCount: onlineUsers.length,
     threshold: since.toISOString(),
@@ -130,7 +135,7 @@ export async function POST(req: NextRequest) {
     const currentPage = sanitizeCurrentPage(body.currentPage);
     const now = new Date();
 
-    console.log("[presence api] heartbeat", {
+    debugPresence("[presence api] heartbeat", {
       tenantId: context.tenantId,
       userId: context.userId,
       currentPage,
@@ -174,7 +179,7 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   try {
     const context = await requireTenant();
-    console.log("[presence api] get", {
+    debugPresence("[presence api] get", {
       tenantId: context.tenantId,
       userId: context.userId,
     });
@@ -191,7 +196,7 @@ export async function DELETE() {
     const context = await requireTenant();
     const offlineAt = new Date();
 
-    console.log("[presence api] delete/offline", {
+    debugPresence("[presence api] delete/offline", {
       tenantId: context.tenantId,
       userId: context.userId,
       offlineAt: offlineAt.toISOString(),
@@ -224,7 +229,7 @@ export async function DELETE() {
     `;
 
     const payload = await getPresencePayload(context.tenantId);
-    console.log("[presence api] offline decision", {
+    debugPresence("[presence api] offline decision", {
       tenantId: context.tenantId,
       userId: context.userId,
       onlineCount: payload.onlineCount,

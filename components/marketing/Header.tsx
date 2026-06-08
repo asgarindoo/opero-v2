@@ -2,11 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, LogOut, Users } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Users,
+  X,
+} from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { getRootAppUrl } from "@/lib/tenant-url";
 import UserAvatar from "@/components/common/UserAvatar";
-import { getUserDisplayName } from "@/lib/user-identity";
+import { getUserDisplayName, type UserIdentity } from "@/lib/user-identity";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -14,13 +23,19 @@ const navLinks = [
   { label: "Pricing", href: "#pricing" },
 ];
 
-export default function Header() {
+export default function Header({
+  initialUser = null,
+  sessionResolvedOnServer = false,
+}: {
+  initialUser?: UserIdentity | null;
+  sessionResolvedOnServer?: boolean;
+}) {
   const { data: session, isPending } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const user = session?.user;
+  const user = isPending ? session?.user ?? initialUser : session?.user ?? null;
   const userName = getUserDisplayName(user);
 
   useEffect(() => {
@@ -60,7 +75,12 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {user ? (
+          {isPending && !user && !sessionResolvedOnServer ? (
+            <div className="flex items-center gap-2 sm:gap-3" aria-hidden="true">
+              <div className="hidden sm:block h-9 w-18 rounded-full border border-outline/10 bg-surface-container/60 animate-pulse" />
+              <div className="h-9 w-28 rounded-full border border-outline/10 bg-surface-container/70 animate-pulse" />
+            </div>
+          ) : user ? (
             <div className="relative">
               <button
                 type="button"
@@ -71,7 +91,7 @@ export default function Header() {
                 <span className="hidden sm:inline max-w-30 truncate font-body-sm text-[12px] font-semibold text-primary">
                   {userName}
                 </span>
-                <span className="material-symbols-outlined text-[14px] text-on-surface-variant/50">expand_more</span>
+                <ChevronDown size={14} className="text-on-surface-variant/50" />
               </button>
 
               {profileOpen && (
@@ -109,7 +129,7 @@ export default function Header() {
                 className="bg-primary text-on-primary font-label-caps text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold px-4 sm:px-6 py-2 sm:py-2.5 rounded-full flex items-center gap-1.5 hover:bg-primary/90 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-px"
               >
                 Start Free
-                <span className="material-symbols-outlined text-[13px] hidden sm:inline">arrow_forward</span>
+                <ArrowRight size={13} className="hidden sm:inline" />
               </a>
             </>
           )}
@@ -119,9 +139,7 @@ export default function Header() {
             aria-label="Toggle menu"
             className="md:hidden w-9 h-9 rounded-full border border-outline/15 bg-surface-container-lowest/80 flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all duration-200"
           >
-            <span className="material-symbols-outlined text-[18px]">
-              {menuOpen ? "close" : "menu"}
-            </span>
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
@@ -140,10 +158,10 @@ export default function Header() {
                 className="flex items-center justify-between text-on-surface-variant hover:text-primary font-label-caps text-[11px] uppercase tracking-wider font-semibold px-4 py-3.5 rounded-xl hover:bg-surface-container transition-all duration-200"
               >
                 {item.label}
-                <span className="material-symbols-outlined text-[14px] opacity-30">chevron_right</span>
+                <ChevronRight size={14} className="opacity-30" />
               </a>
             ))}
-            {user && !isPending && (
+            {user && (
               <>
                 <div className="my-1 h-px bg-outline/10" />
                 <MobileMenuLink href="/tenants" label="My tenants" onClick={() => setMenuOpen(false)} />
@@ -188,7 +206,7 @@ function MobileMenuLink({ href, label, onClick }: { href: string; label: string;
       className="flex items-center justify-between text-on-surface-variant hover:text-primary font-label-caps text-[11px] uppercase tracking-wider font-semibold px-4 py-3.5 rounded-xl hover:bg-surface-container transition-all duration-200"
     >
       {label}
-      <span className="material-symbols-outlined text-[14px] opacity-30">chevron_right</span>
+      <ChevronRight size={14} className="opacity-30" />
     </Link>
   );
 }

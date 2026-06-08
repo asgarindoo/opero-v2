@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useActiveOrganization, useSession } from "@/lib/auth-client";
+import { useTenant } from "@/components/providers/TenantProvider";
 import TenantLogo from "@/components/marketing/TenantLogo";
 import { getTenantLogoSrc } from "@/lib/tenant-logo";
 import { Settings, ChevronsUpDown } from "lucide-react";
@@ -22,16 +22,15 @@ interface Props {
 function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const { data: session } = useSession();
-  const { data: activeOrg, isPending: isOrgLoading } = useActiveOrganization();
-  const userName = mounted ? getUserDisplayName(session?.user) : "User";
-  const userImage = mounted ? session?.user?.image ?? null : null;
-  const userRole = mounted ? (session?.user as { role?: string })?.role ?? "member" : "member";
-  const tenantName = mounted ? activeOrg?.name ?? "OPERO" : "OPERO";
-  const tenantLogo = mounted ? getTenantLogoSrc(activeOrg?.id ?? "", activeOrg?.logo ?? null) : null;
+  const { tenant, user, role } = useTenant();
+  const userName = mounted ? getUserDisplayName(user) : "User";
+  const userImage = mounted ? user.image : null;
+  const userRole = mounted ? role : "member";
+  const tenantName = tenant.name;
+  const tenantLogo = getTenantLogoSrc(tenant.id, tenant.logo);
   const { onlineCount, isLoading: isPresenceLoading } = usePresence();
   const { totalUnreadCount } = useChat();
-  const showTenantLoading = !mounted || isOrgLoading;
+  const showTenantLoading = !mounted;
   const onlineLabel = isPresenceLoading ? "..." : onlineCount.toString();
 
   useEffect(() => {
@@ -245,7 +244,7 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
         {/* User pill */}
         {!collapsed && (
           <div className="flex items-center gap-2 mt-1 px-2.5 py-[6px] rounded-[6px] cursor-pointer hover:bg-black/[0.035] transition-colors duration-150">
-            <UserAvatar user={session?.user} image={userImage} size="sm" className="h-6 w-6 border-transparent" />
+            <UserAvatar user={user} image={userImage} size="sm" className="h-6 w-6 border-transparent" />
             <div className="flex-1 min-w-0">
               <div className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
                 {userName}

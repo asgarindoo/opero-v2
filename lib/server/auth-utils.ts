@@ -13,7 +13,6 @@
  */
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -275,7 +274,10 @@ export const getTenantContext = cache(async function getTenantContext(): Promise
 export async function requireTenant(): Promise<TenantContext> {
   const context = await getTenantContext();
   if (!context) {
-    redirect("/unauthorized");
+    throw new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
   return context;
 }

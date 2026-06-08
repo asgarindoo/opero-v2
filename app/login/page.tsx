@@ -4,9 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { getTenantDashboardUrl, rememberTenant, getRootAppUrl } from "@/lib/tenant-url";
+import { getTenantDashboardUrl, rememberTenant, getRootAppUrl, isValidTenantSlug } from "@/lib/tenant-url";
 
 const AUTH_TIMEOUT_MS = 15000;
+type TenantSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  logo?: string | null;
+};
 
 async function withAuthTimeout<T>(request: Promise<T>, action: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -21,6 +28,17 @@ async function withAuthTimeout<T>(request: Promise<T>, action: string): Promise<
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
+}
+
+async function listUserTenants(): Promise<TenantSummary[]> {
+  const res = await fetch("/api/tenant", { cache: "no-store" });
+  const payload = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(payload.error ?? "Unable to load workspaces.");
+  }
+
+  return ((payload.organizations ?? []) as TenantSummary[]).filter((org) => isValidTenantSlug(org.slug));
 }
 
 export default function LoginPage() {
@@ -78,14 +96,14 @@ export default function LoginPage() {
       console.log("[LOGIN] ✓ signIn succeeded — checking session on root domain");
 
       // Check how many orgs the user belongs to for smart redirect
-      const { data: orgs } = await withAuthTimeout(
-        authClient.organization.list(),
+      const orgs = await withAuthTimeout(
+        listUserTenants(),
         "Loading workspaces"
       );
 
-      console.log(`[LOGIN] orgs count=${orgs?.length ?? 0}`, orgs?.map((o) => o.slug));
+      console.log(`[LOGIN] orgs count=${orgs.length}`, orgs.map((o) => o.slug));
 
-      if (!orgs || orgs.length === 0) {
+      if (orgs.length === 0) {
         console.log("[LOGIN] no orgs → /onboarding/create");
         router.push("/onboarding/create");
         return;
