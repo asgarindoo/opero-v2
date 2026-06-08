@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
+import { useTenant } from "@/components/providers/TenantProvider";
 import { createClientId } from "@/lib/client-id";
 import { getUserDisplayName } from "@/lib/user-identity";
 import type { ChatChannel, ChatMessage, ChatMessageType } from "@/features/chat";
@@ -240,11 +240,11 @@ function mapRealtimeChannel(record: Record<string, unknown>): ChatChannel | null
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session } = useSession();
-  const sessionUserId = session?.user?.id ?? null;
-  const sessionUserName = getUserDisplayName(session?.user, "You");
-  const sessionUserImage = session?.user?.image ?? null;
-  const sessionUserEmail = session?.user?.email ?? undefined;
+  const { user, tenantId } = useTenant();
+  const sessionUserId = user.id;
+  const sessionUserName = getUserDisplayName(user, "You");
+  const sessionUserImage = user.image;
+  const sessionUserEmail = user.email;
   const routeChannelId = activeChannelIdFromPath(pathname);
 
   const [channels, setChannels] = useState<ChatChannel[]>([]);
@@ -260,11 +260,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(sessionUserId);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(tenantId);
 
   const activeChannelIdRef = useRef<string | null>(activeChannelId);
   const currentUserIdRef = useRef<string | null>(sessionUserId);
-  const organizationIdRef = useRef<string | null>(null);
+  const organizationIdRef = useRef<string | null>(tenantId);
   const channelsRef = useRef(channels);
   const messagesRef = useRef(messages);
   const unreadCountsRef = useRef(unreadCounts);
@@ -352,11 +352,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setHasLoadedChannels({});
     setLoadingChannels(false);
     setLoadingMessages(false);
-    setOrganizationId(null);
+    setOrganizationId(tenantId);
     setRegisteredActiveChannelId(null);
     setError(null);
     setCurrentUserId(nextUserId);
-  }, []);
+  }, [tenantId]);
 
   const setActiveChannel = useCallback((channelId: string | null) => {
     setRegisteredActiveChannelId(channelId);
@@ -367,6 +367,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     lastSessionUserIdRef.current = sessionUserId;
     resetChatState(sessionUserId);
   }, [resetChatState, sessionUserId]);
+
+  useEffect(() => {
+    setOrganizationId(tenantId);
+    organizationIdRef.current = tenantId;
+  }, [tenantId]);
 
   const markChannelAsRead = useCallback(async (channelId: string) => {
     if (markingReadRef.current.has(channelId)) return;

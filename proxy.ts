@@ -20,11 +20,6 @@ import {
   splitHostPort,
 } from "@/lib/routing";
 
-const SESSION_COOKIE_NAMES = [
-  "better-auth.session_token",
-  "__Secure-better-auth.session_token",
-];
-
 const SESSION_DATA_COOKIE = "better-auth.session_data";
 const SESSION_DATA_COOKIE_CLEAR_LIMIT = 32;
 
@@ -224,12 +219,7 @@ function passThrough(request: NextRequest) {
   );
 }
 
-function hasSessionCookie(request: NextRequest) {
-  return SESSION_COOKIE_NAMES.some((name) => Boolean(request.cookies.get(name)?.value));
-}
-
 async function getSession(request: NextRequest) {
-  if (!hasSessionCookie(request)) return null;
   return auth.api.getSession({ headers: sanitizeHeaders(request.headers) }).catch(() => null);
 }
 

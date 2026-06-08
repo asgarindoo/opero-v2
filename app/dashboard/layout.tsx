@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTenantContext } from "@/lib/server/auth-utils";
+import { buildRootUrl } from "@/lib/routing";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { TenantProvider } from "@/components/providers/TenantProvider";
 import { SocialChannelsProvider } from "@/features/social-channels";
@@ -14,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const context = await getTenantContext();
   
   if (!context) {
-    redirect("/unauthorized");
+    redirect(buildRootUrl("/unauthorized").toString());
   }
 
   return (

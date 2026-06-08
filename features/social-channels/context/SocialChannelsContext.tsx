@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useMemo } from "react";
 import useSWR from "swr";
+import { useTenant } from "@/components/providers/TenantProvider";
 import { fetchChannels, createChannel as apiCreate, updateChannel as apiUpdate, deleteChannel as apiDelete } from "../services/channels.client";
 
 export type ChannelStatus = "Active" | "Inactive" | "Archived";
@@ -37,7 +38,8 @@ interface SocialChannelsContextType {
 const SocialChannelsContext = createContext<SocialChannelsContextType | undefined>(undefined);
 
 export function SocialChannelsProvider({ children }: { children: React.ReactNode }) {
-  const { data, mutate, isLoading } = useSWR<Channel[]>("social-channels", fetchChannels, {
+  const { tenantId } = useTenant();
+  const { data, mutate, isLoading } = useSWR<Channel[]>(["social-channels", tenantId], fetchChannels, {
     fallbackData: [],
     keepPreviousData: true,
   });
