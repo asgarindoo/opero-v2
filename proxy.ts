@@ -10,8 +10,6 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import {
   buildRootUrl,
   buildTenantUrl,
@@ -21,6 +19,12 @@ import {
 } from "@/lib/routing";
 
 const SESSION_DATA_COOKIE = "better-auth.session_data";
+const SESSION_TOKEN_COOKIES = new Set([
+  "better-auth.session_token",
+  "__Secure-better-auth.session_token",
+  "better-auth-session_token",
+  "__Secure-better-auth-session_token",
+]);
 const SESSION_DATA_COOKIE_CLEAR_LIMIT = 32;
 
 const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
@@ -152,6 +156,10 @@ function isSessionDataCookieName(name: string) {
   );
 }
 
+function hasSessionTokenCookie(request: NextRequest) {
+  return request.cookies.getAll().some((cookie) => SESSION_TOKEN_COOKIES.has(cookie.name));
+}
+
 function stripSessionDataCookies(cookieHeader: string | null) {
   if (!cookieHeader) return null;
 
@@ -220,6 +228,7 @@ function passThrough(request: NextRequest) {
 }
 
 async function getSession(request: NextRequest) {
+  const { auth } = await import("@/lib/auth");
   return auth.api.getSession({ headers: sanitizeHeaders(request.headers) }).catch(() => null);
 }
 
@@ -260,10 +269,9 @@ function redirect(request: NextRequest, target: URL) {
   return cleanupSessionDataCookies(request, response);
 }
 
-function rewriteWithTenantHeaders(request: NextRequest, tenantSlug: string, userId: string) {
+function rewriteWithTenantHeaders(request: NextRequest, tenantSlug: string) {
   const requestHeaders = sanitizeHeaders(request.headers);
   requestHeaders.set("x-tenant-slug", tenantSlug);
-  requestHeaders.set("x-user-id", userId);
 
   const normalizedPath = normalizeTenantPath(request.nextUrl.pathname);
   if (normalizedPath !== request.nextUrl.pathname) {
@@ -330,23 +338,8 @@ function debugTenantProxy(request: NextRequest, extra: { redirectTarget?: string
   });
 }
 
-async function resolveTenantState(tenantSlug: string) {
-  return prisma.organization.findUnique({
-    where: { slug: tenantSlug },
-    select: { id: true, status: true },
-  });
-}
-
-async function hasActiveTenantMembership(organizationId: string, userId: string) {
-  const membership = await prisma.member.findUnique({
-    where: { organizationId_userId: { organizationId, userId } },
-    select: { status: true },
-  });
-
-  return membership?.status === "active";
-}
-
 async function resolveUserTenantFallback(userId: string, activeOrganizationId?: string | null) {
+  const { prisma } = await import("@/lib/prisma");
   const memberships = await prisma.member.findMany({
     where: {
       userId,
@@ -402,29 +395,7 @@ export default async function proxy(request: NextRequest) {
       return redirect(request, target);
     }
 
-    const tenant = await resolveTenantState(tenantSlug);
-    if (!tenant) {
-      if (isApiRoute(pathname)) {
-        return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
-      }
-
-      const target = buildRootUrl("/tenant-not-found");
-      target.searchParams.set("tenant", tenantSlug);
-      return redirect(request, target);
-    }
-
-    if (tenant.status !== "active") {
-      if (isApiRoute(pathname)) {
-        return NextResponse.json({ error: "Tenant inactive" }, { status: 423 });
-      }
-
-      const target = buildRootUrl("/tenant-inactive");
-      target.searchParams.set("tenant", tenantSlug);
-      return redirect(request, target);
-    }
-
-    const session = await getSession(request);
-    if (!session?.user?.id) {
+    if (!hasSessionTokenCookie(request)) {
       if (isApiRoute(pathname)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -432,18 +403,7 @@ export default async function proxy(request: NextRequest) {
       return redirect(request, buildLoginRedirect(request));
     }
 
-    const hasAccess = await hasActiveTenantMembership(tenant.id, session.user.id);
-    if (!hasAccess) {
-      if (isApiRoute(pathname)) {
-        return NextResponse.json({ error: "Access denied" }, { status: 403 });
-      }
-
-      const target = buildRootUrl("/unauthorized");
-      target.searchParams.set("tenant", tenantSlug);
-      return redirect(request, target);
-    }
-
-    return rewriteWithTenantHeaders(request, tenantSlug, session.user.id);
+    return rewriteWithTenantHeaders(request, tenantSlug);
   }
 
   if (AUTH_ROUTES.has(pathname)) {
@@ -470,6 +430,7 @@ export default async function proxy(request: NextRequest) {
 
     const activeOrgId = session.session?.activeOrganizationId;
     if (activeOrgId) {
+      const { prisma } = await import("@/lib/prisma");
       const membership = await prisma.member.findUnique({
         where: {
           organizationId_userId: {

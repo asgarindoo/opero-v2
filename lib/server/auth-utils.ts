@@ -50,6 +50,17 @@ export interface TenantContext extends TenantMembership {
   userId: string;
 }
 
+export interface TenantContextFailure {
+  status: 401 | 403 | 404 | 423;
+  error: string;
+  tenantSlug?: string | null;
+}
+
+export interface TenantContextResolution {
+  context: TenantContext | null;
+  failure: TenantContextFailure | null;
+}
+
 // ── Core helpers ──────────────────────────────────────────────────────────────
 
 /**
@@ -77,13 +88,42 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Cur
   const session = await getSession();
   if (!session?.user) return null;
 
+  return userFromSession(session);
+});
+
+type TenantOrganization = Pick<CurrentTenant, "id" | "name" | "slug" | "logo" | "status">;
+type CurrentSession = NonNullable<Awaited<ReturnType<typeof getSession>>>;
+
+function userFromSession(session: CurrentSession): CurrentUser {
   return {
     id: session.user.id,
     name: getUserDisplayName(session.user),
     email: session.user.email,
     image: normalizeUserAvatarImage(session.user.id, session.user.image ?? null),
   };
-});
+}
+
+function createTenantContext(session: CurrentSession, tenant: TenantOrganization, role: string): TenantContext {
+  return {
+    tenant,
+    user: userFromSession(session),
+    role: role as OrgRole,
+    tenantId: tenant.id,
+    tenantSlug: tenant.slug,
+    userId: session.user.id,
+  };
+}
+
+function failedTenantContext(
+  status: TenantContextFailure["status"],
+  error: string,
+  tenantSlug?: string | null
+): TenantContextResolution {
+  return {
+    context: null,
+    failure: { status, error, tenantSlug },
+  };
+}
 
 /**
  * Returns the active organization (tenant) from the current session, or null.
@@ -209,77 +249,100 @@ export const resolveTenantFromRequest = cache(async function resolveTenantFromRe
  *
  * Shared database/shared schema rule: every tenant-owned query must use
  * `tenantId` from this helper, never a client-provided tenant_id.
- * Proxy may inject x-tenant-* headers after validation; server handlers still
- * re-check session, tenant status, and membership here before touching data.
+ * Proxy injects x-tenant-slug as routing context; server handlers validate
+ * authentication, tenant status, and membership here before touching data.
  */
-export const getTenantContext = cache(async function getTenantContext(): Promise<TenantContext | null> {
+export const resolveTenantContext = cache(async function resolveTenantContext(): Promise<TenantContextResolution> {
   const session = await getSession();
-  if (!session?.user) return null;
+  if (!session?.user) return failedTenantContext(401, "Unauthorized");
 
   const hdrs = await headers();
   const headerTenantSlug = hdrs.get("x-tenant-slug");
-  
-  let membership;
 
   if (headerTenantSlug) {
-    membership = await prisma.member.findFirst({
-      where: { 
-        userId: session.user.id,
-        organization: { slug: headerTenantSlug, status: "active" },
-        status: "active"
-      },
-      select: { 
-        role: true, 
-        organization: {
-          select: { id: true, name: true, slug: true, logo: true, status: true }
-        } 
-      }
+    const tenant = await prisma.organization.findUnique({
+      where: { slug: headerTenantSlug },
+      select: { id: true, name: true, slug: true, logo: true, status: true },
     });
-  } else if (session.session?.activeOrganizationId) {
-    membership = await prisma.member.findUnique({
-      where: {
-        organizationId_userId: { organizationId: session.session.activeOrganizationId, userId: session.user.id },
-      },
-      select: {
-        role: true,
-        status: true,
-        organization: {
-          select: { id: true, name: true, slug: true, logo: true, status: true }
-        }
-      }
-    });
-    
-    if (membership && (membership.status !== "active" || membership.organization.status !== "active")) {
-      membership = null;
+
+    if (!tenant) {
+      return failedTenantContext(404, "Tenant not found", headerTenantSlug);
     }
+
+    if (tenant.status !== "active") {
+      return failedTenantContext(423, "Tenant inactive", headerTenantSlug);
+    }
+
+    const membership = await prisma.member.findUnique({
+      where: {
+        organizationId_userId: { organizationId: tenant.id, userId: session.user.id },
+      },
+      select: { role: true, status: true },
+    });
+
+    if (!membership || membership.status !== "active") {
+      return failedTenantContext(403, "Access denied", headerTenantSlug);
+    }
+
+    return {
+      context: createTenantContext(session, tenant, membership.role),
+      failure: null,
+    };
   }
 
-  if (!membership || !membership.organization) return null;
+  if (!session.session?.activeOrganizationId) {
+    return failedTenantContext(401, "Unauthorized");
+  }
+
+  const membership = await prisma.member.findUnique({
+    where: {
+      organizationId_userId: {
+        organizationId: session.session.activeOrganizationId,
+        userId: session.user.id,
+      },
+    },
+    select: {
+      role: true,
+      status: true,
+      organization: {
+        select: { id: true, name: true, slug: true, logo: true, status: true },
+      },
+    },
+  });
+
+  if (!membership?.organization) {
+    return failedTenantContext(403, "Access denied");
+  }
+
+  if (membership.organization.status !== "active") {
+    return failedTenantContext(423, "Tenant inactive", membership.organization.slug);
+  }
+
+  if (membership.status !== "active") {
+    return failedTenantContext(403, "Access denied", membership.organization.slug);
+  }
 
   return {
-    tenant: membership.organization,
-    user: {
-      id: session.user.id,
-      name: getUserDisplayName(session.user),
-      email: session.user.email,
-      image: normalizeUserAvatarImage(session.user.id, session.user.image ?? null),
-    },
-    role: membership.role as OrgRole,
-    tenantId: membership.organization.id,
-    tenantSlug: membership.organization.slug,
-    userId: session.user.id,
+    context: createTenantContext(session, membership.organization, membership.role),
+    failure: null,
   };
 });
 
+export const getTenantContext = cache(async function getTenantContext(): Promise<TenantContext | null> {
+  const result = await resolveTenantContext();
+  return result.context;
+});
+
 export async function requireTenant(): Promise<TenantContext> {
-  const context = await getTenantContext();
-  if (!context) {
-    throw new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
+  const result = await resolveTenantContext();
+  if (!result.context) {
+    const failure = result.failure ?? { status: 401, error: "Unauthorized" };
+    throw new Response(JSON.stringify({ error: failure.error }), {
+      status: failure.status,
       headers: { "Content-Type": "application/json" },
     });
   }
-  return context;
+  return result.context;
 }
 
 export async function requireTenantMember(): Promise<TenantContext> {

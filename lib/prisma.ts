@@ -19,7 +19,7 @@ function getPoolMax() {
   const configured = Number(process.env.DATABASE_POOL_MAX ?? process.env.PG_POOL_MAX);
   if (Number.isInteger(configured) && configured > 0) return configured;
 
-  return process.env.NODE_ENV === "production" ? 3 : 10;
+  return process.env.NODE_ENV === "production" ? 1 : 10;
 }
 
 function getSslConfig() {
@@ -37,7 +37,7 @@ const pool = new Pool({
   connectionString,
   ssl: getSslConfig(),
   connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000,
+  idleTimeoutMillis: process.env.NODE_ENV === "production" ? 10000 : 30000,
   max: getPoolMax(),
 });
 const adapter = new PrismaPg(pool);

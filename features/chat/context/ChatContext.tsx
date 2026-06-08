@@ -41,6 +41,15 @@ interface ChatContextType {
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
+const DEBUG_CHAT_REALTIME = process.env.NODE_ENV === "development";
+
+function debugChatRealtime(message: string, data?: unknown) {
+  if (DEBUG_CHAT_REALTIME) console.log(message, data);
+}
+
+function warnChatRealtime(message: string, data?: unknown) {
+  if (DEBUG_CHAT_REALTIME) console.warn(message, data);
+}
 
 function activeChannelIdFromPath(pathname: string | null) {
   const prefix = "/dashboard/chat/";
@@ -273,6 +282,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const markingReadRef = useRef<Set<string>>(new Set());
   const refreshingChannelsRef = useRef(false);
   const lastSessionUserIdRef = useRef<string | null>(null);
+  const lastTenantIdRef = useRef<string | null>(tenantId);
   const lastVisibleRefreshAtRef = useRef(0);
   const syncTimeoutsRef = useRef<Record<string, number>>({});
 
@@ -369,9 +379,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [resetChatState, sessionUserId]);
 
   useEffect(() => {
+    if (lastTenantIdRef.current !== tenantId) {
+      lastTenantIdRef.current = tenantId;
+      resetChatState(sessionUserId);
+      return;
+    }
+
     setOrganizationId(tenantId);
     organizationIdRef.current = tenantId;
-  }, [tenantId]);
+  }, [resetChatState, sessionUserId, tenantId]);
 
   const markChannelAsRead = useCallback(async (channelId: string) => {
     if (markingReadRef.current.has(channelId)) return;
@@ -558,20 +574,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           filter: `organizationId=eq.${organizationId}`,
         },
         (payload) => {
-          console.log("[chat-realtime] INSERT chat_message raw", payload.new);
+          debugChatRealtime("[chat-realtime] INSERT chat_message raw", payload.new);
           const record = payload.new as Record<string, unknown>;
           const message = mapRealtimeMessage(record);
 
           if (!message) {
-            console.warn("[chat-realtime] mapRealtimeMessage returned null — keys:", Object.keys(record));
+            warnChatRealtime("[chat-realtime] mapRealtimeMessage returned null", Object.keys(record));
             return;
           }
           if (message.organizationId !== organizationIdRef.current) {
-            console.warn("[chat-realtime] organizationId mismatch — event:", message.organizationId, "local:", organizationIdRef.current);
+            warnChatRealtime("[chat-realtime] organizationId mismatch", {
+              event: message.organizationId,
+              local: organizationIdRef.current,
+            });
             return;
           }
 
-          console.log("[chat-realtime] mapped message", {
+          debugChatRealtime("[chat-realtime] mapped message", {
             id: message.id,
             channelId: message.channelId,
             content: message.content,
@@ -597,15 +616,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             setMessages((current) => {
               const currentMessages = current[channelId];
               if (!currentMessages && channelId !== activeChannel) {
-                console.log("[chat-realtime] skip — no cache for non-active channel", channelId);
+                debugChatRealtime("[chat-realtime] skip no cache for non-active channel", channelId);
                 return current;
               }
               const reconciled = reconcileMessage(currentMessages ?? [], message);
               if (!reconciled.changed) {
-                console.log("[chat-realtime] skip — message already in state", message.id);
+                debugChatRealtime("[chat-realtime] skip message already in state", message.id);
                 return current;
               }
-              console.log("[chat-realtime] ✅ appended", message.id, "to", channelId);
+              debugChatRealtime("[chat-realtime] appended message", { id: message.id, channelId });
               return { ...current, [channelId]: reconciled.list };
             });
 
@@ -632,7 +651,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           filter: `organizationId=eq.${organizationId}`,
         },
         (payload) => {
-          console.log("[chat-realtime] UPDATE chat_message", payload.new);
+          debugChatRealtime("[chat-realtime] UPDATE chat_message", payload.new);
           const record = payload.new as Record<string, unknown>;
           const deletedId = textValue(coalesce(record, "id"));
           const deletedChannelId = textValue(coalesce(record, "channelId", "channel_id"));
@@ -669,7 +688,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           filter: `organizationId=eq.${organizationId}`,
         },
         (payload) => {
-          console.log("[chat-realtime] DELETE chat_message", payload.old);
+          debugChatRealtime("[chat-realtime] DELETE chat_message", payload.old);
           const record = payload.old as Record<string, unknown>;
           const deletedId = textValue(coalesce(record, "id"));
           const channelId = textValue(coalesce(record, "channelId", "channel_id"));
@@ -689,7 +708,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           filter: `organizationId=eq.${organizationId}`,
         },
         (payload) => {
-          console.log("[chat-realtime] INSERT chat_channel", payload.new);
+          debugChatRealtime("[chat-realtime] INSERT chat_channel", payload.new);
           const channel = mapRealtimeChannel(payload.new as Record<string, unknown>);
           if (!channel || channel.organizationId !== organizationIdRef.current) return;
 
@@ -737,12 +756,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (err) {
           console.error("[chat-realtime] subscription error", err);
         } else {
-          console.log(`[chat-realtime] status: ${status} (org: ${organizationId})`);
+          debugChatRealtime("[chat-realtime] status", { status, organizationId });
         }
       });
 
     return () => {
-      console.log(`[chat-realtime] unsubscribing (org: ${organizationId})`);
+      debugChatRealtime("[chat-realtime] unsubscribing", { organizationId });
       void supabase.removeChannel(subscription);
     };
   }, [markChannelAsRead, organizationId]);

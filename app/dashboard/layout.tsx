@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getTenantContext } from "@/lib/server/auth-utils";
+import {
+  resolveTenantContext,
+  type TenantContextFailure,
+} from "@/lib/server/auth-utils";
 import { buildRootUrl } from "@/lib/routing";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { TenantProvider } from "@/components/providers/TenantProvider";
@@ -11,11 +14,30 @@ export const metadata: Metadata = {
   description: "Business Operating System — centralize your operations.",
 };
 
+function redirectForTenantFailure(failure: TenantContextFailure | null): never {
+  const status = failure?.status ?? 401;
+  const pathname =
+    status === 404
+      ? "/tenant-not-found"
+      : status === 423
+        ? "/tenant-inactive"
+        : status === 401
+          ? "/login"
+          : "/unauthorized";
+  const target = buildRootUrl(pathname);
+
+  if (failure?.tenantSlug) {
+    target.searchParams.set("tenant", failure.tenantSlug);
+  }
+
+  redirect(target.toString());
+}
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const context = await getTenantContext();
+  const { context, failure } = await resolveTenantContext();
   
   if (!context) {
-    redirect(buildRootUrl("/unauthorized").toString());
+    redirectForTenantFailure(failure);
   }
 
   return (
