@@ -6,7 +6,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { getTenantDashboardUrl, getTenantHost, rememberTenant } from "@/lib/tenant-url";
 
-/* â”€â”€ Plan data â”€â”€ */
+/* ── Plan data ── */
 const plans = [
   {
     id: "free",
@@ -26,20 +26,9 @@ const plans = [
     features: ["Unlimited workflows", "Up to 25 members", "50 GB storage", "Priority support", "Analytics dashboard"],
     highlighted: true,
   },
-  {
-    id: "business",
-    name: "Business",
-    price: "$49",
-    period: "/ mo per user",
-    tagline: "For larger operations",
-    features: ["Everything in Pro", "Unlimited members", "500 GB storage", "Dedicated support", "SSO & audit logs"],
-    highlighted: false,
-  },
 ];
 
-const STEPS = ["Business Setup", "Choose Plan", "Launch"];
-
-
+const STEPS = ["Workspace Details", "Select Plan", "Launch"];
 
 function slugify(val: string) {
   return val
@@ -51,34 +40,34 @@ function slugify(val: string) {
     .slice(0, 48);
 }
 
-/* â”€â”€ Availability badge â”€â”€ */
+/* ── Availability badge ── */
 type AvailState = "idle" | "checking" | "available" | "taken";
 
 function AvailBadge({ state }: { state: AvailState }) {
   if (state === "idle") return null;
   if (state === "checking")
     return (
-      <span className="flex items-center gap-1 font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold text-on-surface-variant/50">
-        <span className="w-3 h-3 rounded-full border-[1.5px] border-outline/40 border-t-on-surface-variant/60 animate-spin" />
-        Checkingâ€¦
+      <span className="flex items-center gap-1.5 font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-on-surface-variant/60">
+        <span className="material-symbols-outlined text-[13px] animate-spin">progress_activity</span>
+        Checking
       </span>
     );
   if (state === "available")
     return (
-      <span className="flex items-center gap-1 font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold" style={{ color: "#16a34a" }}>
+      <span className="flex items-center gap-1.5 font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-green-600">
         <span className="material-symbols-outlined text-[13px]">check_circle</span>
         Available
       </span>
     );
   return (
-    <span className="flex items-center gap-1 font-label-caps text-[10px] uppercase tracking-[0.05em] font-semibold" style={{ color: "var(--color-error)" }}>
-      <span className="material-symbols-outlined text-[13px]">cancel</span>
-      Already taken
+    <span className="flex items-center gap-1.5 font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-red-500">
+      <span className="material-symbols-outlined text-[13px]">error</span>
+      Taken
     </span>
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Step 1: Business Setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────── Step 1: Business Setup ─────────────── */
 function StepInfo({
   form,
   setForm,
@@ -130,84 +119,78 @@ function StepInfo({
     reader.readAsDataURL(file);
   };
 
-  const fieldStyle = (f: string) => ({
-    borderColor: focused === f ? "var(--color-primary)" : "rgba(116,120,120,0.2)",
-    boxShadow: focused === f ? "0 0 0 3px rgba(0,0,0,0.06)" : "none",
-  });
-  const inputCls = "w-full py-3 rounded-xl border bg-surface-container-lowest text-primary font-body-md text-[14px] placeholder:text-on-surface-variant/30 outline-none transition-all duration-200";
+  const inputCls = "w-full py-3.5 px-4 rounded-xl bg-surface-container-lowest text-primary text-[15px] font-medium placeholder:text-on-surface-variant/30 outline-none transition-all";
 
   const canProceed = form.name.trim() && form.slug.trim() && avail !== "taken" && avail !== "checking";
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in-up">
-
-      {/* Tenant Name */}
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="tenant-name" className="font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-on-surface-variant">
-          Business Name
+    <div className="flex flex-col gap-8 animate-fade-in-up">
+      {/* Workspace Name */}
+      <div className="flex flex-col gap-2">
+        <label htmlFor="tenant-name" className="font-label-caps text-[11px] uppercase tracking-[0.08em] font-semibold text-on-surface-variant">
+          Workspace Name
         </label>
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant/40 pointer-events-none">business</span>
+        <div className="relative group">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
+            <span className={`material-symbols-outlined text-[18px] transition-colors ${focused === "name" ? "text-primary" : "text-on-surface-variant/40 group-hover:text-on-surface-variant/60"}`}>domain</span>
+          </div>
           <input
             id="tenant-name" type="text" required autoFocus
             placeholder="Acme Corporation"
             value={form.name} onChange={handleNameChange}
             onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
-            className={`${inputCls} pl-10 pr-4`} style={fieldStyle("name")}
+            className={`${inputCls} pl-12 ${focused === "name" ? "shadow-[0_0_0_2px_rgba(0,0,0,0.1)]" : "shadow-[0_0_0_1px_rgba(116,120,120,0.14)] hover:shadow-[0_0_0_1px_rgba(116,120,120,0.25)]"}`}
           />
         </div>
       </div>
 
       {/* Subdomain */}
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <label htmlFor="tenant-slug" className="font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-on-surface-variant">
-            Subdomain
+          <label htmlFor="tenant-slug" className="font-label-caps text-[11px] uppercase tracking-[0.08em] font-semibold text-on-surface-variant">
+            Workspace URL
           </label>
           <AvailBadge state={avail} />
         </div>
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant/40 pointer-events-none">link</span>
+        <div className="relative group">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
+             <span className={`material-symbols-outlined text-[18px] transition-colors ${
+               avail === "taken" ? "text-red-500" 
+               : avail === "available" ? "text-green-500"
+               : focused === "slug" ? "text-primary" 
+               : "text-on-surface-variant/40 group-hover:text-on-surface-variant/60"
+             }`}>link</span>
+          </div>
           <input
             id="tenant-slug" type="text" required
-            placeholder="acme-corporation"
+            placeholder="acme"
             value={form.slug} onChange={handleSlugChange}
             onFocus={() => setFocused("slug")} onBlur={() => setFocused(null)}
-            className={`${inputCls} pl-10 pr-4`}
-            style={{
-              borderColor:
-                avail === "taken"     ? "var(--color-error)"
-                : avail === "available" ? "rgba(22,163,74,0.5)"
-                : focused === "slug"  ? "var(--color-primary)"
-                : "rgba(116,120,120,0.2)",
-              boxShadow:
-                avail === "taken"      ? "0 0 0 3px rgba(186,26,26,0.06)"
-                : avail === "available" ? "0 0 0 3px rgba(22,163,74,0.06)"
-                : focused === "slug"   ? "0 0 0 3px rgba(0,0,0,0.06)"
-                : "none",
-            }}
+            className={`${inputCls} pl-12 pr-28 ${
+              avail === "taken" ? "shadow-[0_0_0_2px_rgba(239,68,68,0.5)] bg-red-50"
+                : avail === "available" ? "shadow-[0_0_0_2px_rgba(34,197,94,0.5)] bg-green-50"
+                  : focused === "slug" ? "shadow-[0_0_0_2px_rgba(0,0,0,0.1)]"
+                    : "shadow-[0_0_0_1px_rgba(116,120,120,0.14)] hover:shadow-[0_0_0_1px_rgba(116,120,120,0.25)]"
+            }`}
           />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+             <span className="font-mono text-[13px] text-on-surface-variant/50">.opero.com</span>
+          </div>
         </div>
-        {/* Live subdomain preview */}
-        <p className="font-body-sm text-[12px] text-on-surface-variant/50 pl-1">
-          Your Tenant URL:{" "}
-          <span className="font-semibold text-primary/70 font-mono tracking-tight">
-            {getTenantHost(form.slug || "your-tenant")}
-          </span>
+        <p className="font-body-sm text-[13px] text-on-surface-variant/60 mt-1">
+          Your portal will be accessible at: <span className="font-semibold text-primary">{getTenantHost(form.slug || "your-workspace")}</span>
         </p>
       </div>
 
       {/* Logo Upload */}
-      <div className="flex flex-col gap-1.5">
-        <span className="font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold text-on-surface-variant">
-          Logo <span className="text-on-surface-variant/40 normal-case tracking-normal font-normal">(optional)</span>
-        </span>
+      <div className="flex flex-col gap-2">
+        <label className="font-label-caps text-[11px] uppercase tracking-[0.08em] font-semibold text-on-surface-variant">
+          Workspace Icon <span className="text-on-surface-variant/40 normal-case tracking-normal font-normal ml-1">Optional</span>
+        </label>
         <div
-          className="relative flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer"
-          style={{
-            borderColor: dragOver ? "var(--color-primary)" : "rgba(116,120,120,0.18)",
-            background: dragOver ? "rgba(0,0,0,0.025)" : "rgba(0,0,0,0.01)",
-          }}
+          className={`relative flex items-center gap-5 p-5 rounded-xl border border-dashed transition-all cursor-pointer ${
+            dragOver ? "border-primary bg-primary/[0.02]" : "border-outline/20 hover:border-outline/40 bg-surface-container-lowest"
+          }`}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -216,37 +199,44 @@ function StepInfo({
           <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           {form.logo ? (
             <>
-              <Image src={form.logo} alt="Logo preview" width={56} height={56} className="w-14 h-14 rounded-xl object-cover border border-outline/15 shadow-sm" />
-              <span className="font-body-sm text-[12px] text-on-surface-variant/55">Click to change</span>
+              <Image src={form.logo} alt="Logo" width={56} height={56} className="w-14 h-14 rounded-xl object-cover shadow-sm ring-1 ring-outline/10" />
+              <div className="flex flex-col gap-1">
+                <span className="font-body-md text-[14px] font-semibold text-primary">Change logo</span>
+                <span className="font-body-sm text-[13px] text-on-surface-variant/60">Click or drag a new image</span>
+              </div>
             </>
           ) : (
             <>
-              <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center border border-outline/10">
-                <span className="material-symbols-outlined text-on-surface-variant/35 text-[20px]">upload</span>
+              <div className="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0 border border-outline/5 shadow-sm">
+                <span className="material-symbols-outlined text-[24px] text-on-surface-variant/40">upload_file</span>
               </div>
-              <div className="text-center">
-                <p className="font-body-md text-[13px] text-primary/65 font-medium">Drop your logo here</p>
-                <p className="font-body-sm text-[12px] text-on-surface-variant/40">PNG, JPG, SVG Â· Max 2 MB</p>
+              <div className="flex flex-col gap-0.5">
+                <span className="font-body-md text-[14px] font-semibold text-primary">Upload icon</span>
+                <span className="font-body-sm text-[13px] text-on-surface-variant/60">PNG, JPG, SVG up to 2MB</span>
               </div>
             </>
           )}
         </div>
       </div>
 
-      <button
-        id="step1-next" type="button"
-        disabled={!canProceed}
-        onClick={onNext}
-        className="mt-2 w-full bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.16)] hover:-translate-y-px"
-      >
-        Continue
-        <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-      </button>
+      <div className="mt-2 flex justify-end">
+        <button
+          id="step1-next" type="button"
+          disabled={!canProceed}
+          onClick={onNext}
+          className="group relative bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.06em] font-bold px-8 py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all overflow-hidden"
+          style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.15)" }}
+        >
+          <span className="relative z-10">Continue</span>
+          <span className="material-symbols-outlined text-[16px] relative z-10 group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+        </button>
+      </div>
     </div>
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Step 2: Choose Plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────── Step 2: Choose Plan ─────────────── */
 function StepPlan({
   selected,
   onSelect,
@@ -259,9 +249,9 @@ function StepPlan({
   onBack: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-5 animate-fade-in-up">
-      {/* Plan cards â€” 3-col on wider containers */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="flex flex-col gap-8 animate-fade-in-up">
+      {/* Plan cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {plans.map((plan) => {
           const active = selected === plan.id;
           return (
@@ -270,87 +260,113 @@ function StepPlan({
               id={`plan-${plan.id}`}
               type="button"
               onClick={() => onSelect(plan.id)}
-              className="text-left rounded-2xl border p-5 transition-all duration-200 flex flex-col gap-3 relative overflow-hidden"
+              className="group text-left flex flex-col rounded-2xl outline-none transition-all duration-300 overflow-hidden relative"
               style={{
-                borderColor: active ? "var(--color-primary)" : "rgba(116,120,120,0.18)",
-                background: active ? "rgba(0,0,0,0.025)" : "rgba(0,0,0,0.01)",
-                boxShadow: active
-                  ? plan.highlighted
-                    ? "0 0 0 3px rgba(0,0,0,0.07), 0 8px 28px rgba(0,0,0,0.08)"
-                    : "0 0 0 2.5px rgba(0,0,0,0.06)"
-                  : "none",
+                background: active
+                  ? "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)"
+                  : "var(--color-surface-container-lowest)",
+                border: active ? "1px solid rgba(0,0,0,0.9)" : "1px solid rgba(116,120,120,0.14)",
+                boxShadow: active ? "0 12px 32px rgba(0,0,0,0.12), 0 0 0 2px rgba(0,0,0,0.9)" : "0 2px 12px rgba(0,0,0,0.03)",
+                transform: active ? "translateY(-4px)" : "none",
               }}
             >
-              {/* Popular badge */}
-              {plan.highlighted && (
-                <span
-                  className="absolute top-3.5 right-3.5 font-label-caps text-[9px] uppercase tracking-[0.06em] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: active ? "var(--color-primary)" : "rgba(0,0,0,0.07)", color: active ? "#fff" : "var(--color-primary)" }}
-                >
-                  Popular
-                </span>
+              {active && (
+                <>
+                  {/* Subtle top shimmer */}
+                  <div className="absolute top-0 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-white/15 to-transparent z-10" />
+                  {/* Subtle dot grid on card */}
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-20 z-0"
+                    style={{
+                      backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)",
+                      backgroundSize: "16px 16px",
+                      maskImage: "radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%)",
+                      WebkitMaskImage: "radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%)",
+                    }}
+                  />
+                </>
               )}
 
-              {/* Radio + Name */}
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200"
-                  style={{ borderColor: active ? "var(--color-primary)" : "rgba(116,120,120,0.3)" }}
-                >
-                  {active && <div className="w-2 h-2 rounded-full bg-primary" />}
+              <div className="p-6 relative z-10 flex flex-col h-full">
+                {/* Popular badge */}
+                {plan.highlighted && (
+                  <span
+                    className={`absolute top-5 right-5 font-label-caps text-[9px] uppercase tracking-[0.06em] font-bold px-2.5 py-1 rounded-full ${
+                      active ? "bg-white/10 text-white/90" : "bg-primary/10 text-primary"
+                    }`}
+                  >
+                    Recommended
+                  </span>
+                )}
+
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${active ? "border-white/30" : "border-outline/30"}`}>
+                    {active && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  <h3 className={`font-display font-bold text-lg ${active ? "text-white" : "text-primary"}`}>
+                    {plan.name}
+                  </h3>
                 </div>
-                <span className="font-h3 text-[14px] font-semibold text-primary">{plan.name}</span>
+
+                <div className="mb-2">
+                  <span className={`font-display font-bold text-3xl tracking-tight ${active ? "text-white" : "text-primary"}`}>
+                    {plan.price}
+                  </span>
+                  <span className={`font-body-sm text-[13px] ml-1.5 ${active ? "text-white/60" : "text-on-surface-variant/70"}`}>
+                    {plan.period}
+                  </span>
+                </div>
+
+                <p className={`font-body-sm text-[13px] leading-relaxed mb-6 ${active ? "text-white/50" : "text-on-surface-variant/60"}`}>
+                  {plan.tagline}
+                </p>
+
+                <ul className={`flex flex-col gap-2.5 pt-5 border-t mt-auto ${active ? "border-white/10" : "border-outline/10"}`}>
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5">
+                      <span className={`material-symbols-outlined text-[16px] mt-0.5 ${active ? "text-white/70" : "text-primary/60"}`}>check</span>
+                      <span className={`font-body-md text-[13.5px] ${active ? "text-white/80" : "text-on-surface-variant/90"}`}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Price */}
-              <div>
-                <span className="font-display font-bold text-primary leading-none" style={{ fontSize: 26 }}>{plan.price}</span>
-                <span className="font-body-sm text-[11px] text-on-surface-variant ml-1">{plan.period}</span>
-              </div>
-
-              <p className="font-body-sm text-[12px] text-on-surface-variant">{plan.tagline}</p>
-
-              {/* Features */}
-              <ul className="flex flex-col gap-1.5 pt-3 border-t border-outline/10 mt-auto">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary/50 text-[12px]">check</span>
-                    <span className="font-body-sm text-[12px] text-on-surface-variant">{f}</span>
-                  </li>
-                ))}
-              </ul>
             </button>
           );
         })}
       </div>
 
-      <p className="text-center font-body-sm text-[12px] text-on-surface-variant/40">
+      <p className="text-center font-body-sm text-[13px] text-on-surface-variant/50">
         Annual billing saves up to 20%. All paid plans include a 14-day free trial.
       </p>
 
-      <button
-        id="step2-next" type="button" onClick={onNext}
-        className="w-full bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.16)] hover:-translate-y-px"
-      >
-        Launch Tenant
-        <span className="material-symbols-outlined text-[15px]">rocket_launch</span>
-      </button>
-      <button
-        type="button" id="step2-back" onClick={onBack}
-        className="w-full border border-outline/20 text-on-surface-variant font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-6 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-surface-container hover:border-outline/40 active:scale-[0.98] transition-all duration-200"
-      >
-        <span className="material-symbols-outlined text-[15px]">arrow_back</span>Back
-      </button>
+      <div className="flex items-center justify-between mt-2 pt-6 border-t border-outline/10">
+        <button
+          type="button" id="step2-back" onClick={onBack}
+          className="font-label-caps text-[11px] uppercase tracking-[0.06em] font-bold text-on-surface-variant/60 hover:text-primary transition-colors flex items-center gap-1.5"
+        >
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Back
+        </button>
+        <button
+          id="step2-next" type="button" onClick={onNext}
+          className="group relative bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.06em] font-bold px-8 py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-primary/90 transition-all overflow-hidden"
+          style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.15)" }}
+        >
+          <span className="relative z-10">Launch Workspace</span>
+          <span className="material-symbols-outlined text-[16px] relative z-10 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">rocket_launch</span>
+          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+        </button>
+      </div>
     </div>
   );
 }
 
 /* ─────────────────── Step 3: Launch ─────────────────── */
 const LAUNCH_STEPS = [
-  { label: "Creating Tenant", delay: 400 },
-  { label: "Applying plan & billing", delay: 900 },
-  { label: "Configuring subdomain", delay: 1500 },
-  { label: "Finalising setup", delay: 2000 },
+  "Provisioning workspace",
+  "Configuring domain routing",
+  "Setting up environment",
+  "Finalizing permissions",
 ];
 
 function StepLaunch({
@@ -364,161 +380,221 @@ function StepLaunch({
   tenantLogo?: string | null;
   onEnter: () => void;
 }) {
-  const hasStartedRef = useRef(false);
   const [doneCount, setDoneCount] = useState(0);
   const [phase, setPhase] = useState<"loading" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
-    if (hasStartedRef.current) return;
-    hasStartedRef.current = true;
+    let cancelled = false;
+    let isApiDone = false;
+    let isError = false;
+    let errMsg = "";
+    let progressTimer: ReturnType<typeof setTimeout> | null = null;
+    let apiStartTimer: ReturnType<typeof setTimeout> | null = null;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    const controller = new AbortController();
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    setDoneCount(0);
+    setPhase("loading");
+    setErrorMsg("");
 
-    // Kick off visual progress steps
-    LAUNCH_STEPS.forEach((s, i) => {
-      timers.push(setTimeout(() => setDoneCount(i + 1), s.delay));
-    });
-
-    // Actual API call — create the org
-    fetch("/api/tenant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: tenantName, slug: tenantSlug, logo: tenantLogo ?? "" }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
+    const finish = () => {
+      if (cancelled) return;
+      setDoneCount(LAUNCH_STEPS.length);
+      settleTimer = setTimeout(() => {
+        if (cancelled) return;
+        if (isError) {
           setPhase("error");
-          setErrorMsg(data.error);
+          setErrorMsg(errMsg);
         } else {
-          timers.push(setTimeout(() => setPhase("success"), 2600));
+          setPhase("success");
         }
-      })
-      .catch(() => {
-        setPhase("error");
-        setErrorMsg("Failed to create tenant. Please try again.");
-      });
+      }, 350);
+    };
 
-    return () => timers.forEach(clearTimeout);
+    const waitForApi = () => {
+      if (cancelled) return;
+      if (isApiDone) {
+        finish();
+        return;
+      }
+      settleTimer = setTimeout(waitForApi, 120);
+    };
+
+    const advanceProgress = (completed: number) => {
+      progressTimer = setTimeout(() => {
+        if (cancelled) return;
+        setDoneCount(completed);
+        if (completed >= LAUNCH_STEPS.length - 1) {
+          waitForApi();
+        } else {
+          advanceProgress(completed + 1);
+        }
+      }, 800);
+    };
+
+    // Delay the POST until after the effect survives React dev re-runs.
+    apiStartTimer = setTimeout(() => {
+      fetch("/api/tenant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: tenantName, slug: tenantSlug, logo: tenantLogo ?? "" }),
+        signal: controller.signal,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            isError = true;
+            errMsg = data.error;
+          }
+          isApiDone = true;
+        })
+        .catch(() => {
+          if (controller.signal.aborted) return;
+          isError = true;
+          errMsg = "Failed to create workspace. Please try again.";
+          isApiDone = true;
+        });
+    }, 0);
+
+    advanceProgress(1);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      if (progressTimer) clearTimeout(progressTimer);
+      if (apiStartTimer) clearTimeout(apiStartTimer);
+      if (settleTimer) clearTimeout(settleTimer);
+    };
   }, [retryNonce, tenantLogo, tenantName, tenantSlug]);
 
-
-
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-7 py-6 animate-fade-in-up min-h-[300px]">
+    <div className="flex flex-col items-center justify-center gap-8 py-8 animate-fade-in min-h-[360px]">
       {phase === "loading" ? (
-        <>
-          {/* Spinner */}
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 rounded-full border-[3px] border-outline/12" />
-            <div
-              className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-primary animate-spin"
-              style={{ animationDuration: "0.85s" }}
-            />
-            {/* Inner pulse */}
-            <div className="absolute inset-3 rounded-full border border-outline/15 animate-pulse" />
+        <div className="w-full max-w-sm animate-fade-in">
+          {/* Header */}
+          <div className="flex items-center gap-5 mb-10">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center" aria-hidden="true">
+              <svg className="h-14 w-14 animate-spin text-primary" viewBox="0 0 48 48" fill="none">
+                <circle
+                  className="text-primary/15"
+                  cx="24"
+                  cy="24"
+                  r="19"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="19"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray="88 32"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="font-h2 font-bold text-lg text-primary">Creating workspace</p>
+              <p className="font-body-sm text-[13px] text-on-surface-variant/60 mt-0.5">Please hold on a moment...</p>
+            </div>
           </div>
 
-          <div>
-            <p className="font-h3 text-[18px] font-semibold text-primary mb-1">Setting up your Tenantâ€¦</p>
-            <p className="font-body-md text-[14px] text-on-surface-variant">This only takes a moment.</p>
-          </div>
-
-          {/* Animated progress steps */}
-          <div className="flex flex-col gap-2.5 w-full max-w-[280px]">
-            {LAUNCH_STEPS.map((s, i) => {
+          {/* List */}
+          <div className="flex flex-col gap-5">
+            {LAUNCH_STEPS.map((label, i) => {
               const done = i < doneCount;
               const active = i === doneCount;
               return (
-                <div key={i} className="flex items-center gap-3 transition-all duration-300">
+                <div key={i} className="flex items-center gap-4 transition-opacity duration-300">
                   <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-400"
-                    style={{
-                      background: done ? "var(--color-primary)" : "transparent",
-                      border: done ? "none" : active ? "1.5px solid var(--color-primary)" : "1.5px solid rgba(116,120,120,0.2)",
-                    }}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300 ${
+                      done ? "bg-primary text-on-primary" : active ? "border-2 border-primary" : "border-2 border-outline/20"
+                    }`}
                   >
-                    {done && <span className="material-symbols-outlined text-white text-[11px]">check</span>}
-                    {active && <span className="w-2 h-2 rounded-full border border-primary border-t-transparent animate-spin block" style={{ animationDuration: "0.6s" }} />}
+                    {done && <span className="material-symbols-outlined text-[12px] font-bold">check</span>}
                   </div>
                   <span
-                    className="font-body-sm text-[12px] transition-colors duration-300"
-                    style={{ color: done ? "var(--color-primary)" : active ? "var(--color-on-surface)" : "rgba(68,71,72,0.4)" }}
+                    className={`font-body-md text-[14px] transition-colors duration-300 ${
+                      done ? "text-primary font-medium" : active ? "text-primary font-semibold" : "text-on-surface-variant/40"
+                    }`}
                   >
-                    {s.label}
+                    {label}
                   </span>
                 </div>
               );
             })}
           </div>
-        </>
+        </div>
       ) : phase === "error" ? (
-        <div className="flex flex-col items-center gap-5 animate-scale-in">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(186,26,26,0.08)", color: "var(--color-error)" }}
-          >
-            <span className="material-symbols-outlined text-[28px]">error</span>
+        <div className="flex flex-col w-full max-w-sm animate-fade-in">
+          <div className="flex items-center gap-5 mb-8">
+            <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px]">error</span>
+            </div>
+            <div>
+              <p className="font-h2 font-bold text-lg text-primary">Setup failed</p>
+              <p className="font-body-sm text-[13px] text-on-surface-variant/60 mt-0.5">We encountered a problem.</p>
+            </div>
           </div>
 
-          <div>
-            <p
-              className="font-display font-bold leading-[1.1] mb-2"
-              style={{ fontSize: "clamp(22px, 3vw, 28px)", letterSpacing: "-0.02em", color: "var(--color-error)" }}
-            >
-              Tenant setup failed.
-            </p>
-            <p className="font-body-md text-[14px] text-on-surface-variant">
-              {errorMsg || "Please check the tenant details and try again."}
+          <div className="p-5 rounded-xl border border-red-500/20 bg-red-50 mb-8">
+            <p className="font-body-sm text-[13px] text-red-700 font-medium">
+              {errorMsg || "An unknown error occurred while creating your workspace."}
             </p>
           </div>
 
           <button
             type="button"
             onClick={() => {
-              hasStartedRef.current = false;
               setDoneCount(0);
               setPhase("loading");
               setErrorMsg("");
               setRetryNonce((value) => value + 1);
             }}
-            className="mt-1 bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-8 py-3.5 rounded-xl flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:-translate-y-px"
+            className="w-full bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.06em] font-bold px-6 py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-primary/90 transition-all"
+            style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.15)" }}
           >
             Try Again
-            <span className="material-symbols-outlined text-[15px]">refresh</span>
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
           </button>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-5 animate-scale-in">
-          {/* Success circle */}
-          <div
-            className="w-16 h-16 rounded-full bg-primary flex items-center justify-center animate-check-pop"
-            style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.15), 0 0 0 8px rgba(0,0,0,0.05)" }}
-          >
-            <span className="material-symbols-outlined text-white text-[28px]">check</span>
+        <div className="flex flex-col w-full max-w-sm animate-fade-in text-center">
+          <div className="w-16 h-16 mx-auto rounded-full bg-green-50 text-green-600 flex items-center justify-center mb-6">
+            <span className="material-symbols-outlined text-[32px]">check_circle</span>
           </div>
+          
+          <h2 className="font-display font-bold text-2xl text-primary mb-2">Workspace ready</h2>
+          <p className="font-body-md text-[14px] text-on-surface-variant/60 mb-8">
+            Your new workspace has been successfully created and configured.
+          </p>
 
-          <div>
-            <p
-              className="font-display font-bold text-primary leading-[1.1] mb-2"
-              style={{ fontSize: "clamp(22px, 3vw, 28px)", letterSpacing: "-0.02em" }}
-            >
-              Your Tenant is ready.
-            </p>
-            <p className="font-body-md text-[14px] text-on-surface-variant">
-              <span className="font-semibold text-primary">{tenantName || "Your Tenant"}</span> is live at{" "}
-              <span className="font-mono text-primary/70">{getTenantHost(tenantSlug || "your-tenant")}</span>
-            </p>
+          {/* Receipt/Summary Card */}
+          <div className="p-5 rounded-2xl border border-outline/10 bg-surface-container-lowest mb-8 flex items-center gap-4 text-left shadow-sm">
+            {tenantLogo ? (
+              <img src={tenantLogo} alt="Logo" className="w-12 h-12 rounded-xl border border-outline/10 object-cover shadow-sm" />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center border border-outline/10 shadow-sm shrink-0">
+                <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">domain</span>
+              </div>
+            )}
+            <div className="flex flex-col overflow-hidden">
+              <span className="font-h2 font-semibold text-[15px] text-primary truncate">{tenantName}</span>
+              <span className="font-mono text-[12px] text-on-surface-variant/50 truncate mt-0.5">{tenantSlug}.opero.com</span>
+            </div>
           </div>
 
           <button
             id="launch-enter" type="button" onClick={onEnter}
-            className="mt-1 bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-8 py-3.5 rounded-xl flex items-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 animate-pulse-glow shadow-[0_4px_16px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:-translate-y-px"
+            className="group w-full bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.06em] font-bold px-6 py-4 rounded-full flex items-center justify-center gap-2 hover:bg-primary/90 transition-all overflow-hidden relative"
+            style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.15)" }}
           >
-            Enter Dashboard
-            <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+            <span className="relative z-10">Enter Dashboard</span>
+            <span className="material-symbols-outlined text-[16px] relative z-10 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
           </button>
         </div>
       )}
@@ -526,7 +602,7 @@ function StepLaunch({
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────── Main page ─────────────── */
 export default function CreateTenantPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [tenantForm, setTenantForm] = useState({ name: "", slug: "", logo: null as string | null });
@@ -560,7 +636,6 @@ export default function CreateTenantPage() {
   }, []);
 
   const handleEnterDashboard = async () => {
-    // The org was already created in StepLaunch - refresh it from our tenant API.
     const res = await fetch("/api/tenant", { cache: "no-store" });
     const payload = await res.json().catch(() => ({}));
     const created = payload.organizations?.find((o: { slug?: string }) => o.slug === tenantForm.slug);
@@ -573,11 +648,14 @@ export default function CreateTenantPage() {
 
   if (eligibility.loading) {
     return (
-      <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">
-        <div className="w-full max-w-[420px] space-y-4 animate-pulse">
-          <div className="mx-auto h-8 w-56 rounded bg-black/[0.05]" />
-          <div className="mx-auto h-3 w-72 rounded bg-black/[0.035]" />
-          <div className="h-48 rounded-2xl border border-outline/10 bg-surface-container-lowest" />
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-[640px] space-y-12 animate-pulse">
+          <div className="flex justify-center gap-6">
+             <div className="h-2 w-12 rounded-full bg-outline/10" />
+             <div className="h-2 w-12 rounded-full bg-outline/5" />
+             <div className="h-2 w-12 rounded-full bg-outline/5" />
+          </div>
+          <div className="h-96 rounded-2xl bg-outline/5" />
         </div>
       </main>
     );
@@ -585,30 +663,30 @@ export default function CreateTenantPage() {
 
   if (!eligibility.canCreate) {
     return (
-      <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">
-        <div className="w-full max-w-[520px] text-center animate-fade-in-up">
-          <span className="inline-flex items-center gap-1.5 font-label-caps text-[10px] uppercase tracking-[0.08em] font-semibold text-on-surface-variant/50 mb-4">
-            Tenant limit reached
-          </span>
-          <h1 className="font-display text-primary font-bold leading-[1.1] mb-4" style={{ fontSize: "clamp(26px, 4vw, 38px)" }}>
-            You already created a tenant.
+      <main className="flex-1 flex flex-col items-center justify-center px-5 py-12">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center mx-auto mb-6 shadow-sm border border-outline/10 text-on-surface-variant">
+            <span className="material-symbols-outlined text-[32px]">domain_disabled</span>
+          </div>
+          <h1 className="font-display text-3xl font-bold text-primary mb-3 tracking-tight">
+            Limit Reached
           </h1>
-          <p className="font-body-md text-[14px] text-on-surface-variant leading-relaxed mb-8">
-            Each account can create one tenant. You can still join other tenants using an invite code.
-            {eligibility.ownedTenant ? ` Your tenant is "${eligibility.ownedTenant.name}".` : ""}
+          <p className="font-body-md text-[14.5px] text-on-surface-variant/80 leading-relaxed mb-8">
+            You can only create one workspace per account. You can still join other workspaces using an invite code.
+            {eligibility.ownedTenant ? ` Your current workspace is "${eligibility.ownedTenant.name}".` : ""}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/onboarding/join"
-              className="w-full sm:w-auto bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-6 py-3 rounded-xl"
+              className="w-full sm:w-auto bg-primary text-on-primary font-label-caps text-[11px] uppercase tracking-[0.06em] font-bold px-8 py-3.5 rounded-full hover:bg-primary/90 transition-all shadow-sm"
             >
-              Join with invite code
+              Join with code
             </Link>
             <Link
               href="/tenants"
-              className="w-full sm:w-auto border border-outline/20 text-primary font-label-caps text-[11px] uppercase tracking-[0.05em] font-semibold px-6 py-3 rounded-xl"
+              className="w-full sm:w-auto bg-surface-container-low text-primary font-label-caps text-[11px] uppercase tracking-[0.06em] font-bold px-8 py-3.5 rounded-full hover:bg-surface-container border border-outline/10 transition-all"
             >
-              My tenants
+              My workspaces
             </Link>
           </div>
         </div>
@@ -617,87 +695,103 @@ export default function CreateTenantPage() {
   }
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">
-      <div className="w-full max-w-[580px]">
+    <main className="flex-1 flex flex-col items-center px-5 sm:px-8 py-10 sm:py-16 relative">
+      {/* Ambient glow behind main container */}
+      <div
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none -z-10"
+        style={{
+          width: 600,
+          height: 400,
+          background: "radial-gradient(ellipse, rgba(0,0,0,0.03) 0%, transparent 70%)",
+        }}
+      />
 
-        {/* Step indicator */}
-        <div className="flex items-center justify-center gap-0 mb-10">
-          {STEPS.map((label, idx) => {
-            const s = idx + 1;
-            const done   = s < step;
-            const active = s === step;
-            return (
-              <div key={label} className="flex items-center">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center font-label-caps text-[11px] font-semibold transition-all duration-300"
-                    style={{
-                      background: done || active ? "var(--color-primary)" : "transparent",
-                      color: done || active ? "#fff" : "var(--color-on-surface-variant)",
-                      border: done || active ? "none" : "1.5px solid rgba(116,120,120,0.25)",
-                    }}
-                  >
-                    {done ? <span className="material-symbols-outlined text-[13px]">check</span> : s}
+      <div className="w-full max-w-[640px]">
+        
+        {/* Sleek Horizontal Stepper */}
+        <div className="flex justify-center mb-12 sm:mb-16">
+          <div className="inline-flex items-center gap-3">
+            {STEPS.map((label, idx) => {
+              const s = idx + 1;
+              const done = s < step;
+              const active = s === step;
+              return (
+                <div key={label} className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    {/* Indicator dot */}
+                    <div className="relative flex items-center justify-center">
+                      {active && (
+                        <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+                      )}
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 relative z-10 ${
+                          active ? "bg-primary scale-110" : done ? "bg-primary/40" : "bg-outline/20"
+                        }`}
+                      />
+                    </div>
+                    {/* Label */}
+                    <span
+                      className={`font-label-caps text-[10px] uppercase tracking-[0.08em] font-bold hidden sm:block transition-colors duration-300 ${
+                        active ? "text-primary" : done ? "text-primary/60" : "text-on-surface-variant/40"
+                      }`}
+                    >
+                      {label}
+                    </span>
                   </div>
-                  <span
-                    className="font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold hidden sm:block transition-colors duration-200"
-                    style={{ color: active ? "var(--color-primary)" : "var(--color-on-surface-variant)", opacity: active ? 1 : 0.4 }}
-                  >
-                    {label}
-                  </span>
+                  {/* Separator Line */}
+                  {idx < STEPS.length - 1 && (
+                    <div
+                      className={`w-6 sm:w-10 h-px transition-all duration-500 ${
+                        done ? "bg-primary/30" : "bg-outline/10"
+                      }`}
+                    />
+                  )}
                 </div>
-                {idx < STEPS.length - 1 && (
-                  <div
-                    className="w-10 sm:w-16 h-px mx-3 transition-all duration-500"
-                    style={{ background: done ? "var(--color-primary)" : "rgba(116,120,120,0.15)" }}
-                  />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-surface-container-lowest border border-outline/12 rounded-2xl p-8 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
-
-          {/* Step heading */}
-          <div className="mb-7">
-            <span className="font-label-caps text-[10px] uppercase tracking-[0.08em] font-semibold text-on-surface-variant/50 block mb-2">
-              Step {step} of {STEPS.length}
-            </span>
-            <h1
-              className="font-display text-primary font-bold leading-[1.1]"
-              style={{ fontSize: "clamp(22px, 3vw, 28px)", letterSpacing: "-0.02em" }}
-            >
-              {step === 1 && "Tell us about your business"}
-              {step === 2 && "Choose the right plan"}
-              {step === 3 && "Launching your Tenant…"}
-            </h1>
-            {step < 3 && (
-              <p className="mt-1.5 font-body-md text-[14px] text-on-surface-variant">
-                {step === 1 && "Give your Tenant a name and choose a unique subdomain."}
-                {step === 2 && "Pick a plan that fits your team. You can always upgrade later."}
+        {/* Main Content Area */}
+        <div className="animate-fade-in-up">
+          {/* Header (Hidden in Step 3 for cleaner launch screen) */}
+          {step < 3 && (
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-outline/10 bg-surface-container-lowest">
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.08em] font-bold text-primary/60">
+                  Step {step} of {STEPS.length}
+                </span>
+              </div>
+              <h1 className="font-display text-primary font-bold text-3xl sm:text-4xl tracking-tight mb-3">
+                {step === 1 && "Create your workspace"}
+                {step === 2 && "Choose your plan"}
+              </h1>
+              <p className="font-body-md text-[15px] text-on-surface-variant/70 max-w-md mx-auto">
+                {step === 1 && "Set up a new operational hub for your team."}
+                {step === 2 && "Select the features that fit your team's needs."}
               </p>
+            </div>
+          )}
+
+          <div className={`transition-all duration-500 ${step === 3 ? "mt-4" : ""}`}>
+            {step === 1 && <StepInfo form={tenantForm} setForm={setTenantForm} onNext={() => setStep(2)} />}
+            {step === 2 && <StepPlan selected={selectedPlan} onSelect={setSelectedPlan} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+            {step === 3 && (
+              <StepLaunch
+                tenantName={tenantForm.name}
+                tenantSlug={tenantForm.slug}
+                tenantLogo={tenantForm.logo}
+                onEnter={handleEnterDashboard}
+              />
             )}
           </div>
-
-          {step === 1 && <StepInfo form={tenantForm} setForm={setTenantForm} onNext={() => setStep(2)} />}
-          {step === 2 && <StepPlan selected={selectedPlan} onSelect={setSelectedPlan} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-          {step === 3 && (
-            <StepLaunch
-              tenantName={tenantForm.name}
-              tenantSlug={tenantForm.slug}
-              tenantLogo={tenantForm.logo}
-              onEnter={handleEnterDashboard}
-            />
-          )}
         </div>
 
         {step === 1 && (
-          <p className="mt-5 text-center font-body-sm text-[12px] text-on-surface-variant/50">
-            Changed your mind?{" "}
-            <Link href="/onboarding" className="text-primary font-semibold hover:underline underline-offset-2">
-              Back to options
+          <p className="mt-12 text-center font-body-sm text-[13px] text-on-surface-variant/50">
+            <Link href="/onboarding" className="hover:text-primary transition-colors inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">arrow_back</span>
+              Return to choices
             </Link>
           </p>
         )}
@@ -705,4 +799,3 @@ export default function CreateTenantPage() {
     </main>
   );
 }
-
