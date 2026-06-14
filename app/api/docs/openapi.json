@@ -1,0 +1,1365 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Opero API",
+    "description": "## Dokumentasi API Multi-Tenant Opero\n\n### Cara Menggunakan\n\n**Autentikasi otomatis via cookie** — tidak perlu mengisi apapun di tombol Authorize.\n\nCukup ikuti langkah berikut:\n1. Login ke aplikasi (Local: [http://lvh.me:3000/login](http://lvh.me:3000/login) | Production: `https://[domain-utama]/login`)\n2. Buka halaman ini dari subdomain tenant: `http://{slug}.lvh.me:3000/docs` (Local) atau `https://{slug}.[domain-utama]/docs` (Production)\n3. Pastikan memilih server yang tepat di dropdown **Servers** di bawah.\n4. Klik **Try it out** pada endpoint manapun, lalu **Execute** — session cookie akan terkirim otomatis\n\n### Catatan Teknis\n- Cookie `better-auth.session_token` bersifat `HttpOnly` dan dikirim otomatis oleh browser\n- Semua endpoint `/api/tenant/*` membutuhkan akses dari subdomain tenant\n- Header `x-tenant-slug` diinjeksi otomatis oleh proxy dari subdomain, tidak boleh diset manual dari client",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Opero"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://lvh.me:3000",
+      "description": "Development (root domain)"
+    },
+    {
+      "url": "http://{tenantSlug}.lvh.me:3000",
+      "description": "Development (tenant subdomain)",
+      "variables": {
+        "tenantSlug": {
+          "default": "my-org",
+          "description": "Slug tenant"
+        }
+      }
+    },
+    {
+      "url": "https://{productionDomain}",
+      "description": "Production (root domain)",
+      "variables": {
+        "productionDomain": {
+          "default": "opero.com",
+          "description": "Domain utama production"
+        }
+      }
+    },
+    {
+      "url": "https://{tenantSlug}.{productionDomain}",
+      "description": "Production (tenant subdomain)",
+      "variables": {
+        "tenantSlug": {
+          "default": "my-org",
+          "description": "Slug tenant"
+        },
+        "productionDomain": {
+          "default": "opero.com",
+          "description": "Domain utama production"
+        }
+      }
+    }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Autentikasi & sesi pengguna" },
+    { "name": "Profile", "description": "Profil pengguna" },
+    { "name": "Tenant", "description": "Manajemen tenant/organisasi" },
+    { "name": "Members", "description": "Manajemen anggota tenant" },
+    { "name": "Settings", "description": "Pengaturan tenant" },
+    { "name": "Tasks", "description": "Manajemen tugas (menggunakan RLS)" },
+    { "name": "Contacts", "description": "Manajemen kontak" },
+    { "name": "Finance", "description": "Manajemen keuangan (admin/owner only untuk write)" },
+    { "name": "Invoices", "description": "Manajemen invoice" },
+    { "name": "Products", "description": "Manajemen produk" },
+    { "name": "Sales", "description": "Manajemen penjualan" },
+    { "name": "Campaigns", "description": "Manajemen kampanye" },
+    { "name": "Documents", "description": "Manajemen dokumen & folder" },
+    { "name": "Goals", "description": "Manajemen tujuan" },
+    { "name": "Flows", "description": "Manajemen alur kerja" },
+    { "name": "Assets", "description": "Manajemen aset" },
+    { "name": "Chat", "description": "Sistem pesan real-time" },
+    { "name": "Social Channels", "description": "Manajemen saluran sosial" },
+    { "name": "Content Planner", "description": "Perencanaan konten" },
+    { "name": "Activity", "description": "Log aktivitas" },
+    { "name": "Dashboard", "description": "Ringkasan dashboard" },
+    { "name": "Files", "description": "Upload & manajemen file" },
+    { "name": "Presence", "description": "Status kehadiran pengguna" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token",
+        "description": "**Tidak perlu diisi manual.** Cookie ini bersifat HttpOnly dan dikirim otomatis oleh browser.\n\nCara autentikasi:\n1. Login di [http://lvh.me:3000/login](http://lvh.me:3000/login)\n2. Buka Swagger dari subdomain tenant kamu\n3. Cookie session terkirim otomatis di setiap request"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "Unauthorized" }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "Validation failed" },
+          "details": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Acme Corp" },
+          "slug": { "type": "string", "example": "acme-corp" },
+          "logo": { "type": "string", "nullable": true },
+          "metadata": { "type": "object", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "role": { "$ref": "#/components/schemas/OrgRole" }
+        }
+      },
+      "OrgRole": {
+        "type": "string",
+        "enum": ["owner", "admin", "member"],
+        "description": "Role pengguna dalam tenant"
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "userId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "image": { "type": "string", "nullable": true },
+          "role": { "$ref": "#/components/schemas/OrgRole" },
+          "department": { "type": "string", "nullable": true },
+          "position": { "type": "string", "nullable": true },
+          "status": { "type": "string", "enum": ["active", "suspended"] },
+          "joinedAt": { "type": "string", "format": "date-time" },
+          "lastActive": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "DomainItem": {
+        "type": "object",
+        "description": "Record domain generik",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "organizationId": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "payload": { "type": "object", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Task": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DomainItem" },
+          {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string", "nullable": true },
+              "priority": { "type": "string", "nullable": true },
+              "dueDate": { "type": "string", "format": "date-time", "nullable": true },
+              "startDate": { "type": "string", "format": "date-time", "nullable": true },
+              "assigneeId": { "type": "string", "format": "uuid", "nullable": true },
+              "campaignId": { "type": "string", "format": "uuid", "nullable": true },
+              "labels": { "type": "array", "items": { "type": "string" } },
+              "assignees": { "type": "array", "items": { "type": "object" } },
+              "checklist": { "type": "array", "items": { "type": "object" } },
+              "comments": { "type": "array", "items": { "type": "object" } },
+              "attachments": { "type": "array", "items": { "type": "object" } }
+            }
+          }
+        ]
+      },
+      "Contact": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DomainItem" },
+          {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "relationshipType": { "type": "string", "example": "Lead" },
+              "industry": { "type": "string", "example": "Technology" },
+              "persons": { "type": "array", "items": { "type": "object" } },
+              "comments": { "type": "array", "items": { "type": "object" } },
+              "isArchived": { "type": "boolean" },
+              "lastContacted": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "Transaction": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DomainItem" },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["Income", "Expense"] },
+              "amount": { "type": "number" },
+              "currency": { "type": "string", "example": "USD" },
+              "category": { "type": "string" },
+              "transactionDate": { "type": "string", "format": "date-time", "nullable": true },
+              "paymentMethod": { "type": "string", "nullable": true },
+              "reference": { "type": "string", "nullable": true },
+              "notes": { "type": "string", "nullable": true }
+            }
+          }
+        ]
+      },
+      "DomainPayloadRequest": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Payload data untuk create/update",
+            "additionalProperties": true
+          }
+        }
+      },
+      "InviteLink": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "url": { "type": "string", "format": "uri" },
+          "createdBy": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time", "nullable": true },
+          "uses": { "type": "integer" }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "image": { "type": "string", "nullable": true }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Tidak terautentikasi",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Unauthorized" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Tidak memiliki izin",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Insufficient permissions" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Data tidak ditemukan",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Record not found" }
+          }
+        }
+      },
+      "ValidationFailed": {
+        "description": "Validasi input gagal",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ValidationError" }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Internal server error" }
+          }
+        }
+      }
+    }
+  },
+  "security": [{ "cookieAuth": [] }],
+  "paths": {
+    "/api/auth/{action}": {
+      "all": {
+        "tags": ["Auth"],
+        "summary": "Better Auth handler",
+        "description": "Menangani semua operasi autentikasi: sign-in, sign-up, sign-out, session, dll. Didelegasikan ke Better Auth library.",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Aksi auth, contoh: `sign-in/email`, `sign-up/email`, `sign-out`, `get-session`"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Payload tergantung aksi",
+                "example": {
+                  "email": "user@example.com",
+                  "password": "password123"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Berhasil" },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        },
+        "security": []
+      }
+    },
+
+    "/api/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Ambil profil pengguna saat ini",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profil pengguna",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profile": { "$ref": "#/components/schemas/Profile" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "patch": {
+        "tags": ["Profile"],
+        "summary": "Update profil pengguna",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "image": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Profil berhasil diupdate" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+
+    "/api/profile/avatar/{userId}": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Ambil avatar pengguna",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Avatar image" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Profile"],
+        "summary": "Upload avatar pengguna",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Avatar berhasil diupload" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+
+    "/api/tenant": {
+      "get": {
+        "tags": ["Tenant"],
+        "summary": "List semua tenant yang diikuti pengguna",
+        "description": "Mengembalikan daftar organisasi aktif tempat pengguna menjadi anggota.",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Daftar organisasi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organizations": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Organization" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Tenant"],
+        "summary": "Buat tenant baru",
+        "description": "Membuat organisasi baru. Setiap pengguna hanya bisa memiliki satu tenant sebagai owner.",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "slug"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 2, "maxLength": 60, "example": "Acme Corp" },
+                  "slug": { "type": "string", "minLength": 2, "maxLength": 30, "pattern": "^[a-z0-9-]+$", "example": "acme-corp" },
+                  "logo": { "type": "string", "description": "URL atau data URL gambar", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tenant berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": { "$ref": "#/components/schemas/Organization" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": {
+            "description": "Pengguna sudah memiliki tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string" },
+                    "tenant": { "$ref": "#/components/schemas/Organization" }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Slug sudah digunakan",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Tenant"],
+        "summary": "Hapus tenant aktif",
+        "description": "Menghapus organisasi secara permanen. **Hanya owner.**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Tenant berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/create-eligibility": {
+      "get": {
+        "tags": ["Tenant"],
+        "summary": "Cek kelayakan pembuatan tenant",
+        "description": "Memeriksa apakah pengguna memenuhi syarat untuk membuat tenant baru.",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Status kelayakan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "canCreate": { "type": "boolean" },
+                    "ownedTenant": {
+                      "allOf": [{ "$ref": "#/components/schemas/Organization" }],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+
+    "/api/tenant/join": {
+      "post": {
+        "tags": ["Tenant"],
+        "summary": "Gabung tenant via invite",
+        "description": "Bergabung ke tenant menggunakan invite code (`OP-XXXX-XXXX`) atau invite token (48-char hex).",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inviteCode": { "type": "string", "pattern": "^OP-[A-Z0-9]{4}-[A-Z0-9]{4}$", "example": "OP-AB12-CD34" },
+                  "inviteToken": { "type": "string", "pattern": "^[a-f0-9]{48}$" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Berhasil bergabung",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "organizationId": { "type": "string" },
+                    "organizationName": { "type": "string" },
+                    "organizationSlug": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "description": "Invite tidak valid" },
+          "410": { "description": "Invite sudah kadaluarsa" }
+        }
+      }
+    },
+
+    "/api/tenant/invite": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "Ambil invite code & daftar invite link",
+        "description": "Mengembalikan invite code permanen dan daftar invite link yang aktif. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Invite data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "inviteCode": { "type": "string", "example": "OP-AB12-CD34" },
+                    "inviteLinks": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/InviteLink" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Members"],
+        "summary": "Buat invite link baru",
+        "description": "Membuat invite link dengan durasi tertentu. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expireDays": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 365,
+                    "description": "Durasi dalam hari, null = tidak kadaluarsa"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invite link berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "inviteLink": { "$ref": "#/components/schemas/InviteLink" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/invite/links/{id}": {
+      "delete": {
+        "tags": ["Members"],
+        "summary": "Revoke invite link",
+        "description": "Mencabut invite link sehingga tidak bisa digunakan lagi. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Link berhasil dicabut" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/api/tenant/members": {
+      "get": {
+        "tags": ["Members"],
+        "summary": "List semua anggota tenant",
+        "description": "Mengembalikan semua anggota organisasi aktif. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Daftar anggota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "members": { "type": "array", "items": { "$ref": "#/components/schemas/Member" } },
+                    "currentRole": { "$ref": "#/components/schemas/OrgRole" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/members/invite": {
+      "post": {
+        "tags": ["Members"],
+        "summary": "Undang anggota via email",
+        "description": "Mengirim undangan ke email. **Role: owner, admin**. Admin tidak bisa mengundang dengan role admin atau owner.",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "role": { "$ref": "#/components/schemas/OrgRole" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Undangan berhasil dikirim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "invitation": { "type": "object" } }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/members/{id}": {
+      "patch": {
+        "tags": ["Members"],
+        "summary": "Update role/status anggota",
+        "description": "Mengubah role, departemen, posisi, atau status anggota. **Role: owner, admin**. Admin hanya bisa mengubah member.",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": { "$ref": "#/components/schemas/OrgRole" },
+                  "department": { "type": "string", "maxLength": 100 },
+                  "position": { "type": "string", "maxLength": 100 },
+                  "status": { "type": "string", "enum": ["active", "suspended"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Anggota berhasil diupdate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "member": { "$ref": "#/components/schemas/Member" } }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Members"],
+        "summary": "Hapus anggota dari tenant",
+        "description": "Menghapus anggota dari organisasi. **Role: owner, admin**. Owner terakhir tidak bisa dihapus.",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Anggota berhasil dihapus" },
+          "400": { "description": "Tidak bisa menghapus owner terakhir" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/api/tenant/settings": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Ambil pengaturan tenant",
+        "description": "Mengembalikan informasi tenant termasuk plan, timezone, dan locale. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Pengaturan tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tenant": { "type": "object" },
+                    "membership": { "type": "object", "properties": { "role": { "$ref": "#/components/schemas/OrgRole" } } },
+                    "user": { "$ref": "#/components/schemas/Profile" },
+                    "usage": { "type": "object", "properties": { "membersCount": { "type": "integer" } } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "patch": {
+        "tags": ["Settings"],
+        "summary": "Update pengaturan tenant",
+        "description": "Mengubah nama, logo, timezone, dan locale tenant. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 2, "maxLength": 60 },
+                  "logo": { "type": "string", "nullable": true },
+                  "timezone": { "type": "string", "example": "Asia/Jakarta" },
+                  "locale": { "type": "string", "example": "id" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Pengaturan berhasil diupdate" },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/tasks": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "List semua task",
+        "description": "Mengembalikan semua task milik tenant. Menggunakan **tenantRls()** — query dieksekusi dalam transaksi dengan `app.organization_id` di-set. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Daftar task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/Task" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Tasks"],
+        "summary": "Buat task baru",
+        "description": "Membuat task baru dalam tenant. Menggunakan **tenantRls()**. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/DomainPayloadRequest" },
+                  {
+                    "example": {
+                      "data": {
+                        "title": "Finalisasi laporan Q2",
+                        "description": "Selesaikan laporan keuangan Q2",
+                        "status": "Todo",
+                        "priority": "High",
+                        "dueDate": "2025-07-01T00:00:00Z",
+                        "assigneeId": "user-uuid-here"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "item": { "$ref": "#/components/schemas/Task" } }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/tasks/{id}": {
+      "patch": {
+        "tags": ["Tasks"],
+        "summary": "Update task",
+        "description": "Mengubah task yang ada. Menggunakan **tenantRls()**. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task berhasil diupdate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "item": { "$ref": "#/components/schemas/Task" } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Tasks"],
+        "summary": "Hapus task",
+        "description": "Menghapus task. Menggunakan **tenantRls()**. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Task berhasil dihapus" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/api/tenant/contacts": {
+      "get": {
+        "tags": ["Contacts"],
+        "summary": "List semua kontak",
+        "description": "Mengembalikan semua kontak milik tenant. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Daftar kontak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Contacts"],
+        "summary": "Buat kontak baru",
+        "description": "Membuat kontak baru. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/DomainPayloadRequest" },
+                  {
+                    "example": {
+                      "data": {
+                        "name": "PT Maju Mundur",
+                        "relationshipType": "Client",
+                        "industry": "Technology",
+                        "status": "Active"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Kontak berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "item": { "$ref": "#/components/schemas/Contact" } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/contacts/{id}": {
+      "patch": {
+        "tags": ["Contacts"],
+        "summary": "Update kontak",
+        "description": "Mengubah data kontak. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Kontak berhasil diupdate" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Contacts"],
+        "summary": "Hapus kontak",
+        "description": "Menghapus kontak. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Kontak berhasil dihapus" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/api/tenant/finance": {
+      "get": {
+        "tags": ["Finance"],
+        "summary": "List semua transaksi",
+        "description": "Mengembalikan semua transaksi keuangan tenant. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Daftar transaksi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/Transaction" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Finance"],
+        "summary": "Buat transaksi baru",
+        "description": "Membuat transaksi keuangan baru. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/DomainPayloadRequest" },
+                  {
+                    "example": {
+                      "data": {
+                        "title": "Pembelian peralatan kantor",
+                        "type": "Expense",
+                        "amount": 5000000,
+                        "currency": "IDR",
+                        "category": "Equipment",
+                        "status": "Completed"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Transaksi berhasil dibuat" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/tenant/finance/{id}": {
+      "patch": {
+        "tags": ["Finance"],
+        "summary": "Update transaksi",
+        "description": "Mengubah transaksi yang ada. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Transaksi berhasil diupdate" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Finance"],
+        "summary": "Hapus transaksi",
+        "description": "Menghapus transaksi. **Role: owner, admin**",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaksi berhasil dihapus" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/api/tenant/campaigns": {
+      "get": { "tags": ["Campaigns"], "summary": "List kampanye", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "Daftar kampanye", "content": { "application/json": { "schema": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/DomainItem" } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } },
+      "post": { "tags": ["Campaigns"], "summary": "Buat kampanye baru", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "Kampanye berhasil dibuat" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/api/tenant/campaigns/{id}": {
+      "patch": { "tags": ["Campaigns"], "summary": "Update kampanye", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Campaigns"], "summary": "Hapus kampanye", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/api/tenant/campaigns/{id}/tasks": {
+      "get": { "tags": ["Campaigns"], "summary": "List task dalam kampanye", "description": "Menggunakan **tenantRls()**. **Role: semua**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Daftar task kampanye", "content": { "application/json": { "schema": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Task" } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+
+    "/api/tenant/documents": {
+      "get": { "tags": ["Documents"], "summary": "List dokumen", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } },
+      "post": { "tags": ["Documents"], "summary": "Buat dokumen", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/api/tenant/documents/{id}": {
+      "patch": { "tags": ["Documents"], "summary": "Update dokumen", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Documents"], "summary": "Hapus dokumen", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/api/tenant/document-folders": {
+      "get": { "tags": ["Documents"], "summary": "List folder dokumen", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Documents"], "summary": "Buat folder dokumen", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/document-folders/{id}": {
+      "patch": { "tags": ["Documents"], "summary": "Update folder", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Documents"], "summary": "Hapus folder", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/goals": {
+      "get": { "tags": ["Goals"], "summary": "List tujuan", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Goals"], "summary": "Buat tujuan", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/goals/{id}": {
+      "patch": { "tags": ["Goals"], "summary": "Update tujuan", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Goals"], "summary": "Hapus tujuan", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/invoices": {
+      "get": { "tags": ["Invoices"], "summary": "List invoice", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Invoices"], "summary": "Buat invoice", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/api/tenant/invoices/{id}": {
+      "patch": { "tags": ["Invoices"], "summary": "Update invoice", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Invoices"], "summary": "Hapus invoice", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/products": {
+      "get": { "tags": ["Products"], "summary": "List produk", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Products"], "summary": "Buat produk", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/products/{id}": {
+      "patch": { "tags": ["Products"], "summary": "Update produk", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Products"], "summary": "Hapus produk", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/sales": {
+      "get": { "tags": ["Sales"], "summary": "List penjualan", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Sales"], "summary": "Buat data penjualan", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/sales/{id}": {
+      "patch": { "tags": ["Sales"], "summary": "Update penjualan", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Sales"], "summary": "Hapus penjualan", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/assets": {
+      "get": { "tags": ["Assets"], "summary": "List aset", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Assets"], "summary": "Buat aset", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/assets/{id}": {
+      "patch": { "tags": ["Assets"], "summary": "Update aset", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Assets"], "summary": "Hapus aset", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/flows": {
+      "get": { "tags": ["Flows"], "summary": "List alur kerja", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Flows"], "summary": "Buat alur kerja", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/flows/{id}": {
+      "patch": { "tags": ["Flows"], "summary": "Update alur kerja", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Flows"], "summary": "Hapus alur kerja", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/content-planner": {
+      "get": { "tags": ["Content Planner"], "summary": "List konten", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Content Planner"], "summary": "Buat konten", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/content-planner/{id}": {
+      "patch": { "tags": ["Content Planner"], "summary": "Update konten", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Content Planner"], "summary": "Hapus konten", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/social-channels": {
+      "get": { "tags": ["Social Channels"], "summary": "List saluran sosial", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Social Channels"], "summary": "Buat saluran sosial", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/api/tenant/social-channels/{id}": {
+      "patch": { "tags": ["Social Channels"], "summary": "Update saluran sosial", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Social Channels"], "summary": "Hapus saluran sosial", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/chat/channels": {
+      "get": { "tags": ["Chat"], "summary": "List channel chat", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Chat"], "summary": "Buat channel chat", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/chat/channels/{channelId}": {
+      "get": { "tags": ["Chat"], "summary": "Detail channel", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "channelId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Chat"], "summary": "Update channel", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "channelId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } },
+      "delete": { "tags": ["Chat"], "summary": "Hapus channel", "description": "**Role: owner, admin**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "channelId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/api/tenant/chat/channels/{channelId}/messages": {
+      "get": { "tags": ["Chat"], "summary": "List pesan dalam channel", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "channelId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Chat"], "summary": "Kirim pesan", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "channelId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/chat/channels/{channelId}/read": {
+      "post": { "tags": ["Chat"], "summary": "Tandai channel sebagai sudah dibaca", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "channelId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/api/tenant/chat/messages/{messageId}": {
+      "patch": { "tags": ["Chat"], "summary": "Edit pesan", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "messageId", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DomainPayloadRequest" } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } },
+      "delete": { "tags": ["Chat"], "summary": "Hapus pesan", "security": [{ "cookieAuth": [] }], "parameters": [{ "name": "messageId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+
+    "/api/tenant/files": {
+      "get": { "tags": ["Files"], "summary": "List file", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Files"], "summary": "Upload file", "description": "**Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } } } } }, "responses": { "201": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+
+    "/api/tenant/activity": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "Log aktivitas tenant",
+        "description": "Mengembalikan log aktivitas semua anggota dalam tenant. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Log aktivitas" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+
+    "/api/tenant/dashboard/summary": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Ringkasan dashboard",
+        "description": "Mengembalikan data ringkasan untuk dashboard tenant. **Role: semua**",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Data dashboard" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+
+    "/api/tenant/presence": {
+      "get": { "tags": ["Presence"], "summary": "Ambil status kehadiran anggota", "description": "Mengembalikan status online/offline anggota. **Role: semua**", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Presence"], "summary": "Update status kehadiran", "description": "Memperbarui status online pengguna. **Role: semua**", "security": [{ "cookieAuth": [] }], "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string", "enum": ["online", "away", "offline"] } } } } } }, "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    }
+  }
+}
