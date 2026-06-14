@@ -280,6 +280,7 @@ function StepPlan({
                 </span>
               )}
 
+              <div className="p-6 flex flex-col h-full">
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${active ? "border-white/30" : "border-outline/30"}`}>
                     {active && <div className="w-2 h-2 rounded-full bg-white" />}
