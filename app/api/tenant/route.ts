@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireTenant } from "@/lib/server/auth-utils";
+import { createTenantCrypto } from "@/lib/server/crypto/tenant-crypto";
 import { canDeleteTenant } from "@/lib/server/rbac";
 import { deleteTenantStorageObjects, uploadTenantLogoFromDataUrl } from "@/lib/server/supabase-storage";
 import { z } from "zod";
@@ -153,6 +154,8 @@ export async function POST(req: NextRequest) {
         where: { id: org.id },
         data: { createdById: user.id },
       });
+
+      await createTenantCrypto(org.id);
     } catch (err) {
       if (!isOrganizationExistsError(err)) throw err;
 

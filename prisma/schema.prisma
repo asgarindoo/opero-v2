@@ -135,6 +135,8 @@ model Organization {
   status      String   @default("active") // "active" | "inactive"
   createdById String?
   createdAt   DateTime @default(now())
+  publicKey        String?  @db.Text
+  encryptedDataKey String?  @db.Text
 
   // Relations
   members          Member[]
