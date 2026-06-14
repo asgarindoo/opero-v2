@@ -30,15 +30,20 @@ ALTER TABLE IF EXISTS "role"
   ADD COLUMN IF NOT EXISTS "color" TEXT,
   ADD COLUMN IF NOT EXISTS "sortOrder" INTEGER NOT NULL DEFAULT 0;
 
-UPDATE "role"
-SET
-  "name" = COALESCE("name", payload->>'name', "title"),
-  "description" = COALESCE("description", payload->>'description'),
-  "permissions" = CASE WHEN "permissions" = '[]'::jsonb AND payload ? 'permissions' THEN payload->'permissions' ELSE "permissions" END,
-  "memberCount" = COALESCE("memberCount", NULLIF(payload->>'memberCount', '')::integer, 0),
-  "color" = COALESCE("color", payload->>'color'),
-  "sortOrder" = COALESCE("sortOrder", NULLIF(payload->>'sortOrder', '')::integer, 0)
-WHERE payload IS NOT NULL;
+DO $$
+BEGIN
+  IF to_regclass('public.role') IS NOT NULL THEN
+    UPDATE "role"
+    SET
+      "name" = COALESCE("name", payload->>'name', "title"),
+      "description" = COALESCE("description", payload->>'description'),
+      "permissions" = CASE WHEN "permissions" = '[]'::jsonb AND payload ? 'permissions' THEN payload->'permissions' ELSE "permissions" END,
+      "memberCount" = COALESCE("memberCount", NULLIF(payload->>'memberCount', '')::integer, 0),
+      "color" = COALESCE("color", payload->>'color'),
+      "sortOrder" = COALESCE("sortOrder", NULLIF(payload->>'sortOrder', '')::integer, 0)
+    WHERE payload IS NOT NULL;
+  END IF;
+END $$;
 
 ALTER TABLE IF EXISTS "goal"
   ADD COLUMN IF NOT EXISTS "targetOutcome" TEXT,
@@ -104,7 +109,12 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS "contact_organizationId_status_idx" ON "contact"("organizationId", "status");
 CREATE INDEX IF NOT EXISTS "contact_organizationId_relationshipType_idx" ON "contact"("organizationId", "relationshipType");
-CREATE INDEX IF NOT EXISTS "role_organizationId_status_idx" ON "role"("organizationId", "status");
+DO $$
+BEGIN
+  IF to_regclass('public.role') IS NOT NULL THEN
+    CREATE INDEX IF NOT EXISTS "role_organizationId_status_idx" ON "role"("organizationId", "status");
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS "goal_organizationId_status_idx" ON "goal"("organizationId", "status");
 CREATE INDEX IF NOT EXISTS "goal_organizationId_dueDate_idx" ON "goal"("organizationId", "dueDate");
 CREATE INDEX IF NOT EXISTS "goal_ownerId_idx" ON "goal"("ownerId");
@@ -116,7 +126,12 @@ UPDATE "task" SET payload = NULL;
 UPDATE "flow" SET payload = NULL;
 UPDATE "campaign" SET payload = NULL;
 UPDATE "contact" SET payload = NULL;
-UPDATE "role" SET payload = NULL;
+DO $$
+BEGIN
+  IF to_regclass('public.role') IS NOT NULL THEN
+    UPDATE "role" SET payload = NULL;
+  END IF;
+END $$;
 UPDATE "goal" SET payload = NULL;
 UPDATE "sale" SET payload = NULL;
 UPDATE "invoice" SET payload = NULL;

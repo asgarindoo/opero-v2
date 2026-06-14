@@ -152,28 +152,27 @@ function StepInfo({
           </label>
           <AvailBadge state={avail} />
         </div>
-        <div className="relative group">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
-            <span className={`material-symbols-outlined text-[18px] transition-colors ${avail === "taken" ? "text-red-500"
-                : avail === "available" ? "text-green-500"
-                  : focused === "slug" ? "text-primary"
-                    : "text-on-surface-variant/40 group-hover:text-on-surface-variant/60"
-              }`}>link</span>
-          </div>
+        <div className="relative">
+          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant/40 pointer-events-none">link</span>
           <input
             id="tenant-slug" type="text" required
             placeholder="acme"
             value={form.slug} onChange={handleSlugChange}
             onFocus={() => setFocused("slug")} onBlur={() => setFocused(null)}
-            className={`${inputCls} pl-12 pr-28 ${avail === "taken" ? "shadow-[0_0_0_2px_rgba(239,68,68,0.5)] bg-red-50"
-                : avail === "available" ? "shadow-[0_0_0_2px_rgba(34,197,94,0.5)] bg-green-50"
-                  : focused === "slug" ? "shadow-[0_0_0_2px_rgba(0,0,0,0.1)]"
-                    : "shadow-[0_0_0_1px_rgba(116,120,120,0.14)] hover:shadow-[0_0_0_1px_rgba(116,120,120,0.25)]"
-              }`}
+            className={`${inputCls} pl-10 pr-4`}
+            style={{
+              borderColor:
+                avail === "taken" ? "var(--color-error)"
+                  : avail === "available" ? "rgba(22,163,74,0.5)"
+                    : focused === "slug" ? "var(--color-primary)"
+                      : "rgba(116,120,120,0.2)",
+              boxShadow:
+                avail === "taken" ? "0 0 0 3px rgba(186,26,26,0.06)"
+                  : avail === "available" ? "0 0 0 3px rgba(22,163,74,0.06)"
+                    : focused === "slug" ? "0 0 0 3px rgba(0,0,0,0.06)"
+                      : "none",
+            }}
           />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <span className="font-mono text-[13px] text-on-surface-variant/50">.opero.com</span>
-          </div>
         </div>
         <p className="font-body-sm text-[13px] text-on-surface-variant/60 mt-1">
           Your portal will be accessible at: <span className="font-semibold text-primary">{getTenantHost(form.slug || "your-workspace")}</span>
@@ -186,8 +185,11 @@ function StepInfo({
           Workspace Icon <span className="text-on-surface-variant/40 normal-case tracking-normal font-normal ml-1">Optional</span>
         </label>
         <div
-          className={`relative flex items-center gap-5 p-5 rounded-xl border border-dashed transition-all cursor-pointer ${dragOver ? "border-primary bg-primary/[0.02]" : "border-outline/20 hover:border-outline/40 bg-surface-container-lowest"
-            }`}
+          className="relative flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer"
+          style={{
+            borderColor: dragOver ? "var(--color-primary)" : "rgba(116,120,120,0.18)",
+            background: dragOver ? "rgba(0,0,0,0.025)" : "rgba(0,0,0,0.01)",
+          }}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -259,41 +261,24 @@ function StepPlan({
               onClick={() => onSelect(plan.id)}
               className="group text-left flex flex-col rounded-2xl outline-none transition-all duration-300 overflow-hidden relative"
               style={{
-                background: active
-                  ? "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)"
-                  : "var(--color-surface-container-lowest)",
-                border: active ? "1px solid rgba(0,0,0,0.9)" : "1px solid rgba(116,120,120,0.14)",
-                boxShadow: active ? "0 12px 32px rgba(0,0,0,0.12), 0 0 0 2px rgba(0,0,0,0.9)" : "0 2px 12px rgba(0,0,0,0.03)",
-                transform: active ? "translateY(-4px)" : "none",
+                borderColor: active ? "var(--color-primary)" : "rgba(116,120,120,0.18)",
+                background: active ? "rgba(0,0,0,0.025)" : "rgba(0,0,0,0.01)",
+                boxShadow: active
+                  ? plan.highlighted
+                    ? "0 0 0 3px rgba(0,0,0,0.07), 0 8px 28px rgba(0,0,0,0.08)"
+                    : "0 0 0 2.5px rgba(0,0,0,0.06)"
+                  : "none",
               }}
             >
-              {active && (
-                <>
-                  {/* Subtle top shimmer */}
-                  <div className="absolute top-0 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-white/15 to-transparent z-10" />
-                  {/* Subtle dot grid on card */}
-                  <div
-                    className="absolute inset-0 pointer-events-none opacity-20 z-0"
-                    style={{
-                      backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)",
-                      backgroundSize: "16px 16px",
-                      maskImage: "radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%)",
-                      WebkitMaskImage: "radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%)",
-                    }}
-                  />
-                </>
+              {/* Popular badge */}
+              {plan.highlighted && (
+                <span
+                  className="absolute top-3.5 right-3.5 font-label-caps text-[9px] uppercase tracking-[0.06em] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: active ? "var(--color-primary)" : "rgba(0,0,0,0.07)", color: active ? "#fff" : "var(--color-primary)" }}
+                >
+                  Popular
+                </span>
               )}
-
-              <div className="p-6 relative z-10 flex flex-col h-full">
-                {/* Popular badge */}
-                {plan.highlighted && (
-                  <span
-                    className={`absolute top-5 right-5 font-label-caps text-[9px] uppercase tracking-[0.06em] font-bold px-2.5 py-1 rounded-full ${active ? "bg-white/10 text-white/90" : "bg-primary/10 text-primary"
-                      }`}
-                  >
-                    Recommended
-                  </span>
-                )}
 
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${active ? "border-white/30" : "border-outline/30"}`}>
@@ -353,7 +338,7 @@ function StepPlan({
           <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
         </button>
       </div>
-    </div>
+    </div >
   );
 }
 
@@ -506,14 +491,17 @@ function StepLaunch({
               return (
                 <div key={i} className="flex items-center gap-4 transition-opacity duration-300">
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300 ${done ? "bg-primary text-on-primary" : active ? "border-2 border-primary" : "border-2 border-outline/20"
-                      }`}
+                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-400"
+                    style={{
+                      background: done ? "var(--color-primary)" : "transparent",
+                      border: done ? "none" : active ? "1.5px solid var(--color-primary)" : "1.5px solid rgba(116,120,120,0.2)",
+                    }}
                   >
                     {done && <span className="material-symbols-outlined text-[12px] font-bold">check</span>}
                   </div>
                   <span
-                    className={`font-body-md text-[14px] transition-colors duration-300 ${done ? "text-primary font-medium" : active ? "text-primary font-semibold" : "text-on-surface-variant/40"
-                      }`}
+                    className="font-body-sm text-[12px] transition-colors duration-300"
+                    style={{ color: done ? "var(--color-primary)" : active ? "var(--color-on-surface)" : "rgba(68,71,72,0.4)" }}
                   >
                     {label}
                   </span>
@@ -561,24 +549,17 @@ function StepLaunch({
             <span className="material-symbols-outlined text-[32px]">check_circle</span>
           </div>
 
-          <h2 className="font-display font-bold text-2xl text-primary mb-2">Workspace ready</h2>
-          <p className="font-body-md text-[14px] text-on-surface-variant/60 mb-8">
-            Your new workspace has been successfully created and configured.
-          </p>
-
-          {/* Receipt/Summary Card */}
-          <div className="p-5 rounded-2xl border border-outline/10 bg-surface-container-lowest mb-8 flex items-center gap-4 text-left shadow-sm">
-            {tenantLogo ? (
-              <img src={tenantLogo} alt="Logo" className="w-12 h-12 rounded-xl border border-outline/10 object-cover shadow-sm" />
-            ) : (
-              <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center border border-outline/10 shadow-sm shrink-0">
-                <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">domain</span>
-              </div>
-            )}
-            <div className="flex flex-col overflow-hidden">
-              <span className="font-h2 font-semibold text-[15px] text-primary truncate">{tenantName}</span>
-              <span className="font-mono text-[12px] text-on-surface-variant/50 truncate mt-0.5">{tenantSlug}.opero.com</span>
-            </div>
+          <div>
+            <p
+              className="font-display font-bold text-primary leading-[1.1] mb-2"
+              style={{ fontSize: "clamp(22px, 3vw, 28px)", letterSpacing: "-0.02em" }}
+            >
+              Your Tenant is ready.
+            </p>
+            <p className="font-body-md text-[14px] text-on-surface-variant">
+              <span className="font-semibold text-primary">{tenantName || "Your Tenant"}</span> is live at{" "}
+              <span className="font-mono text-primary/70">{getTenantHost(tenantSlug || "your-tenant")}</span>
+            </p>
           </div>
 
           <button
@@ -642,14 +623,11 @@ export default function CreateTenantPage() {
 
   if (eligibility.loading) {
     return (
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-full max-w-[640px] space-y-12 animate-pulse">
-          <div className="flex justify-center gap-6">
-            <div className="h-2 w-12 rounded-full bg-outline/10" />
-            <div className="h-2 w-12 rounded-full bg-outline/5" />
-            <div className="h-2 w-12 rounded-full bg-outline/5" />
-          </div>
-          <div className="h-96 rounded-2xl bg-outline/5" />
+      <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">
+        <div className="w-full max-w-[420px] space-y-4 animate-pulse">
+          <div className="mx-auto h-8 w-56 rounded bg-black/[0.05]" />
+          <div className="mx-auto h-3 w-72 rounded bg-black/[0.035]" />
+          <div className="h-48 rounded-2xl border border-outline/10 bg-surface-container-lowest" />
         </div>
       </main>
     );
@@ -689,58 +667,44 @@ export default function CreateTenantPage() {
   }
 
   return (
-    <main className="flex-1 flex flex-col items-center px-5 sm:px-8 py-10 sm:py-16 relative">
-      {/* Ambient glow behind main container */}
-      <div
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none -z-10"
-        style={{
-          width: 600,
-          height: 400,
-          background: "radial-gradient(ellipse, rgba(0,0,0,0.03) 0%, transparent 70%)",
-        }}
-      />
+    <main className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12">
+      <div className="w-full max-w-[580px]">
 
-      <div className="w-full max-w-[640px]">
-
-        {/* Sleek Horizontal Stepper */}
-        <div className="flex justify-center mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-3">
-            {STEPS.map((label, idx) => {
-              const s = idx + 1;
-              const done = s < step;
-              const active = s === step;
-              return (
-                <div key={label} className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    {/* Indicator dot */}
-                    <div className="relative flex items-center justify-center">
-                      {active && (
-                        <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-                      )}
-                      <div
-                        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 relative z-10 ${active ? "bg-primary scale-110" : done ? "bg-primary/40" : "bg-outline/20"
-                          }`}
-                      />
-                    </div>
-                    {/* Label */}
-                    <span
-                      className={`font-label-caps text-[10px] uppercase tracking-[0.08em] font-bold hidden sm:block transition-colors duration-300 ${active ? "text-primary" : done ? "text-primary/60" : "text-on-surface-variant/40"
-                        }`}
-                    >
-                      {label}
-                    </span>
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-0 mb-10">
+          {STEPS.map((label, idx) => {
+            const s = idx + 1;
+            const done = s < step;
+            const active = s === step;
+            return (
+              <div key={label} className="flex items-center">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center font-label-caps text-[11px] font-semibold transition-all duration-300"
+                    style={{
+                      background: done || active ? "var(--color-primary)" : "transparent",
+                      color: done || active ? "#fff" : "var(--color-on-surface-variant)",
+                      border: done || active ? "none" : "1.5px solid rgba(116,120,120,0.25)",
+                    }}
+                  >
+                    {done ? <span className="material-symbols-outlined text-[13px]">check</span> : s}
                   </div>
-                  {/* Separator Line */}
-                  {idx < STEPS.length - 1 && (
-                    <div
-                      className={`w-6 sm:w-10 h-px transition-all duration-500 ${done ? "bg-primary/30" : "bg-outline/10"
-                        }`}
-                    />
-                  )}
+                  <span
+                    className="font-label-caps text-[10px] uppercase tracking-[0.06em] font-semibold hidden sm:block transition-colors duration-200"
+                    style={{ color: active ? "var(--color-primary)" : "var(--color-on-surface-variant)", opacity: active ? 1 : 0.4 }}
+                  >
+                    {label}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+                {idx < STEPS.length - 1 && (
+                  <div
+                    className="w-10 sm:w-16 h-px mx-3 transition-all duration-500"
+                    style={{ background: done ? "var(--color-primary)" : "rgba(116,120,120,0.15)" }}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Main Content Area */}
