@@ -149,7 +149,7 @@ export async function listTasks() {
   );
   const aesKey = await getTenantAesKey(ctx.tenantId);
   try {
-    return mapTaskRecords(ctx, tasks, aesKey);
+    return await mapTaskRecords(ctx, tasks, aesKey);
   } finally {
     aesKey.fill(0);
   }
@@ -166,7 +166,7 @@ export async function listCampaignTasks(campaignId: string) {
   );
   const aesKey = await getTenantAesKey(ctx.tenantId);
   try {
-    return mapTaskRecords(ctx, tasks, aesKey);
+    return await mapTaskRecords(ctx, tasks, aesKey);
   } finally {
     aesKey.fill(0);
   }
