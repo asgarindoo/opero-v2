@@ -2,7 +2,6 @@
 
 import React from "react";
 
-/* ── FormSection ─────────────────────────────────────────────────────────── */
 export function FormSection({ children, title, className = "" }: { children: React.ReactNode; title?: React.ReactNode; className?: string }) {
   return (
     <div className={`p-4 rounded-[8px] space-y-4 ${className}`} style={{ background: "rgba(0,0,0,0.01)", border: "1px dashed rgba(0,0,0,0.09)" }}>
@@ -18,12 +17,10 @@ export function FormSection({ children, title, className = "" }: { children: Rea
   );
 }
 
-/* ── RequiredIndicator ───────────────────────────────────────────────────── */
 export function RequiredIndicator() {
   return <span className="ml-0.5" style={{ color: "var(--color-primary)" }}>*</span>;
 }
 
-/* ── FormLabel ───────────────────────────────────────────────────────────── */
 export function FormLabel({ children, required, icon }: { children: React.ReactNode; required?: boolean; icon?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -35,17 +32,16 @@ export function FormLabel({ children, required, icon }: { children: React.ReactN
   );
 }
 
-/* ── CharacterCounter ────────────────────────────────────────────────────── */
 export function CharacterCounter({ current, max }: { current: number; max: number }) {
   if (current === 0) return null;
   const isNear = current >= max * 0.9;
   const isOver = current >= max;
   return (
-    <span 
-      className="font-label-caps text-[8.5px] font-semibold transition-colors" 
-      style={{ 
-        color: isOver ? "rgba(186,26,26,0.8)" : "var(--color-on-surface-variant)", 
-        opacity: isOver ? 1 : isNear ? 0.7 : 0.3 
+    <span
+      className="font-label-caps text-[8.5px] font-semibold transition-colors"
+      style={{
+        color: isOver ? "rgba(186,26,26,0.8)" : "var(--color-on-surface-variant)",
+        opacity: isOver ? 1 : isNear ? 0.7 : 0.3
       }}
     >
       {current}/{max}
@@ -53,7 +49,6 @@ export function CharacterCounter({ current, max }: { current: number; max: numbe
   );
 }
 
-/* ── ValidationMessage ───────────────────────────────────────────────────── */
 export function ValidationMessage({ error }: { error?: string }) {
   if (!error) return null;
   return (
@@ -63,7 +58,6 @@ export function ValidationMessage({ error }: { error?: string }) {
   );
 }
 
-/* ── GlobalFieldHint ─────────────────────────────────────────────────────── */
 export function GlobalFieldHint({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-1 font-body-sm text-[11px]" style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 }}>
@@ -72,7 +66,6 @@ export function GlobalFieldHint({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ── FormField ───────────────────────────────────────────────────────────── */
 interface FormFieldProps {
   label?: string;
   icon?: React.ReactNode;

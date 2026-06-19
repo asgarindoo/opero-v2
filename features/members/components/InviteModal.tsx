@@ -4,14 +4,13 @@ import React, { useState } from "react";
 import { Link, Copy, Trash2, Clock, Check, Users, Hash, ShieldCheck } from "lucide-react";
 import { useMembers } from "../context/MembersContext";
 
-import { ModalShell }    from "@/components/ui/global/modal/ModalShell";
-import { ModalHeader }   from "@/components/ui/global/modal/ModalHeader";
-import { ModalContent }  from "@/components/ui/global/modal/ModalContent";
-import { ModalFooter }   from "@/components/ui/global/modal/ModalFooter";
-import Dropdown          from "@/components/ui/Dropdown";
+import { ModalShell } from "@/components/ui/global/modal/ModalShell";
+import { ModalHeader } from "@/components/ui/global/modal/ModalHeader";
+import { ModalContent } from "@/components/ui/global/modal/ModalContent";
+import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
+import Dropdown from "@/components/ui/Dropdown";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 
-/* ── Section label — same as CreateFlowModal ───────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -26,7 +25,6 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
   );
 }
 
-/* ── Info box ───────────────────────────────────────────────────────────── */
 function InfoBox({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div
@@ -47,9 +45,9 @@ function InfoBox({ icon, children }: { icon: React.ReactNode; children: React.Re
 }
 
 const EXPIRE_OPTIONS = [
-  { value: "1",     label: "24 Hours"      },
-  { value: "7",     label: "7 Days"        },
-  { value: "30",    label: "30 Days"       },
+  { value: "1", label: "24 Hours" },
+  { value: "7", label: "7 Days" },
+  { value: "30", label: "30 Days" },
   { value: "never", label: "Never Expires" },
 ];
 
@@ -57,7 +55,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
   const { inviteLinks, generateInviteLink, revokeInviteLink, tenantCode } = useMembers();
 
   const [expireDays, setExpireDays] = useState("7");
-  const [copiedId, setCopiedId]     = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkToRevoke, setLinkToRevoke] = useState<string | null>(null);
@@ -96,7 +94,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
     setError(null);
     try {
       const link = await generateInviteLink(days);
-      const ok   = await handleCopy(link.url, link.id);
+      const ok = await handleCopy(link.url, link.id);
       if (!ok) setError("Invite link created. Copy it from the list below.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate invite link");
@@ -131,7 +129,6 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
 
       <ModalContent className="db-sidebar space-y-6">
 
-        {/* ── Permanent Code ──────────────────────────────────────────── */}
         <div className="space-y-3">
           <SL icon={<Hash size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
             Permanent Workspace Code
@@ -168,7 +165,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
 
-        {/* ── Generate Invite Link ─────────────────────────────────────── */}
+        {/*  Generate Invite Link  */}
         <div className="space-y-3">
           <SL icon={<Link size={11} strokeWidth={1.75} style={{ color: "var(--color-on-surface-variant)", opacity: 0.38 }} />}>
             Generate Invite Link
@@ -208,7 +205,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {/* ── Active Links ─────────────────────────────────────────────── */}
+        {/* Active Links */}
         {inviteLinks.length > 0 && (
           <>
             <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
@@ -268,7 +265,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
           </>
         )}
 
-        {/* ── Role note ────────────────────────────────────────────────── */}
+        {/* Role note  */}
         <InfoBox icon={<ShieldCheck size={14} strokeWidth={1.75} />}>
           All users joining via these methods are automatically assigned the{" "}
           <strong style={{ color: "var(--color-on-surface)" }}>Staff</strong> role.
@@ -286,7 +283,7 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
           Close
         </button>
       </ModalFooter>
-      
+
       <ConfirmationModal
         isOpen={!!linkToRevoke}
         onClose={() => setLinkToRevoke(null)}

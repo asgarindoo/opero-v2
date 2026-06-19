@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/prisma";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, type UserIdentity } from "@/lib/user-identity";
@@ -125,11 +124,11 @@ export function mapDomainRecord(record: any, fallbackUser?: { id: string; name: 
     createdBy: ownerSource,
     owner: ownerSource
       ? {
-          id: ownerSource.id ?? "system",
-          name: ownerSource.name,
-          email: ownerSource.email ?? undefined,
-          avatar: ownerSource.image ?? undefined,
-        }
+        id: ownerSource.id ?? "system",
+        name: ownerSource.name,
+        email: ownerSource.email ?? undefined,
+        avatar: ownerSource.image ?? undefined,
+      }
       : { id: "system", name: "System", avatar: undefined },
     updated: record.updatedAt?.toISOString(),
     labels: record.labels ?? [],

@@ -22,7 +22,7 @@ const convertCurrency = async (amount: number, from: string, to: string) => {
     const data = await res.json();
     const rate = data.rates[to];
     if (rate) return amount * rate;
-  } catch {}
+  } catch { }
   const fallbackRates: Record<string, number> = { USD: 1, EUR: 0.92, GBP: 0.79, IDR: 16000, SGD: 1.35 };
   return (amount / (fallbackRates[from] || 1)) * (fallbackRates[to] || 1);
 };
@@ -51,7 +51,6 @@ function formatCurrency(val: number, currency: string = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(val);
 }
 
-/* ── Reusable click dropdown ─────────────────────────────────────────────── */
 function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   value: T; opts: T[]; onChange: (v: T) => void;
   renderT: (v: T) => React.ReactNode; renderO: (v: T) => React.ReactNode;
@@ -77,7 +76,6 @@ function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   );
 }
 
-/* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children, right }: { icon?: React.ReactNode; children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between mb-2">
@@ -128,7 +126,7 @@ export default function AddSaleModal({ onClose }: { onClose: () => void }) {
       }));
     };
     run();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency]);
 
   const addLineItem = () => setItems(prev => [...prev, newItem()]);

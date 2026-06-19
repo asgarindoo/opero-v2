@@ -23,7 +23,6 @@ import DatePicker from "@/components/ui/DatePicker";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { getUserDisplayName } from "@/lib/user-identity";
 
-/* ── Reusable click dropdown ─────────────────────────────────────────────── */
 function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   value: T; opts: T[]; onChange: (v: T) => void;
   renderT: (v: T) => React.ReactNode; renderO: (v: T) => React.ReactNode;
@@ -55,7 +54,6 @@ function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   );
 }
 
-/* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -67,7 +65,6 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
   );
 }
 
-/* ── Props ───────────────────────────────────────────────────────────────── */
 interface Props {
   onClose: () => void;
   onCreate: (task: Task) => void;
@@ -75,22 +72,19 @@ interface Props {
   defaultStatus?: Status;
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   CreateTaskModal
-══════════════════════════════════════════════════════════════════════════ */
 export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStatus = "Todo" }: Props) {
   const { user } = useTenant();
-  const [title,       setTitle]       = useState("");
-  const [desc,        setDesc]        = useState("");
-  const [priority,    setPriority]    = useState<Priority>("medium");
-  const [status,      setStatus]      = useState<Status>(defaultStatus);
-  const [due,         setDue]         = useState("");
-  const [labels,      setLabels]      = useState<string[]>([]);
-  const [assignees,   setAssignees]   = useState<Member[]>([]);
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [priority, setPriority] = useState<Priority>("medium");
+  const [status, setStatus] = useState<Status>(defaultStatus);
+  const [due, setDue] = useState("");
+  const [labels, setLabels] = useState<string[]>([]);
+  const [assignees, setAssignees] = useState<Member[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [links,       setLinks]       = useState<ExternalLink[]>([]);
-  const [checklist,   setChecklist]   = useState<ChecklistItem[]>([]);
-  const [newCheck,    setNewCheck]    = useState("");
+  const [links, setLinks] = useState<ExternalLink[]>([]);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [newCheck, setNewCheck] = useState("");
 
   /* ── Checklist helpers ── */
   function addCheck() {
@@ -126,7 +120,7 @@ export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStat
   }
 
   const doneCount = checklist.filter(c => c.done).length;
-  const checkPct  = checklist.length > 0 ? Math.round((doneCount / checklist.length) * 100) : 0;
+  const checkPct = checklist.length > 0 ? Math.round((doneCount / checklist.length) * 100) : 0;
 
   const footerSummary = (
     <>
@@ -142,7 +136,7 @@ export default function CreateTaskModal({ onClose, onCreate, nextId, defaultStat
   return (
     <ModalShell onClose={onClose} maxWidth={600}>
       <ModalHeader title="New Task" subtitle={nextId} onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput

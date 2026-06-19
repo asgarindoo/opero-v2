@@ -7,17 +7,15 @@ import {
 } from "lucide-react";
 import type { Attachment } from "@/features/tasks";
 
-// ── Utilities ──────────────────────────────────────────────────────────────────
-
 function formatBytes(bytes: number): string {
-  if (bytes < 1024)        return `${bytes} B`;
-  if (bytes < 1048576)     return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1048576).toFixed(1)} MB`;
 }
 
 function detectType(mime: string, name: string): Attachment["type"] {
-  if (mime.startsWith("image/"))                         return "image";
-  if (mime === "application/pdf")                        return "pdf";
+  if (mime.startsWith("image/")) return "image";
+  if (mime === "application/pdf") return "pdf";
   if (mime.includes("spreadsheet") || mime.includes("excel") || name.endsWith(".xlsx") || name.endsWith(".csv")) return "sheet";
   if (mime.includes("word") || name.endsWith(".doc") || name.endsWith(".docx")) return "doc";
   return "other";
@@ -35,22 +33,18 @@ export function fileToAttachment(file: File): Attachment {
   };
 }
 
-// ── Icon ───────────────────────────────────────────────────────────────────────
-
 export function AttachmentTypeIcon({
   type, size = 14,
 }: {
   type: Attachment["type"]; size?: number;
 }) {
   const sw = 1.75;
-  if (type === "pdf")   return <FileText   size={size} strokeWidth={sw} style={{ color: "rgba(186,26,26,0.7)" }} />;
+  if (type === "pdf") return <FileText size={size} strokeWidth={sw} style={{ color: "rgba(186,26,26,0.7)" }} />;
   if (type === "sheet") return <FileSpreadsheet size={size} strokeWidth={sw} style={{ color: "rgba(0,130,70,0.75)" }} />;
-  if (type === "image") return <ImageIcon   size={size} strokeWidth={sw} style={{ color: "rgba(0,100,200,0.7)" }} />;
-  if (type === "doc")   return <FileText    size={size} strokeWidth={sw} style={{ color: "rgba(0,80,200,0.7)" }} />;
+  if (type === "image") return <ImageIcon size={size} strokeWidth={sw} style={{ color: "rgba(0,100,200,0.7)" }} />;
+  if (type === "doc") return <FileText size={size} strokeWidth={sw} style={{ color: "rgba(0,80,200,0.7)" }} />;
   return <File size={size} strokeWidth={sw} style={{ color: "var(--color-on-surface-variant)", opacity: 0.5 } as React.CSSProperties} />;
 }
-
-// ── Drop Zone ──────────────────────────────────────────────────────────────────
 
 interface AttachmentZoneProps {
   attachments: Attachment[];
@@ -59,13 +53,13 @@ interface AttachmentZoneProps {
 }
 
 export default function AttachmentZone({ attachments, onChange, compact }: AttachmentZoneProps) {
-  const [dragging, setDragging]   = useState(false);
-  const [renaming, setRenaming]   = useState<string | null>(null);   // attachment id
+  const [dragging, setDragging] = useState(false);
+  const [renaming, setRenaming] = useState<string | null>(null);   // attachment id
   const [renameVal, setRenameVal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Drop handlers ──
-  const onDragOver  = useCallback((e: DragEvent) => { e.preventDefault(); setDragging(true); }, []);
+  const onDragOver = useCallback((e: DragEvent) => { e.preventDefault(); setDragging(true); }, []);
   const onDragLeave = useCallback(() => setDragging(false), []);
 
   const onDrop = useCallback((e: DragEvent) => {

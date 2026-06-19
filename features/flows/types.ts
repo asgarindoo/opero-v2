@@ -1,19 +1,15 @@
-// ─── Primitive Types ──────────────────────────────────────────────────────────
-
 import type { UserIdentity } from "@/lib/user-identity";
 
-export type FlowCategory = 
-  | "Onboarding" 
-  | "Approvals" 
-  | "Recruitment" 
-  | "Marketing" 
-  | "Operations" 
-  | "Finance" 
+export type FlowCategory =
+  | "Onboarding"
+  | "Approvals"
+  | "Recruitment"
+  | "Marketing"
+  | "Operations"
+  | "Finance"
   | "Production";
 
 export type FlowStatus = "Active" | "Completed" | "Archived" | "Paused";
-
-// ─── Core Interfaces ──────────────────────────────────────────────────────────
 
 export interface ChecklistItem {
   id: string;
@@ -79,8 +75,6 @@ export const STAGE_TYPE_META: Record<WorkflowStageType, { label: string }> = {
   decision: { label: "Decision" },
   completion: { label: "Completion" },
 };
-
-// ─── Metadata & Lookups ──────────────────────────────────────────────────────
 
 export const FLOW_CATEGORIES: FlowCategory[] = [
   "Onboarding", "Approvals", "Recruitment", "Marketing", "Operations", "Finance", "Production"

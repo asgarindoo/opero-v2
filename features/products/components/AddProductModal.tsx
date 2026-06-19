@@ -11,7 +11,6 @@ import { ModalContent } from "@/components/ui/global/modal/ModalContent";
 import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 
-/* ── Reusable click dropdown ─────────────────────────────────────────────── */
 function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   value: T; opts: T[]; onChange: (v: T) => void;
   renderT: (v: T) => React.ReactNode; renderO: (v: T) => React.ReactNode;
@@ -43,7 +42,6 @@ function Dd<T extends string>({ value, opts, onChange, renderT, renderO }: {
   );
 }
 
-/* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -89,7 +87,7 @@ export default function AddProductModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell onClose={onClose} maxWidth={540}>
       <ModalHeader title="New Product" onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput

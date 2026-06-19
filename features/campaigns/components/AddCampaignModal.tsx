@@ -15,7 +15,6 @@ import { useSocialChannels } from "@/features/social-channels";
 import { CampaignChannelPicker } from "./CampaignChannelPicker";
 import { getUserDisplayName } from "@/lib/user-identity";
 
-/* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -27,7 +26,6 @@ function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactN
   );
 }
 
-/* ── Campaign Tags Input ─────────────────────────────────────────────────── */
 function CampaignTagsInput({ tags, setTags, max = 3 }: { tags: string[], setTags: (t: string[]) => void, max?: number }) {
   const [creating, setCreating] = useState(false);
   const [newTag, setNewTag] = useState("");

@@ -15,7 +15,6 @@ import { useTenant } from "@/components/providers/TenantProvider";
 import { getUserDisplayName } from "@/lib/user-identity";
 import DatePicker from "@/components/ui/DatePicker";
 
-/* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -127,7 +126,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
   return (
     <ModalShell onClose={onClose} maxWidth={600}>
       <ModalHeader title="New Operational Flow" onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput
@@ -187,7 +186,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
                   <div className="absolute left-[3px] top-4 bottom-[-16px] w-[2px]" style={{ background: "rgba(0,0,0,0.06)" }} />
                 )}
                 <div className="absolute left-0 top-[6px] w-[8px] h-[8px] rounded-full border-[2px] bg-white z-10" style={{ borderColor: "var(--color-primary)" }} />
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 group/stage">
                     <input
@@ -240,7 +239,7 @@ export default function CreateFlowModal({ onClose, onCreate }: CreateFlowModalPr
                         </button>
                       </div>
                     ))}
-                    
+
                     <button type="button" onClick={() => addChecklistItem(idx)} className="flex items-center gap-1.5 px-2 py-1 font-label-caps text-[9px] font-bold uppercase tracking-widest rounded hover:bg-black/[0.04] transition-all" style={{ color: "var(--color-on-surface-variant)", opacity: 0.6 }}>
                       <Plus size={10} strokeWidth={2} /> Add Item
                     </button>

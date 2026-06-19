@@ -15,7 +15,6 @@ import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
 import { useContacts } from "@/features/contacts/context/ContactsContext";
 
-/* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -77,7 +76,7 @@ export default function AddTransactionModal({ onClose, initialData }: { onClose:
   return (
     <ModalShell onClose={onClose} maxWidth={600}>
       <ModalHeader title={initialData ? "Edit Transaction" : "New Transaction"} onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput
@@ -210,7 +209,7 @@ export default function AddTransactionModal({ onClose, initialData }: { onClose:
             </div>
           </div>
         </div>
-        
+
         <div>
           <SL>Payment Method</SL>
           <Dropdown

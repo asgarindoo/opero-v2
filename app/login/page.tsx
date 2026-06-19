@@ -118,12 +118,6 @@ export default function LoginPage() {
       console.log(`[LOGIN] callbackUrl=${callbackUrl ?? "(none)"}`);
       console.log(`[LOGIN] callbackTenantSlug=${callbackTenantSlug ?? "(none)"}`);
 
-      // ── Routing decision ───────────────────────────────────────────────────
-      // 1. callbackUrl -> user was trying to reach a specific tenant, go directly.
-      // 2. Only 1 org -> go directly (no choice needed).
-      // 3. Multiple orgs + no callback -> show /tenants picker so the user can choose.
-      //    (The /tenants page also handles the single-org fast-path internally.)
-
       if (callbackTenantSlug && !callbackOrg) {
         console.log("[LOGIN] callback tenant not in user's org list -> /unauthorized");
         window.location.assign(getRootAppUrl("/unauthorized"));

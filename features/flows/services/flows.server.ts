@@ -37,8 +37,6 @@ function mapFlow(record: any, aesKey: Buffer, fallbackUser?: { id: string; name:
   return mapDomainRecord(decrypted, fallbackUser);
 }
 
-// ── Stage normalization ───────────────────────────────────────────────────────
-
 function parseDate(value: unknown): Date | undefined {
   if (typeof value !== "string" || !value) return undefined;
   const date = new Date(value);

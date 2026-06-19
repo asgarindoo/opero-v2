@@ -1,25 +1,9 @@
-/**
- * OPERO — Server Auth Utilities
- *
- * These functions run on the server only (Server Components, Route Handlers,
- * Server Actions). Never import from client components.
- *
- * Available utilities:
- *   getCurrentUser()         — Get authenticated user or null
- *   getCurrentTenant()       — Get active organization or null
- *   requireAuth()            — Throw if not authenticated
- *   requireTenantAccess()    — Throw if user is not a member of the tenant
- *   requireRole()            — Throw if user does not have one of the required roles
- */
-
 import { headers } from "next/headers";
 import { cache } from "react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName } from "@/lib/user-identity";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type OrgRole = "owner" | "admin" | "member";
 
@@ -61,13 +45,6 @@ export interface TenantContextResolution {
   failure: TenantContextFailure | null;
 }
 
-// ── Core helpers ──────────────────────────────────────────────────────────────
-
-/**
- * Get the current Better Auth session from request headers.
- * Returns null if no valid session exists.
- * Wrapped in cache() to avoid multiple DB lookups per request.
- */
 export const getSession = cache(async function getSession() {
   try {
     const hdrs = await headers();
@@ -78,12 +55,6 @@ export const getSession = cache(async function getSession() {
   }
 });
 
-// ── Public utilities ──────────────────────────────────────────────────────────
-
-/**
- * Returns the currently authenticated user, or null if not authenticated.
- * Use in Server Components that need to conditionally render auth-gated UI.
- */
 export const getCurrentUser = cache(async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await getSession();
   if (!session?.user) return null;

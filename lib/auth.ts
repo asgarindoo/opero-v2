@@ -17,13 +17,9 @@ const rootAuthUrl =
   process.env.NEXT_PUBLIC_ROOT_URL ??
   "http://lvh.me:3000";
 const rootHostname = new URL(rootAuthUrl).hostname;
-const rootDomain  = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? rootHostname;
+const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? rootHostname;
 const isLoopbackHost = rootHostname === "localhost" || rootHostname === "127.0.0.1";
 
-// Cookie domain strategy:
-//   lvh.me/prod: set a shared root domain so subdomains share the cookie.
-//   localhost:   omit domain entirely; localhost cannot reliably share cookies
-//                with *.localhost in browsers.
 const cookieDomain = !isLoopbackHost
   ? (process.env.BETTER_AUTH_COOKIE_DOMAIN ?? rootDomain)
   : undefined;
@@ -54,28 +50,23 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
-  // ── Email + Password ────────────────────────────────────────────────
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // enable in production
     minPasswordLength: 8,
   },
 
-  // ── Session ─────────────────────────────────────────────────────────
   session: {
     // Session expiry: 30 days
     expiresIn: 60 * 60 * 24 * 30,
     // Extend session on activity
     updateAge: 60 * 60 * 24, // re-validate once per day
-    // Keep Better Auth from storing full session/user data in cookies.
-    // That cache can be chunked into many Set-Cookie headers and break
-    // organization.setActive() with ERR_RESPONSE_HEADERS_TOO_BIG.
+
     cookieCache: {
       enabled: false,
     },
   },
 
-  // ── Organization Plugin (= Tenant in OPERO) ─────────────────────────
   plugins: [
     organization({
       // Allow any authenticated user to create an organization
@@ -134,7 +125,6 @@ export const auth = betterAuth({
     }),
   ],
 
-  // ── Trusted Origins ─────────────────────────────────────────────────
   trustedOrigins: [
     rootAuthUrl,
     "http://*.localhost:3000",
@@ -145,13 +135,13 @@ export const auth = betterAuth({
 
   ...(cookieDomain
     ? {
-        advanced: {
-          crossSubDomainCookies: {
-            enabled: true,
-            domain: cookieDomain,
-          },
+      advanced: {
+        crossSubDomainCookies: {
+          enabled: true,
+          domain: cookieDomain,
         },
-      }
+      },
+    }
     : {}),
 });
 

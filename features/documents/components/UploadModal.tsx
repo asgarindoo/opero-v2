@@ -12,7 +12,6 @@ import { ModalFooter } from "@/components/ui/global/modal/ModalFooter";
 import { GlobalInput } from "@/components/ui/global/form/GlobalInput";
 import Dropdown from "@/components/ui/Dropdown";
 
-/* ── Section label ───────────────────────────────────────────────────────── */
 function SL({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
@@ -151,7 +150,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
 
     setFile(selected);
     setTitle((current) => current || selected.name);
-    
+
     if (selected.type.startsWith("image/")) setType("image");
     else if (ext === "pdf") setType("pdf");
     else if (["xls", "xlsx", "csv"].includes(ext)) setType("spreadsheet");
@@ -205,7 +204,7 @@ export default function UploadModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell onClose={onClose} maxWidth={480}>
       <ModalHeader title="Upload Document" onClose={onClose} />
-      
+
       <ModalContent className="db-sidebar space-y-6">
         <div className="space-y-4">
           <GlobalInput

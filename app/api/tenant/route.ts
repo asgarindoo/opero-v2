@@ -44,7 +44,7 @@ function isOrganizationExistsError(err: unknown) {
   );
 }
 
-// ── GET /api/tenant ───────────────────────────────────────────────────────────
+// GET /api/tenant
 export async function GET() {
   try {
     const user = await requireAuth();
@@ -84,7 +84,7 @@ export async function GET() {
   }
 }
 
-// ── POST /api/tenant ──────────────────────────────────────────────────────────
+// POST /api/tenant 
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth();

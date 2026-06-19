@@ -35,8 +35,6 @@ function decryptGoalRecord(record: any, aesKey: Buffer) {
   };
 }
 
-// ── Payload / mapping helpers ─────────────────────────────────────────────────
-
 const PAYLOAD_KEYS = ["collaboratorIds", "keyResults", "milestones", "linkedItems", "archived", "parentId"] as const;
 
 function goalPayload(data: Record<string, unknown>, currentPayload?: unknown) {
