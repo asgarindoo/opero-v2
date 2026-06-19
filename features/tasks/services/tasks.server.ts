@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import type { TenantContext } from "@/lib/server/auth-utils";
 import { requirePermission } from "@/lib/server/rbac";
+import { decryptField, encryptField, getTenantAesKey } from "@/lib/server/crypto/tenant-crypto";
 import { tenantRls } from "@/lib/server/tenant-rls";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
@@ -10,6 +11,31 @@ import { dateValue, firstStringFromArray, jsonArray, jsonInputOrDefault, textVal
 
 const MODULE = "TASKS";
 const ENTITY = "Task";
+
+function encryptJsonField(aesKey: Buffer, value: unknown): string {
+  return encryptField(aesKey, JSON.stringify(value ?? null)) ?? "";
+}
+
+function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
+  if (typeof value !== "string") return value ?? fallback;
+  const decrypted = decryptField(aesKey, value);
+  if (!decrypted) return fallback;
+  try {
+    return JSON.parse(decrypted);
+  } catch {
+    return fallback;
+  }
+}
+
+function decryptTaskRecord(record: any, aesKey: Buffer) {
+  return {
+    ...record,
+    title: typeof record.title === "string" ? decryptField(aesKey, record.title) : record.title,
+    description: typeof record.description === "string" ? decryptField(aesKey, record.description) : record.description,
+    checklist: decryptJsonField(aesKey, record.checklist, []),
+    comments: decryptJsonField(aesKey, record.comments, []),
+  };
+}
 
 async function getMemberIdentityMap(ctx: TenantContext) {
   const members = await prisma.member.findMany({
@@ -27,7 +53,6 @@ async function getMemberIdentityMap(ctx: TenantContext) {
         email: member.user.email,
         image: normalizeUserAvatarImage(member.userId, member.user.image),
       };
-
       return [member.userId, user];
     })
   );
@@ -60,19 +85,19 @@ function hydrateTaskIdentity(task: any, identities: Map<string, UserIdentity>) {
 
   const comments = Array.isArray(task.comments)
     ? task.comments.map((comment: any) => {
-        const userId = typeof comment.userId === "string" ? comment.userId : "";
-        const identity = userId ? identities.get(userId) : null;
+      const userId = typeof comment.userId === "string" ? comment.userId : "";
+      const identity = userId ? identities.get(userId) : null;
 
-        if (!identity) return comment;
+      if (!identity) return comment;
 
-        return {
-          ...comment,
-          author: getUserDisplayName(identity, comment.author ?? "Member"),
-          email: identity.email ?? comment.email,
-          avatar: identity.image ?? comment.avatar ?? null,
-          initials: getUserInitials(identity),
-        };
-      })
+      return {
+        ...comment,
+        author: getUserDisplayName(identity, comment.author ?? "Member"),
+        email: identity.email ?? comment.email,
+        avatar: identity.image ?? comment.avatar ?? null,
+        initials: getUserInitials(identity),
+      };
+    })
     : [];
 
   return {
@@ -82,9 +107,12 @@ function hydrateTaskIdentity(task: any, identities: Map<string, UserIdentity>) {
   };
 }
 
-async function mapTaskRecords(ctx: TenantContext, records: any[]) {
+async function mapTaskRecords(ctx: TenantContext, records: any[], aesKey: Buffer) {
   const identities = await getMemberIdentityMap(ctx);
-  return records.map((task) => hydrateTaskIdentity(mapDomainRecord(task), identities));
+  return records.map((task) => {
+    const decrypted = decryptTaskRecord(task, aesKey);
+    return hydrateTaskIdentity(mapDomainRecord(decrypted), identities);
+  });
 }
 
 type TaskLookupClient = Pick<Prisma.TransactionClient, "campaign" | "member">;
@@ -110,27 +138,6 @@ async function resolveAssigneeId(db: TaskLookupClient, ctx: TenantContext, data:
   return member?.userId ?? null;
 }
 
-async function buildTaskCreateData(db: TaskLookupClient, ctx: TenantContext, data: Record<string, unknown>) {
-  const title = getTitle(data);
-  return {
-    title,
-    description: textValue(data.description),
-    status: getStatus(data),
-    priority: textValue(data.priority),
-    dueDate: dateValue(data.dueDate) ?? dateValue(data.due),
-    startDate: dateValue(data.startDate),
-    assigneeId: await resolveAssigneeId(db, ctx, data),
-    campaignId: await resolveCampaignId(db, ctx, data.campaignId),
-    labels: jsonArray(data.labels),
-    assignees: jsonArray(data.assignees),
-    checklist: jsonArray(data.checklist),
-    externalLinks: jsonArray(data.externalLinks),
-    comments: jsonArray(data.comments),
-    activity: jsonArray(data.activity),
-    attachments: jsonArray(data.attachments),
-  };
-}
-
 export async function listTasks() {
   const ctx = await requirePermission("tasks.read");
   const tasks = await tenantRls(ctx, (tx) =>
@@ -140,7 +147,12 @@ export async function listTasks() {
       include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
     })
   );
-  return mapTaskRecords(ctx, tasks);
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+  try {
+    return mapTaskRecords(ctx, tasks, aesKey);
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function listCampaignTasks(campaignId: string) {
@@ -152,7 +164,12 @@ export async function listCampaignTasks(campaignId: string) {
       include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
     })
   );
-  return mapTaskRecords(ctx, tasks);
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+  try {
+    return mapTaskRecords(ctx, tasks, aesKey);
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function getTaskById(id: string) {
@@ -164,83 +181,134 @@ export async function getTaskById(id: string) {
     })
   );
   if (!task) return null;
-  const [mappedTask] = await mapTaskRecords(ctx, [task]);
-  return mappedTask;
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+  try {
+    const [mappedTask] = await mapTaskRecords(ctx, [task], aesKey);
+    return mappedTask;
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function createTask(data: Record<string, unknown>) {
   const ctx = await requirePermission("tasks.create");
-  const task = await tenantRls(ctx, async (tx) => {
-    const taskData = await buildTaskCreateData(tx, ctx, data);
-    return tx.task.create({
-      data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
-        organizationId: ctx.tenantId,
-        ...taskData,
-        createdById: ctx.userId,
-        updatedById: ctx.userId,
-      },
+  const title = getTitle(data);
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+
+  try {
+    const task = await tenantRls(ctx, async (tx) => {
+      const campaignId = await resolveCampaignId(tx, ctx, data.campaignId);
+      const assigneeId = await resolveAssigneeId(tx, ctx, data);
+      return tx.task.create({
+        data: {
+          id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
+          organizationId: ctx.tenantId,
+          title: encryptField(aesKey, title),
+          description: encryptField(aesKey, textValue(data.description) ?? null),
+          status: getStatus(data),
+          priority: textValue(data.priority),
+          dueDate: dateValue(data.dueDate) ?? dateValue(data.due),
+          startDate: dateValue(data.startDate),
+          assigneeId,
+          campaignId,
+          labels: jsonArray(data.labels),
+          assignees: jsonArray(data.assignees),
+          checklist: encryptJsonField(aesKey, jsonArray(data.checklist)) as any,
+          externalLinks: jsonArray(data.externalLinks),
+          comments: encryptJsonField(aesKey, jsonArray(data.comments)) as any,
+          activity: jsonArray(data.activity),
+          attachments: jsonArray(data.attachments),
+          createdById: ctx.userId,
+          updatedById: ctx.userId,
+        },
+      });
     });
-  });
-  logDomainActivity({
-    tenantId: ctx.tenantId,
-    userId: ctx.userId,
-    module: MODULE,
-    action: "Created",
-    entityType: ENTITY,
-    entityId: task.id,
-    entityName: task.title,
-    description: task.description,
-  }).catch(console.error);
-  const identities = await getMemberIdentityMap(ctx);
-  return hydrateTaskIdentity(mapDomainRecord(task, ctx.user), identities);
+
+    logDomainActivity({
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+      module: MODULE,
+      action: "Created",
+      entityType: ENTITY,
+      entityId: task.id,
+      entityName: title,
+      description: typeof data.description === "string" ? data.description : null,
+    }).catch(console.error);
+
+    const identities = await getMemberIdentityMap(ctx);
+    const decrypted = decryptTaskRecord(task, aesKey);
+    return hydrateTaskIdentity(mapDomainRecord(decrypted, ctx.user), identities);
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function updateTask(id: string, patch: Record<string, unknown>) {
   const ctx = await requirePermission("tasks.update");
-  const updated = await tenantRls(ctx, async (tx) => {
-    const current = await tx.task.findFirst({ where: { id, organizationId: ctx.tenantId } });
-    if (!current) return null;
+  const aesKey = await getTenantAesKey(ctx.tenantId);
 
-    const campaignId = patch.campaignId !== undefined ? await resolveCampaignId(tx, ctx, patch.campaignId) : current.campaignId;
-    const assigneeId = patch.assigneeId !== undefined || patch.assignees !== undefined ? await resolveAssigneeId(tx, ctx, patch) : current.assigneeId;
-    return tx.task.update({
-      where: { id },
-      data: {
-        title: getTitle(patch, current.title ?? "Untitled"),
-        description: patch.description !== undefined ? textValue(patch.description) : current.description,
-        status: typeof patch.status === "string" ? patch.status : current.status,
-        priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
-        dueDate: patch.dueDate !== undefined || patch.due !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.due) : current.dueDate,
-        startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
-        assigneeId,
-        campaignId,
-        labels: patch.labels !== undefined ? jsonArray(patch.labels) : jsonInputOrDefault(current.labels, []),
-        assignees: patch.assignees !== undefined ? jsonArray(patch.assignees) : jsonInputOrDefault(current.assignees, []),
-        checklist: patch.checklist !== undefined ? jsonArray(patch.checklist) : jsonInputOrDefault(current.checklist, []),
-        externalLinks: patch.externalLinks !== undefined ? jsonArray(patch.externalLinks) : jsonInputOrDefault(current.externalLinks, []),
-        comments: patch.comments !== undefined ? jsonArray(patch.comments) : jsonInputOrDefault(current.comments, []),
-        activity: patch.activity !== undefined ? jsonArray(patch.activity) : jsonInputOrDefault(current.activity, []),
-        attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
-        updatedById: ctx.userId,
-      },
-      include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+  try {
+    const updated = await tenantRls(ctx, async (tx) => {
+      const current = await tx.task.findFirst({ where: { id, organizationId: ctx.tenantId } });
+      if (!current) return null;
+
+      const currentPlain = decryptTaskRecord(current, aesKey);
+      const campaignId = patch.campaignId !== undefined ? await resolveCampaignId(tx, ctx, patch.campaignId) : current.campaignId;
+      const assigneeId = patch.assigneeId !== undefined || patch.assignees !== undefined ? await resolveAssigneeId(tx, ctx, patch) : current.assigneeId;
+      const title = patch.title !== undefined || patch.name !== undefined
+        ? getTitle(patch, currentPlain.title ?? "Untitled")
+        : (currentPlain.title ?? "Untitled");
+
+      return tx.task.update({
+        where: { id },
+        data: {
+          title: encryptField(aesKey, title),
+          description: patch.description !== undefined
+            ? encryptField(aesKey, textValue(patch.description) ?? null)
+            : current.description,
+          status: typeof patch.status === "string" ? patch.status : current.status,
+          priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
+          dueDate: patch.dueDate !== undefined || patch.due !== undefined ? dateValue(patch.dueDate) ?? dateValue(patch.due) : current.dueDate,
+          startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
+          assigneeId,
+          campaignId,
+          labels: patch.labels !== undefined ? jsonArray(patch.labels) : jsonInputOrDefault(current.labels, []),
+          assignees: patch.assignees !== undefined ? jsonArray(patch.assignees) : jsonInputOrDefault(current.assignees, []),
+          checklist: patch.checklist !== undefined
+            ? encryptJsonField(aesKey, jsonArray(patch.checklist)) as any
+            : current.checklist,
+          externalLinks: patch.externalLinks !== undefined ? jsonArray(patch.externalLinks) : jsonInputOrDefault(current.externalLinks, []),
+          comments: patch.comments !== undefined
+            ? encryptJsonField(aesKey, jsonArray(patch.comments)) as any
+            : current.comments,
+          activity: patch.activity !== undefined ? jsonArray(patch.activity) : jsonInputOrDefault(current.activity, []),
+          attachments: patch.attachments !== undefined ? jsonArray(patch.attachments) : jsonInputOrDefault(current.attachments, []),
+          updatedById: ctx.userId,
+        },
+        include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
+      });
     });
-  });
-  if (!updated) return null;
 
-  logDomainActivity({
-    tenantId: ctx.tenantId,
-    userId: ctx.userId,
-    module: MODULE,
-    action: "Updated",
-    entityType: ENTITY,
-    entityId: id,
-    entityName: updated.title,
-    description: typeof patch.description === "string" ? patch.description : null,
-  }).catch(console.error);
-  const [mappedTask] = await mapTaskRecords(ctx, [updated]);
-  return mappedTask ?? mapDomainRecord(updated);
+    if (!updated) return null;
+
+    const decrypted = decryptTaskRecord(updated, aesKey);
+    const title = decrypted.title ?? "Untitled";
+    logDomainActivity({
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+      module: MODULE,
+      action: "Updated",
+      entityType: ENTITY,
+      entityId: id,
+      entityName: title,
+      description: typeof patch.description === "string" ? patch.description : null,
+    }).catch(console.error);
+
+    const identities = await getMemberIdentityMap(ctx);
+    return hydrateTaskIdentity(mapDomainRecord(decrypted), identities) ?? mapDomainRecord(decrypted);
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function deleteTask(id: string) {
@@ -253,6 +321,16 @@ export async function deleteTask(id: string) {
   });
   if (!current) return null;
 
+  let entityName: string | null = null;
+  if (typeof current.title === "string") {
+    const aesKey = await getTenantAesKey(ctx.tenantId);
+    try {
+      entityName = decryptField(aesKey, current.title);
+    } finally {
+      aesKey.fill(0);
+    }
+  }
+
   logDomainActivity({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
@@ -260,7 +338,7 @@ export async function deleteTask(id: string) {
     action: "Deleted",
     entityType: ENTITY,
     entityId: id,
-    entityName: current.title,
+    entityName,
   }).catch(console.error);
   return { id };
 }

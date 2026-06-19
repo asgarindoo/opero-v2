@@ -1,114 +1,230 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/server/rbac";
+import { decryptField, encryptField, getTenantAesKey } from "@/lib/server/crypto/tenant-crypto";
 import { getStatus, getTitle, logDomainActivity, mapDomainRecord } from "@/lib/api/domain-utils";
 import { jsonArray, jsonInputOrDefault, numberValue, textValue } from "@/lib/api/feature-records";
 
 const MODULE = "SALES";
 const ENTITY = "Sale";
 
-function buildSaleCreateData(data: Record<string, unknown>) {
-  const title = getTitle(data);
-  const saleNumber = textValue(data.saleNumber) ?? textValue(data.orderNumber);
-  const discountAmount = numberValue(data.discountAmount) ?? numberValue(data.discountTotal) ?? 0;
-  const grandTotal = numberValue(data.grandTotal) ?? numberValue(data.total) ?? 0;
+const SALE_SELECT = {
+  id: true,
+  organizationId: true,
+  saleNumber: true,
+  title: true,
+  status: true,
+  saleType: true,
+  paymentStatus: true,
+  contactName: true,
+  contactId: true,
+  items: true,
+  subtotal: true,
+  discountAmount: true,
+  taxAmount: true,
+  grandTotal: true,
+  currency: true,
+  orderDiscountValue: true,
+  orderDiscountType: true,
+  discountTotal: true,
+  taxPercentage: true,
+  activities: true,
+  shippingAddress: true,
+  payload: true,
+  createdById: true,
+  updatedById: true,
+  createdAt: true,
+  updatedAt: true,
+  createdBy: { select: { id: true, name: true, email: true, image: true } },
+} as const;
 
+function encryptJsonField(aesKey: Buffer, value: unknown): string {
+  return encryptField(aesKey, JSON.stringify(value ?? null)) ?? "";
+}
+
+function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
+  if (typeof value !== "string") return value ?? fallback;
+  const decrypted = decryptField(aesKey, value);
+  if (!decrypted) return fallback;
+  try {
+    return JSON.parse(decrypted);
+  } catch {
+    return fallback;
+  }
+}
+
+function encryptNumeric(aesKey: Buffer, value: number): string {
+  return encryptField(aesKey, String(value)) ?? "0";
+}
+
+function decryptNumeric(aesKey: Buffer, value: unknown, fallback = 0): number {
+  if (typeof value !== "string") return typeof value === "number" ? value : fallback;
+  const decrypted = decryptField(aesKey, value);
+  if (!decrypted) return fallback;
+  const parsed = parseFloat(decrypted);
+  return isNaN(parsed) ? fallback : parsed;
+}
+
+function decryptSaleRecord(record: any, aesKey: Buffer) {
   return {
-    saleNumber,
-    title,
-    status: getStatus(data),
-    saleType: textValue(data.saleType),
-    paymentStatus: textValue(data.paymentStatus),
-    contactName: textValue(data.contactName),
-    contactId: textValue(data.contactId),
-    items: jsonArray(data.items),
-    subtotal: numberValue(data.subtotal) ?? 0,
-    discountAmount,
-    taxAmount: numberValue(data.taxAmount) ?? 0,
-    grandTotal,
-    currency: textValue(data.currency) ?? "USD",
-    orderDiscountValue: numberValue(data.orderDiscountValue),
-    orderDiscountType: textValue(data.orderDiscountType),
-    discountTotal: numberValue(data.discountTotal) ?? discountAmount,
-    taxPercentage: numberValue(data.taxPercentage),
-    activities: jsonArray(data.activities),
-    shippingAddress: textValue(data.shippingAddress),
+    ...record,
+    title: typeof record.title === "string" ? decryptField(aesKey, record.title) : record.title,
+    contactName: typeof record.contactName === "string" ? decryptField(aesKey, record.contactName) : record.contactName,
+    shippingAddress: typeof record.shippingAddress === "string" ? decryptField(aesKey, record.shippingAddress) : record.shippingAddress,
+    items: decryptJsonField(aesKey, record.items, []),
+    subtotal: decryptNumeric(aesKey, record.subtotal),
+    discountAmount: decryptNumeric(aesKey, record.discountAmount),
+    taxAmount: decryptNumeric(aesKey, record.taxAmount),
+    grandTotal: decryptNumeric(aesKey, record.grandTotal),
+    orderDiscountValue: record.orderDiscountValue != null ? decryptNumeric(aesKey, record.orderDiscountValue) : null,
+    discountTotal: decryptNumeric(aesKey, record.discountTotal),
   };
+}
+
+function mapSale(record: any, aesKey: Buffer, fallbackUser?: { id: string; name: string; email?: string | null; image?: string | null }) {
+  const decrypted = decryptSaleRecord(record, aesKey);
+  return mapDomainRecord(decrypted, fallbackUser);
 }
 
 export async function listSales() {
   const ctx = await requirePermission("sales.read");
-  const sales = await prisma.sale.findMany({ where: { organizationId: ctx.tenantId }, orderBy: { createdAt: "desc" }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
-  return sales.map((sale) => mapDomainRecord(sale));
+  const sales = await prisma.sale.findMany({
+    where: { organizationId: ctx.tenantId },
+    orderBy: { createdAt: "desc" },
+    select: SALE_SELECT,
+  });
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+  try {
+    return sales.map((sale) => mapSale(sale, aesKey));
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function getSaleById(id: string) {
   const ctx = await requirePermission("sales.read");
-  const sale = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId }, include: { createdBy: { select: { id: true, name: true, email: true, image: true } } } });
-  return sale ? mapDomainRecord(sale) : null;
+  const sale = await prisma.sale.findFirst({
+    where: { id, organizationId: ctx.tenantId },
+    select: SALE_SELECT,
+  });
+  if (!sale) return null;
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+  try {
+    return mapSale(sale, aesKey);
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function createSale(data: Record<string, unknown>) {
   const ctx = await requirePermission("sales.create");
-  const saleData = buildSaleCreateData(data);
-  const sale = await prisma.sale.create({
-    data: {
-      id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
-      organizationId: ctx.tenantId,
-      ...saleData,
-      createdById: ctx.userId,
-      updatedById: ctx.userId,
-    },
-  });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: sale.id, entityName: sale.title });
-  return mapDomainRecord(sale, ctx.user);
+  const title = getTitle(data);
+  const saleNumber = textValue(data.saleNumber) ?? textValue(data.orderNumber);
+  const discountAmount = numberValue(data.discountAmount) ?? numberValue(data.discountTotal) ?? 0;
+  const grandTotal = numberValue(data.grandTotal) ?? numberValue(data.total) ?? 0;
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+
+  try {
+    const sale = await prisma.sale.create({
+      data: {
+        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
+        organizationId: ctx.tenantId,
+        saleNumber,
+        title: encryptField(aesKey, title),
+        status: getStatus(data),
+        saleType: textValue(data.saleType),
+        paymentStatus: textValue(data.paymentStatus),
+        contactName: encryptField(aesKey, textValue(data.contactName) ?? null),
+        contactId: textValue(data.contactId),
+        items: encryptJsonField(aesKey, jsonArray(data.items)),
+        subtotal: encryptNumeric(aesKey, numberValue(data.subtotal) ?? 0) as any,
+        discountAmount: encryptNumeric(aesKey, discountAmount) as any,
+        taxAmount: encryptNumeric(aesKey, numberValue(data.taxAmount) ?? 0) as any,
+        grandTotal: encryptNumeric(aesKey, grandTotal) as any,
+        currency: textValue(data.currency) ?? "USD",
+        orderDiscountValue: data.orderDiscountValue != null ? encryptNumeric(aesKey, numberValue(data.orderDiscountValue) ?? 0) as any : undefined,
+        orderDiscountType: textValue(data.orderDiscountType),
+        discountTotal: encryptNumeric(aesKey, numberValue(data.discountTotal) ?? discountAmount) as any,
+        taxPercentage: numberValue(data.taxPercentage),
+        activities: jsonArray(data.activities),
+        shippingAddress: encryptField(aesKey, textValue(data.shippingAddress) ?? null),
+        createdById: ctx.userId,
+        updatedById: ctx.userId,
+      },
+      select: SALE_SELECT,
+    });
+    await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Created", entityType: ENTITY, entityId: sale.id, entityName: title });
+    return mapSale(sale, aesKey, ctx.user);
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function updateSale(id: string, patch: Record<string, unknown>) {
   const ctx = await requirePermission("sales.update");
-  const current = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId }, select: SALE_SELECT });
   if (!current) return null;
-  const discountAmount = patch.discountAmount !== undefined || patch.discountTotal !== undefined
-    ? numberValue(patch.discountAmount) ?? numberValue(patch.discountTotal) ?? current.discountAmount
-    : current.discountAmount;
-  const grandTotal = patch.grandTotal !== undefined || patch.total !== undefined
-    ? numberValue(patch.grandTotal) ?? numberValue(patch.total) ?? current.grandTotal
-    : current.grandTotal;
-  const updated = await prisma.sale.update({
-    where: { id },
-    data: {
-      saleNumber: patch.saleNumber !== undefined || patch.orderNumber !== undefined ? textValue(patch.saleNumber) ?? textValue(patch.orderNumber) : current.saleNumber,
-      title: getTitle(patch, current.title ?? "Untitled"),
-      status: typeof patch.status === "string" ? patch.status : current.status,
-      saleType: patch.saleType !== undefined ? textValue(patch.saleType) : current.saleType,
-      paymentStatus: patch.paymentStatus !== undefined ? textValue(patch.paymentStatus) : current.paymentStatus,
-      contactName: patch.contactName !== undefined ? textValue(patch.contactName) : current.contactName,
-      contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
-      items: patch.items !== undefined ? jsonArray(patch.items) : jsonInputOrDefault(current.items, []),
-      subtotal: patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? current.subtotal : current.subtotal,
-      discountAmount,
-      taxAmount: patch.taxAmount !== undefined ? numberValue(patch.taxAmount) ?? current.taxAmount : current.taxAmount,
-      grandTotal,
-      currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
-      orderDiscountValue: patch.orderDiscountValue !== undefined ? numberValue(patch.orderDiscountValue) : current.orderDiscountValue,
-      orderDiscountType: patch.orderDiscountType !== undefined ? textValue(patch.orderDiscountType) : current.orderDiscountType,
-      discountTotal: patch.discountTotal !== undefined || patch.discountAmount !== undefined ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? current.discountTotal : current.discountTotal,
-      taxPercentage: patch.taxPercentage !== undefined ? numberValue(patch.taxPercentage) : current.taxPercentage,
-      activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
-      shippingAddress: patch.shippingAddress !== undefined ? textValue(patch.shippingAddress) : current.shippingAddress,
-      updatedById: ctx.userId,
-    },
-    include: { createdBy: { select: { id: true, name: true, email: true, image: true } } },
-  });
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: updated.title });
-  return mapDomainRecord(updated);
+
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+  try {
+    const currentPlain = decryptSaleRecord(current, aesKey);
+    const discountAmount = patch.discountAmount !== undefined || patch.discountTotal !== undefined
+      ? numberValue(patch.discountAmount) ?? numberValue(patch.discountTotal) ?? currentPlain.discountAmount
+      : currentPlain.discountAmount;
+    const grandTotal = patch.grandTotal !== undefined || patch.total !== undefined
+      ? numberValue(patch.grandTotal) ?? numberValue(patch.total) ?? currentPlain.grandTotal
+      : currentPlain.grandTotal;
+    const title = patch.title !== undefined || patch.name !== undefined
+      ? getTitle(patch, currentPlain.title ?? "Untitled")
+      : (currentPlain.title ?? "Untitled");
+
+    const updated = await prisma.sale.update({
+      where: { id },
+      data: {
+        saleNumber: patch.saleNumber !== undefined || patch.orderNumber !== undefined ? textValue(patch.saleNumber) ?? textValue(patch.orderNumber) : current.saleNumber,
+        title: encryptField(aesKey, title),
+        status: typeof patch.status === "string" ? patch.status : current.status,
+        saleType: patch.saleType !== undefined ? textValue(patch.saleType) : current.saleType,
+        paymentStatus: patch.paymentStatus !== undefined ? textValue(patch.paymentStatus) : current.paymentStatus,
+        contactName: patch.contactName !== undefined ? encryptField(aesKey, textValue(patch.contactName) ?? null) : current.contactName,
+        contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
+        items: patch.items !== undefined ? encryptJsonField(aesKey, jsonArray(patch.items)) as any : current.items,
+        subtotal: encryptNumeric(aesKey, patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? currentPlain.subtotal : currentPlain.subtotal) as any,
+        discountAmount: encryptNumeric(aesKey, discountAmount) as any,
+        taxAmount: encryptNumeric(aesKey, patch.taxAmount !== undefined ? numberValue(patch.taxAmount) ?? currentPlain.taxAmount : currentPlain.taxAmount) as any,
+        grandTotal: encryptNumeric(aesKey, grandTotal) as any,
+        currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
+        orderDiscountValue: patch.orderDiscountValue !== undefined ? encryptNumeric(aesKey, numberValue(patch.orderDiscountValue) ?? 0) as any : current.orderDiscountValue,
+        orderDiscountType: patch.orderDiscountType !== undefined ? textValue(patch.orderDiscountType) : current.orderDiscountType,
+        discountTotal: encryptNumeric(aesKey, patch.discountTotal !== undefined || patch.discountAmount !== undefined ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? currentPlain.discountTotal : currentPlain.discountTotal) as any,
+        taxPercentage: patch.taxPercentage !== undefined ? numberValue(patch.taxPercentage) : current.taxPercentage,
+        activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
+        shippingAddress: patch.shippingAddress !== undefined ? encryptField(aesKey, textValue(patch.shippingAddress) ?? null) : current.shippingAddress,
+        updatedById: ctx.userId,
+      },
+      select: SALE_SELECT,
+    });
+    await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Updated", entityType: ENTITY, entityId: id, entityName: title });
+    return mapSale(updated, aesKey);
+  } finally {
+    aesKey.fill(0);
+  }
 }
 
 export async function deleteSale(id: string) {
   const ctx = await requirePermission("sales.delete");
-  const current = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId } });
+  const current = await prisma.sale.findFirst({ where: { id, organizationId: ctx.tenantId }, select: { title: true } });
   if (!current) return null;
+  let entityName: string | null = null;
+  if (typeof current.title === "string") {
+    const aesKey = await getTenantAesKey(ctx.tenantId);
+    try {
+      entityName = decryptField(aesKey, current.title);
+    } finally {
+      aesKey.fill(0);
+    }
+  }
   const result = await prisma.sale.deleteMany({ where: { id, organizationId: ctx.tenantId } });
   if (result.count === 0) return null;
-  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Deleted", entityType: ENTITY, entityId: id, entityName: current.title });
+  await logDomainActivity({ tenantId: ctx.tenantId, userId: ctx.userId, module: MODULE, action: "Deleted", entityType: ENTITY, entityId: id, entityName });
   return { id };
 }
