@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
@@ -96,6 +97,40 @@ function failedTenantContext(
   };
 }
 
+// ─── Cached DB queries ───────────────────────────────────────────────────────
+// unstable_cache menyimpan hasil cross-request (shared across Vercel functions).
+// TTL 30 detik — acceptable staleness untuk membership/org check.
+
+const _getMemberBySlug = unstable_cache(
+  async (userId: string, slug: string) =>
+    prisma.member.findFirst({
+      where: { userId, organization: { slug } },
+      select: {
+        role: true,
+        status: true,
+        organization: { select: { id: true, name: true, slug: true, logo: true, status: true } },
+      },
+    }),
+  ["member-by-slug"],
+  { revalidate: 30 }
+);
+
+const _getMemberByOrgId = unstable_cache(
+  async (userId: string, organizationId: string) =>
+    prisma.member.findUnique({
+      where: { organizationId_userId: { organizationId, userId } },
+      select: {
+        role: true,
+        status: true,
+        organization: { select: { id: true, name: true, slug: true, logo: true, status: true } },
+      },
+    }),
+  ["member-by-org-id"],
+  { revalidate: 30 }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Returns the active organization (tenant) from the current session, or null.
  * The active org is set by `authClient.organization.setActive()` on the client.
@@ -104,12 +139,14 @@ export const getCurrentTenant = cache(async function getCurrentTenant(): Promise
   const session = await getSession();
   if (!session?.session?.activeOrganizationId) return null;
 
-  const org = await prisma.organization.findUnique({
-    where: { id: session.session.activeOrganizationId },
-    select: { id: true, name: true, slug: true, logo: true, status: true },
-  });
+  // Cached: org + membership dalam 1 query, disimpan 30 detik cross-request
+  const membership = await _getMemberByOrgId(
+    session.user.id,
+    session.session.activeOrganizationId
+  );
 
-  return org ?? null;
+  if (!membership?.organization || membership.status !== "active") return null;
+  return membership.organization;
 });
 
 /**
@@ -195,15 +232,21 @@ export async function requireRole(
   return context;
 }
 
-/**
- * Resolves a tenant slug from the `x-tenant-slug` header injected by middleware.
- * Falls back to the active org in session if header is absent (local dev).
- */
+// Ambil tenant dari header x-tenant-slug yang diset proxy.
+// Prioritas: gunakan data dari resolveTenantContext (sudah cached) terlebih dahulu
+// untuk menghindari DB query duplikat.
 export const resolveTenantFromRequest = cache(async function resolveTenantFromRequest(): Promise<CurrentTenant | null> {
   const hdrs = await headers();
   const slugFromHeader = hdrs.get("x-tenant-slug");
 
   if (slugFromHeader) {
+    // Coba pakai hasil cached dari resolveTenantContext dulu
+    const { context } = await resolveTenantContext();
+    if (context?.tenant.slug === slugFromHeader) {
+      return context.tenant;
+    }
+
+    // Fallback ke DB jika slug tidak match (jarang terjadi)
     const org = await prisma.organization.findUnique({
       where: { slug: slugFromHeader },
       select: { id: true, name: true, slug: true, logo: true, status: true },
@@ -231,32 +274,23 @@ export const resolveTenantContext = cache(async function resolveTenantContext():
   const headerTenantSlug = hdrs.get("x-tenant-slug");
 
   if (headerTenantSlug) {
-    const tenant = await prisma.organization.findUnique({
-      where: { slug: headerTenantSlug },
-      select: { id: true, name: true, slug: true, logo: true, status: true },
-    });
+    // Cached: membership + org dalam 1 query, TTL 30 detik
+    const membership = await _getMemberBySlug(session.user.id, headerTenantSlug);
 
-    if (!tenant) {
+    if (!membership?.organization) {
       return failedTenantContext(404, "Tenant not found", headerTenantSlug);
     }
 
-    if (tenant.status !== "active") {
+    if (membership.organization.status !== "active") {
       return failedTenantContext(423, "Tenant inactive", headerTenantSlug);
     }
 
-    const membership = await prisma.member.findUnique({
-      where: {
-        organizationId_userId: { organizationId: tenant.id, userId: session.user.id },
-      },
-      select: { role: true, status: true },
-    });
-
-    if (!membership || membership.status !== "active") {
+    if (membership.status !== "active") {
       return failedTenantContext(403, "Access denied", headerTenantSlug);
     }
 
     return {
-      context: createTenantContext(session, tenant, membership.role),
+      context: createTenantContext(session, membership.organization, membership.role),
       failure: null,
     };
   }
@@ -265,21 +299,11 @@ export const resolveTenantContext = cache(async function resolveTenantContext():
     return failedTenantContext(401, "Unauthorized");
   }
 
-  const membership = await prisma.member.findUnique({
-    where: {
-      organizationId_userId: {
-        organizationId: session.session.activeOrganizationId,
-        userId: session.user.id,
-      },
-    },
-    select: {
-      role: true,
-      status: true,
-      organization: {
-        select: { id: true, name: true, slug: true, logo: true, status: true },
-      },
-    },
-  });
+  // Cached: membership + org via orgId, TTL 30 detik
+  const membership = await _getMemberByOrgId(
+    session.user.id,
+    session.session.activeOrganizationId
+  );
 
   if (!membership?.organization) {
     return failedTenantContext(403, "Access denied");

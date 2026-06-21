@@ -1,9 +1,25 @@
 import { prisma } from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 import { mapDomainRecord } from "@/lib/api/domain-utils";
 import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { tenantRls } from "@/lib/server/tenant-rls";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
+
+// Shared cache key dengan tasks.server.ts — hits yang sama per tenantId
+const _getMembersCached = unstable_cache(
+  async (tenantId: string) =>
+    prisma.member.findMany({
+      where: { organizationId: tenantId },
+      select: {
+        userId: true,
+        role: true,
+        user: { select: { id: true, name: true, email: true, image: true } },
+      },
+    }),
+  ["dashboard-members"],
+  { revalidate: 30 }
+);
 
 function getChecklistProgress(checklist?: unknown) {
   if (!Array.isArray(checklist) || checklist.length === 0) return { done: 0, total: 0, progress: 0 };
@@ -39,10 +55,7 @@ export async function getDashboardSummary() {
       take: 5,
       include: { user: { select: { id: true, name: true, email: true, image: true } } },
     }),
-    prisma.member.findMany({
-      where: { organizationId: ctx.tenantId },
-      include: { user: { select: { id: true, name: true, email: true, image: true } } },
-    }),
+    _getMembersCached(ctx.tenantId),
     prisma.contentPost.findMany({
       where: { organizationId: ctx.tenantId },
       orderBy: { createdAt: "desc" }

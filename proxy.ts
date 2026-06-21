@@ -189,10 +189,6 @@ function sanitizeHeaders(headers: Headers): Headers {
   sanitized.delete("x-user-id");
   sanitized.delete("x-user-role");
 
-  const cookieHeader = stripSessionDataCookies(sanitized.get("cookie"));
-  if (cookieHeader) sanitized.set("cookie", cookieHeader);
-  else sanitized.delete("cookie");
-
   return sanitized;
 }
 
