@@ -9,6 +9,7 @@ import {
 } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
+import { cache } from "react";
 
 const DATA_ALGORITHM = "aes-256-cbc";
 const RSA_OAEP_HASH  = "sha256";
@@ -100,7 +101,7 @@ export function decryptField(aesKey: Buffer, value: string | null | undefined): 
 }
 
 // Panggil aesKey.fill(0) setelah selesai
-export async function getTenantAesKey(organizationId: string): Promise<Buffer> {
+export const getTenantAesKey = cache(async function getTenantAesKey(organizationId: string): Promise<Buffer> {
   const tenant = await prisma.organization.findUnique({
     where: { id: organizationId },
     select: { encryptedDataKey: true },
@@ -117,7 +118,7 @@ export async function getTenantAesKey(organizationId: string): Promise<Buffer> {
   if (!privateKey) throw new Error("Private key tenant tidak tersedia di Vault.");
 
   return unwrapAesKey(privateKey, tenant.encryptedDataKey);
-}
+});
 
 export function getVaultSecretName(organizationId: string): string {
   return `tenant_${organizationId}_private_key`;
