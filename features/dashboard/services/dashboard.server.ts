@@ -5,9 +5,9 @@ import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { tenantRls } from "@/lib/server/tenant-rls";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
 
-function getChecklistProgress(checklist?: Array<{ done: boolean }>) {
-  if (!checklist || checklist.length === 0) return { done: 0, total: 0, progress: 0 };
-  const done = checklist.filter((c) => c.done).length;
+function getChecklistProgress(checklist?: unknown) {
+  if (!Array.isArray(checklist) || checklist.length === 0) return { done: 0, total: 0, progress: 0 };
+  const done = checklist.filter((c: any) => c?.done).length;
   const total = checklist.length;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
   return { done, total, progress };
@@ -85,7 +85,7 @@ export async function getDashboardSummary() {
   }
 
   const activeTasks = tasks.slice(0, 5).map((task: any) => {
-    const checklist = getChecklistProgress(task.checklist as Array<{ done: boolean }> | undefined);
+    const checklist = getChecklistProgress(task.checklist);
     const allAssignees = Array.isArray(task.assignees) ? task.assignees : [];
     const firstAssignee = allAssignees[0] ?? null;
     const resolvedAssignees = allAssignees.map((a: any) => resolveMemberIdentity(a));
