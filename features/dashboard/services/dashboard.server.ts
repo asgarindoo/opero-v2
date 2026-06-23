@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/server/rbac";
 import { normalizeUserAvatarImage } from "@/lib/server/supabase-storage";
 import { tenantRls } from "@/lib/server/tenant-rls";
 import { getUserDisplayName, getUserInitials, type UserIdentity } from "@/lib/user-identity";
+import { decryptField, getTenantAesKey } from "@/lib/server/crypto/tenant-crypto";
 
 // Shared cache key dengan tasks.server.ts — hits yang sama per tenantId
 const _getMembersCached = unstable_cache(
@@ -27,6 +28,27 @@ function getChecklistProgress(checklist?: unknown) {
   const total = checklist.length;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
   return { done, total, progress };
+}
+
+function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
+  if (typeof value !== "string") return value ?? fallback;
+  const decrypted = decryptField(aesKey, value);
+  if (!decrypted) return fallback;
+  try {
+    return JSON.parse(decrypted);
+  } catch {
+    return fallback;
+  }
+}
+
+function decryptTaskRecord(record: any, aesKey: Buffer) {
+  return {
+    ...record,
+    title: typeof record.title === "string" ? decryptField(aesKey, record.title) : record.title,
+    description: typeof record.description === "string" ? decryptField(aesKey, record.description) : record.description,
+    checklist: decryptJsonField(aesKey, record.checklist, []),
+    comments: decryptJsonField(aesKey, record.comments, []),
+  };
 }
 
 const ICON_MAP: Record<string, string> = {
@@ -62,7 +84,8 @@ export async function getDashboardSummary() {
     }),
   ]);
 
-  const tasks = taskRecords.map((r: any) => mapDomainRecord(r));
+  const aesKey = await getTenantAesKey(ctx.tenantId);
+  const tasks = taskRecords.map((r: any) => mapDomainRecord(decryptTaskRecord(r, aesKey)));
   const flows = flowRecords.map((r: any) => mapDomainRecord(r));
   const sales = saleRecords.map((r: any) => mapDomainRecord(r));
   const memberIdentityByUserId = new Map(
