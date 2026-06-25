@@ -140,7 +140,6 @@ export async function createFlow(data: Record<string, unknown>) {
   try {
     const flow = await prisma.flow.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         title: encryptField(aesKey, title),
         name: encryptField(aesKey, columns.name) ?? columns.name,

@@ -123,7 +123,6 @@ export async function createProduct(data: Record<string, unknown>) {
   try {
     const product = await prisma.product.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         title: encryptField(aesKey, name),
         name: encryptField(aesKey, name),

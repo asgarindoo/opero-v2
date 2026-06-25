@@ -120,7 +120,6 @@ export async function createGoal(data: Record<string, unknown>) {
   try {
     const goal = await prisma.goal.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         title: encryptField(aesKey, title),
         targetOutcome: encryptField(aesKey, targetOutcome),

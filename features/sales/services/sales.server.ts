@@ -126,7 +126,6 @@ export async function createSale(data: Record<string, unknown>) {
   try {
     const sale = await prisma.sale.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         saleNumber,
         title: encryptField(aesKey, title),

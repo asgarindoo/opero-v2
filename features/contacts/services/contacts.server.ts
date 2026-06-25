@@ -135,7 +135,6 @@ export async function createContact(data: Record<string, unknown>) {
   try {
     const contact = await prisma.contact.create({
       data: {
-        id: typeof parsed.id === "string" && parsed.id ? parsed.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         title: encryptField(aesKey, title),
         name: encryptField(aesKey, name),

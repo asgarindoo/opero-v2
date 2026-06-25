@@ -100,7 +100,6 @@ export async function createTransaction(data: Record<string, unknown>) {
   try {
     const transaction = await prisma.transaction.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         type: textValue(data.type) ?? "Expense",
         title: encryptField(aesKey, title),

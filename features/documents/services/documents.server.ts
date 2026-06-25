@@ -118,7 +118,6 @@ export async function createDocument(data: Record<string, unknown>) {
   try {
     const document = await prisma.document.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         title: encryptField(aesKey, title),
         description: encryptField(aesKey, textValue(data.description) ?? null),
@@ -236,7 +235,6 @@ export async function createFolder(data: Record<string, unknown>) {
   const parentId = await resolveParentFolderId(ctx.tenantId, data.parentId);
   const folder = await prisma.folder.create({
     data: {
-      id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
       organizationId: ctx.tenantId,
       title,
       name: textValue(data.name) ?? title,

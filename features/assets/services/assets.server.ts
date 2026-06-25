@@ -117,7 +117,6 @@ export async function createAsset(data: Record<string, unknown>) {
   try {
     const asset = await prisma.asset.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         title: name,
         name,

@@ -220,7 +220,6 @@ export async function createTask(data: Record<string, unknown>) {
       const assigneeId = await resolveAssigneeId(tx, ctx, data);
       return tx.task.create({
         data: {
-          id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
           organizationId: ctx.tenantId,
           title: encryptField(aesKey, title),
           description: encryptField(aesKey, textValue(data.description) ?? null),

@@ -109,7 +109,6 @@ export async function createCampaign(data: Record<string, unknown>) {
   try {
     const campaign = await prisma.campaign.create({
       data: {
-        id: typeof data.id === "string" && data.id ? data.id : crypto.randomUUID(),
         organizationId: ctx.tenantId,
         title: encryptField(aesKey, name),
         name: encryptField(aesKey, name),
