@@ -11,10 +11,10 @@ import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { cache } from "react";
 
-const DATA_ALGORITHM = "aes-256-cbc";
+const DATA_ALGORITHM = "aes-256-gcm";
 const RSA_OAEP_HASH  = "sha256";
 const AES_KEY_SIZE   = 32;
-const IV_SIZE        = 16;
+const IV_SIZE        = 12;
 
 // Dipanggil sekali saat tenant baru dibuat
 export async function createTenantCrypto(organizationId: string) {
@@ -42,13 +42,13 @@ export async function createTenantCrypto(organizationId: string) {
 
     return { publicKey, encryptedDataKey: wrappedAesKey };
   } finally {
-    aesKey.fill(0); // hapus dari memori
+    aesKey.fill(0);
   }
 }
 
 export function wrapAesKey(rsaPublicKey: string, aesKey: Buffer): string {
   if (aesKey.length !== AES_KEY_SIZE) {
-    throw new Error(`AES key harus 32 byte, diterima: ${aesKey.length} byte`);
+    throw new Error(`AES key harus ${AES_KEY_SIZE} byte, diterima: ${aesKey.length} byte`);
   }
   return publicEncrypt(
     { key: rsaPublicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: RSA_OAEP_HASH },
@@ -70,34 +70,45 @@ export function unwrapAesKey(rsaPrivateKey: string, wrappedAesKey: string): Buff
   return aesKey;
 }
 
-// Format: "<iv_base64>:<ciphertext_base64>"
+// Format Baru (GCM): "<iv_base64>:<tag_base64>:<ciphertext_base64>"
 export function encryptField(aesKey: Buffer, value: string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
 
-  const iv = randomBytes(IV_SIZE); // IV baru tiap enkripsi
-  const cipher = createCipheriv(DATA_ALGORITHM, aesKey, iv);
+  const iv = randomBytes(IV_SIZE);
+  const cipher = createCipheriv(DATA_ALGORITHM, aesKey, iv, { authTagLength: 16 });
+  
   const ciphertext = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
 
-  return `${iv.toString("base64")}:${ciphertext.toString("base64")}`;
+  return `${iv.toString("base64")}:${tag.toString("base64")}:${ciphertext.toString("base64")}`;
 }
 
 export function decryptField(aesKey: Buffer, value: string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
 
-  const colonIndex = value.indexOf(":");
-  if (colonIndex === -1) return value; // data lama, belum terenkripsi
+  const parts = value.split(":");
 
-  const ivBase64         = value.slice(0, colonIndex);
-  const ciphertextBase64 = value.slice(colonIndex + 1);
+  if (parts.length === 1) {
+    return value; // Fallback data lama tanpa enkripsi (plaintext)
+  }
 
-  if (!ivBase64 || !ciphertextBase64) throw new Error("Format ciphertext tidak valid.");
 
-  const decipher = createDecipheriv(DATA_ALGORITHM, aesKey, Buffer.from(ivBase64, "base64"));
 
-  return Buffer.concat([
-    decipher.update(Buffer.from(ciphertextBase64, "base64")),
-    decipher.final(),
-  ]).toString("utf8");
+  // Format GCM baru: "iv:tag:ciphertext"
+  if (parts.length === 3) {
+    const [ivBase64, tagBase64, ciphertextBase64] = parts;
+    const decipher = createDecipheriv(DATA_ALGORITHM, aesKey, Buffer.from(ivBase64, "base64"));
+
+    // GCM wajib menggunakan Auth Tag untuk memverifikasi integritas
+    decipher.setAuthTag(Buffer.from(tagBase64, "base64"));
+
+    return Buffer.concat([
+      decipher.update(Buffer.from(ciphertextBase64, "base64")),
+      decipher.final(),
+    ]).toString("utf8");
+  }
+
+  throw new Error("Format ciphertext tidak dikenali.");
 }
 
 // Panggil aesKey.fill(0) setelah selesai
