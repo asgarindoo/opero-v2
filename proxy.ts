@@ -1,13 +1,3 @@
-/**
- * OPERO - Next.js Proxy
- *
- * Simple multi-tenant routing:
- * - Root app:      lvh.me:3000 locally, production root domain later.
- * - Tenant app:    <slug>.lvh.me:3000 locally, <slug>.<root-domain> later.
- * - Login lives only on the root app.
- * - Tenant auth is handled by shared Better Auth cookies, not handoff tokens.
- */
-
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
@@ -403,6 +393,9 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (AUTH_ROUTES.has(pathname)) {
+    if (!hasSessionTokenCookie(request)) {
+      return passThrough(request);
+    }
     const session = await getSession(request);
     if (session?.user?.id) {
       const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
