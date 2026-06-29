@@ -46,24 +46,13 @@ function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
   }
 }
 
-function encryptNumeric(aesKey: Buffer, value: number): string {
-  return encryptField(aesKey, String(value)) ?? "0";
-}
-
-function decryptNumeric(aesKey: Buffer, value: unknown, fallback = 0): number {
-  if (typeof value !== "string") return typeof value === "number" ? value : fallback;
-  const decrypted = decryptField(aesKey, value);
-  if (!decrypted) return fallback;
-  const parsed = parseFloat(decrypted);
-  return isNaN(parsed) ? fallback : parsed;
-}
 
 function decryptProductRecord(record: any, aesKey: Buffer) {
   return {
     ...record,
     title: typeof record.title === "string" ? decryptField(aesKey, record.title) : record.title,
     name: typeof record.name === "string" ? decryptField(aesKey, record.name) : record.name,
-    price: decryptNumeric(aesKey, record.price),
+    price: record.price,
     comments: decryptJsonField(aesKey, record.comments, []),
   };
 }
@@ -129,7 +118,7 @@ export async function createProduct(data: Record<string, unknown>) {
         sku,
         category: textValue(data.category) ?? "Uncategorized",
         type: textValue(data.type) ?? "Physical",
-        price: encryptNumeric(aesKey, price) as any,
+        price,
         currency: textValue(data.currency) ?? "USD",
         stock,
         totalQuantity: intValue(data.totalQuantity) ?? stock,
@@ -170,7 +159,7 @@ export async function updateProduct(id: string, patch: Record<string, unknown>) 
         sku: patch.sku !== undefined ? textValue(patch.sku) : current.sku,
         category: patch.category !== undefined ? textValue(patch.category) : current.category,
         type: patch.type !== undefined ? textValue(patch.type) ?? current.type : current.type,
-        price: encryptNumeric(aesKey, price) as any,
+        price,
         currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
         stock,
         totalQuantity: intValue(patch.totalQuantity) ?? intValue(patch.stock) ?? current.totalQuantity,

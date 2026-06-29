@@ -45,17 +45,6 @@ function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
   }
 }
 
-function encryptNumeric(aesKey: Buffer, value: number): string {
-  return encryptField(aesKey, String(value)) ?? "0";
-}
-
-function decryptNumeric(aesKey: Buffer, value: unknown, fallback = 0): number {
-  if (typeof value !== "string") return typeof value === "number" ? value : fallback;
-  const decrypted = decryptField(aesKey, value);
-  if (!decrypted) return fallback;
-  const parsed = parseFloat(decrypted);
-  return isNaN(parsed) ? fallback : parsed;
-}
 
 function decryptCampaignRecord(record: any, aesKey: Buffer) {
   return {
@@ -63,7 +52,7 @@ function decryptCampaignRecord(record: any, aesKey: Buffer) {
     title: typeof record.title === "string" ? decryptField(aesKey, record.title) : record.title,
     name: typeof record.name === "string" ? decryptField(aesKey, record.name) : record.name,
     description: typeof record.description === "string" ? decryptField(aesKey, record.description) : record.description,
-    budget: record.budget != null ? decryptNumeric(aesKey, record.budget) : null,
+    budget: record.budget,
     campaignAccounts: decryptJsonField(aesKey, record.campaignAccounts, []),
   };
 }
@@ -117,7 +106,7 @@ export async function createCampaign(data: Record<string, unknown>) {
         priority: textValue(data.priority),
         startDate: dateValue(data.startDate),
         endDate: dateValue(data.endDate),
-        budget: budget != null ? encryptNumeric(aesKey, budget) as any : undefined,
+        budget: budget != null ? budget : undefined,
         currency: textValue(data.currency),
         tags: jsonArray(data.tags),
         campaignAccounts: encryptJsonField(aesKey, jsonArray(data.campaignAccounts)) as any,
@@ -155,7 +144,7 @@ export async function updateCampaign(id: string, patch: Record<string, unknown>)
         priority: patch.priority !== undefined ? textValue(patch.priority) : current.priority,
         startDate: patch.startDate !== undefined ? dateValue(patch.startDate) : current.startDate,
         endDate: patch.endDate !== undefined ? dateValue(patch.endDate) : current.endDate,
-        budget: budget != null ? encryptNumeric(aesKey, budget) as any : current.budget,
+        budget: budget != null ? budget : current.budget,
         currency: patch.currency !== undefined ? textValue(patch.currency) : current.currency,
         tags: patch.tags !== undefined ? jsonArray(patch.tags) : jsonInputOrDefault(current.tags, []),
         campaignAccounts: patch.campaignAccounts !== undefined

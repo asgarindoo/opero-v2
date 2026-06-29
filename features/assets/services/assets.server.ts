@@ -48,23 +48,12 @@ function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
   }
 }
 
-function encryptNumeric(aesKey: Buffer, value: number): string {
-  return encryptField(aesKey, String(value)) ?? "0";
-}
-
-function decryptNumeric(aesKey: Buffer, value: unknown, fallback = 0): number {
-  if (typeof value !== "string") return typeof value === "number" ? value : fallback;
-  const decrypted = decryptField(aesKey, value);
-  if (!decrypted) return fallback;
-  const parsed = parseFloat(decrypted);
-  return isNaN(parsed) ? fallback : parsed;
-}
 
 function decryptAssetRecord(record: any, aesKey: Buffer) {
   return {
     ...record,
     location: typeof record.location === "string" ? decryptField(aesKey, record.location) : record.location,
-    purchaseValue: record.purchaseValue != null ? decryptNumeric(aesKey, record.purchaseValue) : null,
+    purchaseValue: record.purchaseValue,
     supplierName: typeof record.supplierName === "string" ? decryptField(aesKey, record.supplierName) : record.supplierName,
     comments: decryptJsonField(aesKey, record.comments, []),
   };
@@ -126,7 +115,7 @@ export async function createAsset(data: Record<string, unknown>) {
         status: getStatus(data, "Active"),
         location: encryptField(aesKey, textValue(data.location) ?? null),
         purchaseDate: dateValue(data.purchaseDate),
-        purchaseValue: purchaseValue != null ? encryptNumeric(aesKey, purchaseValue) as any : undefined,
+        purchaseValue: purchaseValue != null ? purchaseValue : undefined,
         currency: textValue(data.currency),
         warrantyExpiry: dateValue(data.warrantyExpiry),
         supplierName: encryptField(aesKey, textValue(data.supplierName) ?? textValue(data.supplier) ?? null),
@@ -167,7 +156,7 @@ export async function updateAsset(id: string, patch: Record<string, unknown>) {
         status: typeof patch.status === "string" ? patch.status : current.status,
         location: patch.location !== undefined ? encryptField(aesKey, textValue(patch.location) ?? null) : current.location,
         purchaseDate: patch.purchaseDate !== undefined ? dateValue(patch.purchaseDate) : current.purchaseDate,
-        purchaseValue: purchaseValue != null ? encryptNumeric(aesKey, purchaseValue) as any : current.purchaseValue,
+        purchaseValue: purchaseValue != null ? purchaseValue : current.purchaseValue,
         currency: patch.currency !== undefined ? textValue(patch.currency) : current.currency,
         warrantyExpiry: patch.warrantyExpiry !== undefined ? dateValue(patch.warrantyExpiry) : current.warrantyExpiry,
         supplierName: patch.supplierName !== undefined || patch.supplier !== undefined

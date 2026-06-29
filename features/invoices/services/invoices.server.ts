@@ -54,17 +54,6 @@ function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
   }
 }
 
-function encryptNumeric(aesKey: Buffer, value: number): string {
-  return encryptField(aesKey, String(value)) ?? "0";
-}
-
-function decryptNumeric(aesKey: Buffer, value: unknown, fallback = 0): number {
-  if (typeof value !== "string") return typeof value === "number" ? value : fallback;
-  const decrypted = decryptField(aesKey, value);
-  if (!decrypted) return fallback;
-  const parsed = parseFloat(decrypted);
-  return isNaN(parsed) ? fallback : parsed;
-}
 
 function decryptInvoiceRecord(record: any, aesKey: Buffer) {
   return {
@@ -74,12 +63,12 @@ function decryptInvoiceRecord(record: any, aesKey: Buffer) {
     contactEmail: typeof record.contactEmail === "string" ? decryptField(aesKey, record.contactEmail) : record.contactEmail,
     paymentMethod: typeof record.paymentMethod === "string" ? decryptField(aesKey, record.paymentMethod) : record.paymentMethod,
     items: decryptJsonField(aesKey, record.items, []),
-    subtotal: decryptNumeric(aesKey, record.subtotal),
-    discountAmount: decryptNumeric(aesKey, record.discountAmount),
-    discountTotal: decryptNumeric(aesKey, record.discountTotal),
-    taxAmount: decryptNumeric(aesKey, record.taxAmount),
-    taxTotal: decryptNumeric(aesKey, record.taxTotal),
-    totalAmount: decryptNumeric(aesKey, record.totalAmount),
+    subtotal: record.subtotal,
+    discountAmount: record.discountAmount,
+    discountTotal: record.discountTotal,
+    taxAmount: record.taxAmount,
+    taxTotal: record.taxTotal,
+    totalAmount: record.totalAmount,
   };
 }
 
@@ -143,7 +132,7 @@ async function syncFinanceTransaction(ctx: any, invoiceId: string, invoiceStatus
             organizationId: ctx.tenantId,
             title: encryptField(aesKey, `Payment received for Invoice ${invoiceNumber}`),
             type: "Income",
-            amount: encryptField(aesKey, String(amount)) as any,
+            amount,
             currency: textValue(invoiceData.currency) ?? "USD",
             category: "Invoice Payment",
             transactionDate: new Date(),
@@ -228,14 +217,14 @@ export async function createInvoice(data: Record<string, unknown>) {
         issueDate: dateValue(data.issueDate),
         dueDate: dateValue(data.dueDate),
         items: encryptJsonField(aesKey, jsonArray(data.items)) as any,
-        subtotal: encryptNumeric(aesKey, numberValue(data.subtotal) ?? 0) as any,
-        discountAmount: encryptNumeric(aesKey, discountAmount) as any,
+        subtotal: numberValue(data.subtotal) ?? 0,
+        discountAmount,
         discountRate: numberValue(data.discountRate),
-        discountTotal: encryptNumeric(aesKey, numberValue(data.discountTotal) ?? discountAmount) as any,
+        discountTotal: numberValue(data.discountTotal) ?? discountAmount,
         taxRate: numberValue(data.taxRate),
-        taxAmount: encryptNumeric(aesKey, taxAmount) as any,
-        taxTotal: encryptNumeric(aesKey, numberValue(data.taxTotal) ?? taxAmount) as any,
-        totalAmount: encryptNumeric(aesKey, numberValue(data.totalAmount) ?? grandTotal) as any,
+        taxAmount,
+        taxTotal: numberValue(data.taxTotal) ?? taxAmount,
+        totalAmount: numberValue(data.totalAmount) ?? grandTotal,
         currency: textValue(data.currency) ?? "USD",
         paymentStatus: textValue(data.paymentStatus) ?? status,
         paymentMethod: encryptField(aesKey, textValue(data.paymentMethod) ?? null),
@@ -288,19 +277,19 @@ export async function updateInvoice(id: string, patch: Record<string, unknown>) 
         issueDate: patch.issueDate !== undefined ? dateValue(patch.issueDate) : current.issueDate,
         dueDate: patch.dueDate !== undefined ? dateValue(patch.dueDate) : current.dueDate,
         items: patch.items !== undefined ? encryptJsonField(aesKey, jsonArray(patch.items)) as any : current.items,
-        subtotal: encryptNumeric(aesKey, patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? currentPlain.subtotal : currentPlain.subtotal) as any,
-        discountAmount: patch.discountAmount !== undefined || patch.discountTotal !== undefined ? encryptNumeric(aesKey, discountAmount) as any : current.discountAmount,
+        subtotal: patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? currentPlain.subtotal : currentPlain.subtotal,
+        discountAmount: patch.discountAmount !== undefined || patch.discountTotal !== undefined ? discountAmount : current.discountAmount,
         discountRate: patch.discountRate !== undefined ? numberValue(patch.discountRate) : current.discountRate,
         discountTotal: patch.discountTotal !== undefined || patch.discountAmount !== undefined
-          ? encryptNumeric(aesKey, numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? currentPlain.discountTotal) as any
+          ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? currentPlain.discountTotal
           : current.discountTotal,
         taxRate: patch.taxRate !== undefined ? numberValue(patch.taxRate) : current.taxRate,
-        taxAmount: patch.taxAmount !== undefined || patch.taxTotal !== undefined ? encryptNumeric(aesKey, taxAmount) as any : current.taxAmount,
+        taxAmount: patch.taxAmount !== undefined || patch.taxTotal !== undefined ? taxAmount : current.taxAmount,
         taxTotal: patch.taxTotal !== undefined || patch.taxAmount !== undefined
-          ? encryptNumeric(aesKey, numberValue(patch.taxTotal) ?? numberValue(patch.taxAmount) ?? currentPlain.taxTotal) as any
+          ? numberValue(patch.taxTotal) ?? numberValue(patch.taxAmount) ?? currentPlain.taxTotal
           : current.taxTotal,
         totalAmount: patch.totalAmount !== undefined || patch.grandTotal !== undefined
-          ? encryptNumeric(aesKey, numberValue(patch.totalAmount) ?? grandTotal) as any
+          ? numberValue(patch.totalAmount) ?? grandTotal
           : current.totalAmount,
         currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
         paymentStatus: patch.paymentStatus !== undefined || patch.status !== undefined

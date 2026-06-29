@@ -32,23 +32,12 @@ const TRANSACTION_SELECT = {
   createdBy: { select: { id: true, name: true, email: true, image: true } },
 } as const;
 
-function encryptNumeric(aesKey: Buffer, value: number): string {
-  return encryptField(aesKey, String(value)) ?? "0";
-}
-
-function decryptNumeric(aesKey: Buffer, value: unknown, fallback = 0): number {
-  if (typeof value !== "string") return typeof value === "number" ? value : fallback;
-  const decrypted = decryptField(aesKey, value);
-  if (!decrypted) return fallback;
-  const parsed = parseFloat(decrypted);
-  return isNaN(parsed) ? fallback : parsed;
-}
 
 function decryptTransactionRecord(record: any, aesKey: Buffer) {
   return {
     ...record,
     title: typeof record.title === "string" ? decryptField(aesKey, record.title) : record.title,
-    amount: decryptNumeric(aesKey, record.amount),
+    amount: record.amount,
     paymentMethod: typeof record.paymentMethod === "string" ? decryptField(aesKey, record.paymentMethod) : record.paymentMethod,
     reference: typeof record.reference === "string" ? decryptField(aesKey, record.reference) : record.reference,
     contactName: typeof record.contactName === "string" ? decryptField(aesKey, record.contactName) : record.contactName,
@@ -103,7 +92,7 @@ export async function createTransaction(data: Record<string, unknown>) {
         organizationId: ctx.tenantId,
         type: textValue(data.type) ?? "Expense",
         title: encryptField(aesKey, title),
-        amount: encryptNumeric(aesKey, amount) as any,
+        amount,
         currency: textValue(data.currency) ?? "USD",
         category: textValue(data.category) ?? "General",
         transactionDate: dateValue(data.transactionDate),
@@ -145,7 +134,7 @@ export async function updateTransaction(id: string, patch: Record<string, unknow
       data: {
         type: patch.type !== undefined ? textValue(patch.type) : current.type,
         title: encryptField(aesKey, title),
-        amount: encryptNumeric(aesKey, amount) as any,
+        amount,
         currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
         category: patch.category !== undefined ? textValue(patch.category) : current.category,
         transactionDate: patch.transactionDate !== undefined ? dateValue(patch.transactionDate) : current.transactionDate,

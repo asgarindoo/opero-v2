@@ -52,17 +52,6 @@ function decryptJsonField(aesKey: Buffer, value: unknown, fallback: unknown) {
   }
 }
 
-function encryptNumeric(aesKey: Buffer, value: number): string {
-  return encryptField(aesKey, String(value)) ?? "0";
-}
-
-function decryptNumeric(aesKey: Buffer, value: unknown, fallback = 0): number {
-  if (typeof value !== "string") return typeof value === "number" ? value : fallback;
-  const decrypted = decryptField(aesKey, value);
-  if (!decrypted) return fallback;
-  const parsed = parseFloat(decrypted);
-  return isNaN(parsed) ? fallback : parsed;
-}
 
 function decryptSaleRecord(record: any, aesKey: Buffer) {
   return {
@@ -71,12 +60,12 @@ function decryptSaleRecord(record: any, aesKey: Buffer) {
     contactName: typeof record.contactName === "string" ? decryptField(aesKey, record.contactName) : record.contactName,
     shippingAddress: typeof record.shippingAddress === "string" ? decryptField(aesKey, record.shippingAddress) : record.shippingAddress,
     items: decryptJsonField(aesKey, record.items, []),
-    subtotal: decryptNumeric(aesKey, record.subtotal),
-    discountAmount: decryptNumeric(aesKey, record.discountAmount),
-    taxAmount: decryptNumeric(aesKey, record.taxAmount),
-    grandTotal: decryptNumeric(aesKey, record.grandTotal),
-    orderDiscountValue: record.orderDiscountValue != null ? decryptNumeric(aesKey, record.orderDiscountValue) : null,
-    discountTotal: decryptNumeric(aesKey, record.discountTotal),
+    subtotal: record.subtotal,
+    discountAmount: record.discountAmount,
+    taxAmount: record.taxAmount,
+    grandTotal: record.grandTotal,
+    orderDiscountValue: record.orderDiscountValue,
+    discountTotal: record.discountTotal,
   };
 }
 
@@ -135,14 +124,14 @@ export async function createSale(data: Record<string, unknown>) {
         contactName: encryptField(aesKey, textValue(data.contactName) ?? null),
         contactId: textValue(data.contactId),
         items: encryptJsonField(aesKey, jsonArray(data.items)),
-        subtotal: encryptNumeric(aesKey, numberValue(data.subtotal) ?? 0) as any,
-        discountAmount: encryptNumeric(aesKey, discountAmount) as any,
-        taxAmount: encryptNumeric(aesKey, numberValue(data.taxAmount) ?? 0) as any,
-        grandTotal: encryptNumeric(aesKey, grandTotal) as any,
+        subtotal: numberValue(data.subtotal) ?? 0,
+        discountAmount,
+        taxAmount: numberValue(data.taxAmount) ?? 0,
+        grandTotal,
         currency: textValue(data.currency) ?? "USD",
-        orderDiscountValue: data.orderDiscountValue != null ? encryptNumeric(aesKey, numberValue(data.orderDiscountValue) ?? 0) as any : undefined,
+        orderDiscountValue: data.orderDiscountValue != null ? (numberValue(data.orderDiscountValue) ?? 0) : undefined,
         orderDiscountType: textValue(data.orderDiscountType),
-        discountTotal: encryptNumeric(aesKey, numberValue(data.discountTotal) ?? discountAmount) as any,
+        discountTotal: numberValue(data.discountTotal) ?? discountAmount,
         taxPercentage: numberValue(data.taxPercentage),
         activities: jsonArray(data.activities),
         shippingAddress: encryptField(aesKey, textValue(data.shippingAddress) ?? null),
@@ -187,14 +176,14 @@ export async function updateSale(id: string, patch: Record<string, unknown>) {
         contactName: patch.contactName !== undefined ? encryptField(aesKey, textValue(patch.contactName) ?? null) : current.contactName,
         contactId: patch.contactId !== undefined ? textValue(patch.contactId) : current.contactId,
         items: patch.items !== undefined ? encryptJsonField(aesKey, jsonArray(patch.items)) as any : current.items,
-        subtotal: encryptNumeric(aesKey, patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? currentPlain.subtotal : currentPlain.subtotal) as any,
-        discountAmount: encryptNumeric(aesKey, discountAmount) as any,
-        taxAmount: encryptNumeric(aesKey, patch.taxAmount !== undefined ? numberValue(patch.taxAmount) ?? currentPlain.taxAmount : currentPlain.taxAmount) as any,
-        grandTotal: encryptNumeric(aesKey, grandTotal) as any,
+        subtotal: patch.subtotal !== undefined ? numberValue(patch.subtotal) ?? currentPlain.subtotal : currentPlain.subtotal,
+        discountAmount,
+        taxAmount: patch.taxAmount !== undefined ? numberValue(patch.taxAmount) ?? currentPlain.taxAmount : currentPlain.taxAmount,
+        grandTotal,
         currency: patch.currency !== undefined ? textValue(patch.currency) ?? current.currency : current.currency,
-        orderDiscountValue: patch.orderDiscountValue !== undefined ? encryptNumeric(aesKey, numberValue(patch.orderDiscountValue) ?? 0) as any : current.orderDiscountValue,
+        orderDiscountValue: patch.orderDiscountValue !== undefined ? (numberValue(patch.orderDiscountValue) ?? 0) : current.orderDiscountValue,
         orderDiscountType: patch.orderDiscountType !== undefined ? textValue(patch.orderDiscountType) : current.orderDiscountType,
-        discountTotal: encryptNumeric(aesKey, patch.discountTotal !== undefined || patch.discountAmount !== undefined ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? currentPlain.discountTotal : currentPlain.discountTotal) as any,
+        discountTotal: patch.discountTotal !== undefined || patch.discountAmount !== undefined ? numberValue(patch.discountTotal) ?? numberValue(patch.discountAmount) ?? currentPlain.discountTotal : currentPlain.discountTotal,
         taxPercentage: patch.taxPercentage !== undefined ? numberValue(patch.taxPercentage) : current.taxPercentage,
         activities: patch.activities !== undefined ? jsonArray(patch.activities) : jsonInputOrDefault(current.activities, []),
         shippingAddress: patch.shippingAddress !== undefined ? encryptField(aesKey, textValue(patch.shippingAddress) ?? null) : current.shippingAddress,
